@@ -46,6 +46,10 @@ export async function ingestVideo(videoId: string, opts: { provider?: string; ra
       .update(t.videos)
       .set({ ingestionStatus: "READY", failureReason: null, transcriptLang: lang, isGenerated, durationSec })
       .where(eq(t.videos.id, videoId));
+
+    // AI quiz drafts land in the review queue — never auto-published (spec FR-5.4)
+    const { generateDraftQuestions } = await import("@/lib/quiz/generate");
+    await generateDraftQuestions(videoId).catch(() => {});
   } catch (err) {
     await set("FAILED", err instanceof Error ? err.message : String(err));
     throw err;
