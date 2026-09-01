@@ -1,0 +1,44 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 897 >>
+stream
+BT /F2 16 Tf 0.32 0.51 0.4 rg 1 0 0 1 357.4 500 Tm (Demo Retail Co.) Tj ET
+BT /F2 28 Tf 0.12 0.12 0.1 rg 1 0 0 1 213.2 430 Tm (Fire & Emergency Quick Guide) Tj ET
+BT /F1 13 Tf 0.12 0.12 0.1 rg 1 0 0 1 235.8 360 Tm (1. Raise the alarm and alert your supervisor immediately.) Tj ET
+BT /F1 13 Tf 0.12 0.12 0.1 rg 1 0 0 1 248.8 330 Tm (2. Follow the green exit signs to the assembly point.) Tj ET
+BT /F1 13 Tf 0.12 0.12 0.1 rg 1 0 0 1 291.0 300 Tm (3. Never use lifts during an evacuation.) Tj ET
+BT /F1 13 Tf 0.12 0.12 0.1 rg 1 0 0 1 222.8 270 Tm (4. Only use an extinguisher if trained and the fire is small.) Tj ET
+BT /F1 13 Tf 0.12 0.12 0.1 rg 1 0 0 1 226.0 240 Tm (5. Report to your assembly point marshal for the head count.) Tj ET
+BT /F1 9 Tf 0.45 0.45 0.42 rg 1 0 0 1 277.0 80 Tm (DEMO material  replace with your reviewed emergency procedures.) Tj ET
+0.32 0.51 0.4 RG 2 w 30 30 782 535 re S
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000001198 00000 n 
+0000001268 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+1343
+%%EOF
