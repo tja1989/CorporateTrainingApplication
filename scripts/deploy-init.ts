@@ -20,8 +20,10 @@ async function main() {
     throw new Error("SESSION_SECRET is not set — add a long random string in the service variables.");
   }
 
-  const client = new Client({ connectionString: url, ssl: needsSsl(url) ? { rejectUnauthorized: false } : undefined });
-  await client.connect();
+  // Railway's private network (`*.railway.internal`) can take a few seconds to
+  // come up after container start, and Postgres itself may still be booting —
+  // retry the first connection for up to 90s instead of crashing instantly.
+  const client = await connectWithRetry(url);
 
   try {
     await client.query("CREATE EXTENSION IF NOT EXISTS vector");
@@ -53,6 +55,30 @@ async function main() {
     console.log(`deploy-init: ${rows[0].n} user(s) present — skipping seed`);
   }
   console.log("deploy-init: done");
+}
+
+async function connectWithRetry(url: string, attempts = 30, delayMs = 3000): Promise<Client> {
+  let lastErr: unknown;
+  for (let i = 1; i <= attempts; i++) {
+    const client = new Client({ connectionString: url, ssl: needsSsl(url) ? { rejectUnauthorized: false } : undefined });
+    try {
+      await client.connect();
+      if (i > 1) console.log(`deploy-init: database reachable after ${i} attempt(s)`);
+      return client;
+    } catch (err) {
+      lastErr = err;
+      await client.end().catch(() => {});
+      console.log(
+        `deploy-init: waiting for database (attempt ${i}/${attempts}) — ${err instanceof Error ? err.message : err}`,
+      );
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  throw new Error(
+    `deploy-init: could not reach the database after ${attempts} attempts. Last error: ${
+      lastErr instanceof Error ? lastErr.message : lastErr
+    }. Check that the Postgres service is Online and DATABASE_URL matches its credentials.`,
+  );
 }
 
 function needsSsl(url: string): boolean {
