@@ -12,15 +12,20 @@ export function Markdown({ text }: { text: string }) {
   );
 }
 
+export function slugify(s: string): string {
+  return s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "");
+}
+
 function Block({ block }: { block: string }) {
   if (!block) return null;
   const h = block.match(/^(#{1,3})\s+(.*)$/);
   if (h) {
     const level = h[1].length;
     const content = inline(h[2]);
-    if (level === 1) return <h1>{content}</h1>;
-    if (level === 2) return <h2>{content}</h2>;
-    return <h3>{content}</h3>;
+    const anchor = slugify(h[2]);
+    if (level === 1) return <h1 id={anchor}>{content}</h1>;
+    if (level === 2) return <h2 id={anchor}>{content}</h2>;
+    return <h3 id={anchor}>{content}</h3>;
   }
   const lines = block.split("\n");
   if (lines.every((l) => /^[-*]\s+/.test(l))) {

@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { embed } from "@/lib/ai/embeddings";
+import { embed, embeddingsAvailable } from "@/lib/ai/embeddings";
 
 /**
  * Hybrid retrieval (spec §9.2): vector KNN and full-text run in parallel,
@@ -47,12 +47,17 @@ export async function searchVideoChunks(query: string, scope: { videoId?: string
 
   const ftsRows = (await db.execute(sql`
     SELECT id FROM video_chunks
-    WHERE ${scopeSql} AND to_tsvector('english', text) @@ plainto_tsquery('english', ${query})
-    ORDER BY ts_rank_cd(to_tsvector('english', text), plainto_tsquery('english', ${query})) DESC
+    WHERE ${scopeSql} AND to_tsvector('english', text) @@ replace(plainto_tsquery('english', ${query})::text, '&', '|')::tsquery
+    ORDER BY ts_rank_cd(to_tsvector('english', text), replace(plainto_tsquery('english', ${query})::text, '&', '|')::tsquery) DESC
     LIMIT 20
   `)) as unknown as { rows: Array<{ id: string }> };
 
-  const merged = rrfMerge([vecRows.rows.map((r) => r.id), ftsRows.rows.map((r) => r.id)]).slice(0, topK);
+  const ftsIds = ftsRows.rows.map((r) => r.id);
+  // mock embeddings are lexical noise — weight the FTS ranking double offline
+  const rankings = embeddingsAvailable()
+    ? [vecRows.rows.map((r) => r.id), ftsIds]
+    : [vecRows.rows.map((r) => r.id), ftsIds, ftsIds];
+  const merged = rrfMerge(rankings).slice(0, topK);
   if (merged.length === 0) return [];
   const ids = merged.map((m) => m.id);
   const rows = (await db.execute(sql`
@@ -77,6 +82,7 @@ export type PolicyChunkHit = {
   text: string;
   parentText: string;
   score: number;
+  ftsMatched: boolean;
 };
 
 /**
@@ -109,12 +115,17 @@ export async function searchPolicyChunks(
 
   const ftsRows = (await db.execute(sql`
     SELECT pc.id FROM policy_chunks pc JOIN policy_docs d ON d.id = pc.doc_id
-    WHERE ${filterSql} AND to_tsvector('english', pc.text) @@ plainto_tsquery('english', ${query})
-    ORDER BY ts_rank_cd(to_tsvector('english', pc.text), plainto_tsquery('english', ${query})) DESC
+    WHERE ${filterSql} AND to_tsvector('english', pc.text) @@ replace(plainto_tsquery('english', ${query})::text, '&', '|')::tsquery
+    ORDER BY ts_rank_cd(to_tsvector('english', pc.text), replace(plainto_tsquery('english', ${query})::text, '&', '|')::tsquery) DESC
     LIMIT 16
   `)) as unknown as { rows: Array<{ id: string }> };
 
-  const merged = rrfMerge([vecRows.rows.map((r) => r.id), ftsRows.rows.map((r) => r.id)]).slice(0, topK);
+  const ftsIds = ftsRows.rows.map((r) => r.id);
+  const ftsSet = new Set(ftsIds);
+  const rankings = embeddingsAvailable()
+    ? [vecRows.rows.map((r) => r.id), ftsIds]
+    : [vecRows.rows.map((r) => r.id), ftsIds, ftsIds];
+  const merged = rrfMerge(rankings).slice(0, topK);
   if (merged.length === 0) return [];
   const ids = merged.map((m) => m.id);
   const rows = (await db.execute(sql`
@@ -126,7 +137,15 @@ export async function searchPolicyChunks(
     .map((m) => {
       const r = byId.get(m.id);
       return r
-        ? { id: r.id, docId: r.doc_id, sectionPath: r.section_path, text: r.text, parentText: r.parent_text, score: m.score }
+        ? {
+            id: r.id,
+            docId: r.doc_id,
+            sectionPath: r.section_path,
+            text: r.text,
+            parentText: r.parent_text,
+            score: m.score,
+            ftsMatched: ftsSet.has(r.id),
+          }
         : null;
     })
     .filter((x): x is PolicyChunkHit => !!x);
