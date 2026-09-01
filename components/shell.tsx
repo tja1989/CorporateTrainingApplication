@@ -106,7 +106,8 @@ export async function WorkspaceShell({ user, children }: { user: CurrentUser; ch
         <Header user={user} unread={unread} inboxHref={user.session.workspace === "admin" ? "/admin/inbox" : "/team/inbox"} />
         <div className="flex">
           <SideNav items={nav} />
-          <main className="min-w-0 flex-1 px-6 py-6">
+          {/* pt-12 on phones clears the fixed workspace nav strip */}
+          <main className="min-w-0 flex-1 px-4 pb-6 pt-12 md:px-6 md:pt-6">
             <div className="mb-3 hidden justify-end md:flex">
               <Chip variant="neutral">⌘K to jump</Chip>
             </div>
