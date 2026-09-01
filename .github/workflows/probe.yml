@@ -1,0 +1,28 @@
+name: Probe deployment
+
+# Manually-triggered probe of the live Railway deployment. GitHub runners can
+# reach the public domain, so the job logs show real HTTP status + the
+# /api/health self-diagnosis JSON.
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Base URL to probe
+        required: false
+        default: https://corporatetrainingapplication-production.up.railway.app
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe /api/health
+        run: |
+          BASE="${{ github.event.inputs.url }}"
+          echo "== GET $BASE/api/health =="
+          curl -sS -m 25 -w '\n--> HTTP %{http_code} in %{time_total}s\n' "$BASE/api/health" || echo "--> request failed"
+      - name: Probe /login
+        run: |
+          BASE="${{ github.event.inputs.url }}"
+          echo "== GET $BASE/login =="
+          curl -sS -o /dev/null -m 25 -w '--> HTTP %{http_code} in %{time_total}s\n' "$BASE/login" || echo "--> request failed"
