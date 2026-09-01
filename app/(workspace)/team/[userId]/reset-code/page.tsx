@@ -25,7 +25,7 @@ export default async function ResetCodePage({
         Reset code issued
       </PageTitle>
       <Card className="mb-4 p-6 text-center">
-        <p className="font-mono text-3xl font-semibold tracking-widest">{code}</p>
+        <p className="font-mono text-xl font-medium tracking-widest">{code}</p>
         <p className="mt-2 text-xs text-muted">Valid 14 days. They sign in at /activate with their employee ID and this code.</p>
       </Card>
       <ButtonLink variant="secondary" href={`/team/${member.id}`}>Back</ButtonLink>

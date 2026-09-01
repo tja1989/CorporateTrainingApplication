@@ -29,7 +29,7 @@ export default async function CoursesAdminPage() {
           ))}
         </div>
         <Card className="h-fit p-4">
-          <h2 className="mb-2 text-sm font-semibold text-muted">New course</h2>
+          <h2 className="mb-2 text-sm font-medium text-muted">New course</h2>
           <form action={createCourseAction}>
             <Field label="Title"><Input name="title" required /></Field>
             <Field label="Description"><Input name="description" /></Field>

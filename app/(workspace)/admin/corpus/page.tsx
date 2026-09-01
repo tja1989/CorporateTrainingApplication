@@ -1,7 +1,7 @@
 import { desc, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
-import { Card, Chip, PageTitle, DemoBanner, Button, Field, Input, Select, Textarea } from "@/components/ui";
+import { Card, Chip, PageTitle, DemoBanner, Button, Field, Input, Select, Textarea, Tile } from "@/components/ui";
 import { publishPolicyAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -38,15 +38,15 @@ export default async function CorpusPage() {
       <PageTitle sub="Policy documents, versions, and assistant quality.">HR corpus</PageTitle>
 
       <div className="mb-6 grid max-w-4xl gap-3 sm:grid-cols-4">
-        <Card className="p-4"><p className="text-2xl font-semibold">{deflection}%</p><p className="text-xs text-muted">Deflection (resolved w/o human) · benchmark 20–40% typical, 65–75% good</p></Card>
-        <Card className="p-4"><p className="text-2xl font-semibold">{totals?.escalated ?? 0}</p><p className="text-xs text-muted">Escalations of {total} exchanges</p></Card>
-        <Card className="p-4"><p className="text-2xl font-semibold">{csat === 0 ? "—" : `${Math.round(((totals?.up ?? 0) / csat) * 100)}%`}</p><p className="text-xs text-muted">CSAT ({csat} rated)</p></Card>
-        <Card className="p-4"><p className="text-2xl font-semibold">{totals?.abstained ?? 0}</p><p className="text-xs text-muted">Abstentions (content gaps)</p></Card>
+        <Tile value={deflection} suffix="%" label="Deflection (resolved w/o human)" hint="Benchmark 20–40% typical · 65–75% good" />
+        <Tile value={totals?.escalated ?? 0} label={`Escalations of ${total} exchanges`} href="/admin/tickets" />
+        <Tile value={csat === 0 ? "—" : Math.round(((totals?.up ?? 0) / csat) * 100)} suffix={csat === 0 ? undefined : "%"} label={`CSAT (${csat} rated)`} />
+        <Tile value={totals?.abstained ?? 0} label="Abstentions (content gaps)" tone={(totals?.abstained ?? 0) > 0 ? "warning" : "default"} />
       </div>
 
       <div className="grid max-w-5xl gap-6 lg:grid-cols-2">
         <section aria-label="Documents">
-          <h2 className="mb-2 text-sm font-semibold text-muted">Documents</h2>
+          <h2 className="mb-2 text-sm font-medium text-muted">Documents</h2>
           <div className="flex flex-col gap-2">
             {docs.map((doc) => (
               <Card key={doc.id} className="flex items-center justify-between gap-2 p-3 text-sm">
@@ -62,20 +62,20 @@ export default async function CorpusPage() {
             ))}
           </div>
 
-          <h2 className="mb-2 mt-6 text-sm font-semibold text-muted">Top unanswered questions (content-gap feed)</h2>
+          <h2 className="mb-2 mt-6 text-sm font-medium text-muted">Top unanswered questions (content-gap feed)</h2>
           {unanswered.length === 0 ? (
             <p className="text-sm text-muted">No abstentions yet.</p>
           ) : (
             <ul className="flex flex-col gap-1 text-sm">
               {unanswered.map((u, i) => (
-                <li key={i} className="rounded-[--radius-control] bg-surface-2 px-3 py-1.5">{u.query}</li>
+                <li key={i} className="rounded-control bg-surface-2 px-3 py-1">{u.query}</li>
               ))}
             </ul>
           )}
         </section>
 
         <section aria-label="Publish new version">
-          <h2 className="mb-2 text-sm font-semibold text-muted">Publish a policy version</h2>
+          <h2 className="mb-2 text-sm font-medium text-muted">Publish a policy version</h2>
           <Card className="p-4">
             <form action={publishPolicyAction}>
               <Field label="Title" hint="Publishing with an existing title supersedes the old version (its chunks are flagged, never deleted).">

@@ -37,7 +37,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ use
       </PageTitle>
 
       <section className="mb-6" aria-label="Enrollments">
-        <h2 className="mb-2 text-sm font-semibold text-muted">Enrollments</h2>
+        <h2 className="mb-2 text-sm font-medium text-muted">Enrollments</h2>
         <div className="flex flex-col gap-2">
           {enrollments
             .filter((e) => e.status !== "WITHDRAWN")
@@ -63,7 +63,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ use
 
       <section className="mb-6 grid gap-4 sm:grid-cols-2" aria-label="Actions">
         <Card className="p-4">
-          <h2 className="mb-2 text-sm font-semibold text-muted">Assign training</h2>
+          <h2 className="mb-2 text-sm font-medium text-muted">Assign training</h2>
           <form action={assignAction.bind(null, member.id)}>
             <Field label="Course or path">
               <Select name="target" required>
@@ -91,7 +91,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ use
         </Card>
         <Card className="flex flex-col gap-3 p-4">
           <div>
-            <h2 className="mb-2 text-sm font-semibold text-muted">Nudge</h2>
+            <h2 className="mb-2 text-sm font-medium text-muted">Nudge</h2>
             <form action={nudgeAction.bind(null, member.id)}>
               <Button type="submit" variant="secondary" disabled={!!nudgedRecently}>
                 {nudgedRecently ? "Nudged in the last 48h" : "Send reminder now"}
@@ -100,7 +100,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ use
             {!member.email ? <p className="mt-1 text-xs text-muted">No email — the nudge lands in-app; mention it in person too.</p> : null}
           </div>
           <div>
-            <h2 className="mb-2 text-sm font-semibold text-muted">Account help</h2>
+            <h2 className="mb-2 text-sm font-medium text-muted">Account help</h2>
             <form action={issueResetAction.bind(null, member.id)}>
               <Button type="submit" variant="secondary">Issue password reset code</Button>
             </form>
@@ -110,13 +110,13 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ use
       </section>
 
       <section aria-label="History">
-        <h2 className="mb-2 text-sm font-semibold text-muted">Completions</h2>
+        <h2 className="mb-2 text-sm font-medium text-muted">Completions</h2>
         {records.length === 0 ? (
           <p className="text-sm text-muted">None yet.</p>
         ) : (
           <ul className="flex flex-col gap-1 text-sm">
             {records.map((r) => (
-              <li key={r.id} className="flex justify-between rounded-[--radius-control] bg-surface-2 px-3 py-1.5">
+              <li key={r.id} className="flex justify-between rounded-control bg-surface-2 px-3 py-1">
                 <span>{courseOf.get(r.courseId)?.title ?? r.courseId}</span>
                 <span className="text-muted">{r.completedAt.toISOString().slice(0, 10)}</span>
               </li>

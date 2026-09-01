@@ -47,7 +47,7 @@ export default async function IntegrityPage() {
                       {a.maxScore ? ` · ${Math.round(((a.score ?? 0) / a.maxScore) * 100)}%` : ""}
                     </p>
                   </div>
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-2">
                     {red > 0 ? <Chip variant="destructive">{red} red</Chip> : null}
                     {orange > 0 ? <Chip variant="warning">{orange} orange</Chip> : null}
                     {red === 0 && orange === 0 ? <Chip variant="success">clean</Chip> : null}

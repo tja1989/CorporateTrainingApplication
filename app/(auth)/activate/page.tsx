@@ -10,7 +10,7 @@ export default function ActivatePage() {
   return (
     <main className="flex min-h-dvh items-center justify-center px-4">
       <Card className="animate-enter w-full max-w-sm p-6">
-        <h1 className="font-ai-voice mb-1 text-2xl font-semibold">Activate your account</h1>
+        <h1 className="mb-1 text-xl font-medium">Activate your account</h1>
         <p className="mb-6 text-sm text-muted">Use the one-time code from your manager or HR.</p>
         <form action={action}>
           <Field label="Employee ID">
@@ -26,7 +26,7 @@ export default function ActivatePage() {
             <Input name="confirm" type="password" autoComplete="new-password" required minLength={8} />
           </Field>
           {state?.error ? (
-            <p role="alert" className="mb-3 rounded-[--radius-control] bg-destructive-tint px-3 py-2 text-sm text-destructive-text">
+            <p role="alert" className="mb-3 rounded-control bg-destructive-tint px-3 py-2 text-sm text-destructive-text">
               {state.error}
             </p>
           ) : null}

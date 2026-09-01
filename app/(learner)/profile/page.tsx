@@ -44,11 +44,11 @@ export default async function ProfilePage() {
           <span className="text-xs text-muted">{streak?.currentStreakWeeks ?? 0}-week streak</span>
         </Card>
         <Card className="flex flex-col items-center justify-center gap-1 p-4">
-          <span className="text-2xl font-semibold">{points}</span>
+          <span className="text-xl font-medium">{points}</span>
           <span className="text-xs text-muted">points</span>
         </Card>
         <Card className="flex flex-col items-center justify-center gap-1 p-4">
-          <span className="text-2xl font-semibold">{completed}</span>
+          <span className="text-xl font-medium">{completed}</span>
           <span className="text-xs text-muted">courses completed</span>
         </Card>
       </div>
@@ -64,7 +64,7 @@ export default async function ProfilePage() {
       ) : null}
 
       <section className="mb-6 max-w-2xl" aria-label="Badges">
-        <h2 className="mb-2 text-sm font-semibold text-muted">Badges</h2>
+        <h2 className="mb-2 text-sm font-medium text-muted">Badges</h2>
         <div className="flex flex-wrap gap-2">
           {badgeRows.length === 0 ? <p className="text-sm text-muted">Complete courses and streaks to earn badges.</p> : null}
           {badgeRows.map((b) => (
@@ -74,7 +74,7 @@ export default async function ProfilePage() {
       </section>
 
       <section className="max-w-2xl" aria-label="Certificates">
-        <h2 className="mb-2 text-sm font-semibold text-muted">Certificates</h2>
+        <h2 className="mb-2 text-sm font-medium text-muted">Certificates</h2>
         {certRows.length === 0 ? (
           <p className="text-sm text-muted">Certificates you earn will appear here.</p>
         ) : (

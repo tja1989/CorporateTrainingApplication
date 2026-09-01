@@ -9,7 +9,7 @@ export default async function PrivacyNoticePage() {
   return (
     <main className="flex min-h-dvh items-center justify-center px-4 py-8">
       <Card className="animate-enter w-full max-w-xl p-6">
-        <h1 className="font-ai-voice mb-2 text-2xl font-semibold">How LuLu Learn uses your data</h1>
+        <h1 className="mb-2 text-xl font-medium">How LuLu Learn uses your data</h1>
         <div className="prose-ll text-sm">
           <p>Before you start, here is what this platform records and why — in plain language.</p>
           <h3>What we collect</h3>

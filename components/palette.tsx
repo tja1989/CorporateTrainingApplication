@@ -33,7 +33,7 @@ export function CommandPalette({ entries }: { entries: Entry[] }) {
 
   const results = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    if (!needle) return entries.slice(0, 10);
+    if (!needle) return entries.slice(0, 8);
     // subsequence fuzzy match
     return entries
       .filter((e) => {
@@ -46,20 +46,20 @@ export function CommandPalette({ entries }: { entries: Entry[] }) {
         }
         return true;
       })
-      .slice(0, 10);
+      .slice(0, 8);
   }, [q, entries]);
 
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-[oklch(0_0_0/0.3)] pt-[15vh] backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-scrim pt-[15vh]"
       onClick={() => setOpen(false)}
       role="dialog"
       aria-label="Command palette"
     >
       {/* No entry animation: 100+×/day surface (spec §10.5 frequency rule) */}
       <div
-        className="w-full max-w-lg rounded-[--radius-sheet] border border-border bg-surface shadow-lg"
+        className="w-full max-w-lg rounded-card border border-border bg-surface shadow-overlay"
         onClick={(e) => e.stopPropagation()}
       >
         <input
@@ -81,12 +81,12 @@ export function CommandPalette({ entries }: { entries: Entry[] }) {
           className="w-full border-b border-border bg-transparent px-4 py-3 text-base outline-none"
           aria-label="Search destinations"
         />
-        <ul className="max-h-72 overflow-y-auto p-2">
+        <ul className="p-2">
           {results.map((r, i) => (
             <li key={r.href}>
               <button
                 type="button"
-                className={`flex w-full items-center justify-between rounded-[--radius-control] px-3 py-2 text-start text-sm ${i === sel ? "bg-surface-2" : ""}`}
+                className={`flex w-full items-center justify-between rounded-control px-3 py-2 text-start text-sm ${i === sel ? "bg-surface-2" : ""}`}
                 onMouseEnter={() => setSel(i)}
                 onClick={() => {
                   setOpen(false);

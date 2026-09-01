@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { setFlash } from "@/lib/flash";
 import { eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
@@ -30,6 +31,9 @@ export async function assignAction(userId: string, form: FormData): Promise<void
   if (n > 0) {
     const [course] = type === "course" ? await db.select().from(t.courses).where(eq(t.courses.id, id_)).limit(1) : [];
     await notify(userId, "enrolled", { courseTitle: course?.title ?? "New training", courseId: id_ });
+    await setFlash(`Assigned — due in ${dueDays} day${dueDays === 1 ? "" : "s"}.`);
+  } else {
+    await setFlash("Already enrolled — nothing changed.", "neutral");
   }
   revalidatePath(`/team/${userId}`);
 }
@@ -41,6 +45,7 @@ export async function nudgeAction(userId: string): Promise<void> {
   // rate limit: dedupe key per member, cleared by the 48h check in the UI; the
   // dedupe also hard-stops duplicates at the dispatcher level
   await notify(userId, "overdue", { courseTitle: "your assigned training", courseId: "" }, `nudge:${userId}`);
+  await setFlash(`Nudge sent to ${member.name}.`);
   revalidatePath(`/team/${userId}`);
 }
 

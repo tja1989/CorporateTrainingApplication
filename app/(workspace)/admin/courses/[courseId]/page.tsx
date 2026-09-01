@@ -49,11 +49,11 @@ export default async function CourseEditorPage({ params }: { params: Promise<{ c
                   {lessons.map((lesson, i) => {
                     const video = lesson.payload.videoId ? videoOf.get(lesson.payload.videoId) : null;
                     return (
-                      <li key={lesson.id} className="flex items-center gap-2 rounded-[--radius-control] bg-surface-2 px-3 py-2 text-sm">
+                      <li key={lesson.id} className="flex items-center gap-2 rounded-control bg-surface-2 px-3 py-2 text-sm">
                         <span aria-hidden>{TYPE_ICON[lesson.type]}</span>
                         <span className="flex-1 truncate">{lesson.title}</span>
                         {video ? (
-                          <span className="flex items-center gap-1.5">
+                          <span className="flex items-center gap-2">
                             <Chip variant={video.ingestionStatus === "READY" ? "success" : video.ingestionStatus === "FAILED" ? "destructive" : "warning"}>
                               {video.ingestionStatus.toLowerCase()}
                             </Chip>
@@ -65,10 +65,10 @@ export default async function CourseEditorPage({ params }: { params: Promise<{ c
                           </span>
                         ) : null}
                         <form action={moveLessonAction.bind(null, course.id, lesson.id, -1)}>
-                          <button aria-label="Move up" className={cx("touch-target rounded px-1 hover:bg-surface", i === 0 && "opacity-30")} disabled={i === 0}>↑</button>
+                          <button aria-label="Move up" className={cx("touch-target rounded-control px-1 hover:bg-surface", i === 0 && "opacity-30")} disabled={i === 0}>↑</button>
                         </form>
                         <form action={moveLessonAction.bind(null, course.id, lesson.id, 1)}>
-                          <button aria-label="Move down" className={cx("touch-target rounded px-1 hover:bg-surface", i === lessons.length - 1 && "opacity-30")} disabled={i === lessons.length - 1}>↓</button>
+                          <button aria-label="Move down" className={cx("touch-target rounded-control px-1 hover:bg-surface", i === lessons.length - 1 && "opacity-30")} disabled={i === lessons.length - 1}>↓</button>
                         </form>
                       </li>
                     );
@@ -127,7 +127,7 @@ export default async function CourseEditorPage({ params }: { params: Promise<{ c
         </div>
 
         <Card className="h-fit p-4">
-          <h2 className="mb-2 text-sm font-semibold text-muted">Course settings</h2>
+          <h2 className="mb-2 text-sm font-medium text-muted">Course settings</h2>
           <form action={updateCourseAction.bind(null, course.id)}>
             <Field label="Title"><Input name="title" defaultValue={course.title} /></Field>
             <Field label="Description"><Textarea name="description" rows={2} defaultValue={course.description} /></Field>

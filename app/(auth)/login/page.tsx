@@ -10,7 +10,7 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-dvh items-center justify-center px-4">
       <Card className="animate-enter w-full max-w-sm p-6">
-        <h1 className="font-ai-voice mb-1 text-2xl font-semibold">LuLu Learn</h1>
+        <h1 className="mb-1 text-xl font-medium">LuLu Learn</h1>
         <p className="mb-6 text-sm text-muted">Sign in with your employee ID.</p>
         <form action={action}>
           <Field label="Employee ID">
@@ -20,11 +20,11 @@ export default function LoginPage() {
             <Input name="password" type="password" autoComplete="current-password" required />
           </Field>
           <label className="mb-4 flex items-center gap-2 text-sm text-muted">
-            <input type="checkbox" name="shared" className="h-4 w-4" />
+            <input type="checkbox" name="shared" className="size-4" />
             This is a shared device
           </label>
           {state?.error ? (
-            <p role="alert" className="mb-3 rounded-[--radius-control] bg-destructive-tint px-3 py-2 text-sm text-destructive-text">
+            <p role="alert" className="mb-3 rounded-control bg-destructive-tint px-3 py-2 text-sm text-destructive-text">
               {state.error}
             </p>
           ) : null}

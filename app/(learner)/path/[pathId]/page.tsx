@@ -37,7 +37,7 @@ export default async function PathPage({ params }: { params: Promise<{ pathId: s
             <Card
               className={cx("flex items-center gap-3 p-3", locked ? "opacity-50" : "pressable hover:bg-surface-2")}
             >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-surface-2 text-xs font-semibold">{i + 1}</span>
+              <span className="flex size-8 items-center justify-center rounded-full bg-surface-2 text-xs font-medium">{i + 1}</span>
               <div className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium">{course.title}</span>
                 <span className="text-xs text-muted">{p.done}/{p.total} lessons</span>
