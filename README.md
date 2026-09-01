@@ -53,6 +53,23 @@ Background jobs: `npm run worker` (queue) and `npm run sweep` (nightly complianc
 
 Every AI surface degrades to a clear labeled state — nothing crashes without keys.
 
+## Deploy to Railway (~3 minutes)
+
+The repo is self-deploying: `railway.json` pins the Dockerfile build, and the start command runs `scripts/deploy-init.ts` (enables pgvector → pushes the schema → applies indexes → seeds demo data once when `DEMO_MODE=true` and the DB is empty) before `next start`.
+
+1. **railway.com → New Project → Deploy from GitHub repo** → `tja1989/CorporateTrainingApplication` (pick the branch you want under the service's Settings → Source; merge PR #1 to deploy from `main`).
+2. **+ Create → Database → PostgreSQL.** If the app's first deploy later fails with a pgvector message, replace it with Railway's **pgvector** template — the error tells you.
+3. On the **app service → Variables**, add:
+   ```
+   DATABASE_URL   = ${{Postgres.DATABASE_URL}}
+   SESSION_SECRET = <any long random string, e.g. `openssl rand -hex 32`>
+   DEMO_MODE      = true
+   ```
+   Later, to switch the AI surfaces from offline demo mode to live models, add `ANTHROPIC_API_KEY` (and optionally `VOYAGE_API_KEY`, `AI_MODEL`, `YOUTUBE_API_KEY`) — no redeploy of code needed, just a service restart.
+4. **Settings → Networking → Generate Domain.** First boot takes a couple of minutes (schema + seed); the healthcheck is `/login`. Sign in with the demo credentials above.
+
+For scheduled maintenance, add a Railway cron service on the same repo with the command `npm run sweep` (daily) — it runs reminders, recertification, compliance recompute, and the retention purge.
+
 ## Architecture
 
 Next.js 15 (App Router, TS) · Tailwind v4 with the spec's OKLCH token system (light+dark, editorial/humanist) · Drizzle ORM on Postgres 16 + pgvector (HNSW + GIN, hybrid RRF retrieval) · Postgres-backed job queue (`FOR UPDATE SKIP LOCKED`) · `@anthropic-ai/sdk` behind a single gateway (telemetry, PII redaction, streaming structured outputs) · dependency-free PDF writer for certificates · cookie sessions (HMAC JWT) with shared-device short TTL and TOTP for admins.
