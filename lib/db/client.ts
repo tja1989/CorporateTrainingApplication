@@ -7,7 +7,9 @@ declare global {
   var __dbPool: Pool | undefined;
 }
 
-const connectionString = process.env.DATABASE_URL ?? "postgres://lulu:lulu@127.0.0.1:5432/lulu_learn";
+import { cleanDatabaseUrl } from "./url";
+
+const connectionString = cleanDatabaseUrl(process.env.DATABASE_URL) ?? "postgres://lulu:lulu@127.0.0.1:5432/lulu_learn";
 
 function needsSsl(url: string): boolean {
   if (process.env.DATABASE_SSL === "true") return true;
