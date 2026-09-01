@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "start:deploy": "tsx scripts/deploy-init.ts && next start -H ::",
+    "start:deploy": "tsx scripts/deploy-init.ts && tsx scripts/start-server.ts",
     "db:push": "drizzle-kit push",
     "seed": "tsx scripts/seed.ts",
     "worker": "tsx scripts/worker.ts",
