@@ -13,7 +13,7 @@ import { Client } from "pg";
  * 3. apply ANN/FTS indexes + constraints (db-extras.sql, idempotent)
  * 4. seed demo data once, only when DEMO_MODE=true and the DB is empty
  */
-async function main() {
+export async function runDeployInit(): Promise<void> {
   const { cleanDatabaseUrl, describeDatabaseUrl } = await import("../lib/db/url");
   const url = cleanDatabaseUrl(process.env.DATABASE_URL);
   if (!url) throw new Error("DATABASE_URL is not set — add a Postgres service and reference its DATABASE_URL.");
@@ -60,7 +60,7 @@ async function main() {
   console.log("deploy-init: done");
 }
 
-async function connectWithRetry(url: string, attempts = 30, delayMs = 3000): Promise<Client> {
+async function connectWithRetry(url: string, attempts = 5, delayMs = 3000): Promise<Client> {
   let lastErr: unknown;
   for (let i = 1; i <= attempts; i++) {
     const client = new Client({ connectionString: url, ssl: needsSsl(url) ? { rejectUnauthorized: false } : undefined });
@@ -91,7 +91,12 @@ function needsSsl(url: string): boolean {
   return !/localhost|127\.0\.0\.1|\.railway\.internal/.test(url);
 }
 
-main().catch((err) => {
-  console.error(err instanceof Error ? err.message : err);
-  process.exit(1);
-});
+// Run directly (npm run start:deploy used to call this; start-server now drives it)
+if (process.argv[1]?.endsWith("deploy-init.ts")) {
+  runDeployInit()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error(err instanceof Error ? err.message : err);
+      process.exit(1);
+    });
+}
