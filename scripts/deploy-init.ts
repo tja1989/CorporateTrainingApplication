@@ -14,8 +14,11 @@ import { Client } from "pg";
  * 4. seed demo data once, only when DEMO_MODE=true and the DB is empty
  */
 async function main() {
-  const url = process.env.DATABASE_URL;
+  const { cleanDatabaseUrl, describeDatabaseUrl } = await import("../lib/db/url");
+  const url = cleanDatabaseUrl(process.env.DATABASE_URL);
   if (!url) throw new Error("DATABASE_URL is not set — add a Postgres service and reference its DATABASE_URL.");
+  process.env.DATABASE_URL = url; // pass the cleaned value to drizzle-kit/seed subprocesses
+  console.log(`deploy-init: database target → ${describeDatabaseUrl(url)}`);
   if (!process.env.SESSION_SECRET) {
     throw new Error("SESSION_SECRET is not set — add a long random string in the service variables.");
   }
