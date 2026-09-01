@@ -1,0 +1,41 @@
+{
+  "name": "lulu-learn",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "db:push": "drizzle-kit push",
+    "seed": "tsx scripts/seed.ts",
+    "worker": "tsx scripts/worker.ts",
+    "sweep": "tsx scripts/sweep.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.65.0",
+    "bcryptjs": "^3.0.2",
+    "drizzle-orm": "^0.44.0",
+    "jose": "^6.0.0",
+    "motion": "^12.0.0",
+    "next": "^15.5.0",
+    "pg": "^8.16.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.15.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "drizzle-kit": "^0.31.0",
+    "tailwindcss": "^4.1.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
