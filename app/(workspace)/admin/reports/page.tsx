@@ -2,9 +2,9 @@ import { desc, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
 import { runReport, type ReportFilters, type ReportId } from "@/lib/reports";
-import { Card, Chip, Input, PageTitle, ButtonLink, cx } from "@/components/ui";
+import { Button, Card, Chip, Input, PageHeader, ButtonLink, SectionTitle, Tile } from "@/components/ui";
+import { LinkTabs } from "@/components/tabs";
 import { AskReports } from "./ask";
-import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -56,22 +56,20 @@ export default async function ReportsPage({
   if (params.store) qs.set("store", params.store);
   if (params.status) qs.set("status", params.status);
   if (params.days) qs.set("days", params.days);
+  const tail = qs.toString();
 
   return (
     <div className="animate-slide-up">
-      <PageTitle sub="Every report is live — filters apply instantly. Ask in plain language below.">Reports</PageTitle>
+      <PageHeader title="Reports" sub="Every report is live — filters apply instantly. Ask in plain language below." />
 
       <AskReports />
 
-      <div className="mb-4 mt-6 flex flex-wrap gap-1.5">
-        {REPORTS.map((r) => (
-          <Link key={r.id} href={`/admin/reports?report=${r.id}&${qs.toString()}`}>
-            <span className={cx("inline-block rounded-full px-3 py-1.5 text-sm font-medium", r.id === reportId ? "bg-primary text-primary-fg" : "bg-surface-2 text-muted hover:text-foreground")}>
-              {r.label}
-            </span>
-          </Link>
-        ))}
-      </div>
+      <LinkTabs
+        label="Report"
+        param="report"
+        className="mb-4 mt-6"
+        items={REPORTS.map((r) => ({ href: `/admin/reports?report=${r.id}${tail ? `&${tail}` : ""}`, label: r.label }))}
+      />
 
       <form className="mb-4 grid max-w-3xl grid-cols-2 gap-2 sm:grid-cols-5" action="/admin/reports" method="get">
         <input type="hidden" name="report" value={reportId} />
@@ -79,9 +77,10 @@ export default async function ReportsPage({
         <Input name="store" placeholder="Store…" defaultValue={params.store ?? ""} aria-label="Filter by store" />
         <Input name="status" placeholder="Status (e.g. OVERDUE)" defaultValue={params.status ?? ""} aria-label="Filter by status" />
         <Input name="days" placeholder="Days window" defaultValue={params.days ?? ""} aria-label="Days window" />
-        <button type="submit" className="pressable rounded-[--radius-control] bg-surface-2 px-3 text-sm font-medium">Apply</button>
+        <Button type="submit" variant="secondary">Apply</Button>
       </form>
 
+      {/* Data tables may scroll horizontally — they are page-level data, not tiles (spec §10.7 v1.2) */}
       <Card className="mb-2 overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -96,7 +95,7 @@ export default async function ReportsPage({
               <tr><td colSpan={result.columns.length} className="px-3 py-6 text-center text-muted">No rows match these filters.</td></tr>
             ) : (
               result.rows.slice(0, 200).map((row, i) => (
-                <tr key={i} className="border-b border-border last:border-0 hover:bg-surface-2">
+                <tr key={i} className="border-b border-border transition-colors last:border-0 hover:bg-surface-2">
                   {row.map((cell, j) => (
                     <td key={j} className="px-3 py-2">
                       {String(cell) === "OVERDUE" || String(cell) === "EXPIRED" ? <Chip variant="destructive">{cell}</Chip>
@@ -112,16 +111,17 @@ export default async function ReportsPage({
         </table>
       </Card>
       <div className="mb-8 flex items-center gap-3">
-        <ButtonLink variant="secondary" href={`/api/reports/${reportId}/csv?${qs.toString()}`}>Export CSV</ButtonLink>
+        <ButtonLink variant="secondary" href={`/api/reports/${reportId}/csv?${tail}`}>Export CSV</ButtonLink>
         <span className="text-xs text-muted">{result.rows.length} row(s)</span>
       </div>
 
       <section aria-label="AI cost" className="max-w-3xl">
-        <h2 className="mb-2 text-sm font-semibold text-muted">AI cost (ROI denominator)</h2>
+        <SectionTitle>AI cost (ROI denominator)</SectionTitle>
         <div className="grid gap-3 sm:grid-cols-3">
-          <Card className="p-4"><p className="text-2xl font-semibold">${(cost?.cost ?? 0).toFixed(2)}</p><p className="text-xs text-muted">Total AI spend · {cost?.calls ?? 0} calls · {((cost?.tokens ?? 0) / 1000).toFixed(1)}k tokens</p></Card>
-          <Card className="p-4"><p className="text-2xl font-semibold">${activeUsers?.n ? ((cost?.cost ?? 0) / activeUsers.n).toFixed(3) : "0.000"}</p><p className="text-xs text-muted">Cost per active user (30d)</p></Card>
+          <Tile value={`$${(cost?.cost ?? 0).toFixed(2)}`} label="Total AI spend" hint={`${cost?.calls ?? 0} calls · ${((cost?.tokens ?? 0) / 1000).toFixed(1)}k tokens`} />
+          <Tile value={`$${activeUsers?.n ? ((cost?.cost ?? 0) / activeUsers.n).toFixed(3) : "0.000"}`} label="Cost per active user (30d)" />
           <Card className="p-4">
+            <p className="mb-1 text-xs text-muted">By route</p>
             {routeCosts.slice(0, 4).map((r) => (
               <p key={r.route} className="flex justify-between text-xs"><span className="text-muted">{r.route}</span><span>${r.cost.toFixed(3)} · {r.calls}</span></p>
             ))}

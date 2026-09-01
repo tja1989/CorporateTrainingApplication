@@ -47,10 +47,10 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
     <div className="animate-slide-up">
       <nav className="mb-4 text-sm text-muted" aria-label="Breadcrumb">
         <Link className="hover:underline" href={`/course/${course.id}`}>{course.title}</Link>
-        <span className="mx-1.5" aria-hidden>/</span>
+        <span className="mx-2" aria-hidden>/</span>
         {mod.title}
       </nav>
-      <h1 className="font-ai-voice mb-4 text-2xl font-semibold">{lesson.title}</h1>
+      <h1 className="mb-4 text-xl font-medium">{lesson.title}</h1>
 
       {lesson.type === "TEXT" ? (
         <Card className="mb-6 max-w-3xl p-6">
@@ -61,7 +61,7 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
       {lesson.type === "PDF" ? (
         <Card className="mb-6 max-w-3xl p-4">
           {lesson.payload.fileUrl ? (
-            <iframe src={lesson.payload.fileUrl} title={lesson.title} className="h-[70vh] w-full rounded-[--radius-control] border border-border" />
+            <iframe src={lesson.payload.fileUrl} title={lesson.title} className="h-[70vh] w-full rounded-card border border-border" />
           ) : (
             <p className="text-sm text-muted">Document unavailable.</p>
           )}

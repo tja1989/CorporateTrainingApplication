@@ -13,7 +13,7 @@ export function MfaSetupForm({ secret }: { secret: string }) {
         <Input name="code" inputMode="numeric" pattern="[0-9]*" maxLength={6} required autoFocus />
       </Field>
       {state?.error ? (
-        <p role="alert" className="mb-3 rounded-[--radius-control] bg-destructive-tint px-3 py-2 text-sm text-destructive-text">
+        <p role="alert" className="mb-3 rounded-control bg-destructive-tint px-3 py-2 text-sm text-destructive-text">
           {state.error}
         </p>
       ) : null}

@@ -5,7 +5,7 @@ export function ThemeToggle() {
     <button
       type="button"
       aria-label="Toggle dark mode"
-      className="pressable touch-target rounded-[--radius-control] px-2 text-lg hover:bg-surface-2"
+      className="pressable touch-target rounded-control px-2 text-lg hover:bg-surface-2"
       onClick={() => {
         const root = document.documentElement;
         const dark = root.classList.toggle("dark");

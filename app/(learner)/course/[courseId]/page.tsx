@@ -50,18 +50,18 @@ export default async function CoursePage({ params }: { params: Promise<{ courseI
     <div className="animate-slide-up">
       <div className="mb-6">
         <div className="mb-2 flex flex-wrap items-center gap-2">
-          <h1 className="font-ai-voice text-2xl font-semibold">{course.title}</h1>
+          <h1 className="text-xl font-medium">{course.title}</h1>
           {chip ? <Chip variant={chip.variant}>{chip.label}</Chip> : null}
         </div>
         <p className="mb-3 max-w-2xl text-sm text-muted">{course.description}</p>
-        <div className="mb-4 flex flex-wrap gap-1.5">
+        <div className="mb-4 flex flex-wrap gap-2">
           <Chip variant="neutral">~{course.estMinutes} min</Chip>
           {enrollment?.dueAt ? <Chip variant="neutral">Due {enrollment.dueAt.toISOString().slice(0, 10)}</Chip> : null}
           {course.sequentialLock ? <Chip variant="neutral">Complete in order</Chip> : null}
         </div>
         {course.objectives.length > 0 ? (
           <Card className="mb-4 max-w-2xl p-4">
-            <h2 className="mb-2 text-sm font-semibold text-muted">You will learn to</h2>
+            <h2 className="mb-2 text-sm font-medium text-muted">You will learn to</h2>
             <ul className="flex flex-col gap-1 text-sm">
               {course.objectives.map((o) => (
                 <li key={o} className="flex gap-2"><span className="text-primary" aria-hidden>✓</span>{o}</li>
@@ -93,7 +93,7 @@ export default async function CoursePage({ params }: { params: Promise<{ courseI
                       href={locked ? "#" : `/lesson/${lesson.id}`}
                       aria-disabled={locked}
                       className={cx(
-                        "flex items-center gap-3 rounded-[--radius-control] px-2 py-2 text-sm",
+                        "flex items-center gap-3 rounded-control px-2 py-2 text-sm",
                         locked ? "pointer-events-none opacity-50" : "hover:bg-surface-2",
                       )}
                     >

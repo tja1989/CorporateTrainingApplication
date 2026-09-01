@@ -1,12 +1,13 @@
 # LuLu Learn — AI-Native Corporate Training Platform
 
-## Feature Requirements & Design Specification (MVP v1.1)
+## Feature Requirements & Design Specification (MVP v1.2)
 
 **Client:** LuLu Group International — HR
 **Prepared:** September 2026
 **Audience of this document:** the engineering agent (Claude Opus) that will build the MVP, and LuLu HR stakeholders reviewing scope.
 **Status:** Ready to build. Sections marked `[DISCOVERY]` are questions for the client, not blockers — the MVP ships with the stated defaults.
-**Revision:** v1.1 — revised after a three-lens adversarial review (buildability / HR-stakeholder & legal / design). All LuLu-specific figures are now sourced or tagged `[ASSUMPTION]`.
+**Revision:** v1.2 (Sep 2026) — design language tightened to six enforced rules: a 7-step spacing scale, the bento tile rule, three elevation levels with no glass, 4/8/12/pill radii, 150/250/400ms motion tokens with two easings, and one variable sans at weights 400/500 on a five-size scale. The serif "AI voice" is replaced by the AI surface (tint + label). Enforced by the closed Tailwind theme in `app/globals.css` and `tests/design-guardrails.test.ts`.
+**Previous:** v1.1 — revised after a three-lens adversarial review (buildability / HR-stakeholder & legal / design). All LuLu-specific figures are sourced or tagged `[ASSUMPTION]`.
 
 ---
 
@@ -426,7 +427,7 @@ All model calls go through a single server-side `ai/` module (provider SDK: `@an
 
 2026 product design has split into two shipping languages: techno-futurist (dark-first, neon accent — Linear, Vercel, Raycast) and **editorial/humanist** (warm paper neutrals, serif accents, generous whitespace — Claude, Perplexity, Notion-adjacent, Sana). AI-forward learning products have converged on the second because it reads human and trustworthy. **This product commits to editorial/humanist, light-first.** A workforce LMS on shared/retail-floor and mobile devices needs light-first with strong contrast; dark mode ships as the complete token set below + toggle, not the identity. Mixing both languages (dark hero + cream cards + neon chips) is the trend-collage failure — do not.
 
-Restraint IS the design language (the Linear lesson): one accent, one type pairing, exactly three radii, four surface levels, a closed token vocabulary.
+Restraint IS the design language (the Linear lesson): one accent, **one type family at two weights**, exactly three radii + pill, **three elevation levels**, a closed token vocabulary — closed literally: the Tailwind theme declares only these values, so an off-system class emits no CSS and the guardrail test names it.
 
 ### 10.2 Color tokens (OKLCH, CSS variables — complete light AND dark sets)
 
@@ -470,30 +471,29 @@ Tailwind v4 + shadcn/ui; all colors as OKLCH custom properties. Semantic colors 
 }
 ```
 
-Rules: neutrals carry the UI; `--primary` appears only on primary actions, active states, progress. `--ai` is reserved **exclusively for genuinely model-generated content** (tutor/assistant bubbles, citation chips, AI draft cards) — an honesty affordance; rule-based recommendations and any non-model UI never use it (FR-4.2). Celebration moments use `--primary` + the motion/serif treatment — there is no separate celebration hue (one fewer color, one clearer meaning). Verify ≥ 4.5:1 for body text and chip text in both themes (the `-fg`/`-text` variants above are chosen to pass; validate in CI with an automated contrast check).
+Rules: neutrals carry the UI; `--primary` appears only on primary actions, active states, progress. `--ai` is reserved **exclusively for genuinely model-generated content** (tutor/assistant bubbles, citation chips, AI draft cards) — an honesty affordance; rule-based recommendations and any non-model UI never use it (FR-4.2). Celebration moments use `--primary` + the motion treatment — there is no separate celebration hue (one fewer color, one clearer meaning). AI-generated text renders on the **AI surface** (`--ai-tint` background + a small `✳ AI` label in `--ai-fg`, `<AiSurface>`): the surface, not a typeface, is the honesty affordance. Verify ≥ 4.5:1 for body text and chip text in both themes (the `-fg`/`-text` variants above are chosen to pass; validate in CI with an automated contrast check).
 
-### 10.3 Typography
+### 10.3 Typography (v1.2)
 
-- **UI:** Inter Variable, `font-feature-settings: 'cv01', 'ss03', 'zero'`; body 16px/1.5; weights 400/500/600 only; headings tracking −1%.
-- **Display/AI voice:** one serif — Source Serif 4 Variable — reserved for AI answer text and page-level display headings. Never mix serif into buttons/labels/tables.
-- **Per-script stacks (defined now — AI answers render Arabic/Devanagari/Malayalam in MVP even though UI packs are fast-follow):**
-  - Serif (AI voice): `"Source Serif 4", "Noto Naskh Arabic", "Noto Serif Devanagari", "Noto Serif Malayalam", serif`
-  - UI: `"Inter", "IBM Plex Sans Arabic", "Noto Sans Devanagari", "Noto Sans Malayalam", system-ui, sans-serif`
-  - Load non-Latin subsets on demand (unicode-range) to protect the performance budget.
+- **One variable sans-serif for everything:** Inter Variable (`wght` + `opsz` axes), `font-feature-settings: 'cv01', 'ss03', 'zero'`; body 16px/1.5.
+- **Two weights only — 400 and 500.** No 600/700 anywhere, including headings, `<strong>`, table headers and SVG text (heavy headings are the fastest way to look dated). The theme declares only `font-normal`/`font-medium`; `font-semibold`/`font-bold` emit nothing.
+- **Five sizes, nothing larger exists in the theme:** `xs` 12/16 · `sm` 14/20 · `base` 16/24 · `lg` 20/28 · `xl` 24/32 (page titles, −1% tracking).
+- **No serif.** Model-generated text is distinguished by the AI surface (§10.2), never by a typeface.
+- **Per-script stack:** `"Inter", "IBM Plex Sans Arabic", "Noto Sans Devanagari", "Noto Sans Malayalam", system-ui, sans-serif`; non-Latin subsets load on demand (unicode-range) to protect the performance budget.
 
-### 10.4 Shape & space
+### 10.4 Shape, space & depth (v1.2)
 
-- Radii — exactly three + pill: `8px` (controls), `12px` (cards), `20px` (sheets/modals), `9999px` (pills/chips).
-- Spacing on a 4px base; ladder: 4/8/12/16/24/32/48/64.
-- Four surface levels max (background → surface → surface-2 → overlay). Shadows minimal: `0 1px 2px oklch(0 0 0 / 0.06)` at rest, one elevated tier for overlays.
-- Glass (`backdrop-filter: blur`) allowed **only** on transient overlays (sheet headers, command palette scrim) — never behind body text (Apple shipped a Liquid Glass legibility rollback within four months; learn from it).
+- **Radii as a scale:** `4px` controls (buttons, menu rows, focus ring), `8px` inputs (fields, selects, selectable option rows), `12px` cards (tiles, dialogs, toasts), pill (`9999px`) for chips and tags. Tokens `--radius-control / --radius-input / --radius-card`; nothing else exists.
+- **Spacing is a scale, not "some padding":** exactly seven steps — 4/8/12/16/24/32/48px (`--spacing-1/2/3/4/6/8/12`). The theme declares no other steps, so `p-5` or `gap-1.5` emit no CSS.
+- **Depth — exactly three elevation levels, hairline borders:** L0 page (`--background`); L1 card (`--surface` + 1px `--border`, **no shadow**); L2 overlay (command palette, dialog, toast: `--surface` + hairline + the single `--shadow-overlay`). `--surface-2` is an inset well / hover tint, not a level.
+- **No frosted glass anywhere.** Overlays sit on a flat `--color-scrim`; translucency and `backdrop-filter` are forbidden (glass already reads as 2023, and blur behind text costs legibility).
 
 ### 10.5 Motion budget (the "live and dynamic" spine — written, enforced)
 
-- Durations: press feedback 120ms; tooltips 150ms; dropdowns 200ms; sheets/modals 240–400ms **including spring settle**. Hard rule: **<300ms for high-frequency UI; transient containers ≤400ms. Never `ease-in`.**
-- Easings: entries `cubic-bezier(0.23, 1, 0.32, 1)`; on-screen movement `cubic-bezier(0.77, 0, 0.175, 1)`; drawers `cubic-bezier(0.32, 0.72, 0, 1)`.
-- Springs (Motion/Framer): sheets `{type:'spring', duration:0.4, bounce:0.15}`; the celebration moment (course completion) may use `{duration:0.5, bounce:0.2}` — celebration only.
-- Presses scale to `0.97`; entries from `scale(0.95) + opacity 0`; list/card rails stagger 40ms; animate only `transform` + `opacity`.
+- **Three duration tokens, used everywhere (v1.2):** `--duration-fast` 150ms (press, hover, colour, tab indicator), `--duration-base` 250ms (page/list entry, dialogs, toasts, tab slide), `--duration-slow` 400ms (progress-ring fill, counters, celebration). Looping indicators derive from the slow token (shimmer ×3, cursor ×2.5). Mirrored in `lib/motion.ts`; the guardrail test asserts parity. Consistency of timing is what makes the interface feel like one product.
+- **Two easings only:** `--ease-out cubic-bezier(0.23, 1, 0.32, 1)` for entries and exits; `--ease-in-out cubic-bezier(0.77, 0, 0.175, 1)` for on-screen movement. Never `ease-in`.
+- **Live components (the "dynamic" layer):** animated counters on tiles (`<AnimatedNumber>`), ring fill on mount (`<ProgressRing>`), sliding tab indicator (`<Tabs>`/`<LinkTabs>`), 40ms staggered rails capped at 8 items (`<Stagger>`), L2 toasts for server-action outcomes (`<ToastProvider>` + `setFlash`), layout-matching skeleton boundaries (`loading.tsx`) after 300ms.
+- Presses scale to `0.97`; entries from `scale(0.95) + opacity 0`; animate only `transform` + `opacity`, vertical offsets only (RTL-neutral).
 - Frequency framework: 100+×/day actions (nav, palette) get **no** animation; occasional (modals, toasts) standard; rare (course completion, badge, streak milestone) get the one delight moment — progress-ring fill + a single celebratory sweep.
 - `prefers-reduced-motion`: keep opacity/color fades, remove positional motion.
 
@@ -509,7 +509,7 @@ Rules: neutrals carry the UI; `--primary` appears only on primary actions, activ
 
 - Learner (mobile-first): bottom tab bar — Home / Learn / Drill / Ask HR / Profile (each specced in §11). Desktop: left rail, same five.
 - Admin/Manager (desktop-first responsive): left nav + **⌘K command palette** (cmdk via shadcn Command): jump to course/learner/report, quick actions. Palette opens instantly — no animation (frequency rule). Learners get search-first UI, not the palette. Managers switch between the manager shell and their own learner workspace via the switcher (§11.9a).
-- Bento grids only where a summary mosaic is honest (admin overview, course landing stats) — never as the app shell; task flows stay linear.
+- **The bento rule (v1.2):** a tile earns its place only if it answers **one question at a glance** and links to where the answer lives; a tile that would need a scrollbar becomes a page. No internal vertical scroll regions anywhere — chat threads, transcripts and lists flow in the page with sticky composers/toolbars; data tables may scroll horizontally. Bento only where a summary mosaic is honest: the learner Home at-a-glance band, the admin overview, team status tiles, course-landing stats — never as the app shell; task flows stay linear.
 - Progress rings (Apple Activity style, SVG stroke-dashoffset) for course and weekly-goal progress: card corners, profile header; ring fill animates only on completion events.
 
 ---
@@ -523,7 +523,7 @@ Rules: neutrals carry the UI; `--primary` appears only on primary actions, activ
 5. **Lesson viewers** — VIDEO per §7.4/FR-5.8 (player, Tutor panel with suggested-question chips, streaming answers with validated `[mm:ss]` chips, Transcript tab, "Explain simpler" / "Quiz me" quick actions). TEXT: article layout (65ch measure), sticky "Mark complete". PDF: in-app viewer with page nav + "Mark complete". All three carry prev/next lesson navigation.
 6. **Quiz runner** — pre-flight screen (attempts left, time limit ×user multiplier, pass mark, feedback mode); **integrity consent interstitial** when monitored (what's recorded, what's not — "no camera", why, consent CTA; per-platform truthful) → fullscreen gate where supported; one-question-at-a-time (when set) with progress dots; server-synced timer pill; autosave indicator ("Saved ✓"); **connection-lost banner** with local buffering and auto-resume; submit → result screen per feedback policy; wrong-answer "Review this part [4:12]" links; provisional-grade state ("pending confirmation") and appeal action on finalized AI grades.
 7. **Daily drill** — full-screen card stack, one question per card, optional confidence toggle (Sure / Not sure), instant feedback, end-of-session summary (streak progress, points).
-8. **Ask HR** — chat surface (serif answer text, `--ai` accents); first-run AI-disclosure; citation chips → **Policy viewer (8a)**: document view scrolled to the cited section, with version + effective date banner; persistent "Talk to a person" affordance; escalation composer (consent note: "your name and this conversation will be shared with HR") → **learner ticket thread (8b)** with status and HR replies (notification on update); re-auth prompt before opening history on shared devices; history list.
+8. **Ask HR** — chat surface (answers on the AI surface, `--ai` accents); first-run AI-disclosure; citation chips → **Policy viewer (8a)**: document view scrolled to the cited section, with version + effective date banner; persistent "Talk to a person" affordance; escalation composer (consent note: "your name and this conversation will be shared with HR") → **learner ticket thread (8b)** with status and HR replies (notification on update); re-auth prompt before opening history on shared devices; history list.
 9. **Profile & shell surfaces** — (9) Profile: progress rings, badges, certificates (PDF download), language & quiet-hours settings, privacy notice link. (9a) **Workspace switcher**: managers/admins toggle between admin/manager shell and their own learner view (persistent chip in the header). (9b) **Notification inbox**: bell icon in header (learner: on Home; admin/manager: in top bar), list with read states, deep links.
 10. **Manager dashboard** — status tiles → filtered team table; "not reached directly" list from the weekly digest surfaced as a tile; learner drill-in (transcript, due items); Assign sheet (course/path + due date); Nudge action with rate limit ("Nudged 2 days ago").
 11. **Admin: course builder** — outline editor (modules/lessons drag-sort **with up/down buttons**); lesson editors per type; YouTube URL intake with validation + ingestion status rows + transcript-source picker (manual upload / vendor); AI draft-cards review (accept/edit/discard per card — the accept-gate).

@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, Chip, cx } from "@/components/ui";
+import { AiSurface, AnimatedNumber, Button, Card, Chip, Input, Select, Textarea, cx } from "@/components/ui";
+import { Dialog } from "@/components/dialog";
 
 type Served = {
   questionId: string;
@@ -68,6 +69,7 @@ export function QuizRunner({
     const data = await res.json();
     if (!res.ok) {
       setError(data.error ?? "Could not start the assessment.");
+      setPhase("preflight");
       return;
     }
     setAttemptId(data.attemptId);
@@ -183,13 +185,14 @@ export function QuizRunner({
   };
 
   /* ---------------- preflight & consent ---------------- */
-  if (phase === "preflight") {
+  if (phase === "preflight" || phase === "consent") {
     const exhausted = attemptsLeft !== null && attemptsLeft <= 0 && !resume;
     return (
       <div className="flex flex-col items-start gap-3">
-        {error ? <p role="alert" className="rounded-[--radius-control] bg-destructive-tint px-3 py-2 text-sm text-destructive-text">{error}</p> : null}
+        {error ? <p role="alert" className="rounded-control bg-destructive-tint px-3 py-2 text-sm text-destructive-text">{error}</p> : null}
         {windowOpen && !exhausted ? (
           <Button
+            disabled={phase === "consent"}
             onClick={() => {
               // consent interstitial only for monitored assessments (spec FR-7.4)
               fetch(`/api/quiz/${quizId}/start`, { method: "HEAD" }).catch(() => {});
@@ -211,17 +214,8 @@ export function QuizRunner({
           </button>
         ) : null}
         {appealSent ? <Chip variant="success">Appeal sent — a reviewer will confirm your grade.</Chip> : null}
+        {phase === "consent" ? <ConsentGate quizId={quizId} onProceed={begin} onCancel={() => setPhase("preflight")} /> : null}
       </div>
-    );
-  }
-
-  if (phase === "consent") {
-    return (
-      <ConsentGate
-        quizId={quizId}
-        onProceed={begin}
-        onCancel={() => setPhase("preflight")}
-      />
     );
   }
 
@@ -229,8 +223,10 @@ export function QuizRunner({
   if (phase === "result" && result) {
     return (
       <div className="animate-enter">
-        <Card className="mb-4 p-5">
-          <p className="mb-1 text-2xl font-semibold">{result.scorePct}%</p>
+        <Card className="mb-4 p-6">
+          <p className="mb-1 text-xl font-medium">
+            <AnimatedNumber value={result.scorePct} suffix="%" />
+          </p>
           {result.gradingState === "PROVISIONAL" ? (
             <div>
               <Chip variant="warning">Pending confirmation</Chip>
@@ -256,7 +252,11 @@ export function QuizRunner({
                   {r.correct === null ? <Chip variant="ai">AI-graded</Chip> : r.correct ? <Chip variant="success">✓</Chip> : <Chip variant="destructive">✗</Chip>}
                 </p>
                 {r.explanation ? <p className="text-muted">{r.explanation}</p> : null}
-                {r.rationale ? <p className="font-ai-voice mt-1 rounded-[--radius-control] bg-ai-tint p-2 text-ai-fg">{r.rationale}</p> : null}
+                {r.rationale ? (
+                  <AiSurface variant="block" className="mt-2" label="AI grading rationale">
+                    {r.rationale}
+                  </AiSurface>
+                ) : null}
                 {r.correct === false && r.sourceStartSec !== null ? (
                   <p className="mt-1 text-xs text-muted">Review this part of the video: <span className="bidi-isolate font-mono">{Math.floor(r.sourceStartSec / 60)}:{String(Math.floor(r.sourceStartSec % 60)).padStart(2, "0")}</span></p>
                 ) : null}
@@ -275,17 +275,17 @@ export function QuizRunner({
 
   return (
     <div>
-      <div className="sticky top-12 z-20 mb-4 flex items-center gap-3 rounded-[--radius-card] border border-border bg-surface px-3 py-2 text-sm">
+      <div className="sticky top-12 z-20 mb-4 flex items-center gap-3 rounded-card border border-border bg-surface px-3 py-2 text-sm">
         <span className="text-muted">{answeredCount}/{served.length} answered</span>
         {settings.oneAtATime ? (
           <span className="flex gap-1" aria-label={`Question ${index + 1} of ${served.length}`}>
             {served.map((_, i) => (
-              <span key={i} className={cx("h-1.5 w-1.5 rounded-full", i === index ? "bg-primary" : answers[served[i].questionId] ? "bg-success" : "bg-border")} />
+              <span key={i} className={cx("size-2 rounded-full transition-colors", i === index ? "bg-primary" : answers[served[i].questionId] ? "bg-success" : "bg-border")} />
             ))}
           </span>
         ) : null}
         <span className="flex-1" />
-        {offline ? <Chip variant="warning">Reconnecting — answers saved locally</Chip> : saved ? <span className="text-xs text-muted">Saved ✓</span> : <span className="text-xs text-muted">…</span>}
+        {offline ? <Chip variant="warning">Reconnecting — answers saved locally</Chip> : <span className={cx("text-xs text-muted transition-opacity", saved ? "opacity-100" : "opacity-60")}>{saved ? "Saved ✓" : "Saving…"}</span>}
         {remaining !== null ? (
           <Chip variant={remaining < 60 ? "destructive" : "neutral"}>
             {remaining <= 0 ? "Time up" : `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`}
@@ -311,6 +311,7 @@ export function QuizRunner({
   );
 }
 
+/** Consent interstitial for monitored assessments (spec FR-7.4) — an L2 dialog, never a bare card. */
 function ConsentGate({ quizId, onProceed, onCancel }: { quizId: string; onProceed: () => void; onCancel: () => void }) {
   const [needsConsent, setNeedsConsent] = useState<boolean | null>(null);
   useEffect(() => {
@@ -326,20 +327,21 @@ function ConsentGate({ quizId, onProceed, onCancel }: { quizId: string; onProcee
   if (needsConsent === null) return <p className="text-sm text-muted">Preparing…</p>;
   const fsSupported = typeof document !== "undefined" && !!document.documentElement.requestFullscreen;
   return (
-    <Card className="animate-enter max-w-xl p-5">
-      <h2 className="mb-2 font-medium">Before you start — what this assessment records</h2>
-      <ul className="mb-3 flex list-disc flex-col gap-1 ps-5 text-sm">
+    <Dialog open onClose={onCancel} title="Before you start — what this assessment records">
+      <ul className="mb-3 flex list-disc flex-col gap-1 ps-6 text-sm">
         <li>When you leave this screen or switch apps (timestamps only)</li>
         {fsSupported ? <li>Fullscreen is required; leaving it pauses the attempt</li> : <li>Fullscreen isn’t available on this device — only screen-leave events are recorded</li>}
         <li>Copy and paste are disabled during the assessment</li>
         <li><strong>No camera. No microphone. No screen recording.</strong></li>
       </ul>
-      <p className="mb-4 text-sm text-muted">
+      <p className="mb-6 text-sm text-muted">
         Why: this keeps certifications fair. A person — never software — reviews any flags before they affect you. Events
         are deleted 6 months after the result is final. If you prefer, ask your manager for a supervised in-person sitting instead.
       </p>
-      <div className="flex gap-2">
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button variant="secondary" onClick={onCancel}>Cancel</Button>
         <Button
+          autoFocus
           onClick={async () => {
             await fetch(`/api/quiz/${quizId}/consent-info`, { method: "POST" }).catch(() => {});
             onProceed();
@@ -347,20 +349,21 @@ function ConsentGate({ quizId, onProceed, onCancel }: { quizId: string; onProcee
         >
           I understand — start
         </Button>
-        <Button variant="secondary" onClick={onCancel}>Cancel</Button>
       </div>
-    </Card>
+    </Dialog>
   );
 }
+
+const optionRow = "touch-target rounded-input border px-3 py-2 text-start text-sm";
 
 function QuestionInput({ q, answer, onChange }: { q: Served; answer: Answer | undefined; onChange: (a: Answer) => void }) {
   return (
     <Card className="mb-3 p-4">
-      {q.stimulus ? <p className="mb-2 rounded-[--radius-control] bg-surface-2 p-3 text-sm">{q.stimulus}</p> : null}
+      {q.stimulus ? <p className="mb-2 rounded-control bg-surface-2 p-3 text-sm">{q.stimulus}</p> : null}
       <p className="mb-3 font-medium">{q.prompt}</p>
 
       {(q.type === "mcq_single" || q.type === "truefalse") && q.options ? (
-        <div className="flex flex-col gap-1.5" role="radiogroup" aria-label={q.prompt}>
+        <div className="flex flex-col gap-2" role="radiogroup" aria-label={q.prompt}>
           {q.options.map((opt, i) => {
             const selected = answer?.kind === "choice" && answer.selected[0] === i;
             return (
@@ -369,10 +372,7 @@ function QuestionInput({ q, answer, onChange }: { q: Served; answer: Answer | un
                 role="radio"
                 aria-checked={selected}
                 onClick={() => onChange({ kind: "choice", selected: [i] })}
-                className={cx(
-                  "touch-target rounded-[--radius-control] border px-3 py-2.5 text-start text-sm",
-                  selected ? "border-primary bg-success-tint" : "border-border hover:bg-surface-2",
-                )}
+                className={cx(optionRow, "pressable", selected ? "border-primary bg-success-tint" : "border-border hover:bg-surface-2")}
               >
                 {opt}
               </button>
@@ -382,19 +382,17 @@ function QuestionInput({ q, answer, onChange }: { q: Served; answer: Answer | un
       ) : null}
 
       {q.type === "mcq_multi" && q.options ? (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           {q.options.map((opt, i) => {
             const selected = answer?.kind === "choice" && answer.selected.includes(i);
             return (
               <label
                 key={i}
-                className={cx(
-                  "touch-target flex cursor-pointer items-center gap-2 rounded-[--radius-control] border px-3 py-2.5 text-sm",
-                  selected ? "border-primary bg-success-tint" : "border-border hover:bg-surface-2",
-                )}
+                className={cx(optionRow, "flex cursor-pointer items-center gap-2", selected ? "border-primary bg-success-tint" : "border-border hover:bg-surface-2")}
               >
                 <input
                   type="checkbox"
+                  className="size-4"
                   checked={!!selected}
                   onChange={(e) => {
                     const prev = answer?.kind === "choice" ? answer.selected : [];
@@ -409,21 +407,19 @@ function QuestionInput({ q, answer, onChange }: { q: Served; answer: Answer | un
       ) : null}
 
       {q.type === "fill_blank" ? (
-        <input
+        <Input
           value={answer?.kind === "text" ? answer.text : ""}
           onChange={(e) => onChange({ kind: "text", text: e.target.value })}
-          className="w-full rounded-[--radius-control] border border-border bg-surface px-3 py-2.5 text-sm"
           aria-label="Your answer"
           placeholder="Type your answer"
         />
       ) : null}
 
       {q.type === "free_text" ? (
-        <textarea
+        <Textarea
           value={answer?.kind === "text" ? answer.text : ""}
           onChange={(e) => onChange({ kind: "text", text: e.target.value })}
           rows={5}
-          className="w-full rounded-[--radius-control] border border-border bg-surface px-3 py-2.5 text-sm"
           aria-label="Your answer"
           placeholder="Write your answer in any language…"
         />
@@ -434,21 +430,21 @@ function QuestionInput({ q, answer, onChange }: { q: Served; answer: Answer | un
           {q.left.map((left, li) => (
             <div key={li} className="flex items-center gap-2 text-sm">
               <span className="w-2/5">{left}</span>
-              <select
+              <Select
                 value={answer?.kind === "matching" ? (answer.pairs[li] ?? "") : ""}
                 onChange={(e) => {
                   const prev = answer?.kind === "matching" ? { ...answer.pairs } : {};
                   prev[li] = Number(e.target.value);
                   onChange({ kind: "matching", pairs: prev });
                 }}
-                className="flex-1 rounded-[--radius-control] border border-border bg-surface px-2 py-2"
+                className="flex-1"
                 aria-label={`Match for ${left}`}
               >
                 <option value="" disabled>Choose…</option>
                 {q.right!.map((right, ri) => (
                   <option key={ri} value={ri}>{right}</option>
                 ))}
-              </select>
+              </Select>
             </div>
           ))}
         </div>
@@ -472,13 +468,13 @@ function OrderingInput({ items, answer, onChange }: { items: string[]; answer: A
     onChange({ kind: "ordering", order: next });
   };
   return (
-    <ol className="flex flex-col gap-1.5">
+    <ol className="flex flex-col gap-2">
       {order.map((displayIdx, pos) => (
-        <li key={displayIdx} className="flex items-center gap-2 rounded-[--radius-control] border border-border px-3 py-2 text-sm">
-          <span className="w-5 text-xs text-muted">{pos + 1}.</span>
+        <li key={displayIdx} className="flex items-center gap-2 rounded-input border border-border px-3 py-2 text-sm">
+          <span className="w-6 text-xs text-muted">{pos + 1}.</span>
           <span className="flex-1">{items[displayIdx]}</span>
-          <button onClick={() => move(pos, -1)} aria-label="Move up" className="touch-target rounded px-2 hover:bg-surface-2" disabled={pos === 0}>↑</button>
-          <button onClick={() => move(pos, 1)} aria-label="Move down" className="touch-target rounded px-2 hover:bg-surface-2" disabled={pos === order.length - 1}>↓</button>
+          <button onClick={() => move(pos, -1)} aria-label="Move up" className="touch-target pressable rounded-control px-2 hover:bg-surface-2 disabled:opacity-50" disabled={pos === 0}>↑</button>
+          <button onClick={() => move(pos, 1)} aria-label="Move down" className="touch-target pressable rounded-control px-2 hover:bg-surface-2 disabled:opacity-50" disabled={pos === order.length - 1}>↓</button>
         </li>
       ))}
     </ol>

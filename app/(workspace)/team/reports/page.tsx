@@ -1,13 +1,13 @@
-import Link from "next/link";
 import { requireRole, teamOf } from "@/lib/auth/guard";
 import { runReport, type ReportId } from "@/lib/reports";
-import { Card, PageTitle, ButtonLink, cx } from "@/components/ui";
+import { Card, PageHeader, ButtonLink } from "@/components/ui";
+import { LinkTabs } from "@/components/tabs";
 
 export const dynamic = "force-dynamic";
 
 const REPORTS: Array<{ id: ReportId; label: string }> = [
-  { id: "completion", label: "Completion" },
   { id: "compliance", label: "Compliance" },
+  { id: "completion", label: "Completion" },
   { id: "cert_expiry", label: "Cert expiry" },
   { id: "engagement", label: "Engagement" },
 ];
@@ -16,22 +16,14 @@ const REPORTS: Array<{ id: ReportId; label: string }> = [
 export default async function TeamReportsPage({ searchParams }: { searchParams: Promise<{ report?: string }> }) {
   const manager = await requireRole("MANAGER", "ADMIN");
   const { report } = await searchParams;
-  const reportId = (REPORTS.find((r) => r.id === report)?.id ?? "compliance") as ReportId;
+  const reportId = (REPORTS.find((r) => r.id === report)?.id ?? REPORTS[0].id) as ReportId;
   const team = await teamOf(manager.id);
   const result = await runReport(reportId, { userIds: team.map((u) => u.id) });
 
   return (
     <div className="animate-slide-up">
-      <PageTitle sub="Scoped to your direct reports.">Team reports</PageTitle>
-      <div className="mb-4 flex flex-wrap gap-1.5">
-        {REPORTS.map((r) => (
-          <Link key={r.id} href={`/team/reports?report=${r.id}`}>
-            <span className={cx("inline-block rounded-full px-3 py-1.5 text-sm font-medium", r.id === reportId ? "bg-primary text-primary-fg" : "bg-surface-2 text-muted hover:text-foreground")}>
-              {r.label}
-            </span>
-          </Link>
-        ))}
-      </div>
+      <PageHeader title="Team reports" sub="Scoped to your direct reports." />
+      <LinkTabs label="Report" param="report" className="mb-4" items={REPORTS.map((r) => ({ href: `/team/reports?report=${r.id}`, label: r.label }))} />
       <Card className="mb-2 max-w-4xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead>

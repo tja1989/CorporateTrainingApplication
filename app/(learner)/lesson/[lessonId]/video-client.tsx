@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, Card, Chip, Skeleton, cx } from "@/components/ui";
+import { AiSurface, Button, Card, Chip, Input, PillButton, Skeleton, cx } from "@/components/ui";
+import { Tabs } from "@/components/tabs";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
@@ -15,10 +16,16 @@ type Citation = { startSec: number; endSec: number; quote: string };
 type Msg = { role: "user" | "assistant"; content: string; citations?: Citation[]; mock?: boolean };
 type Chunk = { id: string; startSec: number; endSec: number; text: string };
 
+const TRANSCRIPT_PREVIEW = 40;
+
 function fmtTime(sec: number): string {
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
   return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function reducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 export function VideoLessonClient({
@@ -40,10 +47,12 @@ export function VideoLessonClient({
 }) {
   const playerRef = useRef<any>(null);
   const playerHostRef = useRef<HTMLDivElement>(null);
+  const playerColumnRef = useRef<HTMLDivElement>(null);
   const [playerError, setPlayerError] = useState<string | null>(null);
   const [coverage, setCoverage] = useState(0);
   const [completed, setCompleted] = useState(initialCompleted);
   const [tab, setTab] = useState<"tutor" | "transcript">("tutor");
+  const [showAll, setShowAll] = useState(false);
   const positionRef = useRef(0);
 
   // ---- YouTube IFrame API (spec FR-5.6)
@@ -112,20 +121,29 @@ export function VideoLessonClient({
     return () => clearInterval(interval);
   }, [lessonId, completed]);
 
-  const seekTo = useCallback((sec: number) => {
-    playerRef.current?.seekTo?.(sec, true);
-    playerRef.current?.playVideo?.();
-    fetch("/api/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kind: "citation_click", payload: { lessonId, sec } }),
-    }).catch(() => {});
-  }, [lessonId]);
+  const seekTo = useCallback(
+    (sec: number) => {
+      playerRef.current?.seekTo?.(sec, true);
+      playerRef.current?.playVideo?.();
+      // On narrow screens the player is not sticky — bring it back into view.
+      if (window.matchMedia("(max-width: 1023px)").matches) {
+        playerColumnRef.current?.scrollIntoView({ block: "start", behavior: reducedMotion() ? "auto" : "smooth" });
+      }
+      fetch("/api/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "citation_click", payload: { lessonId, sec } }),
+      }).catch(() => {});
+    },
+    [lessonId],
+  );
+
+  const visibleChunks = showAll ? chunks : chunks.slice(0, TRANSCRIPT_PREVIEW);
 
   return (
-    <div className="mb-6 grid gap-4 lg:grid-cols-[3fr_2fr]">
-      <div>
-        {/* Player — no overlays ever (YouTube ToS) */}
+    <div className="mb-6 grid gap-4 lg:grid-cols-[3fr_2fr] lg:items-start">
+      {/* Player column — sticky on desktop so citations always seek a visible player */}
+      <div ref={playerColumnRef} className="scroll-mt-12 lg:sticky lg:top-12 lg:pt-4">
         {playerError ? (
           <Card className="flex aspect-video items-center justify-center p-6 text-center">
             <div>
@@ -134,7 +152,7 @@ export function VideoLessonClient({
             </div>
           </Card>
         ) : (
-          <div className="overflow-hidden rounded-[--radius-card] border border-border bg-black">
+          <div className="overflow-hidden rounded-card border border-border bg-black">
             <div className="aspect-video w-full">
               <div ref={playerHostRef} className="h-full w-full" />
             </div>
@@ -145,8 +163,8 @@ export function VideoLessonClient({
             <Chip variant="success">Watched ✓</Chip>
           ) : (
             <>
-              <div className="h-1.5 w-32 overflow-hidden rounded-full bg-surface-2">
-                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${coverage}%` }} />
+              <div className="h-1 w-meter overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuenow={coverage} aria-valuemin={0} aria-valuemax={100} aria-label="Watch coverage">
+                <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${coverage}%` }} />
               </div>
               <span>{coverage}% watched · completes at 90%</span>
             </>
@@ -155,22 +173,16 @@ export function VideoLessonClient({
       </div>
 
       <div className="min-w-0">
-        <div role="tablist" aria-label="Lesson panels" className="mb-2 flex gap-1 rounded-[--radius-control] bg-surface-2 p-1">
-          {(["tutor", "transcript"] as const).map((name) => (
-            <button
-              key={name}
-              role="tab"
-              aria-selected={tab === name}
-              onClick={() => setTab(name)}
-              className={cx(
-                "flex-1 rounded-[6px] px-3 py-1.5 text-sm font-medium capitalize",
-                tab === name ? "bg-surface shadow-sm" : "text-muted",
-              )}
-            >
-              {name === "tutor" ? "✳ Tutor" : "Transcript"}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          label="Lesson panels"
+          value={tab}
+          onChange={(id) => setTab(id as "tutor" | "transcript")}
+          tabs={[
+            { id: "tutor", label: "✳ Tutor" },
+            { id: "transcript", label: "Transcript" },
+          ]}
+          className="mb-3"
+        />
         {tab === "tutor" ? (
           <TutorPanel
             lessonId={lessonId}
@@ -181,13 +193,14 @@ export function VideoLessonClient({
             getPosition={() => positionRef.current}
           />
         ) : (
-          <Card className="max-h-[70vh] overflow-y-auto p-3">
-            <ol className="flex flex-col gap-2">
-              {chunks.map((c) => (
+          /* Transcript is content: it flows in the page, never inside a scroller (spec §10.7 v1.2) */
+          <Card className="p-3">
+            <ol className="flex flex-col gap-1">
+              {visibleChunks.map((c) => (
                 <li key={c.id}>
                   <button
                     onClick={() => seekTo(c.startSec)}
-                    className="w-full rounded-[--radius-control] px-2 py-1.5 text-start text-sm hover:bg-surface-2"
+                    className="w-full rounded-control px-2 py-2 text-start text-sm hover:bg-surface-2"
                   >
                     <span className="bidi-isolate me-2 font-mono text-xs text-primary">{fmtTime(c.startSec)}</span>
                     {c.text.length > 220 ? c.text.slice(0, 220) + "…" : c.text}
@@ -195,6 +208,11 @@ export function VideoLessonClient({
                 </li>
               ))}
             </ol>
+            {!showAll && chunks.length > TRANSCRIPT_PREVIEW ? (
+              <div className="mt-3 flex justify-center">
+                <PillButton onClick={() => setShowAll(true)}>Show full transcript ({chunks.length - TRANSCRIPT_PREVIEW} more)</PillButton>
+              </div>
+            ) : null}
           </Card>
         )}
       </div>
@@ -224,7 +242,8 @@ function TutorPanel({
   const [scope, setScope] = useState<"lesson" | "course">("lesson");
   const threadRef = useRef<string | null>(initialThreadId);
   const abortRef = useRef<AbortController | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+  const stickRef = useRef(true);
 
   useEffect(() => {
     fetch(`/api/tutor/suggest?videoId=${videoId}&pos=${Math.round(getPosition())}`)
@@ -234,13 +253,22 @@ function TutorPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId]);
 
+  // Follow the stream only while the reader is already near the bottom of the page.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+    function onScroll() {
+      stickRef.current = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200;
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  useEffect(() => {
+    if (stickRef.current) endRef.current?.scrollIntoView({ block: "end", behavior: reducedMotion() ? "auto" : "smooth" });
   }, [messages, streaming]);
 
   const ask = useCallback(
     async (question: string) => {
       if (!question.trim() || streaming !== null) return;
+      stickRef.current = true;
       setMessages((m) => [...m, { role: "user", content: question.trim() }]);
       setInput("");
       setStreaming("");
@@ -292,102 +320,80 @@ function TutorPanel({
   );
 
   return (
-    <Card className="flex h-[70vh] flex-col">
-      <div className="flex items-center justify-between border-b border-border px-3 py-2">
-        <span className="font-ai-voice text-sm font-semibold text-ai-fg">Lesson Tutor</span>
-        <button
-          onClick={() => setScope((s) => (s === "lesson" ? "course" : "lesson"))}
-          className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted hover:bg-surface-2"
-          aria-label="Toggle retrieval scope"
-        >
+    <section aria-label="Lesson Tutor" className="flex flex-col">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className="flex items-center gap-2 text-sm font-medium">
+          Lesson Tutor <Chip variant="ai">AI</Chip>
+        </span>
+        <PillButton onClick={() => setScope((s) => (s === "lesson" ? "course" : "lesson"))} aria-label="Toggle retrieval scope">
           {scope === "lesson" ? "This lesson ▾" : "Whole course ▾"}
-        </button>
+        </PillButton>
       </div>
 
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto p-3" dir="auto">
+      <div className="flex flex-col gap-3" dir="auto">
         {messages.length === 0 && streaming === null ? (
-          <p className="p-2 text-sm text-muted">
-            Ask anything about this video — answers come only from the lesson content, with timestamps you can tap.
-          </p>
+          <p className="text-sm text-muted">Ask anything about this video — answers come only from the lesson content, with timestamps you can tap.</p>
         ) : null}
         {messages.map((m, i) => (
-          <div key={i} className={cx("mb-3", m.role === "user" ? "text-end" : "")} dir="auto">
-            <div
-              className={cx(
-                "inline-block max-w-[92%] rounded-[--radius-card] px-3 py-2 text-sm",
-                m.role === "user" ? "bg-surface-2 text-start" : "font-ai-voice bg-ai-tint text-start",
-              )}
-            >
-              <span className="whitespace-pre-wrap">{m.content}</span>
-              {m.citations && m.citations.length > 0 ? (
-                <span className="mt-1.5 flex flex-wrap gap-1.5">
-                  {m.citations.map((c, j) => (
-                    <button
-                      key={j}
-                      onClick={() => onSeek(c.startSec)}
-                      title={c.quote}
-                      className="bidi-isolate pressable rounded-full bg-surface px-2 py-0.5 font-sans text-xs font-medium text-ai-fg hover:opacity-80"
-                    >
-                      ▶ {fmtTime(c.startSec)}
-                    </button>
-                  ))}
-                </span>
-              ) : null}
-              {m.mock ? <span className="mt-1 block font-sans text-[10px] text-muted">offline demo mode</span> : null}
-            </div>
+          <div key={i} className={cx(m.role === "user" ? "text-end" : "")} dir="auto">
+            {m.role === "user" ? (
+              <div className="inline-block max-w-[92%] rounded-card bg-surface-2 px-3 py-2 text-start text-sm">
+                <span className="whitespace-pre-wrap">{m.content}</span>
+              </div>
+            ) : (
+              <AiSurface mock={m.mock}>
+                <span className="whitespace-pre-wrap">{m.content}</span>
+                {m.citations && m.citations.length > 0 ? (
+                  <span className="mt-2 flex flex-wrap gap-2">
+                    {m.citations.map((c, j) => (
+                      <button
+                        key={j}
+                        onClick={() => onSeek(c.startSec)}
+                        title={c.quote}
+                        className="bidi-isolate pressable hit-area rounded-full bg-surface px-2 py-1 text-xs font-medium text-ai-fg hover:opacity-80"
+                      >
+                        ▶ {fmtTime(c.startSec)}
+                      </button>
+                    ))}
+                  </span>
+                ) : null}
+              </AiSurface>
+            )}
           </div>
         ))}
         {streaming !== null ? (
-          <div className="mb-3" dir="auto">
-            <div className="font-ai-voice inline-block max-w-[92%] rounded-[--radius-card] bg-ai-tint px-3 py-2 text-sm">
-              {streaming.length === 0 ? (
-                <Skeleton className="h-4 w-40" />
-              ) : (
-                <span className="whitespace-pre-wrap">{streaming}</span>
-              )}
-              <span className="stream-cursor ms-0.5" aria-hidden />
-            </div>
+          <div dir="auto">
+            <AiSurface>
+              {streaming.length === 0 ? <Skeleton className="h-4 w-[160px]" /> : <span className="whitespace-pre-wrap">{streaming}</span>}
+              <span className="stream-cursor ms-1" aria-hidden />
+            </AiSurface>
           </div>
         ) : null}
+        <div ref={endRef} />
       </div>
 
       {suggestions.length > 0 && messages.length === 0 ? (
-        <div className="flex flex-wrap gap-1.5 px-3 pb-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {suggestions.map((s) => (
-            <button
-              key={s}
-              onClick={() => ask(s)}
-              className="pressable rounded-full border border-border px-2.5 py-1 text-xs text-muted hover:bg-surface-2"
-            >
+            <PillButton key={s} onClick={() => ask(s)}>
               {s}
-            </button>
+            </PillButton>
           ))}
         </div>
       ) : null}
 
-      <div className="border-t border-border p-2">
-        <div className="mb-1.5 flex gap-1.5">
-          <button
-            onClick={() => ask("Explain this part in simpler words.")}
-            className="pressable rounded-full border border-border px-2.5 py-1 text-xs text-muted hover:bg-surface-2"
-            disabled={streaming !== null}
-          >
+      <div className="composer-sticky z-10 mt-4 border-t border-border bg-background pt-2">
+        <div className="mb-2 flex gap-2">
+          <PillButton onClick={() => ask("Explain this part in simpler words.")} disabled={streaming !== null}>
             Explain simpler
-          </button>
-          <button
-            onClick={() => ask("Quiz me on this section with 3 quick questions, then give the answers.")}
-            className="pressable rounded-full border border-border px-2.5 py-1 text-xs text-muted hover:bg-surface-2"
-            disabled={streaming !== null}
-          >
+          </PillButton>
+          <PillButton onClick={() => ask("Quiz me on this section with 3 quick questions, then give the answers.")} disabled={streaming !== null}>
             Quiz me
-          </button>
+          </PillButton>
           {streaming !== null ? (
-            <button
-              onClick={() => abortRef.current?.abort()}
-              className="pressable ms-auto rounded-full border border-border px-2.5 py-1 text-xs text-destructive-text"
-            >
+            <PillButton onClick={() => abortRef.current?.abort()} className="ms-auto text-destructive-text">
               ■ Stop
-            </button>
+            </PillButton>
           ) : null}
         </div>
         <form
@@ -395,21 +401,21 @@ function TutorPanel({
             e.preventDefault();
             ask(input);
           }}
-          className="flex gap-2"
+          className="flex gap-2 pb-2"
         >
-          <input
+          <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about this lesson…"
             aria-label="Ask the tutor"
             dir="auto"
-            className="min-w-0 flex-1 rounded-[--radius-control] border border-border bg-surface px-3 py-2 text-sm"
+            className="min-w-0 flex-1"
           />
-          <Button type="submit" disabled={streaming !== null || !input.trim()} className="px-3 py-2">
+          <Button type="submit" disabled={streaming !== null || !input.trim()} className="px-3" aria-label="Send">
             ↑
           </Button>
         </form>
       </div>
-    </Card>
+    </section>
   );
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { setFlash } from "@/lib/flash";
 import { requireRole } from "@/lib/auth/guard";
 import { publishPolicyVersion } from "@/lib/hr/ingest";
 
@@ -18,5 +19,6 @@ export async function publishPolicyAction(form: FormData): Promise<void> {
     effectiveDate: new Date(String(form.get("effectiveDate") ?? new Date().toISOString())),
     body,
   });
+  await setFlash(`Published “${title}” — earlier versions are no longer cited.`);
   revalidatePath("/admin/corpus");
 }

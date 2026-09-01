@@ -39,7 +39,7 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
 
       {q?.trim() ? (
         <section className="mb-8" aria-label="Search results">
-          <h2 className="mb-2 text-sm font-semibold text-muted">Results for “{q}”</h2>
+          <h2 className="mb-2 text-sm font-medium text-muted">Results for “{q}”</h2>
           {results.length === 0 ? (
             <EmptyState title="No matches" body="Try a different word, or browse the catalog below." />
           ) : (
@@ -53,7 +53,7 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
       ) : null}
 
       <section className="mb-8" aria-label="My learning">
-        <h2 className="mb-2 text-sm font-semibold text-muted">My learning</h2>
+        <h2 className="mb-2 text-sm font-medium text-muted">My learning</h2>
         {mine.length === 0 ? (
           <EmptyState title="Nothing assigned yet" body="Courses assigned to you will appear here." />
         ) : (
@@ -76,7 +76,7 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
         )}
         {myPaths.length > 0 ? (
           <div className="mt-4 flex flex-col gap-2">
-            <h3 className="text-sm font-semibold text-muted">My paths</h3>
+            <h3 className="text-sm font-medium text-muted">My paths</h3>
             {myPaths.map((p) => (
               <Link key={p.id} href={`/path/${p.id}`}>
                 <Card className="pressable flex items-center justify-between p-3 hover:bg-surface-2">
@@ -90,7 +90,7 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
       </section>
 
       <section aria-label="Browse">
-        <h2 className="mb-2 text-sm font-semibold text-muted">Browse</h2>
+        <h2 className="mb-2 text-sm font-medium text-muted">Browse</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           {catalog.map((c) => (
             <CourseCard key={c.id} course={c} />
@@ -107,7 +107,7 @@ function CourseCard({ course }: { course: typeof t.courses.$inferSelect }) {
       <Card className="pressable h-full p-4 hover:bg-surface-2">
         <h3 className="mb-1 font-medium">{course.title}</h3>
         <p className="mb-2 line-clamp-2 text-sm text-muted">{course.description}</p>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           <Chip variant="neutral">~{course.estMinutes} min</Chip>
           {course.tags.slice(0, 2).map((tag) => (
             <Chip key={tag} variant="neutral">{tag}</Chip>

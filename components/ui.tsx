@@ -6,10 +6,17 @@ function cx(...parts: Array<string | false | null | undefined>) {
 }
 export { cx };
 
+/* Re-exported primitives (own files so client/server boundaries stay clean) */
+export { ProgressRing } from "./ring";
+export { Tile } from "./tile";
+export { AnimatedNumber } from "./animated-number";
+export { Stagger } from "./stagger";
+export { AiSurface } from "./ai-surface";
+
 /* ----------------------------- Buttons ----------------------------- */
 
 const buttonBase =
-  "pressable touch-target inline-flex items-center justify-center gap-2 rounded-[--radius-control] px-4 py-2.5 text-sm font-medium disabled:opacity-50 disabled:pointer-events-none";
+  "pressable touch-target inline-flex items-center justify-center gap-2 rounded-control px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:pointer-events-none";
 const buttonVariants = {
   primary: "bg-primary text-primary-fg hover:opacity-90",
   secondary: "bg-surface border border-border text-foreground hover:bg-surface-2",
@@ -33,15 +40,24 @@ export function ButtonLink({
   return <Link className={cx(buttonBase, buttonVariants[variant], className)} {...props} />;
 }
 
+/* Pill — a 24px secondary action (suggestions, scope toggles, quick actions).
+   `.hit-area` extends the tap target to 44px without inflating the pill. */
+const pillBase =
+  "pressable hit-area inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted hover:bg-surface-2 disabled:opacity-50 disabled:pointer-events-none";
+
+export function PillButton({ active, className, ...props }: ComponentProps<"button"> & { active?: boolean }) {
+  return <button className={cx(pillBase, active && "border-primary text-foreground", className)} {...props} />;
+}
+
+export function PillLink({ active, className, ...props }: ComponentProps<typeof Link> & { active?: boolean }) {
+  return <Link className={cx(pillBase, active && "border-primary bg-primary text-primary-fg hover:opacity-90", className)} {...props} />;
+}
+
 /* ------------------------------ Cards ------------------------------ */
 
+/** Elevation L1: surface + hairline. Never a shadow (spec §10.4 v1.2). */
 export function Card({ className, ...props }: ComponentProps<"div">) {
-  return (
-    <div
-      className={cx("rounded-[--radius-card] border border-border bg-surface shadow-[0_1px_2px_oklch(0_0_0/0.06)]", className)}
-      {...props}
-    />
-  );
+  return <div className={cx("rounded-card border border-border bg-surface", className)} {...props} />;
 }
 
 /* ------------------------------ Chips ------------------------------ */
@@ -62,7 +78,7 @@ export function Chip({
 }: ComponentProps<"span"> & { variant?: keyof typeof chipVariants }) {
   return (
     <span
-      className={cx("inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium", chipVariants[variant], className)}
+      className={cx("inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium", chipVariants[variant], className)}
       {...props}
     />
   );
@@ -82,42 +98,23 @@ export function complianceChip(status: string): { label: string; variant: keyof 
 
 /* ------------------------------ Forms ------------------------------ */
 
+const fieldBase = "touch-target w-full rounded-input border border-border bg-surface px-3 py-2 text-base placeholder:text-muted";
+
 export function Input({ className, ...props }: ComponentProps<"input">) {
-  return (
-    <input
-      className={cx(
-        "w-full rounded-[--radius-control] border border-border bg-surface px-3.5 py-2.5 text-base placeholder:text-muted",
-        className,
-      )}
-      {...props}
-    />
-  );
+  return <input className={cx(fieldBase, className)} {...props} />;
 }
 
 export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
-  return (
-    <textarea
-      className={cx(
-        "w-full rounded-[--radius-control] border border-border bg-surface px-3.5 py-2.5 text-base placeholder:text-muted",
-        className,
-      )}
-      {...props}
-    />
-  );
+  return <textarea className={cx(fieldBase, className)} {...props} />;
 }
 
 export function Select({ className, ...props }: ComponentProps<"select">) {
-  return (
-    <select
-      className={cx("w-full rounded-[--radius-control] border border-border bg-surface px-3 py-2.5 text-base", className)}
-      {...props}
-    />
-  );
+  return <select className={cx(fieldBase, className)} {...props} />;
 }
 
 export function Label({ className, children, ...props }: ComponentProps<"label">) {
   return (
-    <label className={cx("mb-1.5 block text-sm font-medium text-foreground", className)} {...props}>
+    <label className={cx("mb-1 block text-sm font-medium text-foreground", className)} {...props}>
       {children}
     </label>
   );
@@ -137,8 +134,8 @@ export function Field({ label, children, hint }: { label: string; children: Reac
 
 export function EmptyState({ icon, title, body, action }: { icon?: string; title: string; body?: string; action?: ReactNode }) {
   return (
-    <div className="animate-enter flex flex-col items-center justify-center gap-2 rounded-[--radius-card] border border-dashed border-border px-6 py-12 text-center">
-      {icon ? <div className="text-3xl" aria-hidden>{icon}</div> : null}
+    <div className="animate-enter flex flex-col items-center justify-center gap-2 rounded-card border border-dashed border-border px-6 py-12 text-center">
+      {icon ? <div className="text-xl text-muted" aria-hidden>{icon}</div> : null}
       <h3 className="font-medium">{title}</h3>
       {body ? <p className="max-w-sm text-sm text-muted">{body}</p> : null}
       {action}
@@ -146,55 +143,39 @@ export function EmptyState({ icon, title, body, action }: { icon?: string; title
   );
 }
 
-export function Skeleton({ className }: { className?: string }) {
-  return <div className={cx("skeleton", className)} aria-hidden />;
-}
-
-/* --------------------------- Progress ring -------------------------- */
-
-export function ProgressRing({ pct, size = 44, label }: { pct: number; size?: number; label?: string }) {
-  const stroke = 4;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const clamped = Math.max(0, Math.min(100, pct));
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={label ?? `${Math.round(clamped)}% complete`}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
-      <circle
-        className="ring-progress"
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke="var(--primary)"
-        strokeWidth={stroke}
-        strokeLinecap="round"
-        strokeDasharray={c}
-        strokeDashoffset={c - (clamped / 100) * c}
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-      />
-      <text x="50%" y="54%" dominantBaseline="middle" textAnchor="middle" fontSize={size * 0.26} fill="var(--foreground)" fontWeight={600}>
-        {Math.round(clamped)}
-      </text>
-    </svg>
-  );
+export function Skeleton({ className, delayed }: { className?: string; delayed?: boolean }) {
+  return <div className={cx(delayed ? "skeleton-delayed" : "skeleton", className)} aria-hidden />;
 }
 
 /* ------------------------------ Page bits ---------------------------- */
 
-export function PageTitle({ children, sub }: { children: ReactNode; sub?: string }) {
+/** Page header: 24/500 display title, optional sub line and an actions slot. */
+export function PageHeader({ title, sub, actions, children }: { title: ReactNode; sub?: ReactNode; actions?: ReactNode; children?: ReactNode }) {
   return (
-    <div className="mb-6">
-      <h1 className="font-ai-voice text-2xl font-semibold">{children}</h1>
-      {sub ? <p className="mt-1 text-sm text-muted">{sub}</p> : null}
+    <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div className="min-w-0">
+        <h1 className="text-xl font-medium">{title}</h1>
+        {sub ? <p className="mt-1 text-sm text-muted">{sub}</p> : null}
+        {children}
+      </div>
+      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </div>
   );
+}
+
+/** Back-compat alias for existing call sites. */
+export function PageTitle({ children, sub }: { children: ReactNode; sub?: string }) {
+  return <PageHeader title={children} sub={sub} />;
+}
+
+export function SectionTitle({ children, className }: { children: ReactNode; className?: string }) {
+  return <h2 className={cx("mb-2 text-sm font-medium text-muted", className)}>{children}</h2>;
 }
 
 export function DemoBanner() {
   if (process.env.DEMO_MODE !== "true") return null;
   return (
-    <div className="mb-4 rounded-[--radius-control] bg-warning-tint px-3 py-2 text-xs font-medium text-warning-fg">
+    <div className="mb-4 rounded-control bg-warning-tint px-3 py-2 text-xs font-medium text-warning-fg">
       DEMO environment — fictional Demo Retail Co. data. Replace with reviewed content before production use.
     </div>
   );

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { setFlash } from "@/lib/flash";
 import { eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
@@ -10,6 +11,7 @@ export async function clearAttemptAction(attemptId: string): Promise<void> {
   const [attempt] = await db.select().from(t.attempts).where(eq(t.attempts.id, attemptId)).limit(1);
   if (!attempt || attempt.state === "VOIDED") return;
   await db.update(t.attempts).set({ state: "CLEARED" }).where(eq(t.attempts.id, attemptId));
+  await setFlash("Attempt cleared — the result stands.");
   revalidatePath(`/admin/integrity/${attemptId}`);
 }
 
@@ -21,5 +23,6 @@ export async function voidAttemptAction(attemptId: string, form: FormData): Prom
   const [attempt] = await db.select().from(t.attempts).where(eq(t.attempts.id, attemptId)).limit(1);
   if (!attempt) return;
   await db.update(t.attempts).set({ state: "VOIDED", voidReason: reason }).where(eq(t.attempts.id, attemptId));
+  await setFlash("Attempt voided — the learner gets a fresh slot.", "warning");
   revalidatePath(`/admin/integrity/${attemptId}`);
 }

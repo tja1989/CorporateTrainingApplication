@@ -1,7 +1,7 @@
 import { asc, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
-import { Button, Card, Chip, PageTitle, EmptyState, Input } from "@/components/ui";
+import { AiSurface, Button, Card, Chip, PageTitle, EmptyState, Input } from "@/components/ui";
 import { approveDraftAction, discardDraftAction, confirmGradeAction, adjustGradeAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +33,7 @@ export default async function ReviewsPage() {
       <PageTitle sub="Human judgement gates: AI-graded answers and AI-drafted questions.">Review queues</PageTitle>
 
       <section className="mb-8 max-w-3xl" aria-label="Grading reviews">
-        <h2 className="mb-2 text-sm font-semibold text-muted">AI-graded answers awaiting confirmation ({pendingGrades.length})</h2>
+        <h2 className="mb-2 text-sm font-medium text-muted">AI-graded answers awaiting confirmation ({pendingGrades.length})</h2>
         {pendingGrades.length === 0 ? (
           <EmptyState title="Nothing pending" body="Free-text answers that AI fails, grades with low confidence, or that learners appeal land here." />
         ) : (
@@ -55,8 +55,8 @@ export default async function ReviewsPage() {
                     <Chip variant="ai">AI: {aiTotal}/{aiMax} · conf {Math.round((review.aiConfidence ?? 0) * 100)}%</Chip>
                   </div>
                   <p className="mb-1 text-muted">{q?.body.prompt}</p>
-                  <blockquote className="mb-2 rounded-[--radius-control] bg-surface-2 p-2 whitespace-pre-wrap">{answerText}</blockquote>
-                  {review.aiRationale ? <p className="font-ai-voice mb-2 rounded-[--radius-control] bg-ai-tint p-2 text-ai-fg">{review.aiRationale}</p> : null}
+                  <blockquote className="mb-2 rounded-control bg-surface-2 p-2 whitespace-pre-wrap">{answerText}</blockquote>
+                  {review.aiRationale ? <AiSurface variant="block" className="mb-2" label="AI rationale">{review.aiRationale}</AiSurface> : null}
                   <div className="flex flex-wrap items-end gap-2">
                     <form action={confirmGradeAction.bind(null, review.id)}>
                       <Button type="submit" variant="secondary">Confirm AI grade</Button>
@@ -64,7 +64,7 @@ export default async function ReviewsPage() {
                     <form action={adjustGradeAction.bind(null, review.id)} className="flex items-end gap-2">
                       <div>
                         <label className="mb-1 block text-xs text-muted">Adjusted points (of {aiMax})</label>
-                        <Input name="points" type="number" min={0} max={aiMax} step={0.5} defaultValue={aiTotal} className="w-28" />
+                        <Input name="points" type="number" min={0} max={aiMax} step={0.5} defaultValue={aiTotal} className="w-[112px]" />
                       </div>
                       <Button type="submit">Adjust & finalize</Button>
                     </form>
@@ -77,7 +77,7 @@ export default async function ReviewsPage() {
       </section>
 
       <section className="max-w-3xl" aria-label="AI question drafts">
-        <h2 className="mb-2 text-sm font-semibold text-muted">AI-drafted questions ({drafts.length}) — never published without approval</h2>
+        <h2 className="mb-2 text-sm font-medium text-muted">AI-drafted questions ({drafts.length}) — never published without approval</h2>
         {drafts.length === 0 ? (
           <EmptyState title="No drafts" body="Questions generated from ingested videos appear here for approval." />
         ) : (
@@ -90,7 +90,7 @@ export default async function ReviewsPage() {
                 </div>
                 <p className="mb-1 font-medium">{d.body.prompt}</p>
                 {d.body.options ? (
-                  <ul className="mb-1 flex flex-col gap-0.5 text-muted">
+                  <ul className="mb-1 flex flex-col gap-1 text-muted">
                     {d.body.options.map((opt, i) => (
                       <li key={i}>{d.body.correct?.includes(i) ? "✓ " : "· "}{opt}</li>
                     ))}

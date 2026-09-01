@@ -38,16 +38,16 @@ export default async function IntegrityDetailPage({ params }: { params: Promise<
       </PageTitle>
 
       <Card className="mb-4 p-4">
-        <h2 className="mb-3 text-sm font-semibold text-muted">Event timeline</h2>
+        <h2 className="mb-3 text-sm font-medium text-muted">Event timeline</h2>
         {events.length === 0 ? (
           <p className="text-sm text-muted">No events — a clean sitting.</p>
         ) : (
-          <ol className="flex flex-col gap-1.5">
+          <ol className="flex flex-col gap-2">
             {events.map((e) => {
               const offset = Math.max(0, Math.round((e.ts.getTime() - startMs) / 1000));
               return (
-                <li key={e.id} className={cx("flex items-center gap-3 rounded-[--radius-control] px-3 py-1.5 text-sm", SEVERITY_STYLE[e.severity])}>
-                  <span className="bidi-isolate w-14 font-mono text-xs">+{Math.floor(offset / 60)}:{String(offset % 60).padStart(2, "0")}</span>
+                <li key={e.id} className={cx("flex items-center gap-3 rounded-control px-3 py-1 text-sm", SEVERITY_STYLE[e.severity])}>
+                  <span className="bidi-isolate w-12 font-mono text-xs">+{Math.floor(offset / 60)}:{String(offset % 60).padStart(2, "0")}</span>
                   <span className="flex-1">{e.kind.replace(/_/g, " ")}</span>
                   <span className="text-xs uppercase">{e.severity}</span>
                 </li>

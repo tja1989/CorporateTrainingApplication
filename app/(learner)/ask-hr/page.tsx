@@ -16,10 +16,12 @@ export default async function AskHrPage() {
     .orderBy(desc(t.hrTickets.createdAt))
     .limit(5);
 
+  // The conversation flows in the page (no inner scroll region — spec §10.7
+  // v1.2); the composer sticks to the bottom of the viewport.
   return (
-    <div className="animate-slide-up mx-auto flex h-[calc(100dvh-9rem)] max-w-2xl flex-col md:h-[calc(100dvh-7rem)]">
+    <div className="animate-slide-up mx-auto max-w-2xl">
       {tickets.length > 0 ? (
-        <div className="mb-3 flex flex-col gap-1.5">
+        <div className="mb-4 flex flex-col gap-2" aria-label="Your HR tickets">
           {tickets.map((ticket) => (
             <Link key={ticket.id} href={`/ask-hr/tickets/${ticket.id}`}>
               <Card className="pressable flex items-center justify-between gap-2 px-3 py-2 text-sm hover:bg-surface-2">

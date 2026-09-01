@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, Card, Chip, Skeleton, cx } from "@/components/ui";
+import { AiSurface, Button, Card, Chip, Input, PillButton, Skeleton, cx } from "@/components/ui";
+import { ConfirmDialog } from "@/components/dialog";
 
 type Citation = { docId: string; title: string; sectionPath: string; version: number; effectiveDate: string };
 type Msg = { role: "user" | "assistant"; content: string; citations?: Citation[]; mock?: boolean };
@@ -13,15 +14,21 @@ const SEED_QUESTIONS = [
   "How is end-of-service pay calculated?",
 ];
 
+function reducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
   const [messages, setMessages] = useState<Msg[] | null>(null);
   const [locked, setLocked] = useState(sharedDevice);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState<string | null>(null);
   const [escalateOffer, setEscalateOffer] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [ticketSent, setTicketSent] = useState<string | null>(null);
   const conversationRef = useRef<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+  const stickRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -35,13 +42,22 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
       .catch(() => setMessages([]));
   }, [locked]);
 
+  // Follow the stream only while the reader is already near the bottom of the page.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+    function onScroll() {
+      stickRef.current = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200;
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  useEffect(() => {
+    if (stickRef.current) endRef.current?.scrollIntoView({ block: "end", behavior: reducedMotion() ? "auto" : "smooth" });
   }, [messages, streaming]);
 
   const ask = useCallback(
     async (question: string) => {
       if (!question.trim() || streaming !== null) return;
+      stickRef.current = true;
       setMessages((m) => [...(m ?? []), { role: "user", content: question.trim() }]);
       setInput("");
       setStreaming("");
@@ -90,11 +106,8 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
   );
 
   const escalate = useCallback(async () => {
+    setConfirmOpen(false);
     if (!conversationRef.current) return;
-    const confirmed = window.confirm(
-      "Your name and this conversation will be shared with the HR team so they can help you directly. Continue?",
-    );
-    if (!confirmed) return;
     const res = await fetch("/api/hr/escalate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -109,8 +122,8 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
 
   if (locked) {
     return (
-      <Card className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
-        <p className="text-2xl" aria-hidden>✳</p>
+      <Card className="flex flex-col items-center justify-center gap-3 p-6 text-center">
+        <p className="text-xl text-muted" aria-hidden>✳</p>
         <h1 className="font-medium">Your HR conversations are private</h1>
         <p className="max-w-sm text-sm text-muted">You signed in on a shared device, so history stays hidden until you confirm it&#39;s you.</p>
         <Button onClick={() => setLocked(false)}>Show my conversation</Button>
@@ -119,23 +132,25 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
   }
 
   return (
-    <Card className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between border-b border-border px-3 py-2">
-        <span className="font-ai-voice text-sm font-semibold text-ai-fg">HR Assistant</span>
-        <button onClick={escalate} className="rounded-full border border-border px-2.5 py-1 text-xs text-muted hover:bg-surface-2">
+    <section aria-label="HR Assistant" className="flex flex-col">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className="flex items-center gap-2 text-sm font-medium">
+          HR Assistant <Chip variant="ai">AI</Chip>
+        </span>
+        <PillButton onClick={() => setConfirmOpen(true)} disabled={!conversationRef.current}>
           Talk to a person
-        </button>
+        </PillButton>
       </div>
 
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto p-3" dir="auto">
+      <div className="flex flex-col gap-3" dir="auto">
         {messages === null ? (
-          <div className="flex flex-col gap-2 p-2">
-            <Skeleton className="h-4 w-2/3" />
-            <Skeleton className="h-4 w-1/2" />
+          <div className="flex flex-col gap-2">
+            <Skeleton delayed className="h-4 w-2/3" />
+            <Skeleton delayed className="h-4 w-1/2" />
           </div>
         ) : null}
         {messages !== null && messages.length === 0 ? (
-          <div className="p-2 text-sm text-muted">
+          <div className="text-sm text-muted">
             <p className="mb-1">
               👋 I&#39;m an <strong>AI assistant</strong> that answers questions about company HR policies, with the exact
               policy text cited. I don&#39;t make decisions — HR does.
@@ -144,31 +159,31 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
           </div>
         ) : null}
         {(messages ?? []).map((m, i) => (
-          <div key={i} className={cx("mb-3", m.role === "user" ? "text-end" : "")} dir="auto">
-            <div
-              className={cx(
-                "inline-block max-w-[92%] rounded-[--radius-card] px-3 py-2 text-sm",
-                m.role === "user" ? "bg-surface-2 text-start" : "font-ai-voice bg-ai-tint text-start",
-              )}
-            >
-              <span className="whitespace-pre-wrap">{renderLite(m.content)}</span>
-              {m.citations && m.citations.length > 0 ? (
-                <span className="mt-1.5 flex flex-wrap gap-1.5">
-                  {m.citations.map((c, j) => (
-                    <a
-                      key={j}
-                      href={`/policy/${c.docId}?section=${encodeURIComponent(c.sectionPath)}`}
-                      onClick={() => fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "hr_citation_click", payload: { docId: c.docId } }) }).catch(() => {})}
-                      title={`${c.title} — v${c.version}, effective ${c.effectiveDate}`}
-                      className="bidi-isolate pressable rounded-full bg-surface px-2 py-0.5 font-sans text-xs font-medium text-ai-fg hover:opacity-80"
-                    >
-                      § {c.title} · {c.sectionPath.length > 24 ? c.sectionPath.slice(0, 24) + "…" : c.sectionPath}
-                    </a>
-                  ))}
-                </span>
-              ) : null}
-              {m.mock ? <span className="mt-1 block font-sans text-[10px] text-muted">offline demo mode</span> : null}
-            </div>
+          <div key={i} className={cx(m.role === "user" ? "text-end" : "")} dir="auto">
+            {m.role === "user" ? (
+              <div className="inline-block max-w-[92%] rounded-card bg-surface-2 px-3 py-2 text-start text-sm">
+                <span className="whitespace-pre-wrap">{renderLite(m.content)}</span>
+              </div>
+            ) : (
+              <AiSurface mock={m.mock}>
+                <span className="whitespace-pre-wrap">{renderLite(m.content)}</span>
+                {m.citations && m.citations.length > 0 ? (
+                  <span className="mt-2 flex flex-wrap gap-2">
+                    {m.citations.map((c, j) => (
+                      <a
+                        key={j}
+                        href={`/policy/${c.docId}?section=${encodeURIComponent(c.sectionPath)}`}
+                        onClick={() => fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "hr_citation_click", payload: { docId: c.docId } }) }).catch(() => {})}
+                        title={`${c.title} — v${c.version}, effective ${c.effectiveDate}`}
+                        className="bidi-isolate pressable hit-area rounded-full bg-surface px-2 py-1 text-xs font-medium text-ai-fg hover:opacity-80"
+                      >
+                        § {c.title} · {c.sectionPath.length > 24 ? c.sectionPath.slice(0, 24) + "…" : c.sectionPath}
+                      </a>
+                    ))}
+                  </span>
+                ) : null}
+              </AiSurface>
+            )}
             {m.role === "assistant" && i === (messages ?? []).length - 1 && streaming === null ? (
               <div className="mt-1 flex gap-1">
                 {(["up", "down"] as const).map((fb) => (
@@ -182,7 +197,7 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
                         body: JSON.stringify({ conversationId: conversationRef.current, feedback: fb }),
                       }).catch(() => {})
                     }
-                    className="rounded px-1.5 text-xs text-muted hover:bg-surface-2"
+                    className="hit-area rounded-control px-2 py-1 text-xs text-muted hover:bg-surface-2"
                   >
                     {fb === "up" ? "👍" : "👎"}
                   </button>
@@ -192,29 +207,30 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
           </div>
         ))}
         {streaming !== null ? (
-          <div className="mb-3" dir="auto">
-            <div className="font-ai-voice inline-block max-w-[92%] rounded-[--radius-card] bg-ai-tint px-3 py-2 text-sm">
-              {streaming.length === 0 ? <Skeleton className="h-4 w-40" /> : <span className="whitespace-pre-wrap">{renderLite(streaming)}</span>}
-              <span className="stream-cursor ms-0.5" aria-hidden />
-            </div>
+          <div dir="auto">
+            <AiSurface>
+              {streaming.length === 0 ? <Skeleton className="h-4 w-[160px]" /> : <span className="whitespace-pre-wrap">{renderLite(streaming)}</span>}
+              <span className="stream-cursor ms-1" aria-hidden />
+            </AiSurface>
           </div>
         ) : null}
-        {ticketSent ? (
-          <Chip variant="success">Ticket sent to HR — they&#39;ll reply here and you&#39;ll get a notification.</Chip>
-        ) : null}
+        {ticketSent ? <Chip variant="success">Ticket sent to HR — they&#39;ll reply here and you&#39;ll get a notification.</Chip> : null}
         {escalateOffer && !ticketSent ? (
-          <button onClick={escalate} className="pressable rounded-[--radius-control] border border-border px-3 py-2 text-sm text-primary hover:bg-surface-2">
-            → Ask the HR team directly
-          </button>
+          <div>
+            <PillButton onClick={() => setConfirmOpen(true)} className="text-primary">
+              → Ask the HR team directly
+            </PillButton>
+          </div>
         ) : null}
+        <div ref={endRef} />
       </div>
 
       {messages !== null && messages.length === 0 ? (
-        <div className="flex flex-wrap gap-1.5 px-3 pb-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {SEED_QUESTIONS.map((q) => (
-            <button key={q} onClick={() => ask(q)} className="pressable rounded-full border border-border px-2.5 py-1 text-xs text-muted hover:bg-surface-2">
+            <PillButton key={q} onClick={() => ask(q)}>
               {q}
-            </button>
+            </PillButton>
           ))}
         </div>
       ) : null}
@@ -224,19 +240,30 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
           e.preventDefault();
           ask(input);
         }}
-        className="flex gap-2 border-t border-border p-2"
+        className="composer-sticky z-10 mt-4 flex gap-2 border-t border-border bg-background py-2"
       >
-        <input
+        <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about any HR policy — any language"
           aria-label="Ask the HR assistant"
           dir="auto"
-          className="min-w-0 flex-1 rounded-[--radius-control] border border-border bg-surface px-3 py-2 text-sm"
+          className="min-w-0 flex-1"
         />
-        <Button type="submit" disabled={streaming !== null || !input.trim()} className="px-3 py-2">↑</Button>
+        <Button type="submit" disabled={streaming !== null || !input.trim()} className="px-3" aria-label="Send">
+          ↑
+        </Button>
       </form>
-    </Card>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Share this conversation with HR?"
+        body="Your name and this conversation will be shared with the HR team so they can help you directly. Nothing is shared until you confirm."
+        confirmLabel="Share and create ticket"
+        onConfirm={escalate}
+        onCancel={() => setConfirmOpen(false)}
+      />
+    </section>
   );
 }
 
