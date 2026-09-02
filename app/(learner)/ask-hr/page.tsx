@@ -34,6 +34,18 @@ export default async function AskHrPage() {
           ))}
         </div>
       ) : null}
+      <Link href="/ask-hr/live" className="mb-4 block">
+        <Card className="pressable flex items-center justify-between gap-3 p-3 hover:bg-surface-2">
+          <span className="flex items-center gap-3">
+            <span className="flex size-12 items-center justify-center rounded-full bg-ai-tint text-lg text-ai-fg" aria-hidden>🎙</span>
+            <span>
+              <span className="block text-sm font-medium">Talk to the assistant</span>
+              <span className="block text-xs text-muted">Live voice — same policies, same citations, same guardrails.</span>
+            </span>
+          </span>
+          <Chip variant="ai">AI</Chip>
+        </Card>
+      </Link>
       <HrChat sharedDevice={user.session.shared} />
     </div>
   );

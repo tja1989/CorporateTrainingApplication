@@ -40,6 +40,7 @@ export async function GET() {
       seededUsers,
       init: readInitStatus() ?? "no status yet (init loop not started)",
       aiConfigured: !!process.env.ANTHROPIC_API_KEY,
+      voiceConfigured: !!process.env.GEMINI_API_KEY,
       demoMode: process.env.DEMO_MODE === "true",
       time: new Date().toISOString(),
     },

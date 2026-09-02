@@ -4,6 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/guard";
 import { courseOutline, isLessonLocked } from "@/lib/lms/queries";
+import { latestInterviewsByLesson } from "@/lib/live/store";
 import { Card, Chip, ButtonLink, complianceChip, cx } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,12 @@ export default async function CoursePage({ params }: { params: Promise<{ courseI
         .where(and(eq(t.lessonProgress.userId, user.id), inArray(t.lessonProgress.lessonId, lessonIds)))
     : [];
   const done = new Set(progress.filter((p) => p.status === "COMPLETED").map((p) => p.lessonId));
+  const oral = await latestInterviewsByLesson(user.id, [...done]);
+  const oralCheck = (lessonId: string): { label: string; variant: "success" | "warning" | "ai" } => {
+    const check = oral.get(lessonId);
+    if (check?.state !== "COMPLETED") return { label: "Oral check", variant: "ai" };
+    return check.outcome === "PASS" ? { label: `Oral check · ${check.scorePct}%`, variant: "success" } : { label: "Oral check · in review", variant: "warning" };
+  };
 
   const [enrollment] = await db
     .select()
@@ -88,22 +95,27 @@ export default async function CoursePage({ params }: { params: Promise<{ courseI
                 const locked = isLessonLocked(outline, done, lesson.id, course.sequentialLock);
                 const isDone = done.has(lesson.id);
                 return (
-                  <li key={lesson.id}>
+                  <li key={lesson.id} className="flex items-center gap-2">
                     <Link
                       href={locked ? "#" : `/lesson/${lesson.id}`}
                       aria-disabled={locked}
                       className={cx(
-                        "flex items-center gap-3 rounded-control px-2 py-2 text-sm",
+                        "flex min-w-0 flex-1 items-center gap-3 rounded-control px-2 py-2 text-sm",
                         locked ? "pointer-events-none opacity-50" : "hover:bg-surface-2",
                       )}
                     >
                       <span aria-hidden className={isDone ? "text-success-fg" : "text-muted"}>
                         {isDone ? "●" : TYPE_ICON[lesson.type] ?? "○"}
                       </span>
-                      <span className="flex-1">{lesson.title}</span>
+                      <span className="min-w-0 flex-1 truncate">{lesson.title}</span>
                       {locked ? <span className="text-xs text-muted">locked</span> : null}
                       {isDone ? <span className="text-xs text-success-fg">done</span> : null}
                     </Link>
+                    {isDone && (lesson.type === "VIDEO" || lesson.type === "TEXT") ? (
+                      <Link href={`/lesson/${lesson.id}/interview`} className="hit-area shrink-0" aria-label={`Oral check for ${lesson.title}`}>
+                        <Chip variant={oralCheck(lesson.id).variant}>{oralCheck(lesson.id).label}</Chip>
+                      </Link>
+                    ) : null}
                   </li>
                 );
               })}

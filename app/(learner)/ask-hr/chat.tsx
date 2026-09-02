@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AiSurface, Button, Card, Chip, Input, PillButton, Skeleton, cx } from "@/components/ui";
+import { AiSurface, Button, Card, Chip, Input, PillButton, PillLink, Skeleton, cx } from "@/components/ui";
 import { ConfirmDialog } from "@/components/dialog";
+import { CitationChips } from "@/components/citations";
 
 type Citation = { docId: string; title: string; sectionPath: string; version: number; effectiveDate: string };
 type Msg = { role: "user" | "assistant"; content: string; citations?: Citation[]; mock?: boolean };
@@ -137,9 +138,12 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
         <span className="flex items-center gap-2 text-sm font-medium">
           HR Assistant <Chip variant="ai">AI</Chip>
         </span>
-        <PillButton onClick={() => setConfirmOpen(true)} disabled={!conversationRef.current}>
-          Talk to a person
-        </PillButton>
+        <span className="flex gap-2">
+          <PillLink href="/ask-hr/live">🎙 Talk instead</PillLink>
+          <PillButton onClick={() => setConfirmOpen(true)} disabled={!conversationRef.current}>
+            Talk to a person
+          </PillButton>
+        </span>
       </div>
 
       <div className="flex flex-col gap-3" dir="auto">
@@ -167,21 +171,7 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
             ) : (
               <AiSurface mock={m.mock}>
                 <span className="whitespace-pre-wrap">{renderLite(m.content)}</span>
-                {m.citations && m.citations.length > 0 ? (
-                  <span className="mt-2 flex flex-wrap gap-2">
-                    {m.citations.map((c, j) => (
-                      <a
-                        key={j}
-                        href={`/policy/${c.docId}?section=${encodeURIComponent(c.sectionPath)}`}
-                        onClick={() => fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "hr_citation_click", payload: { docId: c.docId } }) }).catch(() => {})}
-                        title={`${c.title} — v${c.version}, effective ${c.effectiveDate}`}
-                        className="bidi-isolate pressable hit-area rounded-full bg-surface px-2 py-1 text-xs font-medium text-ai-fg hover:opacity-80"
-                      >
-                        § {c.title} · {c.sectionPath.length > 24 ? c.sectionPath.slice(0, 24) + "…" : c.sectionPath}
-                      </a>
-                    ))}
-                  </span>
-                ) : null}
+                {m.citations && m.citations.length > 0 ? <CitationChips citations={m.citations} /> : null}
               </AiSurface>
             )}
             {m.role === "assistant" && i === (messages ?? []).length - 1 && streaming === null ? (

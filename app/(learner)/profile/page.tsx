@@ -3,6 +3,7 @@ import { db, t } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/guard";
 import { myCourses, totalPoints } from "@/lib/lms/queries";
 import { isoWeekStart } from "@/lib/time";
+import { interviewsForUser } from "@/lib/live/store";
 import { and } from "drizzle-orm";
 import { Card, Chip, PageTitle, ProgressRing, ButtonLink } from "@/components/ui";
 
@@ -32,6 +33,7 @@ export default async function ProfilePage() {
   const completed = mine.filter((c) => c.enrollment?.status === "COMPLETED").length;
   const active = mine.find((c) => c.enrollment?.status === "IN_PROGRESS");
   const courseById = new Map(mine.map((m) => [m.course.id, m.course]));
+  const oralChecks = await interviewsForUser(user.id, 10);
 
   return (
     <div className="animate-slide-up">
@@ -89,6 +91,28 @@ export default async function ProfilePage() {
                   </p>
                 </div>
                 <ButtonLink variant="secondary" href={`/api/certificates/${c.id}`}>PDF</ButtonLink>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mt-6 max-w-2xl" aria-label="Oral checks">
+        <h2 className="mb-2 text-sm font-medium text-muted">Oral checks</h2>
+        {oralChecks.length === 0 ? (
+          <p className="text-sm text-muted">After a lesson, take a three-minute spoken check — results appear here.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {oralChecks.map((c) => (
+              <Card key={c.id} className="flex items-center justify-between gap-3 p-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{c.lessonTitle}</p>
+                  <p className="text-xs text-muted">{c.courseTitle} · {c.completedAt?.toISOString().slice(0, 10)}</p>
+                </div>
+                <span className="flex items-center gap-2">
+                  <Chip variant={c.outcome === "PASS" ? "success" : "warning"}>{c.scorePct ?? 0}% · {c.outcome === "PASS" ? "passed" : "in review"}</Chip>
+                  <ButtonLink variant="secondary" href={`/lesson/${c.lessonId}/interview`}>View</ButtonLink>
+                </span>
               </Card>
             ))}
           </div>

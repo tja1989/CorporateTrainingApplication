@@ -66,7 +66,7 @@ export const loginAttempts = pgTable("login_attempts", {
 export const consents = pgTable("consents", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
-  kind: text("kind").$type<"privacy_notice" | "integrity" | "escalation">().notNull(),
+  kind: text("kind").$type<"privacy_notice" | "integrity" | "escalation" | "voice">().notNull(),
   version: text("version").notNull(),
   at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -454,6 +454,7 @@ export const hrConversations = pgTable("hr_conversations", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
   language: text("language").notNull().default("en"),
+  mode: text("mode").$type<"text" | "voice">().notNull().default("text"),
   startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -535,6 +536,42 @@ export const tutorMessages = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("tutor_messages_thread_idx").on(t.threadId)],
+);
+
+// ---------------------------------------------------------------------------
+// Live voice (spec FR-14): oral checks. HR voice conversations reuse hr_* tables.
+// ---------------------------------------------------------------------------
+
+export type LiveTurn = { role: "user" | "assistant"; text: string; at?: string; citations?: HrCitation[]; mock?: boolean };
+export type LiveEvaluation = {
+  questions: Array<{ question: string; answer_summary: string; score: number; feedback: string }>;
+  overall_summary: string;
+  language?: string;
+};
+
+export const liveInterviews = pgTable(
+  "live_interviews",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    lessonId: text("lesson_id").notNull(),
+    courseId: text("course_id").notNull(),
+    state: text("state").$type<"IN_PROGRESS" | "COMPLETED" | "ABANDONED">().notNull().default("IN_PROGRESS"),
+    model: text("model").notNull(),
+    mock: boolean("mock").notNull().default(false),
+    questionCount: integer("question_count").notNull().default(3),
+    maxMinutes: integer("max_minutes").notNull().default(6),
+    transcript: jsonb("transcript").$type<LiveTurn[]>().notNull().default([]),
+    evaluation: jsonb("evaluation").$type<LiveEvaluation>(),
+    evaluationSource: text("evaluation_source").$type<"model" | "fallback" | "mock">(),
+    scorePct: integer("score_pct"),
+    outcome: text("outcome").$type<"PASS" | "NEEDS_REVIEW">(),
+    reviewedBy: text("reviewed_by"),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (t) => [index("live_interviews_user_lesson_idx").on(t.userId, t.lessonId)],
 );
 
 // ---------------------------------------------------------------------------

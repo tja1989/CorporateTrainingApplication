@@ -12,6 +12,7 @@ Built to the spec in [`docs/MVP_SPEC.md`](docs/MVP_SPEC.md) (feature requirement
 - **Daily drill** — SM-2-lite spaced repetition with confidence ratings ("confidently wrong" re-drills first). Optional, never counts toward required training.
 - **Virtual HR assistant** — citation-first RAG over versioned policy docs (superseded versions are hard-filtered but soft-retained for audit reconstructability), country/audience permission filters, deterministic guardrails (grievance → sympathetic human routing; legal/visa/medical denials; injection screening; no-promises output rail), escalation tickets with consented transcripts, pseudonymized audit log, deflection/CSAT/content-gap KPIs.
 - **Managers & reporting** — team dashboard with drill-down tiles and not-reached-directly surfacing, assign/nudge, six live reports with CSV export, and **Ask Reports**: natural-language questions compiled to typed, whitelist-validated query plans (never model-written SQL) with the executed plan disclosed.
+- **Live voice (Gemini Live)** — two realtime voice modes on the Gemini Live API via one-use **ephemeral tokens** (the browser talks to Google directly; the key never leaves the server; prompt and tools are locked into the token): an **oral check** after a lesson (an AI interviewer asks three questions about the transcript, then records a rubric-scored evaluation — optional, non-gating, low scores go to a human queue) and a **live mode for the HR assistant** that speaks only what the server-side policy search returns, with the same guardrails, citations and confirmed escalation. Consent per session, transcript stored, audio never.
 - **Platform-wide data protection** — privacy notice consent at first login, PII redaction before every AI call, retention maximums enforced by a purge job, DSR export/erasure tooling, AI cost telemetry (cost per active user / per route).
 
 ## Quick start
@@ -39,7 +40,7 @@ npm run dev                    # http://localhost:3000
 | Learner | `AE10024` | Meera — Food Safety due soon; staged AI-graded answer in the review queue |
 | Learner | `AE10026` | Priya — certificate expiring → recert loop staged |
 
-Background jobs: `npm run worker` (queue) and `npm run sweep` (nightly compliance/reminders/recert/purge — run it from cron in production). Tests: `npm test` (66 tests over the state machines, scoring, routing, retrieval, HR guardrails, and the design-system guardrails — closed spacing/weight/radius vocabulary plus WCAG contrast on every colour token in both themes).
+Background jobs: `npm run worker` (queue) and `npm run sweep` (nightly compliance/reminders/recert/purge — run it from cron in production). Tests: `npm test` (80 tests over the state machines, scoring, routing, retrieval, HR guardrails, and the design-system guardrails — closed spacing/weight/radius vocabulary plus WCAG contrast on every colour token in both themes).
 
 ## AI configuration & honest degradation
 
@@ -50,6 +51,7 @@ Background jobs: `npm run worker` (queue) and `npm run sweep` (nightly complianc
 | `YOUTUBE_API_KEY` | Embed/privacy validation at ingest + weekly link health | Validation skipped; player errors handled gracefully at view time |
 | `SUPADATA_API_KEY` | Vendor transcript fetch (**demo-only**; scraping shifts ToS risk, it doesn't remove it) | Manual SRT/VTT upload — the lawful default; production path is a company-owned channel + official captions API |
 | `SMTP_URL` | Email channel (`console` logs in dev) | In-app inbox still delivers everything; manager digests remain the certified reach path |
+| `GEMINI_API_KEY` (+`GEMINI_LIVE_MODEL`, `GEMINI_LIVE_VOICE`) | **Voice**: the oral check after a lesson and the HR assistant's live mode, on the Gemini Live API through one-use ephemeral tokens | Both screens run as a **typed offline demo** with the same policy tools and the same offline grader — labeled, nothing crashes |
 
 Every AI surface degrades to a clear labeled state — nothing crashes without keys.
 
@@ -65,14 +67,14 @@ The repo is self-deploying: `railway.json` pins the Dockerfile build, and the st
    SESSION_SECRET = <any long random string, e.g. `openssl rand -hex 32`>
    DEMO_MODE      = true
    ```
-   Later, to switch the AI surfaces from offline demo mode to live models, add `ANTHROPIC_API_KEY` (and optionally `VOYAGE_API_KEY`, `AI_MODEL`, `YOUTUBE_API_KEY`) — no redeploy of code needed, just a service restart.
+   Later, to switch the AI surfaces from offline demo mode to live models, add `ANTHROPIC_API_KEY` (and optionally `VOYAGE_API_KEY`, `AI_MODEL`, `YOUTUBE_API_KEY`) — no redeploy of code needed, just a service restart. For **voice** (oral check + HR live mode) add `GEMINI_API_KEY` from Google AI Studio; `/api/health` shows `voiceConfigured: true` once it is picked up.
 4. **Settings → Networking → Generate Domain.** First boot takes a couple of minutes (schema + seed); the healthcheck is `/login`. Sign in with the demo credentials above.
 
 For scheduled maintenance, add a Railway cron service on the same repo with the command `npm run sweep` (daily) — it runs reminders, recertification, compliance recompute, and the retention purge.
 
 ## Architecture
 
-Next.js 15 (App Router, TS) · Tailwind v4 with the spec's OKLCH token system as a *closed* theme (light+dark; 7-step spacing, 4/8/12/pill radii, three elevation levels, 150/250/400ms motion tokens, Inter Variable at 400/500 — off-system classes emit no CSS and `tests/design-guardrails.test.ts` names them) · Drizzle ORM on Postgres 16 + pgvector (HNSW + GIN, hybrid RRF retrieval) · Postgres-backed job queue (`FOR UPDATE SKIP LOCKED`) · `@anthropic-ai/sdk` behind a single gateway (telemetry, PII redaction, streaming structured outputs) · dependency-free PDF writer for certificates · cookie sessions (HMAC JWT) with shared-device short TTL and TOTP for admins.
+Next.js 15 (App Router, TS) · Tailwind v4 with the spec's OKLCH token system as a *closed* theme (light+dark; 7-step spacing, 4/8/12/pill radii, three elevation levels, 150/250/400ms motion tokens, Inter Variable at 400/500 — off-system classes emit no CSS and `tests/design-guardrails.test.ts` names them) · Drizzle ORM on Postgres 16 + pgvector (HNSW + GIN, hybrid RRF retrieval) · Postgres-backed job queue (`FOR UPDATE SKIP LOCKED`) · `@anthropic-ai/sdk` behind a single gateway (telemetry, PII redaction, streaming structured outputs) · `@google/genai` for Gemini Live — server mints constrained ephemeral tokens, the browser streams 16 kHz PCM over the SDK's WebSocket, tool calls (policy search, escalation, evaluation) round-trip through `/api/live/*` · dependency-free PDF writer for certificates · cookie sessions (HMAC JWT) with shared-device short TTL and TOTP for admins.
 
 Key directories: `lib/` (domain logic — compliance, rules, quiz engine, grading, drill, retrieval, HR assistant, guardrails, reports, sweep, DSR) · `app/(learner)` `app/(workspace)` (UI) · `app/api` (streaming + heartbeat + report routes) · `scripts/` (seed, worker, sweep) · `tests/` (vitest) · `docs/MVP_SPEC.md` (the contract).
 

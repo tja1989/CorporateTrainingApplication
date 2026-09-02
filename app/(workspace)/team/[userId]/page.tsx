@@ -4,6 +4,7 @@ import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
 import { Button, Card, Chip, Field, PageTitle, Select, complianceChip } from "@/components/ui";
 import { assignAction, nudgeAction, issueResetAction } from "../actions";
+import { interviewsForUser } from "@/lib/live/store";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ use
   const courseOf = new Map(courses.map((c) => [c.id, c]));
   const paths = await db.select().from(t.paths);
   const records = await db.select().from(t.completionRecords).where(eq(t.completionRecords.userId, member.id));
+  const oralChecks = await interviewsForUser(member.id, 10);
 
   const [lastNudge] = await db
     .select()
@@ -122,6 +124,38 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ use
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section className="mt-6" aria-label="Oral checks">
+        <h2 className="mb-2 text-sm font-medium text-muted">Oral checks</h2>
+        {oralChecks.length === 0 ? (
+          <p className="text-sm text-muted">No spoken checks taken yet.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {oralChecks.map((c) => (
+              <Card key={c.id} className="p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{c.lessonTitle}</p>
+                    <p className="text-xs text-muted">{c.courseTitle} · {c.completedAt?.toISOString().slice(0, 10)}</p>
+                  </div>
+                  <Chip variant={c.outcome === "PASS" ? "success" : "warning"}>{c.scorePct ?? 0}% · {c.outcome === "PASS" ? "passed" : c.reviewedAt ? "reviewed" : "in review"}</Chip>
+                </div>
+                {c.evaluation?.overall_summary ? <p className="mt-2 text-xs text-muted">{c.evaluation.overall_summary}</p> : null}
+                <details className="mt-2 text-sm">
+                  <summary className="cursor-pointer text-xs text-muted">Transcript ({c.transcript.length} turns)</summary>
+                  <div className="mt-2 flex flex-col gap-1" dir="auto">
+                    {c.transcript.map((turn, i) => (
+                      <p key={i} className="rounded-control bg-surface-2 px-3 py-1 text-xs">
+                        <span className="text-muted">{turn.role === "user" ? member.name.split(" ")[0] : "Interviewer"}:</span> {turn.text}
+                      </p>
+                    ))}
+                  </div>
+                </details>
+              </Card>
+            ))}
+          </div>
         )}
       </section>
     </div>

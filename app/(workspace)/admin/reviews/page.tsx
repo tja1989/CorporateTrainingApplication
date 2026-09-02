@@ -2,7 +2,8 @@ import { asc, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
 import { AiSurface, Button, Card, Chip, PageTitle, EmptyState, Input } from "@/components/ui";
-import { approveDraftAction, discardDraftAction, confirmGradeAction, adjustGradeAction } from "./actions";
+import { approveDraftAction, discardDraftAction, confirmGradeAction, adjustGradeAction, markInterviewReviewedAction } from "./actions";
+import { pendingInterviewReviews } from "@/lib/live/store";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export default async function ReviewsPage() {
   const allQids = [...new Set([...gradeQids, ...drafts.map((d) => d.id)])];
   const questionRows = allQids.length ? await db.select().from(t.questions).where(inArray(t.questions.id, allQids)) : [];
   const questionOf = new Map(questionRows.map((q) => [q.id, q]));
+  const oralReviews = await pendingInterviewReviews();
 
   return (
     <div className="animate-slide-up">
@@ -106,6 +108,55 @@ export default async function ReviewsPage() {
                     <Button type="submit" variant="ghost">Discard</Button>
                   </form>
                 </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="max-w-3xl" aria-label="Oral check reviews">
+        <h2 className="mb-2 text-sm font-medium text-muted">Oral checks needing a human look ({oralReviews.length})</h2>
+        {oralReviews.length === 0 ? (
+          <EmptyState icon="🎙" title="No oral checks waiting" body="Checks that score under the pass mark, or were graded after the session ended, land here." />
+        ) : (
+          <div className="flex flex-col gap-3">
+            {oralReviews.map((r) => (
+              <Card key={r.id} className="p-4">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-sm font-medium">{r.learnerName}</span>
+                  <span className="flex gap-2">
+                    <Chip variant="warning">{r.scorePct ?? 0}% · needs review</Chip>
+                    {r.evaluationSource !== "model" ? <Chip variant="neutral">graded {r.evaluationSource === "mock" ? "offline" : "after session"}</Chip> : null}
+                  </span>
+                </div>
+                <p className="mb-2 text-xs text-muted">
+                  {r.lessonTitle} · {r.courseTitle} · {r.completedAt?.toISOString().slice(0, 16).replace("T", " ") ?? ""}
+                </p>
+                {r.evaluation ? (
+                  <AiSurface variant="block" label="AI evaluation" mock={r.evaluationSource === "mock"} className="mb-2 block max-w-full">
+                    {r.evaluation.overall_summary ? <p className="mb-2">{r.evaluation.overall_summary}</p> : null}
+                    <ol className="flex flex-col gap-1 text-xs">
+                      {r.evaluation.questions.map((q, i) => (
+                        <li key={i}>
+                          <span className="font-medium">{q.question}</span> — {q.answer_summary || "no answer"} <span className="text-muted">({q.score}/3)</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </AiSurface>
+                ) : null}
+                <details className="mb-3 text-sm">
+                  <summary className="cursor-pointer text-xs text-muted">Transcript ({r.transcript.length} turns)</summary>
+                  <div className="mt-2 flex flex-col gap-1" dir="auto">
+                    {r.transcript.map((turn, i) => (
+                      <p key={i} className="rounded-control bg-surface-2 px-3 py-1 text-xs">
+                        <span className="text-muted">{turn.role === "user" ? "Learner" : "Interviewer"}:</span> {turn.text}
+                      </p>
+                    ))}
+                  </div>
+                </details>
+                <form action={markInterviewReviewedAction.bind(null, r.id)}>
+                  <Button type="submit" variant="secondary">Mark reviewed</Button>
+                </form>
               </Card>
             ))}
           </div>

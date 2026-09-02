@@ -17,7 +17,7 @@ import type { HrCitation } from "@/lib/db/schema";
 export const HR_ABSTENTION =
   "I couldn't find this in the current policies. I don't want to guess on something that matters — shall I connect you with the HR team?";
 
-const RETRIEVAL_FLOOR = 0.015; // RRF score floor — below it, don't answer (tuned on the golden set)
+export const RETRIEVAL_FLOOR = 0.015; // RRF score floor — below it, don't answer (tuned on the golden set)
 
 export function pseudoId(userId: string): string {
   return createHmac("sha256", process.env.SESSION_SECRET ?? "dev").update(userId).digest("hex").slice(0, 16);
@@ -46,7 +46,7 @@ Rules:
 - NEVER promise outcomes ("you will be approved"), never make determinations, never give legal/medical/visa advice.
 - Keep answers short, warm, and ESL-friendly. End factual answers with: "${DETERMINATION_FOOTER}"`;
 
-function toCitation(hit: PolicyChunkHit, docs: Map<string, typeof t.policyDocs.$inferSelect>): HrCitation | null {
+export function toCitation(hit: PolicyChunkHit, docs: Map<string, typeof t.policyDocs.$inferSelect>): HrCitation | null {
   const doc = docs.get(hit.docId);
   if (!doc) return null;
   return {
@@ -56,6 +56,58 @@ function toCitation(hit: PolicyChunkHit, docs: Map<string, typeof t.policyDocs.$
     version: doc.version,
     effectiveDate: doc.effectiveDate.toISOString().slice(0, 10),
   };
+}
+
+export type PolicyDocMap = Map<string, typeof t.policyDocs.$inferSelect>;
+
+/** Loads the policy docs referenced by a set of hits (for citations). */
+export async function docsForHits(hits: PolicyChunkHit[]): Promise<PolicyDocMap> {
+  const ids = [...new Set(hits.map((h) => h.docId))];
+  if (ids.length === 0) return new Map();
+  return new Map((await db.select().from(t.policyDocs).where(inArray(t.policyDocs.id, ids))).map((d) => [d.id, d]));
+}
+
+/**
+ * Layer-1 confidence (spec FR-8.6): a usable top hit above the RRF floor — and,
+ * offline (mock embeddings are lexical noise), actual full-text evidence.
+ */
+export function retrievalConfident(hits: PolicyChunkHit[]): boolean {
+  const lexicalEvidence = aiAvailable() || hits.some((h) => h.ftsMatched);
+  return hits.length > 0 && hits[0].score >= RETRIEVAL_FLOOR && lexicalEvidence;
+}
+
+/** Mock-mode answer: the top excerpts quoted directly, with real citations and the output rail. */
+export function extractiveAnswer(hits: PolicyChunkHit[], docs: PolicyDocMap): { answer: string; citations: HrCitation[]; chunkIds: string[] } {
+  const top = hits.slice(0, 2);
+  const citations = top.map((h) => toCitation(h, docs)).filter((c): c is HrCitation => !!c);
+  const answer = applyOutputRail(
+    `Per **${citations[0]?.title ?? "policy"}**:\n\n` +
+      top.map((h) => `${h.text.slice(0, 350)}${h.text.length > 350 ? "…" : ""}`).join("\n\n") +
+      `\n\n*Offline demo answer — the excerpts above are quoted directly from the policy.*`,
+  );
+  return { answer, citations, chunkIds: top.map((h) => h.id) };
+}
+
+/** Append-only pseudonymized audit row (spec FR-8.11); never throws. */
+export async function auditHrTurn(
+  base: { userId: string; language: string; query: string; piiRedacted: boolean },
+  fields: Partial<typeof t.hrAuditLog.$inferInsert>,
+): Promise<void> {
+  await db
+    .insert(t.hrAuditLog)
+    .values({
+      id: id(),
+      pseudoId: pseudoId(base.userId),
+      language: base.language,
+      query: base.query,
+      piiRedacted: base.piiRedacted,
+      chunkIds: [],
+      answer: "",
+      modelVersion: aiAvailable() ? MODEL : "mock",
+      promptVersion: PROMPT_VERSION,
+      ...fields,
+    })
+    .catch(() => {});
 }
 
 export async function* hrAnswer(opts: {
@@ -68,23 +120,8 @@ export async function* hrAnswer(opts: {
   const language = detectLanguage(question);
   const { text: safeQuestion, redacted } = redactPii(question);
 
-  const audit = async (fields: Partial<typeof t.hrAuditLog.$inferInsert>) => {
-    await db
-      .insert(t.hrAuditLog)
-      .values({
-        id: id(),
-        pseudoId: pseudoId(opts.userId),
-        language,
-        query: safeQuestion,
-        piiRedacted: redacted,
-        chunkIds: [],
-        answer: "",
-        modelVersion: aiAvailable() ? MODEL : "mock",
-        promptVersion: PROMPT_VERSION,
-        ...fields,
-      })
-      .catch(() => {});
-  };
+  const audit = (fields: Partial<typeof t.hrAuditLog.$inferInsert>) =>
+    auditHrTurn({ userId: opts.userId, language, query: safeQuestion, piiRedacted: redacted }, fields);
 
   // ---- layer 0: deterministic guardrails
   const verdict = screenInput(question);
@@ -110,20 +147,13 @@ export async function* hrAnswer(opts: {
     return;
   }
 
-  // Offline, mock embeddings are lexical noise — demand actual full-text evidence
-  const lexicalEvidence = aiAvailable() || hits.some((h) => h.ftsMatched);
-  const confident = hits.length > 0 && hits[0].score >= RETRIEVAL_FLOOR && lexicalEvidence;
-  if (!confident) {
+  if (!retrievalConfident(hits)) {
     await audit({ answer: HR_ABSTENTION, confidence: hits[0]?.score ?? 0, escalated: false });
     yield { type: "final", answer: HR_ABSTENTION, citations: [], mock: !aiAvailable(), escalationSuggested: true, guardrail: null };
     return;
   }
 
-  const docs = new Map(
-    (await db.select().from(t.policyDocs).where(inArray(t.policyDocs.id, [...new Set(hits.map((h) => h.docId))]))).map(
-      (d) => [d.id, d],
-    ),
-  );
+  const docs = await docsForHits(hits);
 
   // ---- un-evaluated language → hedged template + citations (spec FR-8.9)
   if (!EVALUATED_LANGUAGES.has(language)) {
@@ -140,18 +170,12 @@ export async function* hrAnswer(opts: {
 
   // ---- mock mode: extractive answer with real citations
   if (!aiAvailable()) {
-    const top = hits.slice(0, 2);
-    const citations = top.map((h) => toCitation(h, docs)).filter((c): c is HrCitation => !!c);
-    const answer = applyOutputRail(
-      `Per **${citations[0]?.title ?? "policy"}**:\n\n` +
-        top.map((h) => `${h.text.slice(0, 350)}${h.text.length > 350 ? "…" : ""}`).join("\n\n") +
-        `\n\n*Offline demo answer — the excerpts above are quoted directly from the policy.*`,
-    );
+    const { answer, citations, chunkIds } = extractiveAnswer(hits, docs);
     for (const word of answer.split(/(?<=\s)/)) {
       yield { type: "delta", text: word };
       await new Promise((r) => setTimeout(r, 6));
     }
-    await audit({ answer, citations, chunkIds: top.map((h) => h.id), confidence: hits[0].score });
+    await audit({ answer, citations, chunkIds, confidence: hits[0].score });
     yield { type: "final", answer, citations, mock: true, escalationSuggested: false, guardrail: null };
     return;
   }

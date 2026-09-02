@@ -16,7 +16,9 @@ export type NotificationKind =
   | "quiz_graded"
   | "hr_ticket_updated"
   | "manager_digest"
-  | "course_completed";
+  | "course_completed"
+  | "oral_check_result"
+  | "oral_check_review";
 
 const TEMPLATES: Record<NotificationKind, (p: Record<string, unknown>) => { title: string; body: string }> = {
   enrolled: (p) => ({ title: "New training assigned", body: `You've been enrolled in “${p.courseTitle}”.` }),
@@ -28,6 +30,11 @@ const TEMPLATES: Record<NotificationKind, (p: Record<string, unknown>) => { titl
   hr_ticket_updated: (p) => ({ title: "HR replied", body: `Your HR ticket “${p.subject}” has an update.` }),
   manager_digest: (p) => ({ title: "Weekly team digest", body: String(p.summary ?? "") }),
   course_completed: (p) => ({ title: "Course completed 🎉", body: `You completed “${p.courseTitle}”. Nice work.` }),
+  oral_check_result: (p) => ({
+    title: "Oral check result",
+    body: `Your oral check for “${p.lessonTitle}” scored ${p.scorePct}% — ${p.outcome === "PASS" ? "passed" : "a person will review it"}.`,
+  }),
+  oral_check_review: (p) => ({ title: "Oral check to review", body: `${p.learnerName}’s oral check for “${p.lessonTitle}” needs a human look (${p.scorePct}%).` }),
 };
 
 export async function notify(

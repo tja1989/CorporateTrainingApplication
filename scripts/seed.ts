@@ -22,7 +22,7 @@ async function main() {
     "ui_events", "ai_call_log", "notifications", "badges", "points_ledger", "streak_state", "drill_state",
     "integrity_events", "grading_reviews", "attempts", "quizzes", "questions", "question_banks",
     "hr_ticket_messages", "hr_tickets", "hr_audit_log", "hr_messages", "hr_conversations",
-    "policy_chunks", "policy_docs", "tutor_messages", "tutor_threads", "video_chunks", "videos",
+    "policy_chunks", "policy_docs", "tutor_messages", "tutor_threads", "live_interviews", "video_chunks", "videos",
     "certificates", "completion_records", "lesson_progress", "enrollments", "enrollment_rules",
     "path_courses", "paths", "lessons", "modules", "courses", "jobs", "report_views",
     "consents", "login_attempts", "users", "groups", "org_units",
