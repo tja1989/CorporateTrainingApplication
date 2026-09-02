@@ -10,8 +10,8 @@ export default async function HrLivePage() {
   const user = await requireUser();
   return (
     <div className="animate-slide-up">
-      <PageHeader title="Talk to the HR assistant" sub="Speak naturally — answers are in English, with the policy cited. Same guardrails as the text chat." />
-      <HrVoice configured={liveAvailable()} sharedDevice={user.session.shared} />
+      <PageHeader title="Talk to your assistant" sub="HR policy, your courses, and what's due — spoken, with the source cited. Answers are in English." />
+      <HrVoice configured={liveAvailable()} sharedDevice={user.session.shared} demoMode={process.env.DEMO_MODE === "true"} firstName={user.name.split(" ")[0] ?? ""} />
     </div>
   );
 }

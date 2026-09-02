@@ -101,17 +101,28 @@ export const modules = pgTable("modules", {
   sort: integer("sort").notNull().default(0),
 });
 
+/** Admin-configured oral check (spec FR-14.2 v1.4) — an INTERVIEW lesson's settings. */
+export type InterviewConfig = {
+  questionCount: number; // 1–6
+  passPct: number; // 50–100
+  maxMinutes: number; // 3–9, scaled by the learner's time multiplier
+  scope: "previous" | "module" | "course"; // which lesson content the interviewer may ask about
+  focus?: string; // topics / instructions for the interviewer
+  requirePass: boolean; // when true the lesson completes only on a pass
+};
+
 export type LessonPayload = {
   videoId?: string; // -> videos.id (VIDEO)
   body?: string; // markdown (TEXT)
   fileUrl?: string; // (PDF)
   quizId?: string; // -> quizzes.id (QUIZ)
+  interview?: InterviewConfig; // (INTERVIEW)
 };
 
 export const lessons = pgTable("lessons", {
   id: text("id").primaryKey(),
   moduleId: text("module_id").notNull(),
-  type: text("type").$type<"VIDEO" | "TEXT" | "PDF" | "QUIZ">().notNull(),
+  type: text("type").$type<"VIDEO" | "TEXT" | "PDF" | "QUIZ" | "INTERVIEW">().notNull(),
   title: text("title").notNull(),
   sort: integer("sort").notNull().default(0),
   payload: jsonb("payload").$type<LessonPayload>().notNull().default({}),
@@ -459,6 +470,10 @@ export const hrConversations = pgTable("hr_conversations", {
 });
 
 export type HrCitation = { docId: string; title: string; sectionPath: string; version: number; effectiveDate: string };
+/** A citation into the learner's own course content (voice assistant, spec FR-14.3 v1.4). */
+export type LessonCitation = { kind: "lesson"; title: string; lessonId: string; courseTitle: string; href: string };
+/** What the voice assistant cites: policy sections (default kind) or lessons. */
+export type LiveCitation = (HrCitation & { kind?: "policy" }) | LessonCitation;
 
 export const hrMessages = pgTable(
   "hr_messages",
@@ -467,7 +482,7 @@ export const hrMessages = pgTable(
     conversationId: text("conversation_id").notNull(),
     role: text("role").$type<"user" | "assistant" | "system">().notNull(),
     content: text("content").notNull(),
-    citations: jsonb("citations").$type<HrCitation[]>(),
+    citations: jsonb("citations").$type<LiveCitation[]>(),
     feedback: text("feedback").$type<"up" | "down" | null>(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -542,7 +557,7 @@ export const tutorMessages = pgTable(
 // Live voice (spec FR-14): oral checks. HR voice conversations reuse hr_* tables.
 // ---------------------------------------------------------------------------
 
-export type LiveTurn = { role: "user" | "assistant"; text: string; at?: string; citations?: HrCitation[]; mock?: boolean };
+export type LiveTurn = { role: "user" | "assistant"; text: string; at?: string; citations?: LiveCitation[]; mock?: boolean };
 export type LiveEvaluation = {
   questions: Array<{ question: string; answer_summary: string; score: number; feedback: string }>;
   overall_summary: string;
@@ -561,11 +576,12 @@ export const liveInterviews = pgTable(
     mock: boolean("mock").notNull().default(false),
     questionCount: integer("question_count").notNull().default(3),
     maxMinutes: integer("max_minutes").notNull().default(6),
+    passPct: integer("pass_pct").notNull().default(67),
     transcript: jsonb("transcript").$type<LiveTurn[]>().notNull().default([]),
     evaluation: jsonb("evaluation").$type<LiveEvaluation>(),
     evaluationSource: text("evaluation_source").$type<"model" | "fallback" | "mock">(),
     scorePct: integer("score_pct"),
-    outcome: text("outcome").$type<"PASS" | "NEEDS_REVIEW">(),
+    outcome: text("outcome").$type<"PASS" | "FAIL">(),
     reviewedBy: text("reviewed_by"),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),

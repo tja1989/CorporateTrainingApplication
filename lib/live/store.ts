@@ -2,10 +2,12 @@ import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { id } from "@/lib/ids";
 import { notify } from "@/lib/notify";
-import type { LiveEvaluation, LiveTurn } from "@/lib/db/schema";
-import { fallbackEvaluate, interviewContentFor, scoreEvaluation, type InterviewContent } from "./interview";
+import { markLessonComplete } from "@/lib/lms/completion";
+import { courseOutline } from "@/lib/lms/queries";
+import type { InterviewConfig, LiveEvaluation, LiveTurn } from "@/lib/db/schema";
+import { CONTENT_CHAR_CAP, fallbackEvaluate, interviewContentFor, parseInterviewConfig, pickScopeLessons, scoreEvaluation, type InterviewContent } from "./interview";
 
-/** Persistence for oral checks (spec FR-14.2). */
+/** Persistence for oral checks (spec FR-14.2 v1.4): post-lesson checks and INTERVIEW lessons. */
 
 export type Interview = typeof t.liveInterviews.$inferSelect;
 
@@ -17,6 +19,7 @@ export async function createInterview(opts: {
   mock: boolean;
   questionCount: number;
   maxMinutes: number;
+  passPct: number;
 }): Promise<string> {
   const interviewId = id();
   await db.insert(t.liveInterviews).values({ id: interviewId, ...opts });
@@ -38,61 +41,102 @@ export async function appendInterviewTurns(interviewId: string, turns: LiveTurn[
     .where(eq(t.liveInterviews.id, interviewId));
 }
 
-/** Lesson + course + interviewable content for an interview. */
-export async function loadLessonContent(lessonId: string): Promise<{
-  lesson: typeof t.lessons.$inferSelect;
+type LessonRow = typeof t.lessons.$inferSelect;
+
+/** Interviewable text of one VIDEO (READY transcript) or TEXT lesson. */
+async function lessonContent(lesson: LessonRow): Promise<InterviewContent | null> {
+  if (lesson.type === "VIDEO" && lesson.payload.videoId) {
+    const [video] = await db.select().from(t.videos).where(eq(t.videos.id, lesson.payload.videoId)).limit(1);
+    const chunks = video
+      ? await db.select({ text: t.videoChunks.text }).from(t.videoChunks).where(eq(t.videoChunks.videoId, video.id)).orderBy(t.videoChunks.startSec)
+      : [];
+    return interviewContentFor(lesson, video ?? null, chunks);
+  }
+  return interviewContentFor(lesson);
+}
+
+export type LoadedLesson = {
+  lesson: LessonRow;
   course: typeof t.courses.$inferSelect;
+  outline: Awaited<ReturnType<typeof courseOutline>>;
+  /** Present for INTERVIEW lessons only. */
+  config: InterviewConfig | null;
   content: InterviewContent | null;
-} | null> {
+};
+
+/**
+ * Lesson + course + the content the interviewer may ask about. INTERVIEW
+ * lessons assemble their scope (previous / module / course); VIDEO and TEXT
+ * lessons interview on themselves (the post-lesson oral check).
+ */
+export async function loadLessonContent(lessonId: string): Promise<LoadedLesson | null> {
   const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, lessonId)).limit(1);
   if (!lesson) return null;
   const [mod] = await db.select().from(t.modules).where(eq(t.modules.id, lesson.moduleId)).limit(1);
   if (!mod) return null;
   const [course] = await db.select().from(t.courses).where(eq(t.courses.id, mod.courseId)).limit(1);
   if (!course) return null;
-  let content: InterviewContent | null = null;
-  if (lesson.type === "VIDEO" && lesson.payload.videoId) {
-    const [video] = await db.select().from(t.videos).where(eq(t.videos.id, lesson.payload.videoId)).limit(1);
-    const chunks = video
-      ? await db.select({ text: t.videoChunks.text }).from(t.videoChunks).where(eq(t.videoChunks.videoId, video.id)).orderBy(t.videoChunks.startSec)
-      : [];
-    content = interviewContentFor(lesson, video ?? null, chunks);
-  } else {
-    content = interviewContentFor(lesson);
+  const outline = await courseOutline(course.id);
+
+  if (lesson.type !== "INTERVIEW") {
+    return { lesson, course, outline, config: null, content: await lessonContent(lesson) };
   }
-  return { lesson, course, content };
+  const config = parseInterviewConfig(lesson.payload.interview);
+  const byId = new Map(outline.flatMap((o) => o.lessons).map((l) => [l.id, l]));
+  const sources = new Set<string>();
+  const parts: string[] = [];
+  for (const scopedId of pickScopeLessons(outline, lesson.id, config.scope)) {
+    const scoped = byId.get(scopedId);
+    if (!scoped) continue;
+    const c = await lessonContent(scoped);
+    if (!c) continue;
+    sources.add(c.source);
+    parts.push(`## ${scoped.title}\n${c.text}`);
+    if (parts.join("\n\n").length >= CONTENT_CHAR_CAP) break;
+  }
+  const text = parts.join("\n\n").slice(0, CONTENT_CHAR_CAP);
+  const content: InterviewContent | null = text.trim()
+    ? { title: lesson.title, text, source: sources.size > 1 ? "mixed" : sources.has("video") ? "video" : "text" }
+    : null;
+  return { lesson, course, outline, config, content };
 }
 
-/** Stores the result, notifies the learner, and routes NEEDS_REVIEW to the manager. */
+/**
+ * Stores the result, notifies the learner (and the manager on a fail), and —
+ * for INTERVIEW lessons — completes the lesson on a pass (or on any finish
+ * when the admin did not require a pass).
+ */
 export async function completeInterview(
   interviewId: string,
   evaluation: LiveEvaluation,
   source: "model" | "fallback" | "mock",
-  opts: { forceReview?: boolean } = {},
-): Promise<{ pct: number; outcome: "PASS" | "NEEDS_REVIEW" }> {
+): Promise<{ pct: number; outcome: "PASS" | "FAIL" }> {
   const row = await getInterview(interviewId);
   if (!row) throw new Error("Interview not found");
-  if (row.state === "COMPLETED") return { pct: row.scorePct ?? 0, outcome: row.outcome ?? "NEEDS_REVIEW" };
-  const scored = scoreEvaluation(evaluation);
-  const outcome = opts.forceReview ? "NEEDS_REVIEW" : scored.outcome;
+  if (row.state === "COMPLETED") return { pct: row.scorePct ?? 0, outcome: row.outcome ?? "FAIL" };
+  const scored = scoreEvaluation(evaluation, row.passPct);
   await db
     .update(t.liveInterviews)
-    .set({ evaluation, evaluationSource: source, scorePct: scored.pct, outcome, state: "COMPLETED", completedAt: new Date() })
+    .set({ evaluation, evaluationSource: source, scorePct: scored.pct, outcome: scored.outcome, state: "COMPLETED", completedAt: new Date() })
     .where(eq(t.liveInterviews.id, interviewId));
 
   const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, row.lessonId)).limit(1);
   const [user] = await db.select().from(t.users).where(eq(t.users.id, row.userId)).limit(1);
   const lessonTitle = lesson?.title ?? "lesson";
-  await notify(row.userId, "oral_check_result", { lessonTitle, scorePct: scored.pct, outcome, interviewId }, `oral:${interviewId}`);
-  if (outcome === "NEEDS_REVIEW" && user?.managerId) {
+  await notify(row.userId, "oral_check_result", { lessonTitle, scorePct: scored.pct, outcome: scored.outcome, interviewId }, `oral:${interviewId}`);
+  if (scored.outcome === "FAIL" && user?.managerId) {
     await notify(user.managerId, "oral_check_review", { learnerName: user.name, lessonTitle, scorePct: scored.pct, interviewId }, `oral-review:${interviewId}`);
   }
-  return { pct: scored.pct, outcome };
+  if (lesson?.type === "INTERVIEW") {
+    const cfg = parseInterviewConfig(lesson.payload.interview);
+    if (scored.outcome === "PASS" || !cfg.requirePass) await markLessonComplete(row.userId, row.lessonId);
+  }
+  return scored;
 }
 
 /**
  * Called when the session ends. A transcript with at least one learner answer
- * but no recorded evaluation is graded by the fallback and flagged for review;
+ * but no recorded evaluation is graded from the transcript by the fallback;
  * an empty one is marked abandoned.
  */
 export async function finishInterview(interviewId: string): Promise<Interview | null> {
@@ -106,8 +150,26 @@ export async function finishInterview(interviewId: string): Promise<Interview | 
   const loaded = await loadLessonContent(row.lessonId);
   const content = loaded?.content ?? { title: "lesson", text: "", source: "text" as const };
   const { evaluation, source } = await fallbackEvaluate(row.transcript, content);
-  await completeInterview(interviewId, evaluation, source, { forceReview: true });
+  await completeInterview(interviewId, evaluation, source);
   return getInterview(interviewId);
+}
+
+/** An admin overturns a fail: the check counts as passed and an INTERVIEW lesson completes. */
+export async function overturnInterview(interviewId: string, reviewerId: string): Promise<void> {
+  const row = await getInterview(interviewId);
+  if (!row || row.state !== "COMPLETED") return;
+  await db
+    .update(t.liveInterviews)
+    .set({ outcome: "PASS", reviewedBy: reviewerId, reviewedAt: new Date() })
+    .where(eq(t.liveInterviews.id, interviewId));
+  const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, row.lessonId)).limit(1);
+  if (lesson?.type === "INTERVIEW") await markLessonComplete(row.userId, row.lessonId);
+  await notify(
+    row.userId,
+    "oral_check_result",
+    { lessonTitle: lesson?.title ?? "lesson", scorePct: row.scorePct ?? 0, outcome: "PASS", overturned: true, interviewId },
+    `oral-overturn:${interviewId}`,
+  );
 }
 
 /** Latest interview per lesson for a learner (completed rows win over abandoned ones). */
@@ -154,11 +216,12 @@ export async function interviewsForUser(userId: string, limit = 20): Promise<Int
   return withTitles(rows);
 }
 
+/** Failed checks nobody has looked at yet (spec FR-6.10a: a human can confirm or overturn). */
 export async function pendingInterviewReviews(limit = 50): Promise<InterviewWithTitles[]> {
   const rows = await db
     .select()
     .from(t.liveInterviews)
-    .where(and(eq(t.liveInterviews.outcome, "NEEDS_REVIEW"), isNull(t.liveInterviews.reviewedAt)))
+    .where(and(eq(t.liveInterviews.outcome, "FAIL"), isNull(t.liveInterviews.reviewedAt)))
     .orderBy(desc(t.liveInterviews.completedAt))
     .limit(limit);
   return withTitles(rows);

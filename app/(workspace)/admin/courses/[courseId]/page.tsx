@@ -8,13 +8,17 @@ import {
   setCourseStatusAction,
   addModuleAction,
   addLessonAction,
+  updateInterviewLessonAction,
   retryIngestAction,
   moveLessonAction,
 } from "../actions";
 
+import { parseInterviewConfig } from "@/lib/live/interview";
+import type { InterviewConfig } from "@/lib/db/schema";
+
 export const dynamic = "force-dynamic";
 
-const TYPE_ICON: Record<string, string> = { VIDEO: "▶", TEXT: "¶", PDF: "▦", QUIZ: "☑" };
+const TYPE_ICON: Record<string, string> = { VIDEO: "▶", TEXT: "¶", PDF: "▦", QUIZ: "☑", INTERVIEW: "🎙" };
 
 export default async function CourseEditorPage({ params }: { params: Promise<{ courseId: string }> }) {
   await requireRole("ADMIN");
@@ -49,7 +53,8 @@ export default async function CourseEditorPage({ params }: { params: Promise<{ c
                   {lessons.map((lesson, i) => {
                     const video = lesson.payload.videoId ? videoOf.get(lesson.payload.videoId) : null;
                     return (
-                      <li key={lesson.id} className="flex items-center gap-2 rounded-control bg-surface-2 px-3 py-2 text-sm">
+                      <li key={lesson.id} className="rounded-control bg-surface-2 px-3 py-2 text-sm">
+                        <div className="flex items-center gap-2">
                         <span aria-hidden>{TYPE_ICON[lesson.type]}</span>
                         <span className="flex-1 truncate">{lesson.title}</span>
                         {video ? (
@@ -70,6 +75,22 @@ export default async function CourseEditorPage({ params }: { params: Promise<{ c
                         <form action={moveLessonAction.bind(null, course.id, lesson.id, 1)}>
                           <button aria-label="Move down" className={cx("touch-target rounded-control px-1 hover:bg-surface", i === lessons.length - 1 && "opacity-30")} disabled={i === lessons.length - 1}>↓</button>
                         </form>
+                        </div>
+                        {lesson.type === "INTERVIEW" ? (() => {
+                          const cfg = parseInterviewConfig(lesson.payload.interview);
+                          return (
+                            <details className="mt-2">
+                              <summary className="cursor-pointer text-xs text-primary">
+                                Oral check · {cfg.questionCount} questions · pass {cfg.passPct}% · scope: {cfg.scope}{cfg.requirePass ? " · pass required" : ""}
+                              </summary>
+                              <form action={updateInterviewLessonAction.bind(null, course.id, lesson.id)} className="mt-2">
+                                <Field label="Title"><Input name="title" defaultValue={lesson.title} /></Field>
+                                <InterviewFields cfg={cfg} />
+                                <Button type="submit" variant="secondary">Save oral check</Button>
+                              </form>
+                            </details>
+                          );
+                        })() : null}
                       </li>
                     );
                   })}
@@ -86,6 +107,7 @@ export default async function CourseEditorPage({ params }: { params: Promise<{ c
                           <option value="PDF">PDF</option>
                           <option value="VIDEO">YouTube video</option>
                           <option value="QUIZ">Quiz</option>
+                          <option value="INTERVIEW">Interview (voice oral check)</option>
                         </Select>
                       </Field>
                       <Field label="Title"><Input name="title" required /></Field>
@@ -111,6 +133,10 @@ export default async function CourseEditorPage({ params }: { params: Promise<{ c
                         <label className="flex items-center gap-2"><input type="checkbox" name="integrity" /> Integrity monitoring</label>
                       </div>
                     </div>
+                    <fieldset className="mb-3 rounded-control border border-border p-3">
+                      <legend className="px-1 text-xs text-muted">INTERVIEW: oral check settings (ignored for other types)</legend>
+                      <InterviewFields />
+                    </fieldset>
                     <Button type="submit">Add lesson</Button>
                   </form>
                 </details>
@@ -148,6 +174,32 @@ export default async function CourseEditorPage({ params }: { params: Promise<{ c
           </form>
         </Card>
       </div>
+    </div>
+  );
+}
+
+/** Oral-check settings (spec FR-14.2 v1.4) — shared by "Add lesson" and the inline editor. */
+function InterviewFields({ cfg }: { cfg?: InterviewConfig }) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-3">
+      <Field label="Questions (1–6)"><Input name="questionCount" type="number" min={1} max={6} defaultValue={cfg?.questionCount ?? 3} /></Field>
+      <Field label="Pass mark %"><Input name="passPct" type="number" min={50} max={100} defaultValue={cfg?.passPct ?? 67} /></Field>
+      <Field label="Max minutes (3–9)"><Input name="maxMinutes" type="number" min={3} max={9} defaultValue={cfg?.maxMinutes ?? 6} /></Field>
+      <Field label="Ask about" hint="Which lesson content the interviewer may use">
+        <Select name="scope" defaultValue={cfg?.scope ?? "module"}>
+          <option value="previous">The previous lesson</option>
+          <option value="module">Lessons in this module</option>
+          <option value="course">Everything in the course</option>
+        </Select>
+      </Field>
+      <div className="sm:col-span-2">
+        <Field label="Focus (optional)" hint="Topics or instructions for the interviewer, e.g. “the LAST complaint method”">
+          <Textarea name="focus" rows={2} defaultValue={cfg?.focus ?? ""} />
+        </Field>
+      </div>
+      <label className="flex items-center gap-2 text-sm sm:col-span-3">
+        <input type="checkbox" name="requirePass" defaultChecked={cfg?.requirePass ?? true} /> Passing is required to complete this lesson
+      </label>
     </div>
   );
 }

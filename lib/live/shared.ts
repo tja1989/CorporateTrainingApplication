@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { HrCitation, LiveEvaluation, LiveTurn } from "@/lib/db/schema";
+import type { LiveCitation, LiveEvaluation, LiveTurn } from "@/lib/db/schema";
 
 /**
  * Types and request schemas shared by the Live voice routes and the browser
@@ -23,19 +23,29 @@ export type SessionInfo = {
   interviewId?: string;
   questionCount?: number;
   maxMinutes?: number;
+  passPct?: number;
   questions?: string[];
 };
 
 export type Evaluation = LiveEvaluation;
-export type Citation = HrCitation;
+export type Citation = LiveCitation;
 
-const CitationSchema = z.object({
-  docId: z.string(),
-  title: z.string(),
-  sectionPath: z.string(),
-  version: z.number(),
-  effectiveDate: z.string(),
-});
+/** Stable identity for dedupe: policy chips by doc+section, lesson chips by lesson. */
+export function citationKey(c: Citation): string {
+  return c.kind === "lesson" ? `lesson:${c.lessonId}` : `policy:${c.docId}::${c.sectionPath}`;
+}
+
+const CitationSchema = z.union([
+  z.object({
+    kind: z.literal("policy").optional(),
+    docId: z.string(),
+    title: z.string(),
+    sectionPath: z.string(),
+    version: z.number(),
+    effectiveDate: z.string(),
+  }),
+  z.object({ kind: z.literal("lesson"), title: z.string(), lessonId: z.string(), courseTitle: z.string(), href: z.string() }),
+]);
 
 export const TurnSchema = z.object({
   role: z.enum(["user", "assistant"]),
@@ -84,7 +94,9 @@ export const InterviewEventBody = z.discriminatedUnion("type", [
 ]);
 
 /** Tool names the browser may forward to the server. Anything else is rejected. */
-export const HR_TOOL_NAMES = ["search_hr_policy", "escalate_to_hr"] as const;
+export const HR_TOOL_NAMES = ["search_hr_policy", "search_course_content", "my_training_status", "escalate_to_hr"] as const;
+/** Tools declared NON_BLOCKING — their responses are queued behind the model's filler phrase (WHEN_IDLE). */
+export const NON_BLOCKING_TOOLS = ["search_hr_policy", "search_course_content"] as const;
 export const INTERVIEW_TOOL_NAMES = ["submit_evaluation"] as const;
 
 export const KICKOFF_TEXT = "[session started — greet the learner and begin]";

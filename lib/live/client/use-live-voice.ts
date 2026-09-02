@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createMicCapture, createPlayer, micSupported, type MicCapture, type Player } from "./audio";
 import { connectLive, type LiveConnection, type LiveEvent, type ToolCall } from "./session";
 import { createMockTransport } from "./mock-transport";
-import { KICKOFF_TEXT, type Citation, type Evaluation as LiveEvaluation, type LiveKind, type LiveUsage, type SessionInfo, type Turn } from "../shared";
+import { KICKOFF_TEXT, NON_BLOCKING_TOOLS, citationKey, type Citation, type Evaluation as LiveEvaluation, type LiveKind, type LiveUsage, type SessionInfo, type Turn } from "../shared";
 
 /**
  * One hook drives both voice screens (spec FR-14): consent → mic → token →
@@ -251,12 +251,12 @@ export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUr
   const onToolCall = useCallback(
     async (call: ToolCall): Promise<Record<string, unknown>> => {
       const res = await postEvent({ type: "tool", name: call.name, args: call.args });
-      if (call.name === "search_hr_policy" && Array.isArray(res.citations)) {
+      if ((call.name === "search_hr_policy" || call.name === "search_course_content") && Array.isArray(res.citations)) {
         const cites = res.citations as Citation[];
         lastCitationsRef.current = cites;
         update((s) => {
-          const seen = new Set(s.citations.map((c) => `${c.docId}::${c.sectionPath}`));
-          return { citations: [...s.citations, ...cites.filter((c) => !seen.has(`${c.docId}::${c.sectionPath}`))] };
+          const seen = new Set(s.citations.map(citationKey));
+          return { citations: [...s.citations, ...cites.filter((c) => !seen.has(citationKey(c)))] };
         });
       }
       if (call.name === "escalate_to_hr") update({ pendingEscalation: true });
@@ -273,7 +273,14 @@ export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUr
   const connect = useCallback(
     async (token: string, model: string, resumeHandle?: string) => {
       try {
-        const conn = await connectLive({ token, model, resumeHandle, onEvent: (e) => handleEventRef.current(e), onToolCall });
+        const conn = await connectLive({
+          token,
+          model,
+          resumeHandle,
+          nonBlockingTools: opts.kind === "hr" ? NON_BLOCKING_TOOLS : [],
+          onEvent: (e) => handleEventRef.current(e),
+          onToolCall,
+        });
         connRef.current = conn;
         update({ status: "live", warning: resumeHandle ? null : stateRef.current.warning });
         if (!resumeHandle) conn.sendText(KICKOFF_TEXT);
@@ -282,7 +289,7 @@ export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUr
         update({ status: "error", error: err instanceof Error ? err.message : "Could not connect to Gemini Live" });
       }
     },
-    [onToolCall, teardown, update],
+    [onToolCall, teardown, update, opts.kind],
   );
 
   const reconnect = useCallback(async () => {
@@ -366,8 +373,8 @@ export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUr
       case "citations": {
         lastCitationsRef.current = e.citations;
         update((s) => {
-          const seen = new Set(s.citations.map((c) => `${c.docId}::${c.sectionPath}`));
-          return { citations: [...s.citations, ...e.citations.filter((c) => !seen.has(`${c.docId}::${c.sectionPath}`))] };
+          const seen = new Set(s.citations.map(citationKey));
+          return { citations: [...s.citations, ...e.citations.filter((c) => !seen.has(citationKey(c)))] };
         });
         break;
       }

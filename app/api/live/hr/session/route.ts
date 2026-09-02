@@ -3,7 +3,7 @@ import { db, t } from "@/lib/db/client";
 import { currentUser } from "@/lib/auth/guard";
 import { id } from "@/lib/ids";
 import { LiveUnavailableError, liveAvailable, mintLiveToken, resolveLiveModel } from "@/lib/live/gemini";
-import { buildHrLiveConfig } from "@/lib/live/hr-voice";
+import { assistantContextFor, buildHrLiveConfig } from "@/lib/live/hr-voice";
 import { HrSessionBody, type SessionInfo } from "@/lib/live/shared";
 
 export const maxDuration = 60;
@@ -38,7 +38,8 @@ export async function POST(req: Request) {
   }
   try {
     const { model, warning } = await resolveLiveModel();
-    const { token, expiresAt } = await mintLiveToken({ model, config: buildHrLiveConfig({ resumeHandle: parsed.data.resumeHandle }) });
+    const context = await assistantContextFor(user);
+    const { token, expiresAt } = await mintLiveToken({ model, config: buildHrLiveConfig({ resumeHandle: parsed.data.resumeHandle, context }) });
     const info: SessionInfo = { mock: false, model, token, expiresAt, warning, conversationId };
     return Response.json(info);
   } catch (err) {

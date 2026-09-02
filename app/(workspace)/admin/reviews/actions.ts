@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
 import { finalizeReview } from "@/lib/quiz/engine";
-import { markInterviewReviewed } from "@/lib/live/store";
+import { markInterviewReviewed, overturnInterview } from "@/lib/live/store";
 
 export async function confirmGradeAction(reviewId: string): Promise<void> {
   const admin = await requireRole("ADMIN");
@@ -48,5 +48,12 @@ export async function markInterviewReviewedAction(interviewId: string): Promise<
   const admin = await requireRole("ADMIN");
   await markInterviewReviewed(interviewId, admin.id);
   await setFlash("Oral check marked as reviewed.");
+  revalidatePath("/admin/reviews");
+}
+
+export async function overturnInterviewAction(interviewId: string): Promise<void> {
+  const admin = await requireRole("ADMIN");
+  await overturnInterview(interviewId, admin.id);
+  await setFlash("Oral check overturned to a pass — the learner has been notified.");
   revalidatePath("/admin/reviews");
 }

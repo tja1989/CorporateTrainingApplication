@@ -8,6 +8,7 @@ import { Markdown } from "@/lib/markdown";
 import { Button, Card, PageTitle, ButtonLink } from "@/components/ui";
 import { markCompleteAction } from "../actions";
 import { VideoLesson } from "./video-lesson";
+import { InterviewLesson } from "./interview-lesson";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +70,10 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
       ) : null}
 
       {lesson.type === "VIDEO" ? <VideoLesson lesson={lesson} courseId={course.id} isDone={isDone} /> : null}
+
+      {lesson.type === "INTERVIEW" ? (
+        <InterviewLesson lessonId={lesson.id} userId={user.id} timeMultiplier={user.timeMultiplier} backHref={`/course/${course.id}`} />
+      ) : null}
 
       {lesson.type === "QUIZ" ? (
         <Card className="mb-6 max-w-3xl p-6">

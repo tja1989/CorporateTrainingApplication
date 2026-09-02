@@ -44,8 +44,13 @@ export async function runDeployInit(): Promise<void> {
   console.log("deploy-init: applying indexes/constraints…");
   const extras = readFileSync(resolve(process.cwd(), "scripts/db-extras.sql"), "utf8");
   for (const statement of extras.split(/;\s*\n/)) {
-    const sql = statement.trim();
-    if (!sql || sql.startsWith("--")) continue;
+    // Strip comment lines inside the chunk — a statement preceded by a comment must still run.
+    const sql = statement
+      .split("\n")
+      .filter((line) => !line.trim().startsWith("--"))
+      .join("\n")
+      .trim();
+    if (!sql) continue;
     await client.query(sql);
   }
 
@@ -56,6 +61,12 @@ export async function runDeployInit(): Promise<void> {
     execSync("npx tsx scripts/seed.ts", { stdio: "inherit", env: process.env });
   } else {
     console.log(`deploy-init: ${rows[0].n} user(s) present — skipping seed`);
+  }
+  if (process.env.DEMO_MODE === "true") {
+    // Idempotent: gives an already-seeded demo the oral-check lessons without a reseed.
+    const { ensureDemoInterviewLessons } = await import("./seed-interviews");
+    const added = await ensureDemoInterviewLessons();
+    console.log(`deploy-init: demo oral-check lessons ensured (${added} added)`);
   }
   console.log("deploy-init: done");
 }

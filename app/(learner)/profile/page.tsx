@@ -110,7 +110,7 @@ export default async function ProfilePage() {
                   <p className="text-xs text-muted">{c.courseTitle} · {c.completedAt?.toISOString().slice(0, 10)}</p>
                 </div>
                 <span className="flex items-center gap-2">
-                  <Chip variant={c.outcome === "PASS" ? "success" : "warning"}>{c.scorePct ?? 0}% · {c.outcome === "PASS" ? "passed" : "in review"}</Chip>
+                  <Chip variant={c.outcome === "PASS" ? "success" : "warning"}>{c.scorePct ?? 0}% · {c.outcome === "PASS" ? "passed" : "not passed"}</Chip>
                   <ButtonLink variant="secondary" href={`/lesson/${c.lessonId}/interview`}>View</ButtonLink>
                 </span>
               </Card>

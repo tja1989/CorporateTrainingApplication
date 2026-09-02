@@ -9,7 +9,7 @@ import { Card, Chip, ButtonLink, complianceChip, cx } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
-const TYPE_ICON: Record<string, string> = { VIDEO: "▶", TEXT: "¶", PDF: "▦", QUIZ: "☑" };
+const TYPE_ICON: Record<string, string> = { VIDEO: "▶", TEXT: "¶", PDF: "▦", QUIZ: "☑", INTERVIEW: "🎙" };
 
 export default async function CoursePage({ params }: { params: Promise<{ courseId: string }> }) {
   const user = await requireUser();
@@ -26,11 +26,17 @@ export default async function CoursePage({ params }: { params: Promise<{ courseI
         .where(and(eq(t.lessonProgress.userId, user.id), inArray(t.lessonProgress.lessonId, lessonIds)))
     : [];
   const done = new Set(progress.filter((p) => p.status === "COMPLETED").map((p) => p.lessonId));
-  const oral = await latestInterviewsByLesson(user.id, [...done]);
+  const interviewLessonIds = outline.flatMap((o) => o.lessons.filter((l) => l.type === "INTERVIEW").map((l) => l.id));
+  const oral = await latestInterviewsByLesson(user.id, [...new Set([...done, ...interviewLessonIds])]);
   const oralCheck = (lessonId: string): { label: string; variant: "success" | "warning" | "ai" } => {
     const check = oral.get(lessonId);
     if (check?.state !== "COMPLETED") return { label: "Oral check", variant: "ai" };
-    return check.outcome === "PASS" ? { label: `Oral check · ${check.scorePct}%`, variant: "success" } : { label: "Oral check · in review", variant: "warning" };
+    return check.outcome === "PASS" ? { label: `Oral check · ${check.scorePct}%`, variant: "success" } : { label: `Oral check · not passed (${check.scorePct}%)`, variant: "warning" };
+  };
+  const interviewChip = (lessonId: string): { label: string; variant: "success" | "warning" } | null => {
+    const check = oral.get(lessonId);
+    if (check?.state !== "COMPLETED") return null;
+    return check.outcome === "PASS" ? { label: `Passed · ${check.scorePct}%`, variant: "success" } : { label: `Not passed · ${check.scorePct}%`, variant: "warning" };
   };
 
   const [enrollment] = await db
@@ -115,6 +121,9 @@ export default async function CoursePage({ params }: { params: Promise<{ courseI
                       <Link href={`/lesson/${lesson.id}/interview`} className="hit-area shrink-0" aria-label={`Oral check for ${lesson.title}`}>
                         <Chip variant={oralCheck(lesson.id).variant}>{oralCheck(lesson.id).label}</Chip>
                       </Link>
+                    ) : null}
+                    {lesson.type === "INTERVIEW" && interviewChip(lesson.id) ? (
+                      <Chip variant={interviewChip(lesson.id)!.variant}>{interviewChip(lesson.id)!.label}</Chip>
                     ) : null}
                   </li>
                 );

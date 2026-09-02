@@ -25,6 +25,9 @@ async function main() {
   let transcript = "";
   let toolCalls = 0;
   let audioBytes = 0;
+  let askedAt = 0;
+  let toolAt = 0;
+  let firstAudioAfterAsk = 0;
   let usage: LiveServerMessage["usageMetadata"] | undefined;
   let done: () => void = () => {};
   const finished = new Promise<void>((r) => (done = r));
@@ -38,6 +41,7 @@ async function main() {
         if (m.toolCall?.functionCalls?.length) {
           for (const fc of m.toolCall.functionCalls) {
             toolCalls++;
+            toolAt = Date.now();
             console.log("tool call:", fc.name, JSON.stringify(fc.args));
             session.sendToolResponse({
               functionResponses: [
@@ -55,7 +59,10 @@ async function main() {
           }
         }
         if (m.serverContent?.outputTranscription?.text) transcript += m.serverContent.outputTranscription.text;
-        if (m.data) audioBytes += Buffer.from(m.data, "base64").length;
+        if (m.data) {
+          audioBytes += Buffer.from(m.data, "base64").length;
+          if (askedAt && toolAt && !firstAudioAfterAsk && Date.now() > toolAt) firstAudioAfterAsk = Date.now();
+        }
         if (m.usageMetadata) usage = m.usageMetadata;
         if (m.serverContent?.turnComplete && toolCalls > 0 && transcript.length > 20) done();
       },
@@ -65,8 +72,10 @@ async function main() {
   });
   session.sendClientContent({ turns: KICKOFF_TEXT, turnComplete: true });
   await new Promise((r) => setTimeout(r, 4000));
+  askedAt = Date.now();
   session.sendClientContent({ turns: "How many days of annual leave do I get?", turnComplete: true });
   await finished;
+  if (toolAt) console.log(`timing: question → tool call ${toolAt - askedAt} ms; tool call → first answer audio ${firstAudioAfterAsk ? firstAudioAfterAsk - toolAt : "n/a"} ms`);
   clearTimeout(deadline);
   session.close();
   console.log("transcript:", transcript.trim());

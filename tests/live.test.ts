@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { LIVE_MODEL_CANDIDATES, estimateLiveCost, parseDuration, pickLiveModel } from "@/lib/live/gemini";
-import { EvaluationSchema, buildInterviewConfig, interviewContentFor, maxMinutesFor, mockEvaluate, mockQuestions, pairTranscript, scoreEvaluation } from "@/lib/live/interview";
+import { EvaluationSchema, buildInterviewConfig, interviewContentFor, maxMinutesFor, mockEvaluate, mockQuestions, pairTranscript, parseInterviewConfig, pickScopeLessons, scoreEvaluation } from "@/lib/live/interview";
 import { HR_TOOLS, buildHrLiveConfig } from "@/lib/live/hr-voice";
+import { routeMockTool } from "@/lib/live/client/mock-transport";
+import { citationKey } from "@/lib/live/shared";
 import { base64ToBytes, bytesToBase64, downsample, floatTo16BitPCM, pcm16ToFloat32 } from "@/lib/live/client/audio";
 
 describe("live model resolution (spec FR-14.1)", () => {
@@ -28,21 +30,50 @@ describe("live model resolution (spec FR-14.1)", () => {
 
 describe("oral check rubric (spec FR-14.2)", () => {
   const ev = (scores: number[]) => ({ questions: scores.map((score, i) => ({ question: `Q${i}`, answer_summary: "", score, feedback: "" })), overall_summary: "" });
-  it("passes at two thirds of the rubric and routes anything lower to review", () => {
+  it("passes at the pass mark (two thirds by default) and fails below it", () => {
     expect(scoreEvaluation(ev([3, 3, 3]))).toEqual({ pct: 100, outcome: "PASS" });
     expect(scoreEvaluation(ev([2, 2, 2]))).toEqual({ pct: 67, outcome: "PASS" });
-    expect(scoreEvaluation(ev([1, 2, 2]))).toEqual({ pct: 56, outcome: "NEEDS_REVIEW" });
-    expect(scoreEvaluation(ev([]))).toEqual({ pct: 0, outcome: "NEEDS_REVIEW" });
+    expect(scoreEvaluation(ev([1, 2, 2]))).toEqual({ pct: 56, outcome: "FAIL" });
+    expect(scoreEvaluation(ev([]))).toEqual({ pct: 0, outcome: "FAIL" });
+    expect(scoreEvaluation(ev([2, 2, 2]), 80).outcome).toBe("FAIL");
+    expect(scoreEvaluation(ev([1, 2, 2]), 50).outcome).toBe("PASS");
   });
-  it("validates the model's submission strictly", () => {
-    expect(EvaluationSchema.safeParse({ questions: [{ question: "Q", answer_summary: "A", score: 2, feedback: "F" }], overall_summary: "ok" }).success).toBe(true);
-    expect(EvaluationSchema.safeParse({ questions: [{ question: "Q", answer_summary: "A", score: 4, feedback: "F" }], overall_summary: "ok" }).success).toBe(false);
-    expect(EvaluationSchema.safeParse({ questions: [], overall_summary: "ok" }).success).toBe(false);
+  it("parses admin config tolerantly: clamps, defaults, checkbox semantics", () => {
+    expect(parseInterviewConfig(undefined)).toEqual({ questionCount: 3, passPct: 67, maxMinutes: 6, scope: "module", focus: undefined, requirePass: true });
+    expect(parseInterviewConfig({ questionCount: "9", passPct: "20", maxMinutes: "30", scope: "course", focus: "  LAST method ", requirePass: "on" })).toEqual({
+      questionCount: 6,
+      passPct: 50,
+      maxMinutes: 9,
+      scope: "course",
+      focus: "LAST method",
+      requirePass: true,
+    });
+    expect(parseInterviewConfig({ requirePass: null }).requirePass).toBe(false);
+    expect(parseInterviewConfig({ scope: "nonsense" }).scope).toBe("module");
+  });
+  it("picks the interview scope with sensible fallbacks", () => {
+    const outline = [
+      { lessons: [{ id: "a", type: "TEXT", moduleId: "m1" }, { id: "b", type: "VIDEO", moduleId: "m1" }, { id: "q", type: "QUIZ", moduleId: "m1" }] },
+      { lessons: [{ id: "c", type: "TEXT", moduleId: "m2" }, { id: "i", type: "INTERVIEW", moduleId: "m2" }] },
+      { lessons: [{ id: "j", type: "INTERVIEW", moduleId: "m3" }] },
+    ];
+    expect(pickScopeLessons(outline, "i", "previous")).toEqual(["c"]);
+    expect(pickScopeLessons(outline, "i", "module")).toEqual(["c"]);
+    expect(pickScopeLessons(outline, "i", "course")).toEqual(["a", "b", "c"]);
+    expect(pickScopeLessons(outline, "j", "module")).toEqual(["a", "b", "c"]); // empty module → whole course
+    expect(pickScopeLessons(outline, "a", "previous")).toEqual(["b", "c"]); // nothing before → whole course minus itself
   });
   it("scales the time box with the accommodation and caps it under the connection limit", () => {
     expect(maxMinutesFor(1)).toBe(6);
     expect(maxMinutesFor(1.5)).toBe(9);
     expect(maxMinutesFor(2)).toBe(9);
+    expect(maxMinutesFor(1, 4)).toBe(4);
+    expect(maxMinutesFor(2, 3)).toBe(6);
+  });
+  it("validates the model's submission strictly", () => {
+    expect(EvaluationSchema.safeParse({ questions: [{ question: "Q", answer_summary: "A", score: 2, feedback: "F" }], overall_summary: "ok" }).success).toBe(true);
+    expect(EvaluationSchema.safeParse({ questions: [{ question: "Q", answer_summary: "A", score: 4, feedback: "F" }], overall_summary: "ok" }).success).toBe(false);
+    expect(EvaluationSchema.safeParse({ questions: [], overall_summary: "ok" }).success).toBe(false);
   });
   it("only interviews on ready video transcripts and text bodies", () => {
     const chunks = [{ text: "Greet every customer within ten seconds of arrival." }];
@@ -64,6 +95,10 @@ describe("oral check rubric (spec FR-14.2)", () => {
     expect(names).toEqual(["submit_evaluation"]);
     expect(String(cfg.systemInstruction)).toContain("Wash hands for 20 seconds.");
     expect(String(cfg.systemInstruction)).toContain("Farhan");
+    expect(cfg.realtimeInputConfig).toBeUndefined(); // interviewer keeps default VAD so pauses aren't cut
+    const focused = buildInterviewConfig({ learnerFirstName: "F", courseTitle: "C", lessonTitle: "L", content: { title: "L", text: "x", source: "text" }, maxMinutes: 6, focus: "the LAST method", objectives: ["Greet within 10 seconds"] });
+    expect(String(focused.systemInstruction)).toContain("Focus your questions on: the LAST method");
+    expect(String(focused.systemInstruction)).toContain("Greet within 10 seconds");
   });
   it("grades offline by overlap, monotonically", () => {
     const content = { title: "Hand hygiene", text: "Wash hands with soap for twenty seconds before handling food and after touching waste.", source: "text" as const };
@@ -90,14 +125,39 @@ describe("oral check rubric (spec FR-14.2)", () => {
   });
 });
 
-describe("HR live config (spec FR-14.3)", () => {
-  it("declares the search and escalation tools and audio with transcription", () => {
+describe("assistant live config (spec FR-14.3 v1.4)", () => {
+  it("declares policy, course, status and escalation tools; searches are non-blocking", () => {
     const cfg = buildHrLiveConfig();
-    expect(HR_TOOLS.map((t) => t.name)).toEqual(["search_hr_policy", "escalate_to_hr"]);
+    expect(HR_TOOLS.map((t) => t.name)).toEqual(["search_hr_policy", "search_course_content", "my_training_status", "escalate_to_hr"]);
+    expect(HR_TOOLS.filter((t) => t.behavior === "NON_BLOCKING").map((t) => t.name)).toEqual(["search_hr_policy", "search_course_content"]);
     expect(cfg.responseModalities).toEqual(["AUDIO"]);
     expect(cfg.outputAudioTranscription).toBeDefined();
-    expect(String(cfg.systemInstruction)).toMatch(/search_hr_policy/);
+    expect(cfg.realtimeInputConfig?.automaticActivityDetection?.silenceDurationMs).toBe(500);
+    expect(String(cfg.systemInstruction)).toMatch(/search_course_content/);
     expect(buildHrLiveConfig({ resumeHandle: "h1" }).sessionResumption).toEqual({ handle: "h1" });
+  });
+  it("puts the learner context into the prompt without ids or email", () => {
+    const cfg = buildHrLiveConfig({
+      context: {
+        firstName: "Farhan",
+        jobTitle: "Cashier",
+        storeName: "Barsha Hypermarket",
+        status: { summary: "2 course(s) assigned: 1 overdue, 0 due soon, 1 completed.", courses: [{ title: "Food Safety Essentials", status: "in progress", compliance: "overdue", due: "2026-08-20", daysToDue: -13, pct: 40, reason: "Overdue — finish this first" }] },
+      },
+    });
+    const sys = String(cfg.systemInstruction);
+    expect(sys).toContain("Farhan, Cashier, at Barsha Hypermarket");
+    expect(sys).toContain("Food Safety Essentials: in progress, overdue, 40% done · due 2026-08-20 (13 days overdue)");
+    expect(sys).not.toMatch(/AE1\d{4}|@/);
+  });
+  it("routes typed demo questions to the right tool offline", () => {
+    expect(routeMockTool("What training is due for me?").name).toBe("my_training_status");
+    expect(routeMockTool("What does the cold chain lesson say?").name).toBe("search_course_content");
+    expect(routeMockTool("How many days of annual leave do I get?").name).toBe("search_hr_policy");
+  });
+  it("keys citations by lesson or by policy section", () => {
+    expect(citationKey({ kind: "lesson", title: "T", lessonId: "l1", courseTitle: "C", href: "/lesson/l1" })).toBe("lesson:l1");
+    expect(citationKey({ docId: "d", title: "P", sectionPath: "S", version: 1, effectiveDate: "2026-01-01" })).toBe("policy:d::S");
   });
 });
 
