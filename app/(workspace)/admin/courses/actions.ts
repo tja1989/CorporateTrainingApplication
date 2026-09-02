@@ -10,6 +10,8 @@ import { enqueue } from "@/lib/jobs/queue";
 import { handlers } from "@/lib/jobs/handlers";
 import { drain } from "@/lib/jobs/queue";
 import { validateYoutubeVideo } from "@/lib/video/ingest";
+import { setFlash } from "@/lib/flash";
+import { parseInterviewConfig } from "@/lib/live/interview";
 
 export async function createCourseAction(form: FormData): Promise<void> {
   const admin = await requireRole("ADMIN");
@@ -67,7 +69,7 @@ export async function addModuleAction(courseId: string, form: FormData): Promise
 
 export async function addLessonAction(courseId: string, moduleId: string, form: FormData): Promise<void> {
   await requireRole("ADMIN");
-  const type = String(form.get("type") ?? "TEXT") as "TEXT" | "PDF" | "VIDEO" | "QUIZ";
+  const type = String(form.get("type") ?? "TEXT") as "TEXT" | "PDF" | "VIDEO" | "QUIZ" | "INTERVIEW";
   const title = String(form.get("title") ?? "").trim();
   if (!title) return;
   const lessons = await db.select().from(t.lessons).where(eq(t.lessons.moduleId, moduleId));
@@ -117,7 +119,34 @@ export async function addLessonAction(courseId: string, moduleId: string, form: 
     });
     await db.insert(t.lessons).values({ id: lessonId, moduleId, type, title, sort: lessons.length, payload: { quizId } });
     await db.update(t.quizzes).set({ lessonId }).where(eq(t.quizzes.id, quizId));
+  } else if (type === "INTERVIEW") {
+    await db.insert(t.lessons).values({ id: lessonId, moduleId, type, title, sort: lessons.length, payload: { interview: interviewConfigFromForm(form) } });
   }
+  revalidatePath(`/admin/courses/${courseId}`);
+}
+
+function interviewConfigFromForm(form: FormData) {
+  return parseInterviewConfig({
+    questionCount: form.get("questionCount"),
+    passPct: form.get("passPct"),
+    maxMinutes: form.get("maxMinutes"),
+    scope: form.get("scope"),
+    focus: form.get("focus"),
+    requirePass: form.get("requirePass"),
+  });
+}
+
+/** Edits an INTERVIEW lesson's oral-check settings (spec FR-14.2 v1.4). */
+export async function updateInterviewLessonAction(courseId: string, lessonId: string, form: FormData): Promise<void> {
+  await requireRole("ADMIN");
+  const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, lessonId)).limit(1);
+  if (!lesson || lesson.type !== "INTERVIEW") return;
+  const title = String(form.get("title") ?? "").trim();
+  await db
+    .update(t.lessons)
+    .set({ title: title || lesson.title, payload: { interview: interviewConfigFromForm(form) } })
+    .where(eq(t.lessons.id, lessonId));
+  await setFlash("Oral check settings saved.");
   revalidatePath(`/admin/courses/${courseId}`);
 }
 

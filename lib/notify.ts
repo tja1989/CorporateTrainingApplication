@@ -31,10 +31,12 @@ const TEMPLATES: Record<NotificationKind, (p: Record<string, unknown>) => { titl
   manager_digest: (p) => ({ title: "Weekly team digest", body: String(p.summary ?? "") }),
   course_completed: (p) => ({ title: "Course completed 🎉", body: `You completed “${p.courseTitle}”. Nice work.` }),
   oral_check_result: (p) => ({
-    title: "Oral check result",
-    body: `Your oral check for “${p.lessonTitle}” scored ${p.scorePct}% — ${p.outcome === "PASS" ? "passed" : "a person will review it"}.`,
+    title: p.outcome === "PASS" ? "Oral check passed" : "Oral check not passed",
+    body: p.overturned
+      ? `An admin reviewed your oral check for “${p.lessonTitle}” and confirmed it as a pass.`
+      : `Your oral check for “${p.lessonTitle}” scored ${p.scorePct}% — ${p.outcome === "PASS" ? "passed." : "not passed yet. You can retake it any time."}`,
   }),
-  oral_check_review: (p) => ({ title: "Oral check to review", body: `${p.learnerName}’s oral check for “${p.lessonTitle}” needs a human look (${p.scorePct}%).` }),
+  oral_check_review: (p) => ({ title: "Oral check to review", body: `${p.learnerName} did not pass the oral check for “${p.lessonTitle}” (${p.scorePct}%). Worth a look.` }),
 };
 
 export async function notify(

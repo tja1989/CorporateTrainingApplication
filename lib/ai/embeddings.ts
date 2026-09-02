@@ -13,7 +13,7 @@ export function embeddingsAvailable(): boolean {
   return !!process.env.VOYAGE_API_KEY;
 }
 
-export async function embed(texts: string[], inputType: "document" | "query"): Promise<number[][]> {
+async function embedUncached(texts: string[], inputType: "document" | "query"): Promise<number[][]> {
   if (texts.length === 0) return [];
   if (!embeddingsAvailable()) return texts.map(mockEmbed);
   const res = await fetch("https://api.voyageai.com/v1/embeddings", {
@@ -47,4 +47,24 @@ export function mockEmbed(text: string): number[] {
   }
   const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1;
   return v.map((x) => x / norm);
+}
+
+// In-process cache for single query embeddings: repeat and follow-up questions
+// in a voice session skip the embedding round trip (spec FR-14.3 v1.4).
+const QUERY_CACHE = new Map<string, number[]>();
+const QUERY_CACHE_MAX = 200;
+
+export async function embed(texts: string[], inputType: "document" | "query"): Promise<number[][]> {
+  if (inputType !== "query" || texts.length !== 1) return embedUncached(texts, inputType);
+  const key = texts[0].trim().toLowerCase().replace(/\s+/g, " ");
+  const hit = QUERY_CACHE.get(key);
+  if (hit) {
+    QUERY_CACHE.delete(key);
+    QUERY_CACHE.set(key, hit);
+    return [hit];
+  }
+  const [vec] = await embedUncached(texts, inputType);
+  QUERY_CACHE.set(key, vec);
+  if (QUERY_CACHE.size > QUERY_CACHE_MAX) QUERY_CACHE.delete(QUERY_CACHE.keys().next().value as string);
+  return [vec];
 }

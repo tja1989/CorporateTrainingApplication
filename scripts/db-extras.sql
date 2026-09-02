@@ -21,3 +21,5 @@ CREATE INDEX IF NOT EXISTS lessons_fts
 CREATE UNIQUE INDEX IF NOT EXISTS enrollments_active_uniq
   ON enrollments (user_id, course_id)
   WHERE status IN ('NOT_STARTED', 'IN_PROGRESS');
+
+UPDATE live_interviews SET outcome = 'FAIL' WHERE outcome = 'NEEDS_REVIEW';

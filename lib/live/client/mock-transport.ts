@@ -10,7 +10,18 @@ import type { Citation, LiveKind } from "../shared";
 
 type PostEvent = (body: Record<string, unknown>) => Promise<Record<string, unknown>>;
 
-const HR_GREETING = "Hi — I'm the LuLu Learn HR assistant, running in offline demo mode. Type a question about leave, pay, hours or end-of-service and I'll quote the policy.";
+const HR_GREETING =
+  "Hi — I'm your LuLu Learn assistant, running in offline demo mode. Type a question about HR policy (leave, pay, hours), about your assigned courses, or ask what training is due.";
+
+const STATUS_RE = /\b(my training|training (is )?due|what('s| is) due|due for me|assigned|overdue|my courses?|which courses?|how far|my progress|what do i (have|need) to (finish|complete))\b/i;
+const COURSE_RE = /\b(lesson|course|module|video|cold chain|greet|greeting|handwash|hand hygiene|till|refund|allergen|alarm|assembly|customer|complaint|fridge|temperature)\b/i;
+
+/** Offline routing stands in for the model's tool choice. */
+export function routeMockTool(text: string): { name: string; args: Record<string, unknown> } {
+  if (STATUS_RE.test(text)) return { name: "my_training_status", args: {} };
+  if (COURSE_RE.test(text)) return { name: "search_course_content", args: { query: text } };
+  return { name: "search_hr_policy", args: { query: text } };
+}
 
 function speak(text: string, onEvent: (e: LiveEvent) => void): void {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
@@ -87,8 +98,9 @@ export function createMockTransport(opts: {
       onEvent({ type: "turnComplete" });
       if (opts.kind === "hr") {
         busy = true;
+        const route = routeMockTool(text);
         void opts
-          .postEvent({ type: "tool", name: "search_hr_policy", args: { query: text } })
+          .postEvent({ type: "tool", name: route.name, args: route.args })
           .then((res) => {
             const spoken = typeof res.spoken === "string" ? res.spoken : "I couldn't find this in the current policies.";
             say(spoken, Array.isArray(res.citations) ? (res.citations as Citation[]) : undefined);

@@ -39,8 +39,8 @@ export default async function AskHrPage() {
           <span className="flex items-center gap-3">
             <span className="flex size-12 items-center justify-center rounded-full bg-ai-tint text-lg text-ai-fg" aria-hidden>🎙</span>
             <span>
-              <span className="block text-sm font-medium">Talk to the assistant</span>
-              <span className="block text-xs text-muted">Live voice — same policies, same citations, same guardrails.</span>
+              <span className="block text-sm font-medium">Talk to your assistant</span>
+              <span className="block text-xs text-muted">Live voice — HR policy, your courses, and what&#39;s due, with sources cited.</span>
             </span>
           </span>
           <Chip variant="ai">AI</Chip>

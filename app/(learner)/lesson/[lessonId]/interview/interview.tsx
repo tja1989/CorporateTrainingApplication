@@ -23,6 +23,8 @@ export function OralCheck({
   configured,
   questionCount,
   maxMinutes,
+  passPct,
+  gating,
   previous,
   backHref,
 }: {
@@ -30,6 +32,9 @@ export function OralCheck({
   configured: boolean;
   questionCount: number;
   maxMinutes: number;
+  passPct: number;
+  /** INTERVIEW lessons: passing completes the lesson. */
+  gating?: boolean;
   previous: OralResult | null;
   backHref: string;
 }) {
@@ -47,13 +52,14 @@ export function OralCheck({
 
   return (
     <div className="flex flex-col gap-4">
-      {idle && previous ? <ResultCard title="Your last result" result={previous} /> : null}
+      {idle && previous ? <ResultCard title="Your last result" result={previous} passPct={passPct} gating={gating} /> : null}
       {idle ? (
         <VoiceConsent
           kind="interview"
           configured={configured}
           questionCount={questionCount}
           maxMinutes={maxMinutes}
+          gating={gating}
           starting={false}
           startLabel={previous ? "Retake the oral check" : undefined}
           onStart={() => void v.start()}
@@ -67,7 +73,7 @@ export function OralCheck({
             <VoiceOrb status={v.status} speaking={v.speaking} level={v.level} muted={v.muted} typedOnly={v.typedOnly} />
             <div className="text-end text-xs text-muted">
               <p>up to {questionCount} questions</p>
-              <p>{maxMinutes} min max</p>
+              <p>{maxMinutes} min max · pass mark {passPct}%</p>
             </div>
           </div>
           {v.warning ? <p className="text-center text-xs text-muted">{v.warning}</p> : null}
@@ -76,7 +82,7 @@ export function OralCheck({
           {over ? (
             result?.evaluation || result?.scorePct !== null ? (
               <>
-                {result ? <ResultCard title="Your result" result={result} /> : null}
+                {result ? <ResultCard title="Your result" result={result} passPct={passPct} gating={gating} /> : null}
                 <div className="flex gap-2">
                   <ButtonLink href={backHref}>Back to course</ButtonLink>
                   <Button variant="secondary" onClick={() => void v.start()}>
@@ -129,7 +135,7 @@ export function OralCheck({
   );
 }
 
-export function ResultCard({ title, result }: { title: string; result: OralResult }) {
+export function ResultCard({ title, result, passPct, gating }: { title: string; result: OralResult; passPct?: number; gating?: boolean }) {
   const ev = result.evaluation;
   const pct = result.scorePct ?? 0;
   const pass = result.outcome === "PASS";
@@ -143,11 +149,17 @@ export function ResultCard({ title, result }: { title: string; result: OralResul
             <AnimatedNumber value={pct} suffix="%" />
           </p>
         </div>
-        <Chip variant={pass ? "success" : "warning"}>{pass ? "Passed" : "Needs review"}</Chip>
+        <Chip variant={pass ? "success" : "warning"}>{pass ? "Passed" : "Not passed"}</Chip>
       </div>
-      {!pass ? (
-        <p className="mb-3 text-xs text-muted">A person will look at this before it counts for anything.{afterTheFact ? " Graded from the transcript after the session." : ""}</p>
-      ) : null}
+      <p className="mb-3 text-xs text-muted">
+        {passPct !== undefined ? `Pass mark ${passPct}%. ` : ""}
+        {pass
+          ? gating
+            ? "This lesson is now complete."
+            : "Nice work."
+          : `Not passed this time — you can retake it whenever you're ready.${gating ? " The lesson completes when you pass." : ""}`}
+        {afterTheFact ? " Graded from the transcript after the session; an admin may review it." : !pass ? " An admin can review and overturn a fail." : ""}
+      </p>
       {ev ? (
         <AiSurface variant="block" label="AI evaluation" mock={result.evaluationSource === "mock"} className="block max-w-full">
           {ev.overall_summary ? <p className="mb-2">{ev.overall_summary}</p> : null}

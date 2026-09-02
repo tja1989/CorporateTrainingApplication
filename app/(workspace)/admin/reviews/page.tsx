@@ -2,7 +2,7 @@ import { asc, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
 import { AiSurface, Button, Card, Chip, PageTitle, EmptyState, Input } from "@/components/ui";
-import { approveDraftAction, discardDraftAction, confirmGradeAction, adjustGradeAction, markInterviewReviewedAction } from "./actions";
+import { approveDraftAction, discardDraftAction, confirmGradeAction, adjustGradeAction, markInterviewReviewedAction, overturnInterviewAction } from "./actions";
 import { pendingInterviewReviews } from "@/lib/live/store";
 
 export const dynamic = "force-dynamic";
@@ -115,9 +115,9 @@ export default async function ReviewsPage() {
       </section>
 
       <section className="max-w-3xl" aria-label="Oral check reviews">
-        <h2 className="mb-2 text-sm font-medium text-muted">Oral checks needing a human look ({oralReviews.length})</h2>
+        <h2 className="mb-2 text-sm font-medium text-muted">Oral checks not passed ({oralReviews.length})</h2>
         {oralReviews.length === 0 ? (
-          <EmptyState icon="🎙" title="No oral checks waiting" body="Checks that score under the pass mark, or were graded after the session ended, land here." />
+          <EmptyState icon="🎙" title="No failed oral checks waiting" body="Checks under the pass mark land here for a human look — confirm the fail, or overturn it to a pass." />
         ) : (
           <div className="flex flex-col gap-3">
             {oralReviews.map((r) => (
@@ -125,7 +125,7 @@ export default async function ReviewsPage() {
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <span className="text-sm font-medium">{r.learnerName}</span>
                   <span className="flex gap-2">
-                    <Chip variant="warning">{r.scorePct ?? 0}% · needs review</Chip>
+                    <Chip variant="warning">{r.scorePct ?? 0}% · not passed (pass mark {r.passPct}%)</Chip>
                     {r.evaluationSource !== "model" ? <Chip variant="neutral">graded {r.evaluationSource === "mock" ? "offline" : "after session"}</Chip> : null}
                   </span>
                 </div>
@@ -154,9 +154,14 @@ export default async function ReviewsPage() {
                     ))}
                   </div>
                 </details>
-                <form action={markInterviewReviewedAction.bind(null, r.id)}>
-                  <Button type="submit" variant="secondary">Mark reviewed</Button>
-                </form>
+                <div className="flex flex-wrap gap-2">
+                  <form action={markInterviewReviewedAction.bind(null, r.id)}>
+                    <Button type="submit" variant="secondary">Confirm fail</Button>
+                  </form>
+                  <form action={overturnInterviewAction.bind(null, r.id)}>
+                    <Button type="submit">Overturn to pass</Button>
+                  </form>
+                </div>
               </Card>
             ))}
           </div>

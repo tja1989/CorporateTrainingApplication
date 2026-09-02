@@ -17,9 +17,12 @@ export function VoiceConsent({
   onStart,
   onTestSpeaker,
   startLabel,
+  gating,
 }: {
   kind: "hr" | "interview";
   startLabel?: string;
+  /** INTERVIEW lessons: passing completes the lesson (and may be required). */
+  gating?: boolean;
   configured: boolean;
   questionCount?: number;
   maxMinutes?: number;
@@ -56,8 +59,8 @@ export function VoiceConsent({
           <span>
             You&#39;re talking to an AI.{" "}
             {kind === "hr"
-              ? "It quotes policy and never makes decisions — HR does. Answers are in English for now."
-              : `It asks up to ${questionCount ?? 3} short questions — about three minutes, ${maxMinutes ?? 6} at most. The result never blocks a course completion.`}
+              ? "It quotes HR policy and your own course lessons, and can tell you what training is due. It never makes decisions — HR does. Answers are in English for now."
+              : `It asks up to ${questionCount ?? 3} short questions — about three minutes, ${maxMinutes ?? 6} at most. ${gating ? "Passing completes this lesson; you can retake it if you don't pass." : "The result never blocks a course completion."}`}
           </span>
         </li>
         <li className="flex gap-2">

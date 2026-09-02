@@ -2,7 +2,7 @@
 
 A mobile-first learning platform for a retail workforce where every piece of content can be **talked to**, every lesson is assessed, and every employee has a citation-grounded **HR assistant** in their pocket.
 
-Built to the spec in [`docs/MVP_SPEC.md`](docs/MVP_SPEC.md) (feature requirements, AI architecture, design language, data model, milestones M0–M6 — all implemented).
+Built to the spec in [`docs/MVP_SPEC.md`](docs/MVP_SPEC.md) (feature requirements, AI architecture, design language, data model, milestones M0–M6 — all implemented). Presenting it? Follow [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md).
 
 ## What's inside
 
@@ -12,7 +12,7 @@ Built to the spec in [`docs/MVP_SPEC.md`](docs/MVP_SPEC.md) (feature requirement
 - **Daily drill** — SM-2-lite spaced repetition with confidence ratings ("confidently wrong" re-drills first). Optional, never counts toward required training.
 - **Virtual HR assistant** — citation-first RAG over versioned policy docs (superseded versions are hard-filtered but soft-retained for audit reconstructability), country/audience permission filters, deterministic guardrails (grievance → sympathetic human routing; legal/visa/medical denials; injection screening; no-promises output rail), escalation tickets with consented transcripts, pseudonymized audit log, deflection/CSAT/content-gap KPIs.
 - **Managers & reporting** — team dashboard with drill-down tiles and not-reached-directly surfacing, assign/nudge, six live reports with CSV export, and **Ask Reports**: natural-language questions compiled to typed, whitelist-validated query plans (never model-written SQL) with the executed plan disclosed.
-- **Live voice (Gemini Live)** — two realtime voice modes on the Gemini Live API via one-use **ephemeral tokens** (the browser talks to Google directly; the key never leaves the server; prompt and tools are locked into the token): an **oral check** after a lesson (an AI interviewer asks three questions about the transcript, then records a rubric-scored evaluation — optional, non-gating, low scores go to a human queue) and a **live mode for the HR assistant** that speaks only what the server-side policy search returns, with the same guardrails, citations and confirmed escalation. Consent per session, transcript stored, audio never.
+- **Live voice (Gemini Live)** — realtime voice on the Gemini Live API via one-use **ephemeral tokens** (the browser talks to Google directly; the key never leaves the server; prompt and tools are locked into the token). **Interview lessons**: admins add an oral check to any course and configure questions, pass mark, time box, scope and whether passing is required; the AI interviewer asks, listens and awards **pass or fail** on a fixed rubric — a pass completes the lesson, fails go to a human queue that can overturn. **Your assistant**: a spoken agent that answers HR policy questions, questions about the learner's own courses, and "what's due for me", speaking only what its server-side tools return, with citations and confirmed escalation. Consent per session, transcript stored, audio never.
 - **Platform-wide data protection** — privacy notice consent at first login, PII redaction before every AI call, retention maximums enforced by a purge job, DSR export/erasure tooling, AI cost telemetry (cost per active user / per route).
 
 ## Quick start

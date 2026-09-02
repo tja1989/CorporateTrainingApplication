@@ -22,10 +22,13 @@ export async function GET() {
     dbPing = `failed: ${err instanceof Error ? err.message : String(err)}`;
   }
   let seededUsers: number | string = "unknown";
+  let interviewLessons: number | null = null;
   if (dbPing === "ok") {
     try {
       const res = (await db.execute(sql`SELECT count(*)::int AS n FROM users`)) as unknown as { rows: Array<{ n: number }> };
       seededUsers = res.rows[0]?.n ?? 0;
+      const il = (await db.execute(sql`SELECT count(*)::int AS n FROM lessons WHERE type = 'INTERVIEW'`)) as unknown as { rows: Array<{ n: number }> };
+      interviewLessons = il.rows[0]?.n ?? 0;
     } catch (err) {
       seededUsers = `schema missing (${err instanceof Error ? err.message.slice(0, 60) : "?"})`;
     }
@@ -41,6 +44,7 @@ export async function GET() {
       init: readInitStatus() ?? "no status yet (init loop not started)",
       aiConfigured: !!process.env.ANTHROPIC_API_KEY,
       voiceConfigured: !!process.env.GEMINI_API_KEY,
+      interviewLessons,
       demoMode: process.env.DEMO_MODE === "true",
       time: new Date().toISOString(),
     },

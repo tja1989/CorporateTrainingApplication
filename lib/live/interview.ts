@@ -1,6 +1,6 @@
 import { Modality, Type, type FunctionDeclaration, type LiveConnectConfig, type Schema } from "@google/genai";
 import { z } from "zod";
-import type { LiveEvaluation, LiveTurn } from "@/lib/db/schema";
+import type { InterviewConfig, LiveEvaluation, LiveTurn } from "@/lib/db/schema";
 import { LIVE_VOICE, liveAvailable, textClient } from "./gemini";
 
 /**
@@ -13,7 +13,68 @@ export const MAX_SCORE = 3;
 export const PASS_PCT = 67;
 export const CONTENT_CHAR_CAP = 24_000;
 
-export type InterviewContent = { title: string; text: string; source: "video" | "text" };
+export type InterviewContent = { title: string; text: string; source: "video" | "text" | "mixed" };
+
+// ---------------------------------------------------------------------------
+// Admin configuration of an INTERVIEW lesson (spec FR-14.2 v1.4)
+// ---------------------------------------------------------------------------
+
+export const INTERVIEW_DEFAULTS: InterviewConfig = { questionCount: QUESTION_COUNT, passPct: PASS_PCT, maxMinutes: 6, scope: "module", requirePass: true };
+
+export const InterviewConfigSchema = z.object({
+  questionCount: z.coerce.number().int().min(1).max(6).default(QUESTION_COUNT),
+  passPct: z.coerce.number().int().min(50).max(100).default(PASS_PCT),
+  maxMinutes: z.coerce.number().int().min(3).max(9).default(6),
+  scope: z.enum(["previous", "module", "course"]).default("module"),
+  focus: z.string().trim().max(600).optional(),
+  requirePass: z.boolean().default(true),
+});
+
+const clamp = (v: unknown, lo: number, hi: number, dflt: number) => {
+  const n = Number(v);
+  return Number.isFinite(n) && String(v).trim() !== "" ? Math.min(hi, Math.max(lo, Math.round(n))) : dflt;
+};
+
+/** Tolerant parse for stored payloads and admin forms (checkbox "on", strings, missing fields). */
+export function parseInterviewConfig(input: Record<string, unknown> | null | undefined): InterviewConfig {
+  const raw = input ?? {};
+  const requirePass = raw.requirePass === undefined ? true : raw.requirePass === true || raw.requirePass === "on" || raw.requirePass === "true";
+  const focus = typeof raw.focus === "string" && raw.focus.trim() ? raw.focus.trim().slice(0, 600) : undefined;
+  const scope = raw.scope === "previous" || raw.scope === "course" ? raw.scope : "module";
+  return {
+    questionCount: clamp(raw.questionCount, 1, 6, QUESTION_COUNT),
+    passPct: clamp(raw.passPct, 50, 100, PASS_PCT),
+    maxMinutes: clamp(raw.maxMinutes, 3, 9, 6),
+    scope,
+    focus,
+    requirePass,
+  };
+}
+
+export type OutlineLesson = { id: string; type: string; moduleId: string };
+
+/**
+ * Which lessons an INTERVIEW lesson may ask about. "previous" = the nearest
+ * earlier video/text lesson; "module" = the video/text lessons in its module;
+ * "course" = all of them. Empty scopes fall back to the whole course so an
+ * interviewer never runs with nothing to ask.
+ */
+export function pickScopeLessons(outline: Array<{ lessons: OutlineLesson[] }>, lessonId: string, scope: InterviewConfig["scope"]): string[] {
+  const flat = outline.flatMap((o) => o.lessons);
+  const idx = flat.findIndex((l) => l.id === lessonId);
+  const self = idx >= 0 ? flat[idx] : null;
+  const contentful = (l: OutlineLesson) => l.id !== lessonId && (l.type === "VIDEO" || l.type === "TEXT");
+  const all = flat.filter(contentful).map((l) => l.id);
+  if (scope === "previous") {
+    const before = flat.slice(0, Math.max(0, idx)).filter(contentful);
+    return before.length ? [before[before.length - 1].id] : all;
+  }
+  if (scope === "module" && self) {
+    const inModule = flat.filter((l) => l.moduleId === self.moduleId && contentful(l)).map((l) => l.id);
+    return inModule.length ? inModule : all;
+  }
+  return all;
+}
 
 /** What the interviewer may ask about: READY video transcripts or text lesson bodies. */
 export function interviewContentFor(
@@ -33,9 +94,9 @@ export function interviewContentFor(
   return null;
 }
 
-/** 6 minutes at 1×, scaled by the assessment accommodation, capped under the Live connection limit. */
-export function maxMinutesFor(timeMultiplier: number): number {
-  return Math.min(9, Math.max(3, Math.round(6 * (timeMultiplier || 1))));
+/** Base minutes (6 by default, admin-configurable) scaled by the assessment accommodation, capped under the Live connection limit. */
+export function maxMinutesFor(timeMultiplier: number, base = 6): number {
+  return Math.min(9, Math.max(3, Math.round(base * (timeMultiplier || 1))));
 }
 
 const EVALUATION_PARAMETERS: Schema = {
@@ -83,11 +144,11 @@ export const EvaluationSchema = z.object({
   language: z.string().trim().max(16).optional(),
 });
 
-export function scoreEvaluation(ev: LiveEvaluation): { pct: number; outcome: "PASS" | "NEEDS_REVIEW" } {
+export function scoreEvaluation(ev: LiveEvaluation, passPct = PASS_PCT): { pct: number; outcome: "PASS" | "FAIL" } {
   const max = ev.questions.length * MAX_SCORE;
   const earned = ev.questions.reduce((s, q) => s + Math.max(0, Math.min(MAX_SCORE, q.score)), 0);
   const pct = max === 0 ? 0 : Math.round((earned / max) * 100);
-  return { pct, outcome: pct >= PASS_PCT ? "PASS" : "NEEDS_REVIEW" };
+  return { pct, outcome: pct >= passPct ? "PASS" : "FAIL" };
 }
 
 export function buildInterviewConfig(opts: {
@@ -99,8 +160,12 @@ export function buildInterviewConfig(opts: {
   maxMinutes: number;
   voice?: string;
   resumeHandle?: string;
+  focus?: string;
+  objectives?: string[];
 }): LiveConnectConfig {
   const n = opts.questionCount ?? QUESTION_COUNT;
+  const focusLine = opts.focus ? `\n- Focus your questions on: ${opts.focus}.` : "";
+  const objectivesLine = opts.objectives?.length ? `\nCourse objectives: ${opts.objectives.join("; ")}.` : "";
   const system = `You are the oral-check interviewer inside LuLu Learn, speaking with ${opts.learnerFirstName}, who just finished the lesson "${opts.lessonTitle}" in the course "${opts.courseTitle}".
 
 Your job: check understanding with a short, friendly spoken conversation, then record the result with the submit_evaluation tool.
@@ -113,9 +178,9 @@ Rules:
 - Understanding is what counts, not language. If ${opts.learnerFirstName} answers in another language, you may continue in that language.
 - After the last answer — or if ${opts.learnerFirstName} asks to stop, or you are told time is up — say thank you, then call submit_evaluation exactly once with every question you asked. Scores: 3 accurate and complete, 2 mostly right, 1 partly right, 0 wrong or no answer. Feedback must be specific and encouraging.
 - After the tool call, close with one sentence: the result is on screen now. Then stop talking.
-- Keep the whole check under ${opts.maxMinutes} minutes.
+- Keep the whole check under ${opts.maxMinutes} minutes.${focusLine}${objectivesLine}
 
-LESSON CONTENT (${opts.content.source === "video" ? "video transcript" : "lesson text"}):
+LESSON CONTENT (${opts.content.source === "video" ? "video transcript" : opts.content.source === "mixed" ? "lesson transcripts and texts" : "lesson text"}):
 ${opts.content.text}`;
   return {
     responseModalities: [Modality.AUDIO],

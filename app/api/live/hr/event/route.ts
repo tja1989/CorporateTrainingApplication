@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { currentUser } from "@/lib/auth/guard";
@@ -41,9 +42,11 @@ export async function POST(req: Request) {
         });
         const searched = (lastSearchAt.get(conv.id) ?? 0) > Date.now() - UNGROUNDED_WINDOW_MS;
         if (turn.role === "assistant" && turn.text.length > 160 && !searched) {
-          await auditHrTurn(
-            { userId: user.id, language: detectLanguage(turn.text), query: "[voice] assistant turn without a policy search", piiRedacted: false },
-            { guardrail: "ungrounded", answer: turn.text.slice(0, 2000) },
+          after(() =>
+            auditHrTurn(
+              { userId: user.id, language: detectLanguage(turn.text), query: "[voice] assistant turn without a search", piiRedacted: false },
+              { guardrail: "ungrounded", answer: turn.text.slice(0, 2000) },
+            ),
           );
         }
       }
@@ -52,7 +55,7 @@ export async function POST(req: Request) {
     case "tool": {
       if (!(HR_TOOL_NAMES as readonly string[]).includes(body.name)) return new Response("Unknown tool", { status: 400 });
       const result = await runHrTool({ user, conversationId: conv.id, name: body.name, args: body.args, mock: !liveAvailable() });
-      if (body.name === "search_hr_policy") lastSearchAt.set(conv.id, Date.now());
+      if (body.name === "search_hr_policy" || body.name === "search_course_content" || body.name === "my_training_status") lastSearchAt.set(conv.id, Date.now());
       return Response.json(result);
     }
     case "escalate": {

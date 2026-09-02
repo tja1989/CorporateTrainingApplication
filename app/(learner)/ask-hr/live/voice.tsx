@@ -11,7 +11,14 @@ import { CitationChips } from "@/components/citations";
 import { ConfirmDialog } from "@/components/dialog";
 import { Button, ButtonLink, Card, Chip, PillButton, PillLink } from "@/components/ui";
 
-export function HrVoice({ configured, sharedDevice }: { configured: boolean; sharedDevice: boolean }) {
+const SUGGESTED = [
+  "How many days of annual leave do I get?",
+  "What training is due for me?",
+  "What does the cold chain lesson say?",
+  "How should I greet a customer?",
+];
+
+export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { configured: boolean; sharedDevice: boolean; demoMode?: boolean; firstName?: string }) {
   const v = useLiveVoice({ kind: "hr", sessionUrl: "/api/live/hr/session", eventUrl: "/api/live/hr/event" });
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [locked, setLocked] = useState(sharedDevice);
@@ -33,7 +40,7 @@ export function HrVoice({ configured, sharedDevice }: { configured: boolean; sha
     <section aria-label="HR assistant — voice" className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-2 text-sm font-medium">
-          HR Assistant <Chip variant="ai">AI</Chip>
+          Your assistant <Chip variant="ai">AI</Chip>
         </span>
         <span className="flex gap-2">
           <PillLink href="/ask-hr">Text chat</PillLink>
@@ -42,9 +49,22 @@ export function HrVoice({ configured, sharedDevice }: { configured: boolean; sha
       </div>
       {/* FR-8.10: the AI disclosure is fixed UI text, not something the model has to remember to say */}
       <p className="text-sm text-muted">
-        👋 You&#39;re talking to an <strong>AI assistant</strong> that answers questions about company HR policies and cites the exact policy text. It doesn&#39;t make
-        decisions — HR does.
+        👋 {firstName ? `${firstName}, you're` : "You're"} talking to an <strong>AI assistant</strong> that quotes company HR policy and your own course lessons, and knows
+        what training you have due. It cites its sources and doesn&#39;t make decisions — HR does.
       </p>
+      {demoMode ? (
+        <details className="rounded-card border border-border bg-surface px-3 py-2 text-sm">
+          <summary className="cursor-pointer text-xs font-medium text-muted">Demo tips</summary>
+          <ul className="mt-2 flex flex-col gap-1 text-xs text-muted">
+            <li>1. Tap Start, allow the microphone, and wait for the greeting — the assistant speaks first.</li>
+            <li>2. Ask a policy question, then a follow-up (&quot;and sick leave?&quot;) — it re-checks the policy each time.</li>
+            <li>3. Ask &quot;what training is due for me?&quot; — the answer comes from your real enrollments.</li>
+            <li>4. Ask about a lesson (&quot;what does the cold chain lesson say?&quot;) — the chip links to the lesson.</li>
+            <li>5. Say &quot;I want to talk to a person&quot; — nothing is shared until you confirm on screen.</li>
+            <li>Noisy room? Use the suggested prompts or &quot;Type instead&quot; — same session, same tools.</li>
+          </ul>
+        </details>
+      ) : null}
 
       {idle ? <VoiceConsent kind="hr" configured={configured} starting={false} onStart={() => void v.start()} onTestSpeaker={v.testSpeaker} /> : null}
 
@@ -53,10 +73,19 @@ export function HrVoice({ configured, sharedDevice }: { configured: boolean; sha
           <VoiceOrb status={v.status} speaking={v.speaking} level={v.level} muted={v.muted} typedOnly={v.typedOnly} />
           {v.warning ? <p className="text-center text-xs text-muted">{v.warning}</p> : null}
           {v.error ? <p className="text-center text-xs text-destructive-text">{v.error}</p> : null}
-          <LiveCaptions turns={v.turns} emptyHint={v.status === "live" ? "Say hello — or type below." : undefined} />
+          <LiveCaptions turns={v.turns} emptyHint={v.status === "live" ? "Say hello — or tap a suggestion below." : undefined} />
+          {v.status === "live" ? (
+            <div className="flex flex-wrap gap-2" aria-label="Try asking">
+              {SUGGESTED.map((q) => (
+                <PillButton key={q} type="button" onClick={() => v.sendText(q)}>
+                  {q}
+                </PillButton>
+              ))}
+            </div>
+          ) : null}
           {v.citations.length > 0 ? (
             <Card className="p-3">
-              <p className="text-xs text-muted">Policies cited in this conversation</p>
+              <p className="text-xs text-muted">Sources cited in this conversation</p>
               <CitationChips citations={v.citations} />
             </Card>
           ) : null}

@@ -140,7 +140,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ use
                     <p className="truncate text-sm font-medium">{c.lessonTitle}</p>
                     <p className="text-xs text-muted">{c.courseTitle} · {c.completedAt?.toISOString().slice(0, 10)}</p>
                   </div>
-                  <Chip variant={c.outcome === "PASS" ? "success" : "warning"}>{c.scorePct ?? 0}% · {c.outcome === "PASS" ? "passed" : c.reviewedAt ? "reviewed" : "in review"}</Chip>
+                  <Chip variant={c.outcome === "PASS" ? "success" : "warning"}>{c.scorePct ?? 0}% · {c.outcome === "PASS" ? "passed" : c.reviewedAt ? "not passed · reviewed" : "not passed"}</Chip>
                 </div>
                 {c.evaluation?.overall_summary ? <p className="mt-2 text-xs text-muted">{c.evaluation.overall_summary}</p> : null}
                 <details className="mt-2 text-sm">

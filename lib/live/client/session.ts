@@ -54,10 +54,13 @@ export async function connectLive(opts: {
   token: string;
   model: string;
   resumeHandle?: string;
+  /** Tools declared NON_BLOCKING server-side: their results are queued behind the filler phrase (WHEN_IDLE). */
+  nonBlockingTools?: readonly string[];
   onEvent: (event: LiveEvent) => void;
   onToolCall: ToolHandler;
 }): Promise<LiveConnection> {
-  const { GoogleGenAI } = await import("@google/genai");
+  const { GoogleGenAI, FunctionResponseScheduling } = await import("@google/genai");
+  const nonBlocking = new Set(opts.nonBlockingTools ?? []);
   const ai = new GoogleGenAI({ apiKey: opts.token, httpOptions: { apiVersion: "v1alpha" } });
   let session: Session | null = null;
   const cancelled = new Set<string>();
@@ -72,7 +75,11 @@ export async function connectLive(opts: {
           .catch((err: unknown) => ({ error: err instanceof Error ? err.message : "tool failed" }))
           .then((response) => {
             if (cancelled.has(call.id)) return;
-            session?.sendToolResponse({ functionResponses: [{ id: call.id, name: call.name, response }] });
+            session?.sendToolResponse({
+              functionResponses: [
+                { id: call.id, name: call.name, response, ...(nonBlocking.has(call.name) ? { scheduling: FunctionResponseScheduling.WHEN_IDLE } : {}) },
+              ],
+            });
           });
       }
     }

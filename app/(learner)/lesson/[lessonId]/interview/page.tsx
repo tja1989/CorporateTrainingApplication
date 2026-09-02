@@ -1,9 +1,9 @@
 import { and, eq } from "drizzle-orm";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { db, t } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/guard";
 import { liveAvailable } from "@/lib/live/gemini";
-import { QUESTION_COUNT, maxMinutesFor } from "@/lib/live/interview";
+import { PASS_PCT, QUESTION_COUNT, maxMinutesFor } from "@/lib/live/interview";
 import { latestInterviewsByLesson, loadLessonContent } from "@/lib/live/store";
 import { ButtonLink, EmptyState, PageHeader } from "@/components/ui";
 import { OralCheck } from "./interview";
@@ -16,6 +16,7 @@ export default async function InterviewPage({ params }: { params: Promise<{ less
   const { lessonId } = await params;
   const loaded = await loadLessonContent(lessonId);
   if (!loaded || loaded.course.status !== "PUBLISHED") notFound();
+  if (loaded.lesson.type === "INTERVIEW") redirect(`/lesson/${lessonId}`);
   const backHref = `/course/${loaded.course.id}`;
   const [progress] = await db
     .select({ status: t.lessonProgress.status })
@@ -61,6 +62,7 @@ export default async function InterviewPage({ params }: { params: Promise<{ less
         configured={liveAvailable()}
         questionCount={QUESTION_COUNT}
         maxMinutes={maxMinutesFor(user.timeMultiplier)}
+        passPct={PASS_PCT}
         backHref={backHref}
         previous={
           latest && latest.state === "COMPLETED"
