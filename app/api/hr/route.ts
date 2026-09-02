@@ -3,6 +3,7 @@ import { db, t } from "@/lib/db/client";
 import { currentUser } from "@/lib/auth/guard";
 import { id } from "@/lib/ids";
 import { hrAnswer } from "@/lib/hr/assistant";
+import { hrScopeFor } from "@/lib/hr/scope";
 
 export const maxDuration = 60;
 
@@ -24,8 +25,7 @@ export async function POST(req: Request) {
   }
   await db.insert(t.hrMessages).values({ id: id(), conversationId, role: "user", content: body.message.trim() });
 
-  const country = await userCountry(user.storeId);
-  const audience = user.role === "LEARNER" ? ("all" as const) : ("managers" as const);
+  const { country, audience } = await hrScopeFor(user);
 
   const encoder = new TextEncoder();
   const cid = conversationId;
@@ -55,18 +55,6 @@ export async function POST(req: Request) {
   return new Response(stream, {
     headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" },
   });
-}
-
-async function userCountry(storeId: string | null): Promise<string> {
-  if (!storeId) return "AE";
-  let cursor: string | null = storeId;
-  for (let i = 0; i < 5 && cursor; i++) {
-    const [unit] = await db.select().from(t.orgUnits).where(eq(t.orgUnits.id, cursor)).limit(1);
-    if (!unit) break;
-    if (unit.type === "country") return unit.name === "United Arab Emirates" ? "AE" : unit.name;
-    cursor = unit.parentId;
-  }
-  return "AE";
 }
 
 /** GET: the user's conversations + messages for the history list. */

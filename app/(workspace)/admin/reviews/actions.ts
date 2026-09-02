@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
 import { finalizeReview } from "@/lib/quiz/engine";
+import { markInterviewReviewed } from "@/lib/live/store";
 
 export async function confirmGradeAction(reviewId: string): Promise<void> {
   const admin = await requireRole("ADMIN");
@@ -40,5 +41,12 @@ export async function discardDraftAction(questionId: string): Promise<void> {
   await requireRole("ADMIN");
   await db.update(t.questions).set({ status: "RETIRED" }).where(eq(t.questions.id, questionId));
   await setFlash("AI draft discarded.", "neutral");
+  revalidatePath("/admin/reviews");
+}
+
+export async function markInterviewReviewedAction(interviewId: string): Promise<void> {
+  const admin = await requireRole("ADMIN");
+  await markInterviewReviewed(interviewId, admin.id);
+  await setFlash("Oral check marked as reviewed.");
   revalidatePath("/admin/reviews");
 }

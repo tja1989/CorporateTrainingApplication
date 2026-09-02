@@ -103,6 +103,8 @@ async function main() {
         quizId && `/quiz/${quizId}`,
         "/drill",
         "/ask-hr",
+        "/ask-hr/live",
+        videoLesson && `/lesson/${videoLesson}/interview`,
         "/profile",
         "/inbox",
       ].filter(Boolean) as string[],

@@ -9,7 +9,7 @@ export async function exportUserData(userId: string): Promise<Record<string, unk
   if (!user) throw new Error("User not found");
   const [
     enrollments, progress, completions, certs, attempts, drill, streaks, points, badgeRows,
-    notificationsRows, tutorThreadRows, hrConvs, tickets, consents, events,
+    notificationsRows, tutorThreadRows, hrConvs, tickets, consents, events, interviews,
   ] = await Promise.all([
     db.select().from(t.enrollments).where(eq(t.enrollments.userId, userId)),
     db.select().from(t.lessonProgress).where(eq(t.lessonProgress.userId, userId)),
@@ -26,6 +26,7 @@ export async function exportUserData(userId: string): Promise<Record<string, unk
     db.select().from(t.hrTickets).where(eq(t.hrTickets.userId, userId)),
     db.select().from(t.consents).where(eq(t.consents.userId, userId)),
     db.select().from(t.uiEvents).where(eq(t.uiEvents.userId, userId)),
+    db.select().from(t.liveInterviews).where(eq(t.liveInterviews.userId, userId)),
   ]);
   const threadMessages = [] as unknown[];
   for (const thread of tutorThreadRows) {
@@ -43,7 +44,7 @@ export async function exportUserData(userId: string): Promise<Record<string, unk
     enrollments, lessonProgress: progress, completionRecords: completions, certificates: certs,
     attempts, drillState: drill, streaks, points, badges: badgeRows, notifications: notificationsRows,
     tutorThreads: tutorThreadRows, tutorMessages: threadMessages,
-    hrConversations: hrConvs, hrMessages: hrMessagesRows, hrTickets: tickets, consents, uiEvents: events,
+    hrConversations: hrConvs, hrMessages: hrMessagesRows, hrTickets: tickets, consents, uiEvents: events, oralChecks: interviews,
     note: "HR audit-log rows are stored pseudonymously under id " + pseudoId(userId),
   };
 }
@@ -58,6 +59,7 @@ export async function eraseUser(userId: string): Promise<void> {
   const convs = await db.select().from(t.hrConversations).where(eq(t.hrConversations.userId, userId));
   for (const conv of convs) await db.delete(t.hrMessages).where(eq(t.hrMessages.conversationId, conv.id));
   await db.delete(t.hrConversations).where(eq(t.hrConversations.userId, userId));
+  await db.delete(t.liveInterviews).where(eq(t.liveInterviews.userId, userId));
   await db.delete(t.notifications).where(eq(t.notifications.userId, userId));
   await db.delete(t.drillState).where(eq(t.drillState.userId, userId));
   await db.delete(t.streakState).where(eq(t.streakState.userId, userId));

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AiSurface, Button, Card, Chip, Input, PillButton, Skeleton, cx } from "@/components/ui";
+import { AiSurface, Button, ButtonLink, Card, Chip, Input, PillButton, Skeleton, cx } from "@/components/ui";
 import { Tabs } from "@/components/tabs";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -170,6 +170,15 @@ export function VideoLessonClient({
             </>
           )}
         </div>
+        {completed ? (
+          <Card className="mt-3 flex flex-wrap items-center justify-between gap-2 p-3">
+            <div>
+              <p className="text-sm font-medium">Lesson complete</p>
+              <p className="text-xs text-muted">Check your understanding out loud — three short questions, about three minutes.</p>
+            </div>
+            <ButtonLink href={`/lesson/${lessonId}/interview`}>Start the oral check</ButtonLink>
+          </Card>
+        ) : null}
       </div>
 
       <div className="min-w-0">

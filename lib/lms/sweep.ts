@@ -125,6 +125,12 @@ export async function purge(now = new Date()): Promise<number> {
   total += await del(await db.delete(t.hrAuditLog).where(lt(t.hrAuditLog.ts, d(365))));
   total += await del(await db.delete(t.hrMessages).where(lt(t.hrMessages.createdAt, d(365))));
   total += await del(await db.delete(t.tutorMessages).where(lt(t.tutorMessages.createdAt, d(365))));
+  total += await del(await db.delete(t.liveInterviews).where(lt(t.liveInterviews.startedAt, d(365))));
+  // voice sessions that never posted an end (closed tab, lost device): abandon after an hour
+  await db
+    .update(t.liveInterviews)
+    .set({ state: "ABANDONED", completedAt: now })
+    .where(and(eq(t.liveInterviews.state, "IN_PROGRESS"), lt(t.liveInterviews.startedAt, new Date(now.getTime() - 3600_000))));
   // integrity events: 6 months after attempt finalization
   const oldEvents = await db
     .select({ id: t.integrityEvents.id, attemptId: t.integrityEvents.attemptId })

@@ -91,6 +91,9 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
               <Button type="submit">Mark complete</Button>
             </form>
           ) : null}
+          {isDone && lesson.type === "TEXT" ? (
+            <ButtonLink variant="secondary" href={`/lesson/${lesson.id}/interview`}>Oral check</ButtonLink>
+          ) : null}
           {next ? <ButtonLink variant="ghost" href={`/lesson/${next.id}`}>{next.title} →</ButtonLink> : null}
         </div>
       </div>
