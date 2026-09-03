@@ -44,7 +44,7 @@ export default async function CourseEditorPage({ params }: { params: Promise<{ c
         </form>
       </div>
 
-      <div className="grid max-w-6xl gap-6 lg:grid-cols-[3fr_2fr]">
+      <div className="grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div>
           {mods.map((mod) => {
             const lessons = lessonRows.filter((l) => l.moduleId === mod.id).sort((a, b) => a.sort - b.sort);

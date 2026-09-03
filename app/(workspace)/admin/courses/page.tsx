@@ -14,7 +14,7 @@ export default async function CoursesAdminPage() {
   return (
     <div className="animate-slide-up">
       <PageTitle sub="Create, edit, and publish courses.">Courses</PageTitle>
-      <div className="grid max-w-5xl gap-6 lg:grid-cols-[2fr_1fr]">
+      <div className="grid max-w-5xl gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="flex flex-col gap-2">
           {courses.map((c) => (
             <Link key={c.id} href={`/admin/courses/${c.id}`}>

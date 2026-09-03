@@ -18,7 +18,7 @@ export default function LessonLoading() {
       <div className="min-w-0 flex-1">
         <Skeleton delayed className="mb-3 h-4 w-1/3" />
         <Skeleton delayed className="mb-4 h-12 w-2/3" />
-        <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <Skeleton delayed className="aspect-video w-full rounded-card" />
           <div className="flex flex-col gap-2">
             <Skeleton delayed className="h-12" />

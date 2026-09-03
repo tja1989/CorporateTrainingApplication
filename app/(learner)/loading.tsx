@@ -10,7 +10,7 @@ export default function LearnerLoading() {
   return (
     <div role="status" aria-label="Loading">
       <Skeleton delayed className="mb-6 h-12 w-1/2" />
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-[2fr_1fr_1fr]">
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
         <Skeleton delayed className="col-span-2 h-[108px] rounded-card sm:col-span-1" />
         <Skeleton delayed className="h-[108px] rounded-card" />
         <Skeleton delayed className="h-[108px] rounded-card" />

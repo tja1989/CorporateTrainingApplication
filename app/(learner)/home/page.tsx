@@ -58,7 +58,7 @@ export default async function HomePage() {
         />
       ) : (
         /* At-a-glance band — each tile answers one question and links to the answer (spec §10.7 v1.2) */
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-[2fr_1fr_1fr]" aria-label="At a glance">
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]" aria-label="At a glance">
           {resume ? (
             <Tile
               className="col-span-2 sm:col-span-1"
