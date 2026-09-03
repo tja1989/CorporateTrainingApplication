@@ -314,17 +314,22 @@ strong, b, th { font-weight: 500; }
   0% { background-position: -400px 0; }
   100% { background-position: 400px 0; }
 }
-.skeleton {
-  border-radius: var(--radius-input);
-  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface) 50%, var(--surface-2) 75%);
-  background-size: 800px 100%;
-  animation: ll-shimmer calc(var(--duration-slow) * 3) linear infinite;
-}
-/* Loading tiers (spec §10.6): show nothing for the first 300ms */
-.skeleton-delayed {
-  opacity: 0;
-  animation: ll-shimmer calc(var(--duration-slow) * 3) linear infinite,
-    ll-fade var(--duration-fast) var(--ease-out) 300ms forwards;
+/* In the components layer so a `rounded-card` utility can round a card-shaped
+   skeleton. Both variants share the shimmer surface — the delayed one used to
+   declare only its fade, which left every `loading.tsx` box invisible. */
+@layer components {
+  .skeleton, .skeleton-delayed {
+    border-radius: var(--radius-input);
+    background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface) 50%, var(--surface-2) 75%);
+    background-size: 800px 100%;
+  }
+  .skeleton { animation: ll-shimmer calc(var(--duration-slow) * 3) linear infinite; }
+  /* Loading tiers (spec §10.6): show nothing for the first 300ms */
+  .skeleton-delayed {
+    opacity: 0;
+    animation: ll-shimmer calc(var(--duration-slow) * 3) linear infinite,
+      ll-fade var(--duration-fast) var(--ease-out) 300ms forwards;
+  }
 }
 
 /* Streaming cursor — 2px, 500ms on / 500ms off (spec §10.6) */
