@@ -1,0 +1,45 @@
+name: CI
+
+# Railway's "Wait for CI" gates production deploys on the checks GitHub reports
+# for a commit, so something has to report them: with no push-triggered workflow
+# a merge to main produces no checks and that setting waits on nothing. This is
+# that workflow — and it runs the same three commands a contributor runs, so a
+# green deploy means the tests actually passed rather than that nothing ran.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Supersede an in-flight run when a newer commit lands on the same PR. Pushes to
+# main are deliberately never cancelled: a cancelled run is not a successful one,
+# and the deploy for that commit is waiting on it.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # package.json asks for >=20; the toolchain is developed on 22.
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      - run: npm test
+
+      # No secrets and no database, deliberately: every route is force-dynamic,
+      # the pg Pool connects lazily rather than at import, and DATABASE_URL falls
+      # back to a local default — so the build reaches for neither. Checked by
+      # running all three steps with the environment stripped. Keep it that way:
+      # a build that needs a secret to compile cannot be verified before deploy.
+      - run: npm run build
