@@ -5,15 +5,16 @@ import { Icon } from "./icons";
 import { AnimatedNumber } from "./animated-number";
 import { ProgressRing } from "./ring";
 
-/* Each tone is a whole card, not just a number colour — the mosaic reads as
-   white / mint / sand / pink / lavender at a glance, like a chart legend. */
+/* Surfaces stay neutral, as in the reference stat cards (white / sand / stone);
+   a tone shows as a legend dot beside the label and, for the two states that
+   need a second look, in the number itself. */
 const tones = {
-  default: { card: "border-border bg-surface", value: "text-foreground" },
-  muted: { card: "border-transparent bg-surface-2", value: "text-muted" },
-  success: { card: "border-transparent bg-success-tint", value: "text-success-fg" },
-  warning: { card: "border-transparent bg-warning-tint", value: "text-warning-fg" },
-  destructive: { card: "border-transparent bg-destructive-tint", value: "text-destructive-text" },
-  ai: { card: "border-transparent bg-ai-tint", value: "text-ai-fg" },
+  default: { card: "border-border bg-surface", value: "text-foreground", dot: null },
+  muted: { card: "border-transparent bg-surface-2", value: "text-muted", dot: null },
+  success: { card: "border-border bg-surface", value: "text-foreground", dot: "bg-success" },
+  warning: { card: "border-transparent bg-warning-tint", value: "text-foreground", dot: "bg-warning" },
+  destructive: { card: "border-border bg-surface", value: "text-destructive-text", dot: "bg-destructive" },
+  ai: { card: "border-transparent bg-ai-tint", value: "text-ai-fg", dot: null },
 } as const;
 
 /**
@@ -45,13 +46,17 @@ export function Tile({
   disabled?: boolean;
 }) {
   const numeric = typeof value === "number";
+  const t = tones[tone];
   const body = (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0 flex-1">
-        <p className={cx("truncate", numeric ? "stat text-2xl" : "display text-lg", tones[tone].value)}>
+        <p className={cx("truncate", numeric ? "stat text-2xl" : "display text-lg", t.value)}>
           {numeric ? <AnimatedNumber value={value} suffix={suffix} /> : value}
         </p>
-        <p className="eyebrow mt-1 text-muted">{label}</p>
+        <p className="eyebrow mt-1 flex items-start gap-2 text-muted">
+          {t.dot ? <span className={cx("mt-1 size-2 shrink-0 rounded-full", t.dot)} aria-hidden /> : null}
+          <span>{label}</span>
+        </p>
         {hint ? <p className="mt-1 line-clamp-2 text-xs text-muted">{hint}</p> : null}
       </div>
       {ring !== undefined ? (
@@ -65,7 +70,7 @@ export function Tile({
   );
   const classes = cx(
     "block rounded-card border p-4",
-    tones[tone].card,
+    t.card,
     href && !disabled && "lift pressable",
     active && "border-primary",
     disabled && "opacity-60",

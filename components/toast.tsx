@@ -19,7 +19,7 @@ export function useToast() {
 
 /* Each tone is an icon in its own tinted disc — the message stays on the surface. */
 const toneStyle: Record<NonNullable<Toast["tone"]>, { icon: IconName; disc: string }> = {
-  neutral: { icon: "bell", disc: "bg-accent text-accent-fg" },
+  neutral: { icon: "bell", disc: "bg-surface-2 text-foreground" },
   success: { icon: "check", disc: "bg-success-tint text-success-fg" },
   warning: { icon: "warning", disc: "bg-warning-tint text-warning-fg" },
   destructive: { icon: "x", disc: "bg-destructive-tint text-destructive-text" },

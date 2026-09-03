@@ -5,7 +5,9 @@ export default function LearnerLoading() {
   return (
     <div className="min-h-dvh">
       <div className="h-12 border-b border-border" aria-hidden />
-      <div className="mx-auto max-w-5xl px-4 pt-6" role="status" aria-label="Loading">
+      <div className="flex">
+        <div className="hidden w-rail-sm shrink-0 md:block" aria-hidden />
+        <div className="mx-auto w-full max-w-5xl px-4 pt-6" role="status" aria-label="Loading">
         <Skeleton delayed className="mb-6 h-8 w-1/2" />
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Skeleton delayed className="col-span-2 h-[88px] sm:col-span-1" />
@@ -16,6 +18,7 @@ export default function LearnerLoading() {
         <Skeleton delayed className="mb-2 h-[64px]" />
         <Skeleton delayed className="mb-2 h-[64px]" />
         <Skeleton delayed className="h-[64px]" />
+        </div>
       </div>
     </div>
   );

@@ -5,49 +5,48 @@
 /* ------------------------------------------------------------------ */
 /* Design tokens — spec §10.2 colours (light-first) + §10.5 durations   */
 /*                                                                      */
-/* v2 visual language: a warm cream canvas framed by charcoal chrome,   */
-/* ink for primary actions and a lime accent for progress, active and  */
-/* celebration states. Status tints are saturated enough to read as     */
-/* colour (mint / sand / pink / lavender) while their -fg pairs keep    */
-/* WCAG AA — tests/design-guardrails.test.ts checks every pair.         */
+/* v2 visual language, palette lifted from the reference dashboard:     */
+/* charcoal chrome (#1a1a1a), a warm light-grey canvas (#e9e8e3), white */
+/* / sand (#f3efdc) / stone (#dedcd5) cards, ink for primary actions,   */
+/* and ONE chromatic accent — lime (#d7e05a) — for the active nav row,  */
+/* progress and focus. Mint (#a3e0cb), yellow (#e9dc55) and pink        */
+/* (#e7a9cc) exist only as legend dots and chip tints, never as whole   */
+/* surfaces. Stored as OKLCH so the guardrail test can check every      */
+/* text pair for WCAG AA; the hex each value came from is beside it.    */
 /* ------------------------------------------------------------------ */
 :root {
-  --background: oklch(0.965 0.016 88);
-  --surface: oklch(1 0 0);
-  --surface-2: oklch(0.945 0.028 90);
-  --border: oklch(0.9 0.02 88);
-  --foreground: oklch(0.2 0.012 70);
-  --muted-foreground: oklch(0.46 0.02 75);
-  --primary: oklch(0.22 0.014 70);
-  --primary-fg: oklch(0.98 0.01 100);
-  --accent: oklch(0.9 0.19 118);
-  --accent-fg: oklch(0.24 0.06 120);
-  --accent-tint: oklch(0.96 0.09 118);
-  --accent-glow: oklch(0.9 0.19 118 / 0.45);
-  --success: oklch(0.72 0.14 165);
-  --success-fg: oklch(0.36 0.09 160);
-  --success-tint: oklch(0.93 0.08 165);
-  --warning: oklch(0.8 0.15 85);
-  --warning-fg: oklch(0.42 0.11 70);
-  --warning-tint: oklch(0.95 0.09 92);
-  --destructive: oklch(0.56 0.2 22);
-  --destructive-fg: oklch(0.985 0 0);
-  --destructive-text: oklch(0.44 0.17 22);
-  --destructive-tint: oklch(0.93 0.06 5);
-  --ai: oklch(0.58 0.16 300);
-  --ai-fg: oklch(0.38 0.14 300);
-  --ai-tint: oklch(0.94 0.05 300);
-  /* Text links — a deep teal that stays a colour next to ink headlines. */
-  --link: oklch(0.42 0.12 165);
+  --background: oklch(0.93 0.007 97.4); /* #e9e8e3 canvas */
+  --surface: oklch(1 0 0); /* #ffffff card */
+  --surface-2: oklch(0.894 0.01 93.6); /* #dedcd5 stone card / well */
+  --border: oklch(0.869 0.011 95.2); /* #d6d4cc */
+  --foreground: oklch(0.218 0 0); /* #1a1a1a ink */
+  --muted-foreground: oklch(0.464 0.006 95.2); /* #5a5955 */
+  --primary: oklch(0.218 0 0); /* #1a1a1a dark pill */
+  --primary-fg: oklch(1 0 0); /* #ffffff */
+  --accent: oklch(0.875 0.156 112.8); /* #d7e05a lime */
+  --accent-fg: oklch(0.218 0 0); /* #1a1a1a */
+  --accent-tint: oklch(0.945 0.054 110.8); /* #eef1c8 */
+  --accent-glow: oklch(0.875 0.156 112.8 / 0.28);
+  --success: oklch(0.859 0.069 171.3); /* #a3e0cb mint dot */
+  --success-fg: oklch(0.396 0.055 164.8); /* #27503f */
+  --success-tint: oklch(0.95 0.02 164.6); /* #e3f3eb */
+  --warning: oklch(0.88 0.153 103.8); /* #e9dc55 yellow dot */
+  --warning-fg: oklch(0.437 0.082 96.1); /* #5f5111 */
+  --warning-tint: oklch(0.95 0.025 97.1); /* #f3efdc sand card */
+  --destructive: oklch(0.803 0.085 344.3); /* #e7a9cc pink */
+  --destructive-fg: oklch(0.218 0 0); /* #1a1a1a */
+  --destructive-text: oklch(0.434 0.114 350.5); /* #7d3259 */
+  --destructive-tint: oklch(0.938 0.022 344.2); /* #f6e5ee */
+  --ai: oklch(0.627 0.021 80.1); /* #8f877a warm greige (the "AI for results" card) */
+  --ai-fg: oklch(0.389 0.023 86.2); /* #4a4437 */
+  --ai-tint: oklch(0.917 0.019 86.1); /* #e9e3d6 */
+  /* Text links are ink with a drawn underline — the reference has no link colour. */
+  --link: oklch(0.218 0 0); /* #1a1a1a */
   /* The chrome: header, nav rail and tab bar sit on charcoal in both themes. */
-  --rail: oklch(0.2 0.012 70);
-  --rail-fg: oklch(0.96 0.01 90);
-  --rail-muted: oklch(0.7 0.015 80);
-  --rail-hover: oklch(0.27 0.014 70);
-  /* Ambient colour behind the canvas (login hero, page corners). */
-  --ambient-1: oklch(0.9 0.19 118 / 0.35);
-  --ambient-2: oklch(0.85 0.1 165 / 0.35);
-  --ambient-3: oklch(0.88 0.08 350 / 0.3);
+  --rail: oklch(0.218 0 0); /* #1a1a1a */
+  --rail-fg: oklch(0.966 0.004 106.5); /* #f4f4f1 */
+  --rail-muted: oklch(0.646 0.004 106.5); /* #8e8e8b */
+  --rail-hover: oklch(0.276 0.004 106.6); /* #282826 */
 
   /* Motion durations (spec §10.5 v1.2) — mirrored in lib/motion.ts */
   --duration-fast: 150ms;
@@ -55,39 +54,36 @@
   --duration-slow: 400ms;
 }
 .dark {
-  --background: oklch(0.17 0.012 75);
-  --surface: oklch(0.22 0.014 75);
-  --surface-2: oklch(0.27 0.016 78);
-  --border: oklch(0.33 0.016 78);
-  --foreground: oklch(0.95 0.012 90);
-  --muted-foreground: oklch(0.7 0.018 85);
-  --primary: oklch(0.95 0.012 90);
-  --primary-fg: oklch(0.2 0.012 75);
-  --accent: oklch(0.88 0.19 118);
-  --accent-fg: oklch(0.2 0.05 120);
-  --accent-tint: oklch(0.3 0.07 118);
-  --accent-glow: oklch(0.88 0.19 118 / 0.35);
-  --success: oklch(0.78 0.14 165);
-  --success-fg: oklch(0.88 0.1 165);
-  --success-tint: oklch(0.28 0.05 165);
-  --warning: oklch(0.82 0.15 85);
-  --warning-fg: oklch(0.9 0.11 88);
-  --warning-tint: oklch(0.3 0.06 85);
-  --destructive: oklch(0.7 0.18 22);
-  --destructive-fg: oklch(0.16 0.03 22);
-  --destructive-text: oklch(0.82 0.13 20);
-  --destructive-tint: oklch(0.3 0.06 15);
-  --ai: oklch(0.76 0.13 300);
-  --ai-fg: oklch(0.88 0.08 300);
-  --ai-tint: oklch(0.3 0.06 300);
-  --link: oklch(0.82 0.13 165);
-  --rail: oklch(0.13 0.012 75);
-  --rail-fg: oklch(0.95 0.012 90);
-  --rail-muted: oklch(0.68 0.018 85);
-  --rail-hover: oklch(0.2 0.014 75);
-  --ambient-1: oklch(0.88 0.19 118 / 0.14);
-  --ambient-2: oklch(0.78 0.14 165 / 0.14);
-  --ambient-3: oklch(0.76 0.13 300 / 0.14);
+  --background: oklch(0.191 0 0); /* #141414 */
+  --surface: oklch(0.239 0.002 0); /* #1f1f1e */
+  --surface-2: oklch(0.284 0.004 106.6); /* #2a2a28 */
+  --border: oklch(0.324 0.003 106.6); /* #343432 */
+  --foreground: oklch(0.96 0.005 106.5); /* #f2f2ee */
+  --muted-foreground: oklch(0.711 0.009 98.9); /* #a3a29c */
+  --primary: oklch(0.96 0.005 106.5); /* #f2f2ee */
+  --primary-fg: oklch(0.218 0 0); /* #1a1a1a */
+  --accent: oklch(0.875 0.156 112.8); /* #d7e05a */
+  --accent-fg: oklch(0.218 0 0); /* #1a1a1a */
+  --accent-tint: oklch(0.322 0.045 114); /* #33361a */
+  --accent-glow: oklch(0.875 0.156 112.8 / 0.22);
+  --success: oklch(0.859 0.069 171.3); /* #a3e0cb */
+  --success-fg: oklch(0.899 0.051 166); /* #bfe9d6 */
+  --success-tint: oklch(0.295 0.028 165.1); /* #1f3129 */
+  --warning: oklch(0.88 0.153 103.8); /* #e9dc55 */
+  --warning-fg: oklch(0.907 0.106 101.2); /* #efe38f */
+  --warning-tint: oklch(0.306 0.035 101.2); /* #33301b */
+  --destructive: oklch(0.803 0.085 344.3); /* #e7a9cc */
+  --destructive-fg: oklch(0.218 0 0); /* #1a1a1a */
+  --destructive-text: oklch(0.864 0.061 345.7); /* #f1c3db */
+  --destructive-tint: oklch(0.279 0.033 346.6); /* #35222c */
+  --ai: oklch(0.699 0.025 82.1); /* #a69d8d */
+  --ai-fg: oklch(0.86 0.025 83.4); /* #d9d0bf */
+  --ai-tint: oklch(0.282 0.012 84.6); /* #2c2923 */
+  --link: oklch(0.96 0.005 106.5); /* #f2f2ee */
+  --rail: oklch(0.168 0 0); /* #0f0f0f */
+  --rail-fg: oklch(0.96 0.005 106.5); /* #f2f2ee */
+  --rail-muted: oklch(0.646 0.004 106.5); /* #8e8e8b */
+  --rail-hover: oklch(0.239 0.002 0); /* #1f1f1e */
 }
 
 /* ------------------------------------------------------------------ */
@@ -160,7 +156,7 @@
   --font-serif: initial;
   --font-sans: var(--font-manrope), "IBM Plex Sans Arabic", "Noto Sans Devanagari",
     "Noto Sans Malayalam", system-ui, sans-serif;
-  --font-display: var(--font-bricolage), var(--font-manrope), "IBM Plex Sans Arabic", "Noto Sans Devanagari",
+  --font-display: var(--font-inter-tight), var(--font-manrope), "IBM Plex Sans Arabic", "Noto Sans Devanagari",
     "Noto Sans Malayalam", system-ui, sans-serif;
   --font-weight-*: initial;
   --font-weight-normal: 400;
@@ -206,20 +202,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* The canvas carries a faint wash of the accent hues in its corners, so a
-   page never reads as flat paper. Fixed so it never scrolls with content. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(40rem 24rem at 100% -10%, var(--ambient-1), transparent 60%),
-    radial-gradient(32rem 20rem at -10% 100%, var(--ambient-2), transparent 60%),
-    radial-gradient(28rem 20rem at 90% 110%, var(--ambient-3), transparent 60%);
-}
-
 /* Text weights stay at 500 — 600 is reserved for the display face. */
 strong, b, th { font-weight: 500; }
 
@@ -228,7 +210,6 @@ strong, b, th { font-weight: 500; }
   font-family: var(--font-display);
   font-weight: 600;
   letter-spacing: -0.02em;
-  font-variation-settings: "opsz" 48;
 }
 /* Big numbers line up when they count. */
 .stat { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
@@ -276,29 +257,14 @@ strong, b, th { font-weight: 500; }
 }
 .link:hover, .link:focus-visible { background-size: 100% 1px; }
 
-/* Sign-in hero: the ambient wash turned up, plus two slow-drifting orbs. */
-.auth-hero { position: relative; isolation: isolate; overflow: hidden; }
-.auth-hero::before, .auth-hero::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  border-radius: 9999px;
-  pointer-events: none;
-  animation: ll-float calc(var(--duration-slow) * 15) var(--ease-in-out) infinite;
+/* Sign-in backdrop: the soft cool-grey to warm-beige gradient the reference
+   device sits on. Flat and still — nothing competes with the card. */
+.auth-hero {
+  background: linear-gradient(115deg, oklch(0.84 0.004 250) 0%, var(--background) 45%, oklch(0.9 0.02 85) 100%);
 }
-.auth-hero::before {
-  width: 28rem; height: 28rem; inset-inline-end: -8rem; top: -8rem;
-  background: radial-gradient(circle at 30% 30%, var(--accent), transparent 70%);
-  opacity: 0.55;
+.dark .auth-hero {
+  background: linear-gradient(115deg, oklch(0.16 0.004 250) 0%, var(--background) 45%, oklch(0.2 0.012 85) 100%);
 }
-.auth-hero::after {
-  width: 24rem; height: 24rem; inset-inline-start: -6rem; bottom: -6rem;
-  background: radial-gradient(circle at 60% 40%, var(--ai), transparent 70%);
-  opacity: 0.35;
-  animation-delay: calc(var(--duration-slow) * -7);
-}
-.dark .auth-hero::before { opacity: 0.25; }
-.dark .auth-hero::after { opacity: 0.2; }
 
 /* Lime halo for the one thing that is "on" right now. */
 .glow { box-shadow: var(--shadow-glow); }
@@ -457,6 +423,10 @@ strong, b, th { font-weight: 500; }
   transition: opacity var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
 }
 .rail-row[aria-current]::before { opacity: 1; transform: scaleY(1); }
+.rail-row[aria-current] {
+  background: linear-gradient(to right, var(--accent-glow), transparent 70%);
+}
+[dir="rtl"] .rail-row[aria-current] { background: linear-gradient(to left, var(--accent-glow), transparent 70%); }
 .rail-row .rail-icon { transition: transform var(--duration-fast) var(--ease-out); }
 @media (hover: hover) {
   .rail-row:hover .rail-icon { transform: scale(1.12); }
@@ -473,7 +443,7 @@ strong, b, th { font-weight: 500; }
 @media (prefers-reduced-motion: reduce) {
   .animate-enter, .animate-slide-up, .animate-pop { animation: ll-fade var(--duration-base) var(--ease-out); }
   .animate-stagger { animation: ll-fade var(--duration-base) var(--ease-out) both; }
-  .animate-float, .animate-wave, .auth-hero::before, .auth-hero::after { animation: none; }
+  .animate-float, .animate-wave { animation: none; }
   .pressable:active { transform: none; }
   .lift, .nudge, .link { transition: none; }
   .lift:hover { transform: none; }

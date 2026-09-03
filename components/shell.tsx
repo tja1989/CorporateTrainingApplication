@@ -108,10 +108,13 @@ export async function LearnerShell({ user, children }: { user: CurrentUser; chil
     <ToastProvider initial={flash}>
       <div className="min-h-dvh">
         <Header user={user} unread={unread} inboxHref="/inbox" />
-        <LearnerContainer>
+        {/* Same frame as the workspace shell: rail at the start edge, content centred in what is left. */}
+        <div className="shell-body flex">
           <LearnerTabs items={LEARNER_TABS} defaultCollapsed={navCollapsed} />
-          <main className="learner-main min-w-0 flex-1 px-4 pt-6">{children}</main>
-        </LearnerContainer>
+          <main className="learner-main min-w-0 flex-1 px-4 pt-6 md:px-6">
+            <LearnerContainer>{children}</LearnerContainer>
+          </main>
+        </div>
       </div>
     </ToastProvider>
   );

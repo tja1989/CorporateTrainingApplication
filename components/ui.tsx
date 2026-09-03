@@ -148,7 +148,7 @@ export function Field({ label, children, hint }: { label: string; children: Reac
 
 export function EmptyState({
   icon,
-  tone = "accent",
+  tone = "neutral",
   title,
   body,
   action,

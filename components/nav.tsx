@@ -9,9 +9,10 @@ import { Icon, type IconName } from "@/components/icons";
 export type NavItem = { href: string; label: string; icon: IconName };
 
 /* The rail sits on charcoal in both themes: idle rows in the rail's muted
-   tone, the active row in lime with a lime bar at its start edge. */
+   tone; the active row is lime, with a lime bar at its start edge and a soft
+   lime glow fading out behind the label (`.rail-row[aria-current]`). */
 const railItem = "rail-row rounded-control px-3 py-2 text-sm font-medium";
-const railActive = "bg-rail-hover text-accent";
+const railActive = "text-accent";
 const railIdle = "text-rail-muted hover:bg-rail-hover hover:text-rail-fg";
 
 /* Navigation is a 100+×/day surface: no entry animation (spec §10.5 frequency
@@ -86,7 +87,7 @@ function RailLink({ item, active }: { item: NavItem; active: boolean }) {
       <span className="rail-icon flex w-6 shrink-0 justify-center" aria-hidden>
         <Icon name={item.icon} />
       </span>
-      <span className="rail-label ms-2">{item.label}</span>
+      <span className="rail-label eyebrow ms-2">{item.label}</span>
     </Link>
   );
 }
