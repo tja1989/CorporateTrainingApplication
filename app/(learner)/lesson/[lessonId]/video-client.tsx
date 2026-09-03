@@ -142,7 +142,7 @@ export function VideoLessonClient({
   const visibleChunks = showAll ? chunks : chunks.slice(0, TRANSCRIPT_PREVIEW);
 
   return (
-    <div className="mb-6 grid gap-4 lg:grid-cols-[3fr_2fr] lg:items-start">
+    <div className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
       {/* Player column — sticky on desktop so citations always seek a visible player */}
       <div ref={playerColumnRef} className="scroll-mt-12 lg:sticky lg:top-12 lg:pt-4">
         {playerError ? (

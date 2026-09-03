@@ -23,17 +23,22 @@ const railIdle = "text-rail-muted hover:bg-rail-hover hover:text-rail-fg";
  * Collapse the desktop rail to its icons. The choice is a cookie, so the server
  * renders the right width on the next navigation and the rail never flashes
  * open before hydration. Phones keep the bottom tab bar either way.
+ *
+ * `hoverLock` covers the one case CSS cannot see: collapsing with the chevron
+ * leaves the pointer sitting on the rail, and the hover reveal would reopen the
+ * panel on the spot, so the click would read as ignored. The lock suppresses
+ * that reveal until the pointer leaves.
  */
 function useRailCollapse(initial: boolean) {
   const [collapsed, setCollapsed] = useState(initial);
+  const [hoverLock, setHoverLock] = useState(false);
   const toggle = () => {
-    setCollapsed((was) => {
-      const next = !was;
-      document.cookie = `ll_nav=${next ? "collapsed" : "open"};path=/;max-age=31536000;samesite=lax`;
-      return next;
-    });
+    const next = !collapsed;
+    setCollapsed(next);
+    setHoverLock(next);
+    document.cookie = `ll_nav=${next ? "collapsed" : "open"};path=/;max-age=31536000;samesite=lax`;
   };
-  return { collapsed, toggle };
+  return { collapsed, toggle, hoverLock, releaseHoverLock: () => setHoverLock(false) };
 }
 
 /** Points to the start when the rail is pinned open, to the end when collapsed. */
@@ -94,7 +99,7 @@ function RailLink({ item, active }: { item: NavItem; active: boolean }) {
 
 export function LearnerTabs({ items, defaultCollapsed = false }: { items: NavItem[]; defaultCollapsed?: boolean }) {
   const pathname = usePathname();
-  const { collapsed, toggle } = useRailCollapse(defaultCollapsed);
+  const { collapsed, toggle, hoverLock, releaseHoverLock } = useRailCollapse(defaultCollapsed);
   return (
     <>
       {/* Mobile bottom tab bar — charcoal, the active icon lifted into a lime pill */}
@@ -123,8 +128,15 @@ export function LearnerTabs({ items, defaultCollapsed = false }: { items: NavIte
           );
         })}
       </nav>
-      {/* Desktop left rail — the <nav> holds the width in the flow, the panel overlays. */}
-      <nav aria-label="Main" data-collapsed={collapsed ? "" : undefined} className="rail relative hidden shrink-0 md:block">
+      {/* Desktop left rail — the <nav> holds the open width in the flow whatever
+          the panel is doing, so expanding never covers or shifts the page. */}
+      <nav
+        aria-label="Main"
+        data-collapsed={collapsed ? "" : undefined}
+        data-hover-lock={hoverLock ? "" : undefined}
+        onPointerLeave={releaseHoverLock}
+        className="rail relative hidden shrink-0 md:block"
+      >
         <div className="rail-panel absolute inset-y-0 start-0 flex flex-col gap-1 bg-rail p-2 text-rail-fg">
           <RailToggle collapsed={collapsed} onToggle={toggle} />
           {items.map((item) => (
@@ -139,11 +151,17 @@ export function LearnerTabs({ items, defaultCollapsed = false }: { items: NavIte
 /** Workspace nav: a left rail on md+, a horizontally scrolling strip on phones (toolbars may scroll sideways). */
 export function SideNav({ items, defaultCollapsed = false }: { items: NavItem[]; defaultCollapsed?: boolean }) {
   const pathname = usePathname();
-  const { collapsed, toggle } = useRailCollapse(defaultCollapsed);
+  const { collapsed, toggle, hoverLock, releaseHoverLock } = useRailCollapse(defaultCollapsed);
   const isActive = (item: NavItem) => pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
   return (
     <>
-      <nav aria-label="Workspace" data-collapsed={collapsed ? "" : undefined} className="rail relative hidden shrink-0 md:block">
+      <nav
+        aria-label="Workspace"
+        data-collapsed={collapsed ? "" : undefined}
+        data-hover-lock={hoverLock ? "" : undefined}
+        onPointerLeave={releaseHoverLock}
+        className="rail relative hidden shrink-0 md:block"
+      >
         {/* The divider rides the panel, not the nav, so it travels with what is visible. */}
         <div className="rail-panel absolute inset-y-0 start-0 flex flex-col gap-1 border-e border-rail-hover bg-rail p-2 text-rail-fg">
           <RailToggle collapsed={collapsed} onToggle={toggle} />

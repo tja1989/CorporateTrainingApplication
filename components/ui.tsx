@@ -134,12 +134,17 @@ export function Label({ className, children, ...props }: ComponentProps<"label">
   );
 }
 
+/* min-w-0 so a field laid out in a grid or flex row may shrink past its
+   content's intrinsic width — a <select> is as wide as its longest option, and
+   without this it widens the whole page rather than the control. */
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
-    <div className="mb-4">
+    <div className="mb-4 min-w-0">
       <Label>{label}</Label>
       {children}
-      {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
+      {/* hints carry things like a CSV header line — one long comma-run with no
+          spaces to break at, which would otherwise widen the page */}
+      {hint ? <p className="mt-1 break-words text-xs text-muted">{hint}</p> : null}
     </div>
   );
 }

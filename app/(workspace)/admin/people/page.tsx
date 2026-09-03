@@ -44,7 +44,10 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
         </Card>
       ) : null}
 
-      <div className="grid max-w-6xl gap-6 lg:grid-cols-[3fr_2fr]">
+      {/* minmax(0,…) rather than a bare fr: the rule form's <select>s carry whole
+          course titles, and an auto-minimum track would rather push the page
+          sideways than let one shrink. */}
+      <div className="grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <section aria-label="Users">
           <form className="mb-3" action="/admin/people" method="get">
             <Input name="q" defaultValue={q ?? ""} placeholder="Search by name or employee ID…" aria-label="Search users" />
