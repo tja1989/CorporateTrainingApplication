@@ -40,7 +40,7 @@ npm run dev                    # http://localhost:3000
 | Learner | `AE10024` | Meera — Food Safety due soon; staged AI-graded answer in the review queue |
 | Learner | `AE10026` | Priya — certificate expiring → recert loop staged |
 
-Background jobs: `npm run worker` (queue) and `npm run sweep` (nightly compliance/reminders/recert/purge — run it from cron in production). Tests: `npm test` (80 tests over the state machines, scoring, routing, retrieval, HR guardrails, and the design-system guardrails — closed spacing/weight/radius vocabulary, no typed glyph icons, plus WCAG contrast on every colour token in both themes).
+Background jobs: `npm run worker` (queue) and `npm run sweep` (nightly compliance/reminders/recert/purge — run it from cron in production). Tests: `npm test` (117 tests over the state machines, scoring, routing, retrieval, Live model resolution, the nav rail's layout invariants, HR guardrails, and the design-system guardrails — closed spacing/weight/radius vocabulary, no typed glyph icons, plus WCAG contrast on every colour token in both themes).
 
 ## AI configuration & honest degradation
 
@@ -61,7 +61,7 @@ Every AI surface degrades to a clear labeled state — nothing crashes without k
 
 The repo is self-deploying: `railway.json` pins the Dockerfile build, and the start command runs `scripts/deploy-init.ts` (enables pgvector → pushes the schema → applies indexes → seeds demo data once when `DEMO_MODE=true` and the DB is empty) before `next start`.
 
-1. **railway.com → New Project → Deploy from GitHub repo** → `tja1989/CorporateTrainingApplication` (pick the branch you want under the service's Settings → Source; merge PR #1 to deploy from `main`).
+1. **railway.com → New Project → Deploy from GitHub repo** → `tja1989/CorporateTrainingApplication`. Production tracks **`main`** (service → Settings → Source → *Branch connected to production*), auto-deploys on push, and with *Wait for CI* on it deploys only after the `CI` workflow is green — so a merge to `main` is the deploy, and a red build never reaches the demo. `/api/health` reports `commit`, so you can always tell which build answered.
 2. **+ Create → Database → PostgreSQL.** If the app's first deploy later fails with a pgvector message, replace it with Railway's **pgvector** template — the error tells you.
 3. On the **app service → Variables**, add:
    ```
