@@ -4,6 +4,7 @@ loadEnv();
 import { mkdirSync, writeFileSync } from "fs";
 import { resolve } from "path";
 import bcrypt from "bcryptjs";
+import { ensureDemoContentLessons } from "./seed-content";
 import { ensureDemoInterviewLessons } from "./seed-interviews";
 
 async function main() {
@@ -287,6 +288,7 @@ async function main() {
   await seedVideos({ courseIds: { customerService: cs.id, foodSafety: fs_.id } });
   await seedAssessments({ courseIds: { customerService: cs.id, foodSafety: fs_.id, fire: fire.id, pos: pos.id }, learnerIds: { farhan: farhan.id, meera: meera.id } });
   await seedHrCorpus(amina.id);
+  await ensureDemoContentLessons();
   await ensureDemoInterviewLessons();
   const sweepStats = await runDailySweep();
 

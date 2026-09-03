@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LIVE_MODEL_CANDIDATES, estimateLiveCost, parseDuration, pickLiveModel } from "@/lib/live/gemini";
+import { LIVE_LANGUAGE, LIVE_MODEL_CANDIDATES, estimateLiveCost, parseDuration, pickLiveModel, scoreLiveModel } from "@/lib/live/gemini";
 import { EvaluationSchema, buildInterviewConfig, interviewContentFor, maxMinutesFor, mockEvaluate, mockQuestions, pairTranscript, parseInterviewConfig, pickScopeLessons, scoreEvaluation } from "@/lib/live/interview";
 import { HR_TOOLS, buildHrLiveConfig } from "@/lib/live/hr-voice";
 import { routeMockTool } from "@/lib/live/client/mock-transport";
@@ -95,7 +95,15 @@ describe("oral check rubric (spec FR-14.2)", () => {
     expect(names).toEqual(["submit_evaluation"]);
     expect(String(cfg.systemInstruction)).toContain("Wash hands for 20 seconds.");
     expect(String(cfg.systemInstruction)).toContain("Farhan");
-    expect(cfg.realtimeInputConfig).toBeUndefined(); // interviewer keeps default VAD so pauses aren't cut
+    // The transcriber auto-detects per utterance without a hint, which put a
+    // learner's spoken English into other scripts mid-answer.
+    expect(cfg.inputAudioTranscription?.languageCodes).toEqual([LIVE_LANGUAGE]);
+    expect(String(cfg.systemInstruction)).toContain("Conduct the whole check in English");
+    // End-of-turn is tuned down from the default (which felt slow), but sits
+    // above the assistant's 500ms so a learner may pause and think.
+    const vad = cfg.realtimeInputConfig?.automaticActivityDetection;
+    expect(vad?.silenceDurationMs).toBe(800);
+    expect(vad?.prefixPaddingMs).toBe(100);
     const focused = buildInterviewConfig({ learnerFirstName: "F", courseTitle: "C", lessonTitle: "L", content: { title: "L", text: "x", source: "text" }, maxMinutes: 6, focus: "the LAST method", objectives: ["Greet within 10 seconds"] });
     expect(String(focused.systemInstruction)).toContain("Focus your questions on: the LAST method");
     expect(String(focused.systemInstruction)).toContain("Greet within 10 seconds");
@@ -176,5 +184,24 @@ describe("audio helpers", () => {
     expect(out.length).toBe(16_000);
     expect(out[10]).toBeCloseTo(0.25, 5);
     expect(downsample(input, 16_000, 16_000)).toBe(input);
+  });
+});
+
+describe("live model choice", () => {
+  it("ranks a newer native-audio family above the curated list", () => {
+    // The point of the ranking: pick up a new family the day the key exposes
+    // it, without anyone editing LIVE_MODEL_CANDIDATES.
+    expect(scoreLiveModel("gemini-3.0-flash-native-audio-latest")).toBeGreaterThan(scoreLiveModel("gemini-2.5-flash-native-audio-latest"));
+    expect(scoreLiveModel("gemini-2.5-flash-native-audio-latest")).toBeGreaterThan(scoreLiveModel("gemini-live-2.5-flash-preview"));
+    expect(scoreLiveModel("gemini-2.5-flash-native-audio-latest")).toBeGreaterThan(scoreLiveModel("gemini-2.5-flash-native-audio-preview-12-2025"));
+    expect(scoreLiveModel("gemini-2.5-flash")).toBe(0);
+    expect(scoreLiveModel("text-embedding-004")).toBe(0);
+
+    const withNewer = pickLiveModel(["models/gemini-2.5-flash-native-audio-latest", "models/gemini-3.0-flash-native-audio-latest"]);
+    expect(withNewer.model).toBe("gemini-3.0-flash-native-audio-latest");
+    const curatedOnly = pickLiveModel(["models/gemini-2.0-flash-live-001", "models/gemini-2.5-flash-native-audio-latest"]);
+    expect(curatedOnly.model).toBe("gemini-2.5-flash-native-audio-latest");
+    expect(pickLiveModel(["models/gemini-2.5-flash"]).model).toBeNull();
+    expect(pickLiveModel([]).model).toBe(LIVE_MODEL_CANDIDATES[0]);
   });
 });

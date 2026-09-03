@@ -9,7 +9,7 @@ import { HR_ABSTENTION, auditHrTurn, docsForHits, extractiveAnswer, retrievalCon
 import { hrScopeFor } from "@/lib/hr/scope";
 import { localDate } from "@/lib/time";
 import type { LiveCitation } from "@/lib/db/schema";
-import { LIVE_VOICE } from "./gemini";
+import { LIVE_LANGUAGE, LIVE_VOICE } from "./gemini";
 import { learnerContextLines, searchCourseContent, trainingStatus, type TrainingStatus } from "./course-tools";
 
 /**
@@ -94,7 +94,7 @@ export function buildHrLiveConfig(opts: { voice?: string; resumeHandle?: string;
     systemInstruction: system,
     tools: [{ functionDeclarations: HR_TOOLS }],
     speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: opts.voice ?? LIVE_VOICE } } },
-    inputAudioTranscription: {},
+    inputAudioTranscription: { languageCodes: [LIVE_LANGUAGE] },
     outputAudioTranscription: {},
     // Snappier end-of-turn for a conversational assistant (the interviewer keeps the defaults).
     realtimeInputConfig: {

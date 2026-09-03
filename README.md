@@ -6,7 +6,7 @@ Built to the spec in [`docs/MVP_SPEC.md`](docs/MVP_SPEC.md) (feature requirement
 
 ## What's inside
 
-- **LMS core** — courses → modules → typed lessons (YouTube video, text, PDF, quiz), learning paths with in-order locking, auto-enrollment rules with idempotent re-evaluation, the full compliance loop (relative due dates → reminder ladder → certificate PDFs → expiry-driven re-certification), immutable completion records.
+- **LMS core** — courses → modules → typed lessons (YouTube video, text, PDF, quiz, voice oral check) presented as a **collapsible course outline** — sections fold away as you finish them, each row drawn with its own type icon, derived length and lock state, and the same outline follows you into every lesson as a contents rail — learning paths with in-order locking, auto-enrollment rules with idempotent re-evaluation, the full compliance loop (relative due dates → reminder ladder → certificate PDFs → expiry-driven re-certification), immutable completion records.
 - **Chat-with-video Tutor** — transcript ingestion (lawful manual SRT/VTT path by default) → timestamped chunks → hybrid pgvector+FTS retrieval (RRF) → streamed answers whose `[mm:ss]` citation chips are **server-validated** and seek the player. Watch progress = unique watched-second coverage (90% gate).
 - **Assessment engine** — 7 question types + stimulus, question banks with draw-N snapshots, exam windows, cooldowns, per-user time-multiplier accommodations, server-authoritative timing with offline buffering, PRACTICE vs EXAM feedback policies (answers sealed until window close), tier-1 integrity monitoring (consent-first, flags gate *human* review, iOS fallback), AI-drafted questions that **never publish without approval**, and employment-safe AI rubric grading — every AI *fail* is human-reviewed; only confident clear passes auto-finalize; learners can appeal.
 - **Daily drill** — SM-2-lite spaced repetition with confidence ratings ("confidently wrong" re-drills first). Optional, never counts toward required training.
@@ -51,7 +51,9 @@ Background jobs: `npm run worker` (queue) and `npm run sweep` (nightly complianc
 | `YOUTUBE_API_KEY` | Embed/privacy validation at ingest + weekly link health | Validation skipped; player errors handled gracefully at view time |
 | `SUPADATA_API_KEY` | Vendor transcript fetch (**demo-only**; scraping shifts ToS risk, it doesn't remove it) | Manual SRT/VTT upload — the lawful default; production path is a company-owned channel + official captions API |
 | `SMTP_URL` | Email channel (`console` logs in dev) | In-app inbox still delivers everything; manager digests remain the certified reach path |
-| `GEMINI_API_KEY` (+`GEMINI_LIVE_MODEL`, `GEMINI_LIVE_VOICE`) | **Voice**: the oral check after a lesson and the HR assistant's live mode, on the Gemini Live API through one-use ephemeral tokens | Both screens run as a **typed offline demo** with the same policy tools and the same offline grader — labeled, nothing crashes |
+| `GEMINI_API_KEY` (+`GEMINI_LIVE_MODEL`, `GEMINI_LIVE_VOICE`, `GEMINI_LIVE_LANGUAGE`) | **Voice**: the oral check after a lesson and the HR assistant's live mode, on the Gemini Live API through one-use ephemeral tokens | Both screens run as a **typed offline demo** with the same policy tools and the same offline grader — labeled, nothing crashes |
+
+`GEMINI_LIVE_LANGUAGE` (default `en-US`) pins the language a spoken session is conducted in — it becomes the Live API's transcription hint. Left to auto-detect, accented English is regularly transcribed into another language mid-answer. `GEMINI_LIVE_MODEL` pins a model; unset, the newest Live-capable model the key exposes is chosen at runtime.
 
 Every AI surface degrades to a clear labeled state — nothing crashes without keys.
 
