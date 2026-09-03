@@ -46,6 +46,8 @@ export async function GET() {
       voiceConfigured: !!process.env.GEMINI_API_KEY,
       interviewLessons,
       demoMode: process.env.DEMO_MODE === "true",
+      // Railway sets this on every deployment; it says which build answered.
+      commit: process.env.RAILWAY_GIT_COMMIT_SHA ?? null,
       time: new Date().toISOString(),
     },
     { headers: { "Cache-Control": "no-store" } },
