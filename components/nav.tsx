@@ -11,7 +11,9 @@ const railItem = "rounded-control px-3 py-2 text-sm font-medium";
 const railActive = "bg-surface-2 text-foreground";
 const railIdle = "text-muted hover:bg-surface-2 hover:text-foreground";
 
-/* Navigation is a 100+×/day surface: no animation (spec §10.5 frequency rule). */
+/* Navigation is a 100+×/day surface: no animation (spec §10.5 frequency rule).
+   The one exception is the rail's hover reveal — it has to move or it snaps —
+   held to the fast token and driven from CSS in globals.css (§10.7). */
 
 /**
  * Collapse the desktop rail to its icons. The choice is a cookie, so the server
@@ -30,41 +32,56 @@ function useRailCollapse(initial: boolean) {
   return { collapsed, toggle };
 }
 
+/** Points to the start when the rail is pinned open, to the end when collapsed. */
+function RailChevron({ collapsed }: { collapsed: boolean }) {
+  return (
+    <svg
+      className="rail-chevron"
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d={collapsed ? "m6.25 4 4 4-4 4" : "m9.75 4-4 4 4 4"} />
+    </svg>
+  );
+}
+
 function RailToggle({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   return (
     <button
       type="button"
       onClick={onToggle}
       aria-expanded={!collapsed}
-      aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
-      title={collapsed ? "Expand navigation" : "Collapse navigation"}
-      className={cx(
-        "pressable touch-target mb-1 flex items-center rounded-control text-base text-muted hover:bg-surface-2 hover:text-foreground",
-        // Expanded, it lines up with the item labels; collapsed, with the icons.
-        collapsed ? "justify-center" : "justify-start px-3",
-      )}
+      aria-label={collapsed ? "Keep navigation open" : "Collapse navigation"}
+      title={collapsed ? "Keep navigation open" : "Collapse navigation"}
+      className="rail-toggle pressable touch-target mb-1 flex items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-foreground"
     >
-      <span aria-hidden>▥</span>
+      <RailChevron collapsed={collapsed} />
     </button>
   );
 }
 
-/** One rail row, labelled either by its text or — when collapsed — by aria-label. */
-function RailLink({ item, active, collapsed }: { item: NavItem; active: boolean; collapsed: boolean }) {
+/**
+ * One rail row. The shape never changes between states — the label is always
+ * rendered and always read by assistive tech; CSS clips it when the rail is
+ * narrow. That keeps the icon on a fixed centre line, so nothing shifts as the
+ * panel widens.
+ */
+function RailLink({ item, active }: { item: NavItem; active: boolean }) {
   return (
     <Link
       href={item.href}
       aria-current={active ? "page" : undefined}
-      aria-label={collapsed ? item.label : undefined}
-      title={collapsed ? item.label : undefined}
-      className={cx(
-        railItem,
-        active ? railActive : railIdle,
-        collapsed && "flex touch-target items-center justify-center px-2",
-      )}
+      className={cx("flex touch-target items-center", railItem, active ? railActive : railIdle)}
     >
-      <span className={collapsed ? undefined : "me-2"} aria-hidden>{item.icon}</span>
-      {collapsed ? null : item.label}
+      <span className="flex w-6 shrink-0 justify-center text-base" aria-hidden>{item.icon}</span>
+      <span className="rail-label ms-2">{item.label}</span>
     </Link>
   );
 }
@@ -98,17 +115,14 @@ export function LearnerTabs({ items, defaultCollapsed = false }: { items: NavIte
           );
         })}
       </nav>
-      {/* Desktop left rail */}
-      <nav aria-label="Main" className={cx("hidden shrink-0 flex-col gap-1 md:flex", collapsed ? "w-rail-sm p-2" : "w-rail p-4")}>
-        <RailToggle collapsed={collapsed} onToggle={toggle} />
-        {items.map((item) => (
-          <RailLink
-            key={item.href}
-            item={item}
-            collapsed={collapsed}
-            active={pathname === item.href || pathname.startsWith(item.href + "/")}
-          />
-        ))}
+      {/* Desktop left rail — the <nav> holds the width in the flow, the panel overlays. */}
+      <nav aria-label="Main" data-collapsed={collapsed ? "" : undefined} className="rail relative hidden shrink-0 md:block">
+        <div className="rail-panel absolute inset-y-0 start-0 flex flex-col gap-1 bg-background p-2">
+          <RailToggle collapsed={collapsed} onToggle={toggle} />
+          {items.map((item) => (
+            <RailLink key={item.href} item={item} active={pathname === item.href || pathname.startsWith(item.href + "/")} />
+          ))}
+        </div>
       </nav>
     </>
   );
@@ -121,14 +135,14 @@ export function SideNav({ items, defaultCollapsed = false }: { items: NavItem[];
   const isActive = (item: NavItem) => pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
   return (
     <>
-      <nav
-        aria-label="Workspace"
-        className={cx("hidden shrink-0 flex-col gap-1 border-e border-border md:flex", collapsed ? "w-rail-sm p-2" : "w-rail p-4")}
-      >
-        <RailToggle collapsed={collapsed} onToggle={toggle} />
-        {items.map((item) => (
-          <RailLink key={item.href} item={item} collapsed={collapsed} active={isActive(item)} />
-        ))}
+      <nav aria-label="Workspace" data-collapsed={collapsed ? "" : undefined} className="rail relative hidden shrink-0 md:block">
+        {/* The divider rides the panel, not the nav, so it travels with what is visible. */}
+        <div className="rail-panel absolute inset-y-0 start-0 flex flex-col gap-1 border-e border-border bg-background p-2">
+          <RailToggle collapsed={collapsed} onToggle={toggle} />
+          {items.map((item) => (
+            <RailLink key={item.href} item={item} active={isActive(item)} />
+          ))}
+        </div>
       </nav>
       <nav aria-label="Workspace" className="fixed inset-x-0 top-12 z-30 flex gap-1 overflow-x-auto border-b border-border bg-background px-4 py-2 md:hidden">
         {items.map((item) => (
