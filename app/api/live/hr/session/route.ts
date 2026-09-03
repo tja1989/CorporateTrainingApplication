@@ -44,6 +44,14 @@ export async function POST(req: Request) {
     return Response.json(info);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Live voice is unavailable";
-    return Response.json({ error: message }, { status: err instanceof LiveUnavailableError ? 503 : 502 });
+    // No usable Live model behind the key is a configuration state, not a
+    // failure: run the typed offline demo against the same tools and say why,
+    // exactly as a missing key does. Anything else (a token mint that failed,
+    // a network fault) is a real error and still surfaces as one.
+    if (err instanceof LiveUnavailableError) {
+      const info: SessionInfo = { mock: true, model: "mock", warning: message, conversationId };
+      return Response.json(info);
+    }
+    return Response.json({ error: message }, { status: 502 });
   }
 }

@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { cleanDatabaseUrl, describeDatabaseUrl } from "@/lib/db/url";
 import { readInitStatus } from "@/lib/init-status";
-import { liveAvailable, resolveLiveModel } from "@/lib/live/gemini";
+import { liveAvailable, listLiveModels, resolveLiveModel } from "@/lib/live/gemini";
 
 export const dynamic = "force-dynamic";
 
@@ -45,14 +45,22 @@ export async function GET() {
    */
   let voiceModel: string | null = null;
   let voiceModelNote: string | null = null;
+  let voiceModelsSeen: string[] | null = null;
   if (liveAvailable()) {
     try {
       const resolved = await Promise.race([
-        resolveLiveModel(),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout after 3s")), 3000)),
+        (async () => {
+          // The candidates too, not just the winner: which ids a key exposes is
+          // the thing you actually need in order to explain the winner, and
+          // guessing at it costs a deploy per guess.
+          const seen = await listLiveModels();
+          return { ...(await resolveLiveModel()), seen };
+        })(),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout after 4s")), 4000)),
       ]);
       voiceModel = resolved.model;
       voiceModelNote = resolved.warning ?? null;
+      voiceModelsSeen = resolved.seen.slice(0, 24);
     } catch (err) {
       voiceModelNote = err instanceof Error ? err.message : "could not resolve a Live model";
     }
@@ -70,6 +78,7 @@ export async function GET() {
       voiceConfigured: !!process.env.GEMINI_API_KEY,
       voiceModel,
       voiceModelNote,
+      voiceModelsSeen,
       interviewLessons,
       demoMode: process.env.DEMO_MODE === "true",
       // Railway sets this on every deployment; it says which build answered.
