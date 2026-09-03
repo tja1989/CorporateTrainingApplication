@@ -1,3 +1,6 @@
+import { Icon } from "@/components/icons";
+import { LessonIcon } from "@/components/lesson-icon";
+import type { LessonType } from "@/lib/lms/outline";
 import { notFound } from "next/navigation";
 import { eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
@@ -18,7 +21,6 @@ import type { InterviewConfig } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
 
-const TYPE_ICON: Record<string, string> = { VIDEO: "▶", TEXT: "¶", PDF: "▦", QUIZ: "☑", INTERVIEW: "🎙" };
 
 export default async function CourseEditorPage({ params }: { params: Promise<{ courseId: string }> }) {
   await requireRole("ADMIN");
@@ -55,7 +57,7 @@ export default async function CourseEditorPage({ params }: { params: Promise<{ c
                     return (
                       <li key={lesson.id} className="rounded-control bg-surface-2 px-3 py-2 text-sm">
                         <div className="flex items-center gap-2">
-                        <span aria-hidden>{TYPE_ICON[lesson.type]}</span>
+                        <LessonIcon type={lesson.type as LessonType} />
                         <span className="flex-1 truncate">{lesson.title}</span>
                         {video ? (
                           <span className="flex items-center gap-2">
@@ -64,23 +66,23 @@ export default async function CourseEditorPage({ params }: { params: Promise<{ c
                             </Chip>
                             {video.ingestionStatus === "FAILED" ? (
                               <form action={retryIngestAction.bind(null, course.id, video.id)}>
-                                <button type="submit" className="text-xs text-primary underline">retry</button>
+                                <button type="submit" className="link text-xs text-link">retry</button>
                               </form>
                             ) : null}
                           </span>
                         ) : null}
                         <form action={moveLessonAction.bind(null, course.id, lesson.id, -1)}>
-                          <button aria-label="Move up" className={cx("touch-target rounded-control px-1 hover:bg-surface", i === 0 && "opacity-30")} disabled={i === 0}>↑</button>
+                          <button aria-label="Move up" className={cx("touch-target rounded-control px-1 hover:bg-surface", i === 0 && "opacity-30")} disabled={i === 0}><Icon name="arrow-up" size={16} /></button>
                         </form>
                         <form action={moveLessonAction.bind(null, course.id, lesson.id, 1)}>
-                          <button aria-label="Move down" className={cx("touch-target rounded-control px-1 hover:bg-surface", i === lessons.length - 1 && "opacity-30")} disabled={i === lessons.length - 1}>↓</button>
+                          <button aria-label="Move down" className={cx("touch-target rounded-control px-1 hover:bg-surface", i === lessons.length - 1 && "opacity-30")} disabled={i === lessons.length - 1}><Icon name="arrow-down" size={16} /></button>
                         </form>
                         </div>
                         {lesson.type === "INTERVIEW" ? (() => {
                           const cfg = parseInterviewConfig(lesson.payload.interview);
                           return (
                             <details className="mt-2">
-                              <summary className="cursor-pointer text-xs text-primary">
+                              <summary className="cursor-pointer text-xs text-link">
                                 Oral check · {cfg.questionCount} questions · pass {cfg.passPct}% · scope: {cfg.scope}{cfg.requirePass ? " · pass required" : ""}
                               </summary>
                               <form action={updateInterviewLessonAction.bind(null, course.id, lesson.id)} className="mt-2">
@@ -98,7 +100,7 @@ export default async function CourseEditorPage({ params }: { params: Promise<{ c
                 </ul>
 
                 <details>
-                  <summary className="cursor-pointer text-sm font-medium text-primary">+ Add lesson</summary>
+                  <summary className="cursor-pointer text-sm font-medium text-link">+ Add lesson</summary>
                   <form action={addLessonAction.bind(null, course.id, mod.id)} className="mt-3">
                     <div className="grid grid-cols-2 gap-3">
                       <Field label="Type">
@@ -153,7 +155,7 @@ export default async function CourseEditorPage({ params }: { params: Promise<{ c
         </div>
 
         <Card className="h-fit p-4">
-          <h2 className="mb-2 text-sm font-medium text-muted">Course settings</h2>
+          <h2 className="eyebrow mb-2 text-muted">Course settings</h2>
           <form action={updateCourseAction.bind(null, course.id)}>
             <Field label="Title"><Input name="title" defaultValue={course.title} /></Field>
             <Field label="Description"><Textarea name="description" rows={2} defaultValue={course.description} /></Field>

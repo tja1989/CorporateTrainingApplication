@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cx } from "./ui";
+import { Icon } from "./icons";
 
 /**
  * The AI surface — the honesty affordance for genuinely model-generated text
@@ -30,7 +31,7 @@ export function AiSurface({
       )}
     >
       <span className="mb-1 flex items-center gap-1 text-xs font-medium text-ai-fg">
-        <span aria-hidden>✳</span>
+        <Icon name="sparkle" size={14} />
         <span>{label}</span>
       </span>
       {children}

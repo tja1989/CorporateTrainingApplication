@@ -1,12 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Bricolage_Grotesque, Manrope } from "next/font/google";
 import { cookies } from "next/headers";
 import { MotionProvider } from "@/components/motion-config";
 import "./globals.css";
 
-// One variable sans-serif for the whole product (spec §10.3 v1.2): Inter with
-// its optical-size axis so display text and labels render with the right cuts.
-const inter = Inter({ subsets: ["latin"], weight: "variable", axes: ["opsz"], variable: "--font-inter", display: "swap" });
+// Two families (spec §10.3 v2): Manrope carries the UI and reading text;
+// Bricolage Grotesque, with its optical-size and width axes, draws the page
+// titles, greetings and the big tile numbers.
+const manrope = Manrope({ subsets: ["latin"], weight: "variable", variable: "--font-manrope", display: "swap" });
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: "variable",
+  axes: ["opsz", "wdth"],
+  variable: "--font-bricolage",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: { default: "LuLu Learn", template: "%s · LuLu Learn" },
@@ -16,10 +24,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#faf9f6" },
-    { media: "(prefers-color-scheme: dark)", color: "#211f1c" },
-  ],
+  // The chrome is charcoal in both themes, so the browser bar matches the header.
+  themeColor: "#26241f",
 };
 
 const RTL_LANGS = new Set(["ar", "ur"]);
@@ -30,7 +36,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const lang = store.get("ll_lang")?.value ?? "en";
   const dir = RTL_LANGS.has(lang) ? "rtl" : "ltr";
   return (
-    <html lang={lang} dir={dir} className={`${inter.variable} ${theme}`}>
+    <html lang={lang} dir={dir} className={`${manrope.variable} ${bricolage.variable} ${theme}`}>
       <body>
         <MotionProvider>{children}</MotionProvider>
       </body>

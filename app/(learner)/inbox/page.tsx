@@ -22,13 +22,13 @@ export default async function InboxPage() {
     <div className="animate-slide-up">
       <PageTitle sub="Reminders and updates. Email copies go out when you have a work email on file.">Notifications</PageTitle>
       {rows.length === 0 ? (
-        <EmptyState icon="◔" title="Nothing yet" body="Due-date reminders and updates will appear here." />
+        <EmptyState icon="bell" title="Nothing yet" body="Due-date reminders and updates will appear here." />
       ) : (
         <div className="flex max-w-2xl flex-col gap-2">
           {rows.map((n) => {
             const { title, body } = renderNotification(n.kind, n.payload);
             return (
-              <Card key={n.id} className={cx("p-3", !n.readAt && "border-s-2 border-s-primary")}>
+              <Card key={n.id} className={cx("p-3", !n.readAt && "border-s-2 border-s-accent")}>
                 <div className="flex items-baseline justify-between gap-3">
                   <h2 className="text-sm font-medium">{title}</h2>
                   <span className="shrink-0 text-xs text-muted">{n.sentAt.toISOString().slice(0, 10)}</span>

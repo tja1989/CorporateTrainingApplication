@@ -29,7 +29,7 @@ export default async function IntegrityPage() {
     <div className="animate-slide-up">
       <PageTitle sub="Monitored attempts with their event flags. A person decides — never the flags alone.">Integrity review</PageTitle>
       {attempts.length === 0 ? (
-        <EmptyState icon="◉" title="No monitored attempts yet" />
+        <EmptyState icon="shield" title="No monitored attempts yet" />
       ) : (
         <div className="flex max-w-3xl flex-col gap-2">
           {attempts.map((a) => {
@@ -39,7 +39,7 @@ export default async function IntegrityPage() {
             const user = nameOf.get(a.userId);
             return (
               <Link key={a.id} href={`/admin/integrity/${a.id}`}>
-                <Card className="pressable flex items-center justify-between gap-3 p-3 text-sm hover:bg-surface-2">
+                <Card className="lift pressable flex items-center justify-between gap-3 p-3 text-sm hover:bg-surface-2">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{quizOf.get(a.quizId)?.title ?? "Quiz"} — {user?.name ?? "—"}</p>
                     <p className="text-xs text-muted">

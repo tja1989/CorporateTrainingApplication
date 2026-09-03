@@ -4,13 +4,15 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { activateAction } from "../actions";
 import { Button, Card, Field, Input } from "@/components/ui";
+import { Brand } from "@/components/brand";
 
 export default function ActivatePage() {
   const [state, action, pending] = useActionState(activateAction, null);
   return (
-    <main className="flex min-h-dvh items-center justify-center px-4">
-      <Card className="animate-enter w-full max-w-sm p-6">
-        <h1 className="mb-1 text-xl font-medium">Activate your account</h1>
+    <main className="auth-hero flex min-h-dvh items-center justify-center px-4">
+      <Card className="animate-enter w-full max-w-sm p-6 shadow-card">
+        <Brand className="mb-4" />
+        <h1 className="display mb-1 text-2xl">Activate your account</h1>
         <p className="mb-6 text-sm text-muted">Use the one-time code from your manager or HR.</p>
         <form action={action}>
           <Field label="Employee ID">
@@ -35,7 +37,7 @@ export default function ActivatePage() {
           </Button>
         </form>
         <p className="mt-4 text-sm">
-          <Link className="text-primary underline-offset-2 hover:underline" href="/login">
+          <Link className="link text-link" href="/login">
             Back to sign in
           </Link>
         </p>

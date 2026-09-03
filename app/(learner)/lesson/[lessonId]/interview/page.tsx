@@ -29,7 +29,8 @@ export default async function InterviewPage({ params }: { params: Promise<{ less
   if (!loaded.content) {
     return (
       <EmptyState
-        icon="🎙"
+        icon="mic"
+        tone="ai"
         title="No oral check for this lesson"
         body="Oral checks run on video lessons with a transcript and on text lessons."
         action={<ButtonLink href={backHref}>Back to course</ButtonLink>}
@@ -39,7 +40,8 @@ export default async function InterviewPage({ params }: { params: Promise<{ less
   if (!done) {
     return (
       <EmptyState
-        icon="🎙"
+        icon="mic"
+        tone="ai"
         title="Finish the lesson first"
         body="The oral check opens once the lesson is complete."
         action={<ButtonLink href={`/lesson/${lessonId}`}>Open the lesson</ButtonLink>}

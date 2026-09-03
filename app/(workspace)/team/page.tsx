@@ -84,7 +84,7 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
               const unreachable = !member.email && !activeIds.has(member.id);
               return (
                 <Link key={member.id} href={`/team/${member.id}`} className="block">
-                  <Card className="pressable flex items-center justify-between gap-3 p-3 hover:bg-surface-2">
+                  <Card className="lift pressable flex items-center justify-between gap-3 p-3 hover:bg-surface-2">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{member.name}</p>
                       <p className="text-xs text-muted">{member.jobTitle ?? ""} · {items.length} enrollment(s)</p>

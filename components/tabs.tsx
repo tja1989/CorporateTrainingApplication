@@ -7,12 +7,12 @@ import { motion } from "motion/react";
 import { DUR, EASE_OUT } from "@/lib/motion";
 import { cx } from "./ui";
 
-const groupClass = "flex gap-1 rounded-input bg-surface-2 p-1";
-const tabClass = "relative flex-1 touch-target rounded-control px-3 py-2 text-center text-sm font-medium";
+const groupClass = "flex gap-1 rounded-full bg-surface-2 p-1";
+const tabClass = "relative flex-1 touch-target rounded-full px-3 py-2 text-center text-sm font-medium transition-colors";
 const indicatorTransition = { duration: DUR.base, ease: EASE_OUT };
 
 function Indicator({ id }: { id: string }) {
-  return <motion.span layoutId={id} className="absolute inset-0 rounded-control border border-border bg-surface" transition={indicatorTransition} aria-hidden />;
+  return <motion.span layoutId={id} className="absolute inset-0 rounded-full bg-surface shadow-card" transition={indicatorTransition} aria-hidden />;
 }
 
 /** Controlled tablist with a sliding indicator and arrow-key navigation. */

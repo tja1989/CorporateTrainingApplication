@@ -51,7 +51,7 @@ export default async function HomePage() {
 
       {mine.length === 0 ? (
         <EmptyState
-          icon="▤"
+          icon="book"
           title="No training assigned yet"
           body="When your manager or an enrollment rule assigns you a course, it will appear here."
           action={<ButtonLink variant="secondary" href="/learn">Browse the catalog</ButtonLink>}
@@ -96,7 +96,7 @@ export default async function HomePage() {
               const chip = complianceChip(c.enrollment?.complianceStatus ?? "ON_TRACK");
               return (
                 <Link key={c.course.id} href={`/course/${c.course.id}`} className="block">
-                  <Card className="pressable flex items-center justify-between gap-3 p-3 hover:bg-surface-2">
+                  <Card className="lift pressable flex items-center justify-between gap-3 p-3 hover:bg-surface-2">
                     <span className="truncate text-sm font-medium">{c.course.title}</span>
                     <span className="flex items-center gap-2">
                       {c.enrollment?.dueAt ? (
@@ -118,8 +118,8 @@ export default async function HomePage() {
           <Stagger className="grid gap-3 sm:grid-cols-2">
             {recs.map((r) => (
               <Link key={r.course.id} href={`/course/${r.course.id}`} className="block h-full">
-                <Card className="pressable h-full p-4 hover:bg-surface-2">
-                  <h3 className="mb-1 font-medium">{r.course.title}</h3>
+                <Card className="lift pressable h-full p-4 hover:bg-surface-2">
+                  <h3 className="display mb-1 text-base">{r.course.title}</h3>
                   <p className="mb-2 line-clamp-2 text-sm text-muted">{r.course.description}</p>
                   <p className="text-xs text-muted">Because: {r.reason}</p>
                 </Card>

@@ -1,3 +1,4 @@
+import { Icon } from "@/components/icons";
 import { desc, eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/guard";
@@ -46,11 +47,11 @@ export default async function ProfilePage() {
           <span className="text-xs text-muted">{streak?.currentStreakWeeks ?? 0}-week streak</span>
         </Card>
         <Card className="flex flex-col items-center justify-center gap-1 p-4">
-          <span className="text-xl font-medium">{points}</span>
+          <span className="stat text-2xl">{points}</span>
           <span className="text-xs text-muted">points</span>
         </Card>
         <Card className="flex flex-col items-center justify-center gap-1 p-4">
-          <span className="text-xl font-medium">{completed}</span>
+          <span className="stat text-2xl">{completed}</span>
           <span className="text-xs text-muted">courses completed</span>
         </Card>
       </div>
@@ -66,17 +67,17 @@ export default async function ProfilePage() {
       ) : null}
 
       <section className="mb-6 max-w-2xl" aria-label="Badges">
-        <h2 className="mb-2 text-sm font-medium text-muted">Badges</h2>
+        <h2 className="eyebrow mb-2 text-muted">Badges</h2>
         <div className="flex flex-wrap gap-2">
           {badgeRows.length === 0 ? <p className="text-sm text-muted">Complete courses and streaks to earn badges.</p> : null}
           {badgeRows.map((b) => (
-            <Chip key={b.id} variant="primary">★ {BADGE_LABELS[b.badge] ?? b.badge}</Chip>
+            <Chip key={b.id} variant="accent" className="animate-pop"><Icon name="star" size={12} /> {BADGE_LABELS[b.badge] ?? b.badge}</Chip>
           ))}
         </div>
       </section>
 
       <section className="max-w-2xl" aria-label="Certificates">
-        <h2 className="mb-2 text-sm font-medium text-muted">Certificates</h2>
+        <h2 className="eyebrow mb-2 text-muted">Certificates</h2>
         {certRows.length === 0 ? (
           <p className="text-sm text-muted">Certificates you earn will appear here.</p>
         ) : (
@@ -98,7 +99,7 @@ export default async function ProfilePage() {
       </section>
 
       <section className="mt-6 max-w-2xl" aria-label="Oral checks">
-        <h2 className="mb-2 text-sm font-medium text-muted">Oral checks</h2>
+        <h2 className="eyebrow mb-2 text-muted">Oral checks</h2>
         {oralChecks.length === 0 ? (
           <p className="text-sm text-muted">After a lesson, take a three-minute spoken check — results appear here.</p>
         ) : (

@@ -29,7 +29,7 @@ export default async function PolicyPage({
     <div className="animate-slide-up mx-auto max-w-2xl">
       {anchor ? <ScrollToSection anchor={anchor} /> : null}
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <h1 className="text-xl font-medium">{doc.title}</h1>
+        <h1 className="display text-xl">{doc.title}</h1>
         <Chip variant={doc.status === "ACTIVE" ? "success" : "destructive"}>
           {doc.status === "ACTIVE" ? `v${doc.version} · effective ${doc.effectiveDate.toISOString().slice(0, 10)}` : "Superseded"}
         </Chip>

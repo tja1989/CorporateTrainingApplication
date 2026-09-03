@@ -1,3 +1,4 @@
+import { Icon } from "@/components/icons";
 import { asc } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
@@ -37,7 +38,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
       <PageHeader title="People & rules" sub="Users, groups, and auto-enrollment rules." />
 
       {codes ? (
-        <Card className="mb-4 max-w-3xl border-primary p-4">
+        <Card className="mb-4 max-w-3xl border-accent bg-accent-tint p-4">
           <h2 className="mb-1 text-sm font-medium">Activation codes for imported users — shown once</h2>
           <pre className="overflow-x-auto rounded-control bg-surface-2 p-2 text-sm">{decodeURIComponent(codes)}</pre>
         </Card>
@@ -139,10 +140,10 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
               {rules.map((r) => (
                 <li key={r.id} className="flex items-center justify-between gap-2 rounded-control bg-surface-2 px-3 py-2">
                   <span className="min-w-0 truncate">
-                    {r.name} <span className="text-xs text-muted">→ {targetName(r) ?? r.targetId}{r.criteria.groupId ? ` · group ${groupName.get(r.criteria.groupId)}` : ""}</span>
+                    {r.name} <span className="text-xs text-muted"><Icon name="arrow-right" size={12} className="inline align-text-bottom" /> {targetName(r) ?? r.targetId}{r.criteria.groupId ? ` · group ${groupName.get(r.criteria.groupId)}` : ""}</span>
                   </span>
                   <form action={toggleRuleAction.bind(null, r.id)}>
-                    <button className="hit-area text-xs text-primary underline">{r.active ? "disable" : "enable"}</button>
+                    <button className="link hit-area text-xs text-link">{r.active ? "disable" : "enable"}</button>
                   </form>
                 </li>
               ))}

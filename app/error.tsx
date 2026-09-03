@@ -7,7 +7,8 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
     <main className="flex min-h-dvh items-center justify-center px-4">
       <div className="w-full max-w-md">
         <EmptyState
-          icon="⚠"
+          icon="warning"
+          tone="destructive"
           title="Something went wrong"
           body={error.digest ? `Please try again. Reference: ${error.digest}` : "Please try again."}
           action={<Button onClick={reset}>Try again</Button>}

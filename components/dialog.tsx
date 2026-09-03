@@ -42,7 +42,7 @@ export function Dialog({
         className,
       )}
     >
-      <h2 id={titleId} className="mb-3 text-lg font-medium">
+      <h2 id={titleId} className="display mb-3 text-xl">
         {title}
       </h2>
       {children}

@@ -46,7 +46,7 @@ export default async function CorpusPage() {
 
       <div className="grid max-w-5xl gap-6 lg:grid-cols-2">
         <section aria-label="Documents">
-          <h2 className="mb-2 text-sm font-medium text-muted">Documents</h2>
+          <h2 className="eyebrow mb-2 text-muted">Documents</h2>
           <div className="flex flex-col gap-2">
             {docs.map((doc) => (
               <Card key={doc.id} className="flex items-center justify-between gap-2 p-3 text-sm">
@@ -75,7 +75,7 @@ export default async function CorpusPage() {
         </section>
 
         <section aria-label="Publish new version">
-          <h2 className="mb-2 text-sm font-medium text-muted">Publish a policy version</h2>
+          <h2 className="eyebrow mb-2 text-muted">Publish a policy version</h2>
           <Card className="p-4">
             <form action={publishPolicyAction}>
               <Field label="Title" hint="Publishing with an existing title supersedes the old version (its chunks are flagged, never deleted).">

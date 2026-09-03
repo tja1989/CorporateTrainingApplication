@@ -16,7 +16,7 @@ export default async function DrillPage() {
   if ((completedLessons?.n ?? 0) === 0) {
     return (
       <EmptyState
-        icon="◎"
+        icon="target"
         title="Drill unlocks after your first lesson"
         body="Finish any lesson and the daily drill will start serving you quick practice questions. Optional, never graded."
         action={<ButtonLink variant="secondary" href="/learn">Go to my courses</ButtonLink>}

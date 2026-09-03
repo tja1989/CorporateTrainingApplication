@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon, IconDisc } from "@/components/icons";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiSurface, Button, Card, Chip, Input, PillButton, PillLink, Skeleton, cx } from "@/components/ui";
 import { ConfirmDialog } from "@/components/dialog";
@@ -93,7 +94,7 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
               setStreaming(null);
               if (event.escalationSuggested) setEscalateOffer(true);
             } else if (event.type === "error") {
-              setMessages((m) => [...(m ?? []), { role: "assistant", content: "⚠ The assistant is unavailable right now — you can still reach HR with “Talk to a person”." }]);
+              setMessages((m) => [...(m ?? []), { role: "assistant", content: "The assistant is unavailable right now — you can still reach HR with “Talk to a person”." }]);
               setStreaming(null);
               setEscalateOffer(true);
             }
@@ -124,8 +125,8 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
   if (locked) {
     return (
       <Card className="flex flex-col items-center justify-center gap-3 p-6 text-center">
-        <p className="text-xl text-muted" aria-hidden>✳</p>
-        <h1 className="font-medium">Your HR conversations are private</h1>
+        <IconDisc name="sparkle" tone="ai" size={56} className="animate-pop" />
+        <h1 className="display text-lg">Your HR conversations are private</h1>
         <p className="max-w-sm text-sm text-muted">You signed in on a shared device, so history stays hidden until you confirm it&#39;s you.</p>
         <Button onClick={() => setLocked(false)}>Show my conversation</Button>
       </Card>
@@ -139,7 +140,7 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
           HR Assistant <Chip variant="ai">AI</Chip>
         </span>
         <span className="flex gap-2">
-          <PillLink href="/ask-hr/live">🎙 Talk instead</PillLink>
+          <PillLink href="/ask-hr/live"><Icon name="mic" size={14} /> Talk instead</PillLink>
           <PillButton onClick={() => setConfirmOpen(true)} disabled={!conversationRef.current}>
             Talk to a person
           </PillButton>
@@ -156,7 +157,7 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
         {messages !== null && messages.length === 0 ? (
           <div className="text-sm text-muted">
             <p className="mb-1">
-              👋 I&#39;m an <strong>AI assistant</strong> that answers questions about company HR policies, with the exact
+              <Icon name="wave" size={16} className="me-1 inline align-text-bottom text-ai-fg" /> I&#39;m an <strong>AI assistant</strong> that answers questions about company HR policies, with the exact
               policy text cited. I don&#39;t make decisions — HR does.
             </p>
             <p>Ask me anything about leave, pay, hours, or end-of-service.</p>
@@ -189,7 +190,7 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
                     }
                     className="hit-area rounded-control px-2 py-1 text-xs text-muted hover:bg-surface-2"
                   >
-                    {fb === "up" ? "👍" : "👎"}
+                    <Icon name={fb === "up" ? "thumbs-up" : "thumbs-down"} size={16} />
                   </button>
                 ))}
               </div>
@@ -207,8 +208,8 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
         {ticketSent ? <Chip variant="success">Ticket sent to HR — they&#39;ll reply here and you&#39;ll get a notification.</Chip> : null}
         {escalateOffer && !ticketSent ? (
           <div>
-            <PillButton onClick={() => setConfirmOpen(true)} className="text-primary">
-              → Ask the HR team directly
+            <PillButton onClick={() => setConfirmOpen(true)}>
+              Ask the HR team directly <Icon name="arrow-right" size={12} className="nudge" />
             </PillButton>
           </div>
         ) : null}
@@ -241,7 +242,7 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
           className="min-w-0 flex-1"
         />
         <Button type="submit" disabled={streaming !== null || !input.trim()} className="px-3" aria-label="Send">
-          ↑
+          <Icon name="arrow-up" size={18} />
         </Button>
       </form>
 

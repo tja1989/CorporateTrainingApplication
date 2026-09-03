@@ -51,7 +51,7 @@ export function CourseOutline({
       <summary className="touch-target flex cursor-pointer items-center justify-between gap-3 px-3 py-2 text-sm">
         <span className="flex min-w-0 items-center gap-2">
           <Chevron className="text-muted" />
-          <span className="font-medium">Course contents</span>
+          <span className="display text-base">Course contents</span>
         </span>
         <span className="shrink-0 text-xs text-muted">{positionLabel(view)}</span>
       </summary>
@@ -117,7 +117,7 @@ function LessonRow({ lesson: l, compact }: { lesson: OutlineLesson; compact: boo
     "pressable touch-target flex min-w-0 flex-1 items-center gap-2 rounded-control border-s-2 px-2 py-2",
     compact ? "text-xs" : "text-sm",
     l.locked ? "border-transparent opacity-50" : "hover:bg-surface-2",
-    l.current ? "border-primary bg-surface-2 font-medium" : "border-transparent",
+    l.current ? "border-accent bg-accent-tint font-medium" : "border-transparent",
   );
   const body = (
     <>

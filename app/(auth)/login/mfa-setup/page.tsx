@@ -9,9 +9,9 @@ export default async function MfaSetupPage() {
   if (!session || session.role !== "ADMIN") redirect("/login");
   const secret = generateTotpSecret();
   return (
-    <main className="flex min-h-dvh items-center justify-center px-4">
+    <main className="auth-hero flex min-h-dvh items-center justify-center px-4">
       <Card className="animate-enter w-full max-w-md p-6">
-        <h1 className="mb-1 text-xl font-medium">Set up two-factor</h1>
+        <h1 className="display mb-1 text-xl">Set up two-factor</h1>
         <p className="mb-4 text-sm text-muted">
           Admin accounts require an authenticator app (spec FR-1.4). Add this secret to your app, then confirm with a code.
         </p>

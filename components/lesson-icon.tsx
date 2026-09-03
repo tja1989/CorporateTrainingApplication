@@ -4,7 +4,7 @@ import type { LessonState, LessonType } from "@/lib/lms/outline";
 /**
  * Lesson type icons for the course outline (spec §11.4).
  *
- * Drawn rather than typed: the glyphs this replaced (▶ ¶ ▦ ☑ 🎙) render at
+ * Drawn rather than typed: the Unicode glyphs this replaced render at
  * different weights per platform and the microphone arrives as a colour emoji,
  * which the closed palette cannot tone down. These are one 16px line set on the
  * same hairline weight as the rest of the chrome, in `currentColor`, sized by
@@ -17,7 +17,7 @@ import type { LessonState, LessonType } from "@/lib/lms/outline";
 
 const TILE: Record<LessonState, string> = {
   done: "bg-success-tint text-success-fg",
-  current: "bg-primary text-primary-fg",
+  current: "bg-accent text-accent-fg",
   locked: "bg-surface-2 text-muted",
   todo: "bg-surface-2 text-muted",
 };
@@ -40,7 +40,7 @@ const svg = {
   viewBox: "0 0 16 16",
   fill: "none",
   stroke: "currentColor",
-  strokeWidth: 1.5,
+  strokeWidth: 1.75,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
   "aria-hidden": true,

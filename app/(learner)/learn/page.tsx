@@ -39,7 +39,7 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
 
       {q?.trim() ? (
         <section className="mb-8" aria-label="Search results">
-          <h2 className="mb-2 text-sm font-medium text-muted">Results for “{q}”</h2>
+          <h2 className="eyebrow mb-2 text-muted">Results for “{q}”</h2>
           {results.length === 0 ? (
             <EmptyState title="No matches" body="Try a different word, or browse the catalog below." />
           ) : (
@@ -53,7 +53,7 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
       ) : null}
 
       <section className="mb-8" aria-label="My learning">
-        <h2 className="mb-2 text-sm font-medium text-muted">My learning</h2>
+        <h2 className="eyebrow mb-2 text-muted">My learning</h2>
         {mine.length === 0 ? (
           <EmptyState title="Nothing assigned yet" body="Courses assigned to you will appear here." />
         ) : (
@@ -62,7 +62,7 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
               const chip = complianceChip(c.enrollment?.complianceStatus ?? "ON_TRACK");
               return (
                 <Link key={c.course.id} href={`/course/${c.course.id}`}>
-                  <Card className="pressable flex items-center justify-between gap-3 p-3 hover:bg-surface-2">
+                  <Card className="lift pressable flex items-center justify-between gap-3 p-3 hover:bg-surface-2">
                     <div className="min-w-0">
                       <span className="block truncate text-sm font-medium">{c.course.title}</span>
                       <span className="text-xs text-muted">{c.doneLessons}/{c.totalLessons} lessons</span>
@@ -76,10 +76,10 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
         )}
         {myPaths.length > 0 ? (
           <div className="mt-4 flex flex-col gap-2">
-            <h3 className="text-sm font-medium text-muted">My paths</h3>
+            <h3 className="eyebrow text-muted">My paths</h3>
             {myPaths.map((p) => (
               <Link key={p.id} href={`/path/${p.id}`}>
-                <Card className="pressable flex items-center justify-between p-3 hover:bg-surface-2">
+                <Card className="lift pressable flex items-center justify-between p-3 hover:bg-surface-2">
                   <span className="text-sm font-medium">{p.title}</span>
                   <Chip variant="neutral">{p.completeInOrder ? "In order" : "Any order"}</Chip>
                 </Card>
@@ -90,7 +90,7 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
       </section>
 
       <section aria-label="Browse">
-        <h2 className="mb-2 text-sm font-medium text-muted">Browse</h2>
+        <h2 className="eyebrow mb-2 text-muted">Browse</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           {catalog.map((c) => (
             <CourseCard key={c.id} course={c} />
@@ -104,8 +104,8 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
 function CourseCard({ course }: { course: typeof t.courses.$inferSelect }) {
   return (
     <Link href={`/course/${course.id}`}>
-      <Card className="pressable h-full p-4 hover:bg-surface-2">
-        <h3 className="mb-1 font-medium">{course.title}</h3>
+      <Card className="lift pressable h-full p-4 hover:bg-surface-2">
+        <h3 className="display mb-1 text-base">{course.title}</h3>
         <p className="mb-2 line-clamp-2 text-sm text-muted">{course.description}</p>
         <div className="flex flex-wrap gap-2">
           <Chip variant="neutral">~{course.estMinutes} min</Chip>

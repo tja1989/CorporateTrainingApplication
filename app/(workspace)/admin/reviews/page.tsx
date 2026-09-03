@@ -1,3 +1,4 @@
+import { Icon } from "@/components/icons";
 import { asc, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
@@ -35,7 +36,7 @@ export default async function ReviewsPage() {
       <PageTitle sub="Human judgement gates: AI-graded answers and AI-drafted questions.">Review queues</PageTitle>
 
       <section className="mb-8 max-w-3xl" aria-label="Grading reviews">
-        <h2 className="mb-2 text-sm font-medium text-muted">AI-graded answers awaiting confirmation ({pendingGrades.length})</h2>
+        <h2 className="eyebrow mb-2 text-muted">AI-graded answers awaiting confirmation ({pendingGrades.length})</h2>
         {pendingGrades.length === 0 ? (
           <EmptyState title="Nothing pending" body="Free-text answers that AI fails, grades with low confidence, or that learners appeal land here." />
         ) : (
@@ -79,7 +80,7 @@ export default async function ReviewsPage() {
       </section>
 
       <section className="max-w-3xl" aria-label="AI question drafts">
-        <h2 className="mb-2 text-sm font-medium text-muted">AI-drafted questions ({drafts.length}) — never published without approval</h2>
+        <h2 className="eyebrow mb-2 text-muted">AI-drafted questions ({drafts.length}) — never published without approval</h2>
         {drafts.length === 0 ? (
           <EmptyState title="No drafts" body="Questions generated from ingested videos appear here for approval." />
         ) : (
@@ -94,7 +95,7 @@ export default async function ReviewsPage() {
                 {d.body.options ? (
                   <ul className="mb-1 flex flex-col gap-1 text-muted">
                     {d.body.options.map((opt, i) => (
-                      <li key={i}>{d.body.correct?.includes(i) ? "✓ " : "· "}{opt}</li>
+                      <li key={i}>{d.body.correct?.includes(i) ? <Icon name="check" size={12} className="me-1 inline align-text-bottom text-success-fg" /> : "· "}{opt}</li>
                     ))}
                   </ul>
                 ) : null}
@@ -115,9 +116,9 @@ export default async function ReviewsPage() {
       </section>
 
       <section className="max-w-3xl" aria-label="Oral check reviews">
-        <h2 className="mb-2 text-sm font-medium text-muted">Oral checks not passed ({oralReviews.length})</h2>
+        <h2 className="eyebrow mb-2 text-muted">Oral checks not passed ({oralReviews.length})</h2>
         {oralReviews.length === 0 ? (
-          <EmptyState icon="🎙" title="No failed oral checks waiting" body="Checks under the pass mark land here for a human look — confirm the fail, or overturn it to a pass." />
+          <EmptyState icon="mic" tone="ai" title="No failed oral checks waiting" body="Checks under the pass mark land here for a human look — confirm the fail, or overturn it to a pass." />
         ) : (
           <div className="flex flex-col gap-3">
             {oralReviews.map((r) => (

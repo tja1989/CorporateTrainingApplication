@@ -10,30 +10,32 @@ import { LearnerContainer } from "@/components/learner-container";
 import { ThemeToggle } from "./theme-toggle";
 import { CommandPalette } from "./palette";
 import { ToastProvider } from "./toast";
-import { Chip, PillButton } from "./ui";
+import { Icon } from "./icons";
+import { Brand } from "./brand";
+import { Chip } from "./ui";
 
 const LEARNER_TABS: NavItem[] = [
-  { href: "/home", label: "Home", icon: "⌂" },
-  { href: "/learn", label: "Learn", icon: "▤" },
-  { href: "/drill", label: "Drill", icon: "◎" },
-  { href: "/ask-hr", label: "Ask HR", icon: "✳" },
-  { href: "/profile", label: "Profile", icon: "◍" },
+  { href: "/home", label: "Home", icon: "home" },
+  { href: "/learn", label: "Learn", icon: "book" },
+  { href: "/drill", label: "Drill", icon: "target" },
+  { href: "/ask-hr", label: "Ask HR", icon: "sparkle" },
+  { href: "/profile", label: "Profile", icon: "user" },
 ];
 
 const ADMIN_NAV: NavItem[] = [
-  { href: "/admin", label: "Overview", icon: "⌗" },
-  { href: "/admin/courses", label: "Courses", icon: "▤" },
-  { href: "/admin/people", label: "People & rules", icon: "◍" },
-  { href: "/admin/reviews", label: "Review queues", icon: "☑" },
-  { href: "/admin/corpus", label: "HR corpus", icon: "§" },
-  { href: "/admin/tickets", label: "HR tickets", icon: "✉" },
-  { href: "/admin/reports", label: "Reports", icon: "∑" },
-  { href: "/admin/integrity", label: "Integrity", icon: "◉" },
+  { href: "/admin", label: "Overview", icon: "grid" },
+  { href: "/admin/courses", label: "Courses", icon: "book" },
+  { href: "/admin/people", label: "People & rules", icon: "users" },
+  { href: "/admin/reviews", label: "Review queues", icon: "check-square" },
+  { href: "/admin/corpus", label: "HR corpus", icon: "file-text" },
+  { href: "/admin/tickets", label: "HR tickets", icon: "mail" },
+  { href: "/admin/reports", label: "Reports", icon: "chart" },
+  { href: "/admin/integrity", label: "Integrity", icon: "shield" },
 ];
 
 const MANAGER_NAV: NavItem[] = [
-  { href: "/team", label: "My team", icon: "◍" },
-  { href: "/team/reports", label: "Team reports", icon: "∑" },
+  { href: "/team", label: "My team", icon: "users" },
+  { href: "/team/reports", label: "Team reports", icon: "chart" },
 ];
 
 const PALETTE = [
@@ -59,34 +61,41 @@ async function unreadCount(userId: string): Promise<number> {
   return row?.n ?? 0;
 }
 
-/** Opaque, hairline-bordered app bar — fixed 48px so `top-12` stickies line up beneath it. */
+/* Header controls live on the charcoal bar, so they carry their own idle/hover
+   colours rather than the light-surface pill. */
+const headerButton =
+  "pressable touch-target inline-flex items-center justify-center gap-2 rounded-full text-rail-muted hover:bg-rail-hover hover:text-rail-fg";
+
+/** Opaque charcoal app bar — fixed 48px so `top-12` stickies line up beneath it. */
 function Header({ user, unread, inboxHref }: { user: CurrentUser; unread: number; inboxHref: string }) {
   const ws = user.session.workspace;
   return (
-    <header className="sticky top-0 z-30 flex h-12 items-center gap-3 border-b border-border bg-background px-4">
-      <Link href={ws === "learner" ? "/home" : ws === "manager" ? "/team" : "/admin"} className="text-base font-medium">
-        LuLu Learn
-      </Link>
+    <header className="sticky top-0 z-30 flex h-12 items-center gap-2 bg-rail px-4 text-rail-fg">
+      <Brand href={ws === "learner" ? "/home" : ws === "manager" ? "/team" : "/admin"} />
       <div className="flex-1" />
       {user.role !== "LEARNER" ? (
         <form action={switchWorkspace.bind(null, ws === "learner" ? (user.role === "ADMIN" ? "admin" : "manager") : "learner")}>
-          <PillButton type="submit">{ws === "learner" ? "Switch to workspace" : "View as learner"}</PillButton>
+          <button
+            type="submit"
+            className="pressable hit-area inline-flex items-center gap-1 rounded-full border border-rail-hover px-3 py-1 text-xs font-medium text-rail-fg hover:border-accent hover:text-accent"
+          >
+            <Icon name="swap" size={14} />
+            <span className="hidden sm:inline">{ws === "learner" ? "Switch to workspace" : "View as learner"}</span>
+            <span className="sm:hidden">{ws === "learner" ? "Workspace" : "Learner"}</span>
+          </button>
         </form>
       ) : null}
-      <Link
-        href={inboxHref}
-        aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}
-        className="pressable touch-target relative inline-flex items-center justify-center rounded-control px-2 text-base hover:bg-surface-2"
-      >
-        ◔
+      <Link href={inboxHref} aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`} className={`${headerButton} relative px-2`}>
+        <Icon name="bell" />
         {unread > 0 ? (
-          <span className="absolute -end-1 top-1 rounded-full bg-destructive px-1 text-xs font-medium leading-4 text-destructive-fg">{unread > 9 ? "9+" : unread}</span>
+          <span className="animate-pop absolute -end-1 top-1 rounded-full bg-accent px-1 text-xs font-medium leading-4 text-accent-fg">{unread > 9 ? "9+" : unread}</span>
         ) : null}
       </Link>
-      <ThemeToggle />
+      <ThemeToggle className={`${headerButton} px-2`} />
       <form action={logout}>
-        <button type="submit" className="pressable rounded-control px-2 py-1 text-xs text-muted hover:bg-surface-2">
-          Sign out
+        <button type="submit" className={`${headerButton} px-3 text-xs`}>
+          <Icon name="logout" size={16} />
+          <span className="hidden sm:inline">Sign out</span>
         </button>
       </form>
     </header>
@@ -115,12 +124,14 @@ export async function WorkspaceShell({ user, children }: { user: CurrentUser; ch
     <ToastProvider initial={flash}>
       <div className="min-h-dvh">
         <Header user={user} unread={unread} inboxHref={user.session.workspace === "admin" ? "/admin/inbox" : "/team/inbox"} />
-        <div className="flex">
+        <div className="shell-body flex">
           <SideNav items={nav} defaultCollapsed={navCollapsed} />
           {/* pt-12 on phones clears the fixed workspace nav strip */}
           <main className="min-w-0 flex-1 px-4 pb-6 pt-12 md:px-6 md:pt-6">
             <div className="mb-3 hidden justify-end md:flex">
-              <Chip variant="neutral">⌘K to jump</Chip>
+              <Chip variant="neutral">
+                <Icon name="command" size={12} />K to jump
+              </Chip>
             </div>
             {children}
           </main>

@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon, IconDisc } from "@/components/icons";
 import Link from "next/link";
 import { useState } from "react";
 import { useLiveVoice } from "@/lib/live/client/use-live-voice";
@@ -28,8 +29,8 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
   if (locked) {
     return (
       <Card className="flex flex-col items-center justify-center gap-3 p-6 text-center">
-        <p className="text-xl text-muted" aria-hidden>✳</p>
-        <h2 className="font-medium">Your HR conversations are private</h2>
+        <IconDisc name="sparkle" tone="ai" size={56} className="animate-pop" />
+        <h2 className="display text-lg">Your HR conversations are private</h2>
         <p className="max-w-sm text-sm text-muted">You signed in on a shared device, so voice mode waits until you confirm it&#39;s you.</p>
         <Button onClick={() => setLocked(false)}>It&#39;s me — continue</Button>
       </Card>
@@ -49,7 +50,7 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
       </div>
       {/* FR-8.10: the AI disclosure is fixed UI text, not something the model has to remember to say */}
       <p className="text-sm text-muted">
-        👋 {firstName ? `${firstName}, you're` : "You're"} talking to an <strong>AI assistant</strong> that quotes company HR policy and your own course lessons, and knows
+        <Icon name="wave" size={16} className="me-1 inline align-text-bottom text-ai-fg" /> {firstName ? `${firstName}, you're` : "You're"} talking to an <strong>AI assistant</strong> that quotes company HR policy and your own course lessons, and knows
         what training you have due. It cites its sources and doesn&#39;t make decisions — HR does.
       </p>
       {demoMode ? (
@@ -92,7 +93,7 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
           {v.ticketId ? (
             <p className="text-sm">
               <Chip variant="success">Ticket sent to HR</Chip>{" "}
-              <Link href={`/ask-hr/tickets/${v.ticketId}`} className="text-primary underline">
+              <Link href={`/ask-hr/tickets/${v.ticketId}`} className="link text-link">
                 View the ticket
               </Link>
             </p>

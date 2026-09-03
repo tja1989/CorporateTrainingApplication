@@ -1,6 +1,7 @@
 "use client";
 
 import type { LiveCitation } from "@/lib/db/schema";
+import { Icon } from "./icons";
 
 /**
  * Citation chips (spec FR-8.4 / §10.6): every chip previews (title attribute)
@@ -10,13 +11,13 @@ import type { LiveCitation } from "@/lib/db/schema";
  */
 export function CitationChips({ citations, className }: { citations: LiveCitation[]; className?: string }) {
   if (citations.length === 0) return null;
-  const chip = "bidi-isolate pressable hit-area rounded-full bg-surface px-2 py-1 text-xs font-medium text-ai-fg hover:opacity-80";
+  const chip = "bidi-isolate pressable hit-area inline-flex items-center gap-1 rounded-full bg-surface px-2 py-1 text-xs font-medium text-ai-fg hover:bg-ai hover:text-ai-tint";
   return (
     <span className={`mt-2 flex flex-wrap gap-2 ${className ?? ""}`}>
       {citations.map((c, i) =>
         c.kind === "lesson" ? (
           <a key={`lesson-${c.lessonId}-${i}`} href={c.href} title={`${c.courseTitle} › ${c.title}`} className={chip}>
-            ▶ {c.courseTitle} · {c.title.length > 28 ? `${c.title.slice(0, 28)}…` : c.title}
+            <Icon name="play" size={12} /> {c.courseTitle} · {c.title.length > 28 ? `${c.title.slice(0, 28)}…` : c.title}
           </a>
         ) : (
           <a
@@ -32,7 +33,7 @@ export function CitationChips({ citations, className }: { citations: LiveCitatio
               }).catch(() => {});
             }}
           >
-            § {c.title} · {c.sectionPath.length > 24 ? `${c.sectionPath.slice(0, 24)}…` : c.sectionPath}
+            <Icon name="section" size={12} /> {c.title} · {c.sectionPath.length > 24 ? `${c.sectionPath.slice(0, 24)}…` : c.sectionPath}
           </a>
         ),
       )}

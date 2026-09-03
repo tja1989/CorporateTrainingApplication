@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Icon } from "./icons";
 
 type Entry = { label: string; href: string; group: string };
 
@@ -62,6 +63,8 @@ export function CommandPalette({ entries }: { entries: Entry[] }) {
         className="w-full max-w-lg rounded-card border border-border bg-surface shadow-overlay"
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="flex items-center gap-2 border-b border-border px-4">
+          <Icon name="search" size={18} className="shrink-0 text-muted" />
         <input
           ref={inputRef}
           value={q}
@@ -78,15 +81,16 @@ export function CommandPalette({ entries }: { entries: Entry[] }) {
             }
           }}
           placeholder="Jump to…"
-          className="w-full border-b border-border bg-transparent px-4 py-3 text-base outline-none"
+          className="w-full bg-transparent py-3 text-base outline-none"
           aria-label="Search destinations"
         />
+        </div>
         <ul className="p-2">
           {results.map((r, i) => (
             <li key={r.href}>
               <button
                 type="button"
-                className={`flex w-full items-center justify-between rounded-control px-3 py-2 text-start text-sm ${i === sel ? "bg-surface-2" : ""}`}
+                className={`flex w-full items-center justify-between rounded-input px-3 py-2 text-start text-sm transition-colors ${i === sel ? "bg-accent-tint text-foreground" : ""}`}
                 onMouseEnter={() => setSel(i)}
                 onClick={() => {
                   setOpen(false);

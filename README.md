@@ -40,7 +40,7 @@ npm run dev                    # http://localhost:3000
 | Learner | `AE10024` | Meera — Food Safety due soon; staged AI-graded answer in the review queue |
 | Learner | `AE10026` | Priya — certificate expiring → recert loop staged |
 
-Background jobs: `npm run worker` (queue) and `npm run sweep` (nightly compliance/reminders/recert/purge — run it from cron in production). Tests: `npm test` (80 tests over the state machines, scoring, routing, retrieval, HR guardrails, and the design-system guardrails — closed spacing/weight/radius vocabulary plus WCAG contrast on every colour token in both themes).
+Background jobs: `npm run worker` (queue) and `npm run sweep` (nightly compliance/reminders/recert/purge — run it from cron in production). Tests: `npm test` (80 tests over the state machines, scoring, routing, retrieval, HR guardrails, and the design-system guardrails — closed spacing/weight/radius vocabulary, no typed glyph icons, plus WCAG contrast on every colour token in both themes).
 
 ## AI configuration & honest degradation
 
@@ -76,7 +76,7 @@ For scheduled maintenance, add a Railway cron service on the same repo with the 
 
 ## Architecture
 
-Next.js 15 (App Router, TS) · Tailwind v4 with the spec's OKLCH token system as a *closed* theme (light+dark; 7-step spacing, 4/8/12/pill radii, three elevation levels, 150/250/400ms motion tokens, Inter Variable at 400/500 — off-system classes emit no CSS and `tests/design-guardrails.test.ts` names them) · Drizzle ORM on Postgres 16 + pgvector (HNSW + GIN, hybrid RRF retrieval) · Postgres-backed job queue (`FOR UPDATE SKIP LOCKED`) · `@anthropic-ai/sdk` behind a single gateway (telemetry, PII redaction, streaming structured outputs) · `@google/genai` for Gemini Live — server mints constrained ephemeral tokens, the browser streams 16 kHz PCM over the SDK's WebSocket, tool calls (policy search, escalation, evaluation) round-trip through `/api/live/*` · dependency-free PDF writer for certificates · cookie sessions (HMAC JWT) with shared-device short TTL and TOTP for admins.
+Next.js 15 (App Router, TS) · Tailwind v4 with the spec's OKLCH token system as a *closed* theme (light+dark; cream canvas, charcoal chrome, ink primary and a lime accent with mint/sand/pink/lavender status tints; 7-step spacing, 8/12/20/pill radii, three elevation levels, 150/250/400ms motion tokens, Manrope for text at 400/500 and Bricolage Grotesque for display at 600, a drawn line-icon set in `components/icons.tsx` — off-system classes emit no CSS and `tests/design-guardrails.test.ts` names them) · Drizzle ORM on Postgres 16 + pgvector (HNSW + GIN, hybrid RRF retrieval) · Postgres-backed job queue (`FOR UPDATE SKIP LOCKED`) · `@anthropic-ai/sdk` behind a single gateway (telemetry, PII redaction, streaming structured outputs) · `@google/genai` for Gemini Live — server mints constrained ephemeral tokens, the browser streams 16 kHz PCM over the SDK's WebSocket, tool calls (policy search, escalation, evaluation) round-trip through `/api/live/*` · dependency-free PDF writer for certificates · cookie sessions (HMAC JWT) with shared-device short TTL and TOTP for admins.
 
 Key directories: `lib/` (domain logic — compliance, rules, quiz engine, grading, drill, retrieval, HR assistant, guardrails, reports, sweep, DSR) · `app/(learner)` `app/(workspace)` (UI) · `app/api` (streaming + heartbeat + report routes) · `scripts/` (seed, worker, sweep) · `tests/` (vitest) · `docs/MVP_SPEC.md` (the contract).
 

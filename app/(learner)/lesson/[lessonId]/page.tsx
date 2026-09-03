@@ -1,3 +1,4 @@
+import { Icon } from "@/components/icons";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
@@ -58,7 +59,7 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
           <span className="mx-2" aria-hidden>/</span>
           {mod.title}
         </nav>
-        <h1 className="mb-4 text-xl font-medium">{lesson.title}</h1>
+        <h1 className="display mb-4 text-xl">{lesson.title}</h1>
 
         <CourseOutline view={view} variant="panel" className="mb-4 max-w-3xl xl:hidden" />
 
@@ -76,7 +77,7 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
                 {/* Some browsers refuse to render a PDF inline; never dead-end the lesson. */}
                 <p className="mt-3 text-sm text-muted">
                   Not showing?{" "}
-                  <a className="text-primary hover:underline" href={lesson.payload.fileUrl} target="_blank" rel="noreferrer">
+                  <a className="link text-link" href={lesson.payload.fileUrl} target="_blank" rel="noreferrer">
                     Open it in a new tab
                   </a>
                   .
@@ -109,7 +110,7 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
 
         <div className="flex max-w-3xl items-center justify-between gap-3">
           <div className="min-w-0">
-            {prev ? <ButtonLink variant="ghost" href={prev.href}>← {prev.title}</ButtonLink> : null}
+            {prev ? <ButtonLink variant="ghost" href={prev.href}><Icon name="arrow-left" size={16} /> {prev.title}</ButtonLink> : null}
           </div>
           <div className="flex min-w-0 items-center gap-2">
             {(lesson.type === "TEXT" || lesson.type === "PDF") && !isDone ? (
@@ -130,7 +131,7 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
                   <span className="sr-only">is locked until the earlier lessons are complete</span>
                 </span>
               ) : (
-                <ButtonLink variant="ghost" href={next.href}>{next.title} →</ButtonLink>
+                <ButtonLink variant="ghost" href={next.href}>{next.title} <Icon name="arrow-right" size={16} className="nudge" /></ButtonLink>
               )
             ) : null}
           </div>

@@ -4,7 +4,7 @@ import { join, relative, resolve } from "path";
 import { DUR, EASE_IN_OUT, EASE_OUT } from "../lib/motion";
 
 /**
- * Design-language guardrails (spec §10 v1.2). The Tailwind theme is a closed
+ * Design-language guardrails (spec §10 v2.0). The Tailwind theme is a closed
  * vocabulary, so an off-system class silently emits no CSS — this test turns
  * that silence into a named failure, and checks the colour tokens for WCAG AA.
  */
@@ -23,12 +23,17 @@ function walk(dir: string, out: string[] = []): string[] {
 
 const SPACING = /(?<![\w-])-?(?:m|p|mx|my|ms|me|mt|mb|ml|mr|px|py|ps|pe|pt|pb|pl|pr|gap|gap-x|gap-y|space-x|space-y|inset|inset-x|inset-y|top|bottom|start|end|left|right|scroll-mt|scroll-mb)-(\d+(?:\.\d+)?)(?![\w/-])/g;
 
+/* Typed glyph icons (arrows, technical, geometric, misc symbols, dingbats,
+   emoji) rendered at a different weight on every platform — icons are drawn
+   by <Icon> now. Typographic punctuation (· — … ‹ ›) is outside these ranges. */
+const GLYPH = /[←-⇿⌀-⏿■-➿]|\p{Extended_Pictographic}/u;
+
 const RULES: Array<[RegExp, string]> = [
-  [/(?<![\w-])font-(?:thin|extralight|light|semibold|bold|extrabold|black)(?![\w-])/, "font weight outside 400/500"],
-  [/(?<![\w-])text-[2-9]xl(?![\w-])/, "font size outside the five-step scale"],
+  [/(?<![\w-])font-(?:thin|extralight|light|bold|extrabold|black)(?![\w-])/, "font weight outside 400/500 (600 is the display face only)"],
+  [/(?<![\w-])text-[4-9]xl(?![\w-])/, "font size outside the seven-step scale"],
   [/(?<![\w-])text-\[\d+(?:px|rem|em)\]/, "arbitrary font size"],
   [/backdrop-blur/, "frosted glass"],
-  [/(?<![\w-])shadow-(?:2xs|xs|sm|md|lg|xl|2xl|\[)/, "non-token shadow (only shadow-overlay)"],
+  [/(?<![\w-])shadow-(?:2xs|xs|sm|md|lg|xl|2xl|\[)/, "non-token shadow (only shadow-card|overlay|glow)"],
   [/(?<![\w-])rounded(?:-[tbse]{1,2})?(?:-(?:xs|sm|md|lg|xl|2xl|3xl|4xl|\[[^\]]*\]))?(?![\w-])/, "non-token radius (use rounded-control|input|card|full)"],
   [/font-ai-voice|font-serif|Source_Serif/, "serif AI voice was replaced by <AiSurface>"],
   [/(?<![\w-])(?:duration|ease|delay)-(?:\d|\[|\()/, "non-token motion utility"],
@@ -36,7 +41,8 @@ const RULES: Array<[RegExp, string]> = [
   [/(?<![\w-])animate-(?:spin|ping|pulse|bounce)(?![\w-])/, "default keyframes"],
   [/overflow-y-(?:auto|scroll)|max-h-\[?\d/, "internal vertical scroll region (bento rule)"],
   [/window\.(?:confirm|alert|prompt)\(/, "native dialog — use <Dialog>"],
-  [/fontWeight=\{?["']?[6-9]00/, "SVG weight outside 400/500"],
+  [/fontWeight=\{?["']?[7-9]00/, "SVG weight outside 400/500/600"],
+  [GLYPH, "typed glyph icon — draw it with <Icon>"],
 ];
 
 describe("design guardrails — source", () => {
@@ -70,12 +76,14 @@ describe("design guardrails — globals.css", () => {
   });
 
   it("never reaches for heavy weights or frosted glass", () => {
-    expect(css).not.toMatch(/font-weight:\s*[6-9]00/);
+    expect(css).not.toMatch(/font-weight:\s*[7-9]00/);
     expect(css).not.toMatch(/backdrop-filter/);
     expect(css).toMatch(/--font-weight-\*: initial/);
-    expect(css).toMatch(/--radius-control: 4px/);
-    expect(css).toMatch(/--radius-input: 8px/);
-    expect(css).toMatch(/--radius-card: 12px/);
+    expect(css).toMatch(/--font-weight-semibold: 600/);
+    expect(css).toMatch(/--font-display:/);
+    expect(css).toMatch(/--radius-control: 8px/);
+    expect(css).toMatch(/--radius-input: 12px/);
+    expect(css).toMatch(/--radius-card: 20px/);
   });
 
   it("keeps CSS motion tokens in parity with lib/motion.ts", () => {
@@ -130,18 +138,34 @@ const TEXT_PAIRS: Array<[string, string]> = [
   ["foreground", "surface"],
   ["foreground", "surface-2"],
   ["foreground", "ai-tint"],
+  ["foreground", "success-tint"],
+  ["foreground", "warning-tint"],
+  ["foreground", "destructive-tint"],
+  ["foreground", "accent-tint"],
   ["muted-foreground", "background"],
   ["muted-foreground", "surface"],
   ["muted-foreground", "surface-2"],
   ["primary-fg", "primary"],
+  ["accent-fg", "accent"],
   ["destructive-fg", "destructive"],
   ["success-fg", "success-tint"],
+  ["success-fg", "surface"],
   ["warning-fg", "warning-tint"],
+  ["warning-fg", "surface"],
   ["destructive-text", "destructive-tint"],
   ["destructive-text", "surface"],
   ["ai-fg", "ai-tint"],
   ["ai-fg", "surface"],
+  ["link", "background"],
+  ["link", "surface"],
+  ["link", "surface-2"],
   ["primary", "background"],
+  /* the charcoal chrome */
+  ["rail-fg", "rail"],
+  ["rail-fg", "rail-hover"],
+  ["rail-muted", "rail"],
+  ["accent", "rail"],
+  ["accent", "rail-hover"],
 ];
 
 describe("design guardrails — WCAG AA contrast (≥ 4.5:1) in both themes", () => {
@@ -149,6 +173,8 @@ describe("design guardrails — WCAG AA contrast (≥ 4.5:1) in both themes", ()
   for (const theme of [":root", ".dark"]) {
     const tokens = parseTokens(css, theme);
     it(`${theme} text pairs`, () => {
+      const missing = TEXT_PAIRS.flat().filter((name) => !tokens[name]);
+      expect([...new Set(missing)]).toEqual([]);
       const failures = TEXT_PAIRS.filter(([fg, bg]) => contrast(tokens[fg], tokens[bg]) < 4.5).map(
         ([fg, bg]) => `${fg} on ${bg}: ${contrast(tokens[fg], tokens[bg]).toFixed(2)}`,
       );

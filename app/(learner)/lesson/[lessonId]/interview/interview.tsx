@@ -145,7 +145,7 @@ export function ResultCard({ title, result, passPct, gating }: { title: string; 
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <p className="text-xs text-muted">{title}</p>
-          <p className="text-xl font-medium">
+          <p className="display text-xl">
             <AnimatedNumber value={pct} suffix="%" />
           </p>
         </div>

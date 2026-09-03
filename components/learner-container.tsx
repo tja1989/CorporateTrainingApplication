@@ -13,5 +13,5 @@ import { cx } from "@/components/ui";
  */
 export function LearnerContainer({ children }: { children: ReactNode }) {
   const wide = usePathname().startsWith("/lesson/");
-  return <div className={cx("mx-auto flex", wide ? "max-w-7xl" : "max-w-5xl")}>{children}</div>;
+  return <div className={cx("shell-body mx-auto flex", wide ? "max-w-7xl" : "max-w-5xl")}>{children}</div>;
 }

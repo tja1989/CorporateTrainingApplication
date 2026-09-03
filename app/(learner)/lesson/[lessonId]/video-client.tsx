@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/icons";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiSurface, Button, ButtonLink, Card, Chip, Input, PillButton, Skeleton, cx } from "@/components/ui";
 import { Tabs } from "@/components/tabs";
@@ -160,7 +161,7 @@ export function VideoLessonClient({
         )}
         <div className="mt-2 flex items-center gap-2 text-xs text-muted">
           {completed ? (
-            <Chip variant="success">Watched ✓</Chip>
+            <Chip variant="success">Watched</Chip>
           ) : (
             <>
               <div className="h-1 w-meter overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuenow={coverage} aria-valuemin={0} aria-valuemax={100} aria-label="Watch coverage">
@@ -187,7 +188,7 @@ export function VideoLessonClient({
           value={tab}
           onChange={(id) => setTab(id as "tutor" | "transcript")}
           tabs={[
-            { id: "tutor", label: "✳ Tutor" },
+            { id: "tutor", label: <span className="inline-flex items-center gap-1"><Icon name="sparkle" size={14} />Tutor</span> },
             { id: "transcript", label: "Transcript" },
           ]}
           className="mb-3"
@@ -211,7 +212,7 @@ export function VideoLessonClient({
                     onClick={() => seekTo(c.startSec)}
                     className="w-full rounded-control px-2 py-2 text-start text-sm hover:bg-surface-2"
                   >
-                    <span className="bidi-isolate me-2 font-mono text-xs text-primary">{fmtTime(c.startSec)}</span>
+                    <span className="bidi-isolate me-2 font-mono text-xs text-link">{fmtTime(c.startSec)}</span>
                     {c.text.length > 220 ? c.text.slice(0, 220) + "…" : c.text}
                   </button>
                 </li>
@@ -313,14 +314,14 @@ function TutorPanel({
               setMessages((m) => [...m, { role: "assistant", content: event.answer, citations: event.citations, mock: event.mock }]);
               setStreaming(null);
             } else if (event.type === "error") {
-              setMessages((m) => [...m, { role: "assistant", content: `⚠ ${event.message}` }]);
+              setMessages((m) => [...m, { role: "assistant", content: event.message }]);
               setStreaming(null);
             }
           }
         }
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
-          setMessages((m) => [...m, { role: "assistant", content: "⚠ The Tutor is unavailable right now." }]);
+          setMessages((m) => [...m, { role: "assistant", content: "The Tutor is unavailable right now." }]);
         }
         setStreaming(null);
       }
@@ -335,7 +336,7 @@ function TutorPanel({
           Lesson Tutor <Chip variant="ai">AI</Chip>
         </span>
         <PillButton onClick={() => setScope((s) => (s === "lesson" ? "course" : "lesson"))} aria-label="Toggle retrieval scope">
-          {scope === "lesson" ? "This lesson ▾" : "Whole course ▾"}
+          {scope === "lesson" ? "This lesson" : "Whole course"} <Icon name="chevron-down" size={12} />
         </PillButton>
       </div>
 
@@ -359,9 +360,9 @@ function TutorPanel({
                         key={j}
                         onClick={() => onSeek(c.startSec)}
                         title={c.quote}
-                        className="bidi-isolate pressable hit-area rounded-full bg-surface px-2 py-1 text-xs font-medium text-ai-fg hover:opacity-80"
+                        className="bidi-isolate pressable hit-area inline-flex items-center gap-1 rounded-full bg-surface px-2 py-1 text-xs font-medium text-ai-fg hover:bg-ai hover:text-ai-tint"
                       >
-                        ▶ {fmtTime(c.startSec)}
+                        <Icon name="play" size={12} /> {fmtTime(c.startSec)}
                       </button>
                     ))}
                   </span>
@@ -401,7 +402,7 @@ function TutorPanel({
           </PillButton>
           {streaming !== null ? (
             <PillButton onClick={() => abortRef.current?.abort()} className="ms-auto text-destructive-text">
-              ■ Stop
+              <Icon name="stop" size={12} /> Stop
             </PillButton>
           ) : null}
         </div>
@@ -421,7 +422,7 @@ function TutorPanel({
             className="min-w-0 flex-1"
           />
           <Button type="submit" disabled={streaming !== null || !input.trim()} className="px-3" aria-label="Send">
-            ↑
+            <Icon name="arrow-up" size={18} />
           </Button>
         </form>
       </div>

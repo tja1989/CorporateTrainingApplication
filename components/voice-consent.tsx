@@ -3,6 +3,15 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button, Card, PillButton } from "@/components/ui";
+import { Icon, type IconName } from "@/components/icons";
+
+function Bullet({ icon }: { icon: IconName }) {
+  return (
+    <span className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-ai-tint text-ai-fg" aria-hidden>
+      <Icon name={icon} size={14} />
+    </span>
+  );
+}
 
 /**
  * Per-session consent for voice features (spec FR-14.4): says exactly what is
@@ -38,24 +47,24 @@ export function VoiceConsent({
   }, []);
   return (
     <Card className="p-4">
-      <h2 className="mb-2 text-base font-medium">{kind === "hr" ? "Before you talk to the HR assistant" : "Before the oral check"}</h2>
+      <h2 className="display mb-2 text-lg">{kind === "hr" ? "Before you talk to the HR assistant" : "Before the oral check"}</h2>
       <ul className="mb-3 flex flex-col gap-2 text-sm">
         <li className="flex gap-2">
-          <span aria-hidden>🎙</span>
+          <Bullet icon="mic" />
           <span>
             Your microphone is on only while this page is open. Audio streams to Google&#39;s Gemini API to be understood and answered — we never store the
             audio.
           </span>
         </li>
         <li className="flex gap-2">
-          <span aria-hidden>📝</span>
+          <Bullet icon="note" />
           <span>
             A written transcript is kept for 12 months.{" "}
             {kind === "hr" ? "It's yours — the HR team sees it only if you choose to share it." : "Your manager and admins can see it, like a quiz result."}
           </span>
         </li>
         <li className="flex gap-2">
-          <span aria-hidden>✳</span>
+          <Bullet icon="sparkle" />
           <span>
             You&#39;re talking to an AI.{" "}
             {kind === "hr"
@@ -64,12 +73,12 @@ export function VoiceConsent({
           </span>
         </li>
         <li className="flex gap-2">
-          <span aria-hidden>⌨</span>
+          <Bullet icon="keyboard" />
           <span>Prefer not to speak? You can type instead at any point.</span>
         </li>
         {ios ? (
           <li className="flex gap-2">
-            <span aria-hidden>📱</span>
+            <Bullet icon="phone" />
             <span>On iPhone, switch the ringer on to hear the assistant.</span>
           </li>
         ) : null}
@@ -86,7 +95,7 @@ export function VoiceConsent({
         <PillButton type="button" onClick={onTestSpeaker}>
           Test speaker
         </PillButton>
-        <Link href="/privacy-notice" className="text-xs text-primary underline">
+        <Link href="/privacy-notice" className="link text-xs text-link">
           Privacy notice
         </Link>
       </div>

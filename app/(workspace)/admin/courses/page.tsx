@@ -18,7 +18,7 @@ export default async function CoursesAdminPage() {
         <div className="flex flex-col gap-2">
           {courses.map((c) => (
             <Link key={c.id} href={`/admin/courses/${c.id}`}>
-              <Card className="pressable flex items-center justify-between gap-3 p-3 text-sm hover:bg-surface-2">
+              <Card className="lift pressable flex items-center justify-between gap-3 p-3 text-sm hover:bg-surface-2">
                 <div className="min-w-0">
                   <p className="truncate font-medium">{c.title}</p>
                   <p className="text-xs text-muted">~{c.estMinutes} min · {c.tags.join(", ") || "no tags"}{c.certificateEnabled ? " · certificate" : ""}</p>
@@ -29,7 +29,7 @@ export default async function CoursesAdminPage() {
           ))}
         </div>
         <Card className="h-fit p-4">
-          <h2 className="mb-2 text-sm font-medium text-muted">New course</h2>
+          <h2 className="eyebrow mb-2 text-muted">New course</h2>
           <form action={createCourseAction}>
             <Field label="Title"><Input name="title" required /></Field>
             <Field label="Description"><Input name="description" /></Field>

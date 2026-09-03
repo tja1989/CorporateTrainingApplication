@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/icons";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AiSurface, AnimatedNumber, Button, Card, Chip, Input, Select, Textarea, cx } from "@/components/ui";
@@ -204,7 +205,7 @@ export function QuizRunner({
         ) : null}
         {latestFinalized && latestFinalized.gradingState === "FINAL" && !latestFinalized.appealed && !appealSent ? (
           <button
-            className="text-sm text-primary underline underline-offset-2"
+            className="link text-sm text-link"
             onClick={async () => {
               const res = await fetch(`/api/attempt/appeal-latest?quizId=${quizId}`, { method: "POST" });
               if (res.ok) setAppealSent(true);
@@ -224,7 +225,7 @@ export function QuizRunner({
     return (
       <div className="animate-enter">
         <Card className="mb-4 p-6">
-          <p className="mb-1 text-xl font-medium">
+          <p className="display mb-1 text-xl">
             <AnimatedNumber value={result.scorePct} suffix="%" />
           </p>
           {result.gradingState === "PROVISIONAL" ? (
@@ -249,7 +250,7 @@ export function QuizRunner({
               <Card key={r.questionId} className="mb-2 p-4 text-sm">
                 <p className="mb-1 font-medium">
                   {i + 1}. {r.prompt}{" "}
-                  {r.correct === null ? <Chip variant="ai">AI-graded</Chip> : r.correct ? <Chip variant="success">✓</Chip> : <Chip variant="destructive">✗</Chip>}
+                  {r.correct === null ? <Chip variant="ai">AI-graded</Chip> : r.correct ? <Chip variant="success">Correct</Chip> : <Chip variant="destructive">Incorrect</Chip>}
                 </p>
                 {r.explanation ? <p className="text-muted">{r.explanation}</p> : null}
                 {r.rationale ? (
@@ -285,7 +286,7 @@ export function QuizRunner({
           </span>
         ) : null}
         <span className="flex-1" />
-        {offline ? <Chip variant="warning">Reconnecting — answers saved locally</Chip> : <span className={cx("text-xs text-muted transition-opacity", saved ? "opacity-100" : "opacity-60")}>{saved ? "Saved ✓" : "Saving…"}</span>}
+        {offline ? <Chip variant="warning">Reconnecting — answers saved locally</Chip> : <span className={cx("text-xs text-muted transition-opacity", saved ? "opacity-100" : "opacity-60")}>{saved ? <><Icon name="check" size={12} className="me-1 inline align-text-bottom text-success-fg" />Saved</> : "Saving…"}</span>}
         {remaining !== null ? (
           <Chip variant={remaining < 60 ? "destructive" : "neutral"}>
             {remaining <= 0 ? "Time up" : `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`}
@@ -473,8 +474,8 @@ function OrderingInput({ items, answer, onChange }: { items: string[]; answer: A
         <li key={displayIdx} className="flex items-center gap-2 rounded-input border border-border px-3 py-2 text-sm">
           <span className="w-6 text-xs text-muted">{pos + 1}.</span>
           <span className="flex-1">{items[displayIdx]}</span>
-          <button onClick={() => move(pos, -1)} aria-label="Move up" className="touch-target pressable rounded-control px-2 hover:bg-surface-2 disabled:opacity-50" disabled={pos === 0}>↑</button>
-          <button onClick={() => move(pos, 1)} aria-label="Move down" className="touch-target pressable rounded-control px-2 hover:bg-surface-2 disabled:opacity-50" disabled={pos === order.length - 1}>↓</button>
+          <button onClick={() => move(pos, -1)} aria-label="Move up" className="touch-target pressable rounded-control px-2 hover:bg-surface-2 disabled:opacity-50" disabled={pos === 0}><Icon name="arrow-up" size={16} /></button>
+          <button onClick={() => move(pos, 1)} aria-label="Move down" className="touch-target pressable rounded-control px-2 hover:bg-surface-2 disabled:opacity-50" disabled={pos === order.length - 1}><Icon name="arrow-down" size={16} /></button>
         </li>
       ))}
     </ol>

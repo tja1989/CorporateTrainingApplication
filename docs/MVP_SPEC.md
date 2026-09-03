@@ -449,6 +449,13 @@ All model calls go through a single server-side `ai/` module (provider SDK: `@an
 
 ## 10. Design language ("Reimagined, live and dynamic" — made concrete)
 
+> **v2.0 visual refresh (Sept 2026).** The language below still governs *what* the UI is (bento rule, motion budget, closed vocabulary, honesty surfaces); this refresh changed *how it looks*, after the v1 palette read as pale. What moved:
+> - **Colour.** Warm cream canvas (`--background` oklch 0.965/0.016/88) with a faint accent wash in the corners; **charcoal chrome** (`--rail`, `--rail-fg`, `--rail-muted`, `--rail-hover`) for the header, nav rail and tab bar in both themes; **ink `--primary`** for buttons and active outlines (cream in dark mode); a **lime `--accent`** (+`-fg`, `-tint`, `-glow`) for progress, the active nav row, focus rings, selection and celebration; a teal **`--link`** for text links; status tints saturated to mint / sand / pink / lavender. Every text pair is still ≥ 4.5:1 and the guardrail test enumerates them.
+> - **Type.** Two families: **Manrope** for UI and reading text at 400/500, **Bricolage Grotesque** for display (`.display`, `.stat`) at 600 — the one weight above 500 that exists. Scale gains `2xl` 32/36 and `3xl` 44/48 for page titles and tile numbers; `.eyebrow` is the tracked-caps label of a bento card.
+> - **Shape & depth.** Radii 8 / 12 / 20 + pill; buttons are pills. L1 cards gain a soft `--shadow-card` only while hovered (`.lift`); `--shadow-glow` is the lime halo of the one thing that is "on".
+> - **Icons.** One drawn 24-unit line set (`components/icons.tsx`, 1.75 stroke, `currentColor`) replaces every typed glyph and emoji; the guardrail test rejects new ones.
+> - **Micro-motion**, all on the existing tokens: primary buttons turn lime under the pointer, cards lift 2px, trailing arrows nudge, links draw their underline, the active tab icon rises into a lime pill, chips/badges/toast icons pop in, the progress ring sweeps lime→mint, the sign-in orbs drift. Navigation still gets no entry animation.
+
 ### 10.1 Direction: committed editorial/humanist
 
 2026 product design has split into two shipping languages: techno-futurist (dark-first, neon accent — Linear, Vercel, Raycast) and **editorial/humanist** (warm paper neutrals, serif accents, generous whitespace — Claude, Perplexity, Notion-adjacent, Sana). AI-forward learning products have converged on the second because it reads human and trustworthy. **This product commits to editorial/humanist, light-first.** A workforce LMS on shared/retail-floor and mobile devices needs light-first with strong contrast; dark mode ships as the complete token set below + toggle, not the identity. Mixing both languages (dark hero + cream cards + neon chips) is the trend-collage failure — do not.

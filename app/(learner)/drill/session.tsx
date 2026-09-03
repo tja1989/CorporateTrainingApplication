@@ -1,5 +1,6 @@
 "use client";
 
+import { IconDisc } from "@/components/icons";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { DUR, EASE_OUT } from "@/lib/motion";
@@ -36,8 +37,8 @@ export function DrillSession({ daysThisWeek, streakWeeks }: { daysThisWeek: numb
   if (questions.length === 0) {
     return (
       <Card className="animate-enter mx-auto max-w-md p-6 text-center">
-        <p className="mb-1 text-xl text-muted" aria-hidden>✓</p>
-        <h1 className="mb-1 font-medium">Nothing due right now</h1>
+        <IconDisc name="check" tone="success" size={56} className="animate-pop mb-3" />
+        <h1 className="display mb-1 text-lg">Nothing due right now</h1>
         <p className="text-sm text-muted">You&#39;re ahead of the scheduler. Come back tomorrow — spaced practice works best with gaps.</p>
       </Card>
     );
@@ -46,8 +47,8 @@ export function DrillSession({ daysThisWeek, streakWeeks }: { daysThisWeek: numb
   if (finished) {
     return (
       <Card className="animate-enter mx-auto max-w-md p-6 text-center">
-        <p className="mb-2 text-xl text-muted" aria-hidden>◎</p>
-        <h1 className="mb-1 text-xl font-medium">
+        <IconDisc name="flame" tone="accent" size={56} className="animate-pop mb-3" />
+        <h1 className="display mb-1 text-2xl">
           <AnimatedNumber value={score} />/{questions.length} — nice work
         </h1>
         <p className="mb-3 text-sm text-muted">+5 points · {Math.min(daysThisWeek + 1, 7)} active day(s) this week{streakWeeks > 0 ? ` · ${streakWeeks}-week streak` : ""}</p>
@@ -151,7 +152,7 @@ export function DrillSession({ daysThisWeek, streakWeeks }: { daysThisWeek: numb
               </>
             ) : (
               <div className="animate-enter">
-                <Chip variant={feedback.correct ? "success" : "destructive"}>{feedback.correct ? "Correct ✓" : "Not quite"}</Chip>
+                <Chip variant={feedback.correct ? "success" : "destructive"}>{feedback.correct ? "Correct" : "Not quite"}</Chip>
                 {!feedback.correct && feedback.correctAnswer ? (
                   <p className="mt-2 text-sm">
                     Answer: <strong>{feedback.correctAnswer}</strong>

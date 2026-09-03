@@ -39,7 +39,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ use
       </PageTitle>
 
       <section className="mb-6" aria-label="Enrollments">
-        <h2 className="mb-2 text-sm font-medium text-muted">Enrollments</h2>
+        <h2 className="eyebrow mb-2 text-muted">Enrollments</h2>
         <div className="flex flex-col gap-2">
           {enrollments
             .filter((e) => e.status !== "WITHDRAWN")
@@ -65,7 +65,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ use
 
       <section className="mb-6 grid gap-4 sm:grid-cols-2" aria-label="Actions">
         <Card className="p-4">
-          <h2 className="mb-2 text-sm font-medium text-muted">Assign training</h2>
+          <h2 className="eyebrow mb-2 text-muted">Assign training</h2>
           <form action={assignAction.bind(null, member.id)}>
             <Field label="Course or path">
               <Select name="target" required>
@@ -93,7 +93,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ use
         </Card>
         <Card className="flex flex-col gap-3 p-4">
           <div>
-            <h2 className="mb-2 text-sm font-medium text-muted">Nudge</h2>
+            <h2 className="eyebrow mb-2 text-muted">Nudge</h2>
             <form action={nudgeAction.bind(null, member.id)}>
               <Button type="submit" variant="secondary" disabled={!!nudgedRecently}>
                 {nudgedRecently ? "Nudged in the last 48h" : "Send reminder now"}
@@ -102,7 +102,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ use
             {!member.email ? <p className="mt-1 text-xs text-muted">No email — the nudge lands in-app; mention it in person too.</p> : null}
           </div>
           <div>
-            <h2 className="mb-2 text-sm font-medium text-muted">Account help</h2>
+            <h2 className="eyebrow mb-2 text-muted">Account help</h2>
             <form action={issueResetAction.bind(null, member.id)}>
               <Button type="submit" variant="secondary">Issue password reset code</Button>
             </form>
@@ -112,7 +112,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ use
       </section>
 
       <section aria-label="History">
-        <h2 className="mb-2 text-sm font-medium text-muted">Completions</h2>
+        <h2 className="eyebrow mb-2 text-muted">Completions</h2>
         {records.length === 0 ? (
           <p className="text-sm text-muted">None yet.</p>
         ) : (
@@ -128,7 +128,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ use
       </section>
 
       <section className="mt-6" aria-label="Oral checks">
-        <h2 className="mb-2 text-sm font-medium text-muted">Oral checks</h2>
+        <h2 className="eyebrow mb-2 text-muted">Oral checks</h2>
         {oralChecks.length === 0 ? (
           <p className="text-sm text-muted">No spoken checks taken yet.</p>
         ) : (

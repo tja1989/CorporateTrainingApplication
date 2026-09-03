@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AnimatePresence, motion } from "motion/react";
 import { DUR, EASE_OUT } from "@/lib/motion";
 import { cx } from "./ui";
+import { Icon, type IconName } from "./icons";
 
 export type Toast = { id: number; message: string; tone?: "neutral" | "success" | "warning" | "destructive" };
 export type Flash = Omit<Toast, "id">;
@@ -16,12 +17,13 @@ export function useToast() {
   return ctx;
 }
 
-const toneClass = {
-  neutral: "border-border",
-  success: "border-success-fg/40",
-  warning: "border-warning-fg/40",
-  destructive: "border-destructive-text/40",
-} as const;
+/* Each tone is an icon in its own tinted disc — the message stays on the surface. */
+const toneStyle: Record<NonNullable<Toast["tone"]>, { icon: IconName; disc: string }> = {
+  neutral: { icon: "bell", disc: "bg-accent text-accent-fg" },
+  success: { icon: "check", disc: "bg-success-tint text-success-fg" },
+  warning: { icon: "warning", disc: "bg-warning-tint text-warning-fg" },
+  destructive: { icon: "x", disc: "bg-destructive-tint text-destructive-text" },
+};
 
 const FLASH_COOKIE = "ll_flash";
 
@@ -69,25 +71,28 @@ export function ToastProvider({ initial, children }: { initial?: Flash | null; c
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <AnimatePresence initial={false}>
-          {items.map((t) => (
-            <motion.div
-              key={t.id}
-              layout
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: DUR.base, ease: EASE_OUT }}
-              className={cx(
-                "pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-card border bg-surface px-4 py-3 text-sm text-foreground shadow-overlay",
-                toneClass[t.tone ?? "neutral"],
-              )}
-            >
-              <span className="flex-1">{t.message}</span>
-              <button type="button" onClick={() => dismiss(t.id)} aria-label="Dismiss" className="hit-area text-muted hover:text-foreground">
-                ×
-              </button>
-            </motion.div>
-          ))}
+          {items.map((t) => {
+            const tone = toneStyle[t.tone ?? "neutral"];
+            return (
+              <motion.div
+                key={t.id}
+                layout
+                initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                transition={{ duration: DUR.base, ease: EASE_OUT }}
+                className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-card border border-border bg-surface px-4 py-3 text-sm text-foreground shadow-overlay"
+              >
+                <span className={cx("animate-pop flex size-8 shrink-0 items-center justify-center rounded-full", tone.disc)} aria-hidden>
+                  <Icon name={tone.icon} size={16} />
+                </span>
+                <span className="flex-1 pt-1">{t.message}</span>
+                <button type="button" onClick={() => dismiss(t.id)} aria-label="Dismiss" className="hit-area pt-1 text-muted hover:text-foreground">
+                  <Icon name="x" size={16} />
+                </button>
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
     </Ctx.Provider>

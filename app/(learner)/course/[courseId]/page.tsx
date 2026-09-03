@@ -1,3 +1,4 @@
+import { Icon } from "@/components/icons";
 import { notFound } from "next/navigation";
 import { and, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
@@ -55,7 +56,7 @@ export default async function CoursePage({
     <div className="animate-slide-up">
       <div className="mb-6">
         <div className="mb-2 flex flex-wrap items-center gap-2">
-          <h1 className="text-xl font-medium">{course.title}</h1>
+          <h1 className="display text-xl">{course.title}</h1>
           {chip ? <Chip variant={chip.variant}>{chip.label}</Chip> : null}
         </div>
         <p className="mb-3 max-w-2xl text-sm text-muted">{course.description}</p>
@@ -66,10 +67,10 @@ export default async function CoursePage({
         </div>
         {course.objectives.length > 0 ? (
           <Card className="mb-4 max-w-2xl p-4">
-            <h2 className="mb-2 text-sm font-medium text-muted">You will learn to</h2>
+            <h2 className="eyebrow mb-2 text-muted">You will learn to</h2>
             <ul className="flex flex-col gap-1 text-sm">
               {course.objectives.map((o) => (
-                <li key={o} className="flex gap-2"><span className="text-primary" aria-hidden>✓</span>{o}</li>
+                <li key={o} className="flex gap-2"><Icon name="check" size={16} className="mt-1 shrink-0 text-success-fg" />{o}</li>
               ))}
             </ul>
           </Card>

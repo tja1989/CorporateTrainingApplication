@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import { DUR, EASE_IN_OUT, EASE_OUT } from "@/lib/motion";
 import type { VoiceStatus } from "@/lib/live/client/use-live-voice";
+import { Icon } from "./icons";
 
 /**
  * The voice presence: an `--ai` tinted disc that swells with the microphone
@@ -32,11 +33,11 @@ export function VoiceOrb({ status, speaking, level, muted, typedOnly }: { status
         />
         <motion.div
           aria-hidden
-          className="flex size-[64px] items-center justify-center rounded-full bg-ai-tint text-xl text-ai-fg"
+          className="flex size-[64px] items-center justify-center rounded-full bg-ai-tint text-ai-fg shadow-card"
           animate={{ scale: reduced ? 1 : speaking ? 1.06 : listening ? 1 + Math.min(1, level) * 0.35 : 1 }}
           transition={{ duration: DUR.fast, ease: EASE_OUT }}
         >
-          ✳
+          <Icon name="sparkle" size={28} />
         </motion.div>
       </div>
       <p className="text-xs text-muted" role="status" aria-live="polite">
