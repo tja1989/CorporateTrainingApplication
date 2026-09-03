@@ -98,7 +98,7 @@
   /* Layout widths that used to ride the spacing scale */
   --width-rail: 14rem;
   /* The same rail, collapsed to its icons. */
-  --width-rail-sm: 3.5rem;
+  --width-rail-sm: 4rem;
   --width-meter: 8rem;
 
   /* Rule 4 — radii: 4 controls / 8 inputs / 12 cards; pills use rounded-full */
@@ -229,6 +229,55 @@ strong, b, th { font-weight: 500; }
 .disclosure > summary::-webkit-details-marker { display: none; }
 .disclosure > summary .chev { transition: transform var(--duration-fast) var(--ease-out); }
 .disclosure[open] > summary .chev { transform: rotate(180deg); }
+
+/* Nav rail (spec §10.7). The rail reserves a stable width in the flow; the
+   panel inside it is what widens, and it lays over the page — so a cursor
+   drifting across the nav never reflows the content behind it. The reveal is
+   CSS rather than React state: hover cannot be expressed in a re-render, and
+   this way the labels stay in the DOM for assistive tech at every width. */
+.rail { width: var(--width-rail); }
+.rail[data-collapsed] { width: var(--width-rail-sm); }
+
+.rail-panel {
+  width: var(--width-rail);
+  overflow: hidden; /* clips the labels as the panel narrows */
+  z-index: 20; /* over the page, under the sticky header (z-30) */
+  transition: width var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+}
+.rail[data-collapsed] .rail-panel { width: var(--width-rail-sm); }
+
+.rail-label { white-space: nowrap; transition: opacity var(--duration-fast) var(--ease-out); }
+.rail[data-collapsed] .rail-label { opacity: 0; }
+
+/* Keyboard users get the same reveal without a pointer. */
+.rail[data-collapsed]:focus-within .rail-panel {
+  width: var(--width-rail);
+  box-shadow: var(--shadow-overlay);
+}
+.rail[data-collapsed]:focus-within .rail-label { opacity: 1; }
+
+/* Pointer devices only — a touch device must not expand from a stray tap. */
+@media (hover: hover) {
+  .rail[data-collapsed]:hover .rail-panel {
+    width: var(--width-rail);
+    box-shadow: var(--shadow-overlay);
+    /* Opening waits out a cursor that is only passing through; closing is instant. */
+    transition-delay: var(--duration-fast);
+  }
+  .rail[data-collapsed]:hover .rail-label { opacity: 1; }
+  .rail[data-collapsed]:hover .rail-toggle { align-self: flex-end; }
+}
+
+/* Open, the toggle sits at the trailing edge; collapsed, over the icons. It
+   follows the panel, so a hover-opened rail puts it where a pinned one has it. */
+.rail-toggle { align-self: flex-end; }
+.rail[data-collapsed] .rail-toggle { align-self: center; }
+.rail[data-collapsed]:focus-within .rail-toggle { align-self: flex-end; }
+[dir="rtl"] .rail-chevron { transform: scaleX(-1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-panel, .rail-label { transition: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .animate-enter, .animate-slide-up { animation: ll-fade var(--duration-base) var(--ease-out); }

@@ -42,9 +42,13 @@ const PALETTE = [
   { label: "Learner home", href: "/home", group: "Learner" },
 ];
 
-/** The rail's collapsed state, so the server renders the right width with no flash. */
+/**
+ * The rail's pinned state, so the server renders the right width with no flash.
+ * Collapsed is the default: the rail opens on hover, so the icons-only strip
+ * costs nothing and hands ~10rem back to the content.
+ */
 async function railCollapsed(): Promise<boolean> {
-  return (await cookies()).get("ll_nav")?.value === "collapsed";
+  return (await cookies()).get("ll_nav")?.value !== "open";
 }
 
 async function unreadCount(userId: string): Promise<number> {
