@@ -59,6 +59,12 @@ export function pickLiveModel(available: string[], override?: string | null): { 
   const set = new Set(available.map(stripPrefix));
   if (override?.trim()) {
     const m = stripPrefix(override.trim());
+    // A pin is explicit intent, so it is honoured either way — but a model that
+    // cannot speak will refuse the session, and that is worth saying up front
+    // rather than leaving it to a mid-call disconnect.
+    if (!isSpeechCapableLiveModel(m)) {
+      return { model: m, warning: `GEMINI_LIVE_MODEL "${m}" looks like a transcription-only model and will refuse an audio session.` };
+    }
     if (set.size === 0 || set.has(m)) return { model: m };
     return { model: m, warning: `GEMINI_LIVE_MODEL "${m}" is not in this key's model list — trying it anyway.` };
   }
@@ -70,22 +76,53 @@ export function pickLiveModel(available: string[], override?: string | null): { 
   const curated = LIVE_MODEL_CANDIDATES.find((c) => set.has(c));
   if (curated && scoreLiveModel(curated) >= bestScore) return { model: curated };
   if (bestScore > 0) return { model: best };
-  return { model: null, warning: "This API key has no Live-capable (bidiGenerateContent) model." };
+  return { model: null, warning: "This API key exposes no Live model that can speak — a transcription-only model cannot hold a voice session." };
+}
+
+/**
+ * Streaming over `bidiGenerateContent` is not the same as being able to speak:
+ * the transcription family is bidirectional too, and `models.list` reports no
+ * response modalities, so the id is the only signal there is. A session that
+ * asks for `AUDIO` out is refused outright by these — "response modalities
+ * (AUDIO) is not supported by the model" — so they are never candidates.
+ */
+const NOT_SPEECH = /transcribe|transcription|\btts\b|embedding|image|vision|guard|rerank/;
+
+/**
+ * The model generation, from either naming shape — `gemini-2.5-flash-live` and
+ * `gemini-live-2.5-flash` alike. Only a dotted generation counts, or digits
+ * directly after `gemini-`; a trailing serial or date (`-001`, `-12-2025`) is
+ * not a version, and reading one as 12 would rank a dated preview above
+ * everything else.
+ */
+function liveModelVersion(m: string): number {
+  const dotted = m.match(/(?:^|-)(\d+\.\d+)(?=-|$)/);
+  if (dotted) return Number(dotted[1]);
+  const major = m.match(/gemini-(\d+)(?=-|$)/);
+  return major ? Number(major[1]) : 0;
 }
 
 /**
  * Rank a Live-capable model id. Newer family first, native audio over
- * half-cascade, stable aliases over dated previews. Returns 0 for anything
- * that does not look like a Live model, so it is never chosen.
+ * half-cascade, stable aliases over dated previews. Returns 0 for anything that
+ * does not look like a Live model that can speak, so it is never chosen — an
+ * unfamiliar naming shape scores 0 rather than being guessed at, which leaves
+ * the curated list in charge until someone vouches for the new name.
  */
 export function scoreLiveModel(model: string): number {
   const m = stripPrefix(model);
-  const version = Number(m.match(/gemini-(\d+(?:\.\d+)?)/)?.[1] ?? 0);
-  if (!version) return 0;
+  if (NOT_SPEECH.test(m)) return 0;
   if (!/native-audio|live/.test(m)) return 0;
+  const version = liveModelVersion(m);
+  if (!version) return 0;
   const nativeAudio = /native-audio/.test(m) ? 4 : 0;
   const stable = /-latest$/.test(m) ? 2 : /preview|exp/.test(m) ? 0 : 1;
   return version * 10 + nativeAudio + stable;
+}
+
+/** Whether an id belongs to a family that cannot return audio at all. */
+export function isSpeechCapableLiveModel(model: string): boolean {
+  return !NOT_SPEECH.test(stripPrefix(model));
 }
 
 let modelCache: { at: number; models: string[] } | null = null;
@@ -97,7 +134,12 @@ export async function listLiveModels(): Promise<string[]> {
   try {
     const pager = await liveClient().models.list({ config: { pageSize: 100 } });
     for await (const m of pager) {
-      if (m.name && (m.supportedActions ?? []).includes("bidiGenerateContent")) models.push(stripPrefix(m.name));
+      // bidiGenerateContent alone would keep the transcription family, which
+      // streams but cannot speak — drop those here so nothing downstream, the
+      // ranking included, can land on one.
+      if (m.name && (m.supportedActions ?? []).includes("bidiGenerateContent") && isSpeechCapableLiveModel(m.name)) {
+        models.push(stripPrefix(m.name));
+      }
     }
   } catch {
     /* offline or listing unsupported → caller falls back to the default candidate */

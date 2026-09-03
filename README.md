@@ -53,7 +53,7 @@ Background jobs: `npm run worker` (queue) and `npm run sweep` (nightly complianc
 | `SMTP_URL` | Email channel (`console` logs in dev) | In-app inbox still delivers everything; manager digests remain the certified reach path |
 | `GEMINI_API_KEY` (+`GEMINI_LIVE_MODEL`, `GEMINI_LIVE_VOICE`, `GEMINI_LIVE_LANGUAGE`) | **Voice**: the oral check after a lesson and the HR assistant's live mode, on the Gemini Live API through one-use ephemeral tokens | Both screens run as a **typed offline demo** with the same policy tools and the same offline grader — labeled, nothing crashes |
 
-`GEMINI_LIVE_LANGUAGE` (default `en-US`) pins the language a spoken session is conducted in — it becomes the Live API's transcription hint. Left to auto-detect, accented English is regularly transcribed into another language mid-answer. `GEMINI_LIVE_MODEL` pins a model; unset, the newest Live-capable model the key exposes is chosen at runtime.
+`GEMINI_LIVE_LANGUAGE` (default `en-US`) pins the language a spoken session is conducted in — it becomes the Live API's transcription hint. Left to auto-detect, accented English is regularly transcribed into another language mid-answer. `GEMINI_LIVE_MODEL` pins a model; unset, the newest model the key exposes that can actually *speak* is chosen at runtime — streaming over `bidiGenerateContent` is not enough on its own, since the transcription family (`…-transcribe-live`) does that too and then refuses a session that asks for audio out.
 
 Every AI surface degrades to a clear labeled state — nothing crashes without keys.
 
@@ -69,7 +69,7 @@ The repo is self-deploying: `railway.json` pins the Dockerfile build, and the st
    SESSION_SECRET = <any long random string, e.g. `openssl rand -hex 32`>
    DEMO_MODE      = true
    ```
-   Later, to switch the AI surfaces from offline demo mode to live models, add `ANTHROPIC_API_KEY` (and optionally `VOYAGE_API_KEY`, `AI_MODEL`, `YOUTUBE_API_KEY`) — no redeploy of code needed, just a service restart. For **voice** (oral check + HR live mode) add `GEMINI_API_KEY` from Google AI Studio; `/api/health` shows `voiceConfigured: true` once it is picked up.
+   Later, to switch the AI surfaces from offline demo mode to live models, add `ANTHROPIC_API_KEY` (and optionally `VOYAGE_API_KEY`, `AI_MODEL`, `YOUTUBE_API_KEY`) — no redeploy of code needed, just a service restart. For **voice** (oral check + HR live mode) add `GEMINI_API_KEY` from Google AI Studio; `/api/health` shows `voiceConfigured: true` once it is picked up, and `voiceModel` — the model a session would actually open against, so a key that resolves to something unusable is visible there rather than only when someone starts talking.
 4. **Settings → Networking → Generate Domain.** First boot takes a couple of minutes (schema + seed); the healthcheck is `/login`. Sign in with the demo credentials above.
 
 For scheduled maintenance, add a Railway cron service on the same repo with the command `npm run sweep` (daily) — it runs reminders, recertification, compliance recompute, and the retention purge.

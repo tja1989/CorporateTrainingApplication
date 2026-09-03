@@ -204,4 +204,46 @@ describe("live model choice", () => {
     expect(pickLiveModel(["models/gemini-2.5-flash"]).model).toBeNull();
     expect(pickLiveModel([]).model).toBe(LIVE_MODEL_CANDIDATES[0]);
   });
+
+  /**
+   * A voice session asks for AUDIO out. The transcription family streams over
+   * bidiGenerateContent like a Live model but refuses that config outright
+   * ("response modalities (AUDIO) is not supported by the model"), which the
+   * browser then reports as a dead conversation. Ranking used to read the "live"
+   * in `gemini-3.5-transcribe-live` as Live-capable and its 3.5 as the newest
+   * family, so it outscored every model that can actually speak.
+   */
+  it("never picks a transcription model for a session that must speak", () => {
+    expect(scoreLiveModel("gemini-3.5-transcribe-live")).toBe(0);
+    expect(scoreLiveModel("gemini-3.5-transcribe-live")).toBeLessThan(scoreLiveModel("gemini-2.5-flash-native-audio-latest"));
+    expect(pickLiveModel(["models/gemini-3.5-transcribe-live", "models/gemini-2.5-flash-native-audio-latest"]).model).toBe(
+      "gemini-2.5-flash-native-audio-latest",
+    );
+    // Nothing speech-capable at all: say so, rather than handing back a model
+    // that will drop the call. The route turns this into the offline demo.
+    const none = pickLiveModel(["models/gemini-3.5-transcribe-live"]);
+    expect(none.model).toBeNull();
+    expect(none.warning).toMatch(/speak|transcription/i);
+    // A pin is still honoured — but it is flagged, not silently broken.
+    expect(pickLiveModel([], "gemini-3.5-transcribe-live").warning).toMatch(/transcription-only/);
+    for (const cannotSpeak of ["gemini-2.5-flash-preview-tts", "text-embedding-004", "gemini-2.5-flash-image-live"]) {
+      expect(scoreLiveModel(cannotSpeak)).toBe(0);
+    }
+  });
+
+  /**
+   * Both naming shapes carry the generation: `gemini-2.5-flash-live` and
+   * `gemini-live-2.5-flash`. Reading only the digits straight after "gemini-"
+   * scored the second shape 0, so a curated candidate could be rejected as
+   * unusable and a new one in that shape would never be adopted.
+   */
+  it("reads the generation from either naming shape, and ignores serials and dates", () => {
+    expect(scoreLiveModel("gemini-live-2.5-flash-preview")).toBeGreaterThan(0);
+    expect(pickLiveModel(["models/gemini-live-2.5-flash-preview"]).model).toBe("gemini-live-2.5-flash-preview");
+    expect(pickLiveModel(["models/gemini-live-3.0-flash"]).model).toBe("gemini-live-3.0-flash");
+    expect(scoreLiveModel("gemini-live-3.0-flash")).toBeGreaterThan(scoreLiveModel("gemini-live-2.5-flash-preview"));
+    // `-001` and `-12-2025` are a serial and a date; neither is a generation.
+    expect(scoreLiveModel("gemini-2.0-flash-live-001")).toBeLessThan(scoreLiveModel("gemini-2.5-flash-native-audio-latest"));
+    expect(scoreLiveModel("gemini-2.5-flash-native-audio-preview-12-2025")).toBeLessThan(scoreLiveModel("gemini-3.0-flash-native-audio-latest"));
+  });
 });
