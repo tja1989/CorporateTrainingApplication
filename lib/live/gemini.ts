@@ -62,8 +62,8 @@ export function pickLiveModel(available: string[], override?: string | null): { 
     // A pin is explicit intent, so it is honoured either way — but a model that
     // cannot speak will refuse the session, and that is worth saying up front
     // rather than leaving it to a mid-call disconnect.
-    if (!isSpeechCapableLiveModel(m)) {
-      return { model: m, warning: `GEMINI_LIVE_MODEL "${m}" looks like a transcription-only model and will refuse an audio session.` };
+    if (!isConversationalLiveModel(m)) {
+      return { model: m, warning: `GEMINI_LIVE_MODEL "${m}" is a task-specialised model, not a voice agent — it will refuse or derail an audio session.` };
     }
     if (set.size === 0 || set.has(m)) return { model: m };
     return { model: m, warning: `GEMINI_LIVE_MODEL "${m}" is not in this key's model list — trying it anyway.` };
@@ -73,20 +73,36 @@ export function pickLiveModel(available: string[], override?: string | null): { 
   // family is picked up the day it ships, without editing the candidate list.
   const best = [...set].sort((a, b) => scoreLiveModel(b) - scoreLiveModel(a))[0];
   const bestScore = scoreLiveModel(best);
+  // A curated id is vouched for even when it scores 0 (the `gemini-live-2.5-flash`
+  // shape is not native-audio), so it wins any tie and every all-zero list.
   const curated = LIVE_MODEL_CANDIDATES.find((c) => set.has(c));
   if (curated && scoreLiveModel(curated) >= bestScore) return { model: curated };
   if (bestScore > 0) return { model: best };
-  return { model: null, warning: "This API key exposes no Live model that can speak — a transcription-only model cannot hold a voice session." };
+  return { model: null, warning: "This API key exposes no Live model fit to hold a voice session — only task-specialised families (transcription, translation) or unrecognised ones." };
 }
 
 /**
- * Streaming over `bidiGenerateContent` is not the same as being able to speak:
- * the transcription family is bidirectional too, and `models.list` reports no
- * response modalities, so the id is the only signal there is. A session that
- * asks for `AUDIO` out is refused outright by these — "response modalities
- * (AUDIO) is not supported by the model" — so they are never candidates.
+ * Task-specialised families that stream over `bidiGenerateContent` but are not
+ * voice agents. `models.list` reports no response modalities and the SDK's Model
+ * type carries none, so the id is the only signal there is. A transcriber
+ * refuses an audio session outright ("response modalities (AUDIO) is not
+ * supported by the model"); a translator would answer, in the wrong job.
  */
-const NOT_SPEECH = /transcribe|transcription|\btts\b|embedding|image|vision|guard|rerank/;
+const SPECIALISED = /transcribe|transcription|translate|translation|\btts\b|embedding|image|vision|guard|rerank/;
+
+/**
+ * The marker Google puts on its conversational native-audio dialog models, and
+ * the only thing we adopt on sight. Every other id has to be vouched for by
+ * LIVE_MODEL_CANDIDATES.
+ *
+ * This is deliberately an allow-list. Treating "the id contains live" as proof
+ * of a voice agent, then ranking on generation, twice picked a specialised 3.5
+ * family over a working 2.5 one — the newest thing on the list is not the same
+ * as the right thing. An unrecognised shape now scores 0 and the curated list
+ * stays in charge, which costs a config change the day a new family ships and
+ * saves a demo that dies mid-sentence.
+ */
+const CONVERSATIONAL_AUDIO = /native-audio/;
 
 /**
  * The model generation, from either naming shape — `gemini-2.5-flash-live` and
@@ -103,26 +119,25 @@ function liveModelVersion(m: string): number {
 }
 
 /**
- * Rank a Live-capable model id. Newer family first, native audio over
- * half-cascade, stable aliases over dated previews. Returns 0 for anything that
- * does not look like a Live model that can speak, so it is never chosen — an
- * unfamiliar naming shape scores 0 rather than being guessed at, which leaves
- * the curated list in charge until someone vouches for the new name.
+ * Rank a native-audio Live model: newer generation first, stable aliases over
+ * dated previews. Returns 0 for everything else — a specialised family, an
+ * unfamiliar shape, or a Live model in a naming scheme we have not vouched for.
+ * A 0 here does not mean unusable, only "not adopted on sight": pickLiveModel
+ * still takes anything on LIVE_MODEL_CANDIDATES.
  */
 export function scoreLiveModel(model: string): number {
   const m = stripPrefix(model);
-  if (NOT_SPEECH.test(m)) return 0;
-  if (!/native-audio|live/.test(m)) return 0;
+  if (SPECIALISED.test(m)) return 0;
+  if (!CONVERSATIONAL_AUDIO.test(m)) return 0;
   const version = liveModelVersion(m);
   if (!version) return 0;
-  const nativeAudio = /native-audio/.test(m) ? 4 : 0;
   const stable = /-latest$/.test(m) ? 2 : /preview|exp/.test(m) ? 0 : 1;
-  return version * 10 + nativeAudio + stable;
+  return version * 10 + stable;
 }
 
-/** Whether an id belongs to a family that cannot return audio at all. */
-export function isSpeechCapableLiveModel(model: string): boolean {
-  return !NOT_SPEECH.test(stripPrefix(model));
+/** Whether an id belongs to a task-specialised family rather than a voice agent. */
+export function isConversationalLiveModel(model: string): boolean {
+  return !SPECIALISED.test(stripPrefix(model));
 }
 
 let modelCache: { at: number; models: string[] } | null = null;
@@ -134,12 +149,10 @@ export async function listLiveModels(): Promise<string[]> {
   try {
     const pager = await liveClient().models.list({ config: { pageSize: 100 } });
     for await (const m of pager) {
-      // bidiGenerateContent alone would keep the transcription family, which
-      // streams but cannot speak — drop those here so nothing downstream, the
-      // ranking included, can land on one.
-      if (m.name && (m.supportedActions ?? []).includes("bidiGenerateContent") && isSpeechCapableLiveModel(m.name)) {
-        models.push(stripPrefix(m.name));
-      }
+      // Everything bidi-capable, unfiltered: which of these is fit to hold a
+      // voice session is decided in one place (scoreLiveModel), and /api/health
+      // reports this list, so it has to show what the key really exposes.
+      if (m.name && (m.supportedActions ?? []).includes("bidiGenerateContent")) models.push(stripPrefix(m.name));
     }
   } catch {
     /* offline or listing unsupported → caller falls back to the default candidate */

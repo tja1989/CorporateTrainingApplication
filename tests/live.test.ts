@@ -206,44 +206,66 @@ describe("live model choice", () => {
   });
 
   /**
-   * A voice session asks for AUDIO out. The transcription family streams over
-   * bidiGenerateContent like a Live model but refuses that config outright
-   * ("response modalities (AUDIO) is not supported by the model"), which the
-   * browser then reports as a dead conversation. Ranking used to read the "live"
-   * in `gemini-3.5-transcribe-live` as Live-capable and its 3.5 as the newest
-   * family, so it outscored every model that can actually speak.
+   * A voice session asks for AUDIO out. Task-specialised families stream over
+   * bidiGenerateContent exactly like a voice model: a transcriber refuses that
+   * config outright ("response modalities (AUDIO) is not supported by the
+   * model") and the browser reports a dead conversation; a translator would
+   * answer, in the wrong job. Both were picked in turn on the same key, because
+   * "the id contains live" was taken as proof and the generation decided the
+   * rest — so 3.5 specialised beat 2.5 working.
    */
-  it("never picks a transcription model for a session that must speak", () => {
-    expect(scoreLiveModel("gemini-3.5-transcribe-live")).toBe(0);
-    expect(scoreLiveModel("gemini-3.5-transcribe-live")).toBeLessThan(scoreLiveModel("gemini-2.5-flash-native-audio-latest"));
+  it("never adopts a task-specialised Live family, whatever its generation", () => {
+    for (const specialised of [
+      "gemini-3.5-transcribe-live",
+      "gemini-3.5-live-translate-preview",
+      "gemini-2.5-flash-preview-tts",
+      "gemini-2.5-flash-image-live",
+      "text-embedding-004",
+    ]) {
+      expect(scoreLiveModel(specialised)).toBe(0);
+      expect(scoreLiveModel(specialised)).toBeLessThan(scoreLiveModel("gemini-2.5-flash-native-audio-latest"));
+    }
+    // Both real cases: the working model must win even though it is older.
     expect(pickLiveModel(["models/gemini-3.5-transcribe-live", "models/gemini-2.5-flash-native-audio-latest"]).model).toBe(
       "gemini-2.5-flash-native-audio-latest",
     );
-    // Nothing speech-capable at all: say so, rather than handing back a model
-    // that will drop the call. The route turns this into the offline demo.
-    const none = pickLiveModel(["models/gemini-3.5-transcribe-live"]);
+    expect(pickLiveModel(["models/gemini-3.5-live-translate-preview", "models/gemini-2.5-flash-native-audio-latest"]).model).toBe(
+      "gemini-2.5-flash-native-audio-latest",
+    );
+    // Nothing fit for a voice session: say so rather than handing back a model
+    // that drops the call. The route turns this into the labelled offline demo.
+    const none = pickLiveModel(["models/gemini-3.5-transcribe-live", "models/gemini-3.5-live-translate-preview"]);
     expect(none.model).toBeNull();
-    expect(none.warning).toMatch(/speak|transcription/i);
-    // A pin is still honoured — but it is flagged, not silently broken.
-    expect(pickLiveModel([], "gemini-3.5-transcribe-live").warning).toMatch(/transcription-only/);
-    for (const cannotSpeak of ["gemini-2.5-flash-preview-tts", "text-embedding-004", "gemini-2.5-flash-image-live"]) {
-      expect(scoreLiveModel(cannotSpeak)).toBe(0);
-    }
+    expect(none.warning).toMatch(/voice session/i);
+    // A pin is still honoured — but flagged, not silently broken.
+    expect(pickLiveModel([], "gemini-3.5-live-translate-preview").warning).toMatch(/task-specialised/);
   });
 
   /**
-   * Both naming shapes carry the generation: `gemini-2.5-flash-live` and
-   * `gemini-live-2.5-flash`. Reading only the digits straight after "gemini-"
-   * scored the second shape 0, so a curated candidate could be rejected as
-   * unusable and a new one in that shape would never be adopted.
+   * Adoption on sight is limited to the native-audio marker. A Live model in any
+   * other shape has to be vouched for by LIVE_MODEL_CANDIDATES — the cost of
+   * that is a config change the day a new family ships, against the cost of
+   * ranking picking up whatever specialised family Google names next.
    */
-  it("reads the generation from either naming shape, and ignores serials and dates", () => {
-    expect(scoreLiveModel("gemini-live-2.5-flash-preview")).toBeGreaterThan(0);
+  it("adopts a new native-audio generation on sight, and nothing else", () => {
+    const newer = pickLiveModel(["models/gemini-2.5-flash-native-audio-latest", "models/gemini-3.0-flash-native-audio-latest"]);
+    expect(newer.model).toBe("gemini-3.0-flash-native-audio-latest");
+    // Uncurated and not native-audio: not adopted, even though it reads Live.
+    expect(scoreLiveModel("gemini-4.0-flash-live-preview")).toBe(0);
+    expect(pickLiveModel(["models/gemini-4.0-flash-live-preview"]).model).toBeNull();
+    // Curated wins any tie and every all-zero list, whatever its shape scores.
+    expect(scoreLiveModel("gemini-live-2.5-flash-preview")).toBe(0);
     expect(pickLiveModel(["models/gemini-live-2.5-flash-preview"]).model).toBe("gemini-live-2.5-flash-preview");
-    expect(pickLiveModel(["models/gemini-live-3.0-flash"]).model).toBe("gemini-live-3.0-flash");
-    expect(scoreLiveModel("gemini-live-3.0-flash")).toBeGreaterThan(scoreLiveModel("gemini-live-2.5-flash-preview"));
-    // `-001` and `-12-2025` are a serial and a date; neither is a generation.
-    expect(scoreLiveModel("gemini-2.0-flash-live-001")).toBeLessThan(scoreLiveModel("gemini-2.5-flash-native-audio-latest"));
+    expect(pickLiveModel(["models/gemini-live-2.5-flash-preview", "models/gemini-3.5-transcribe-live"]).model).toBe("gemini-live-2.5-flash-preview");
+  });
+
+  /** The generation sits in either shape, and a serial or date is not one. */
+  it("reads the generation from either naming shape, ignoring serials and dates", () => {
+    expect(scoreLiveModel("gemini-live-2.5-flash-native-audio")).toBeGreaterThan(0);
+    expect(scoreLiveModel("gemini-2.5-flash-native-audio-latest")).toBeGreaterThan(0);
+    expect(scoreLiveModel("gemini-live-3.0-flash-native-audio")).toBeGreaterThan(scoreLiveModel("gemini-live-2.5-flash-native-audio"));
+    // `-12-2025` is a date: read as a generation it would outrank everything.
     expect(scoreLiveModel("gemini-2.5-flash-native-audio-preview-12-2025")).toBeLessThan(scoreLiveModel("gemini-3.0-flash-native-audio-latest"));
+    expect(scoreLiveModel("gemini-flash-native-audio-12-2025")).toBe(0);
   });
 });
