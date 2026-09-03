@@ -218,12 +218,23 @@ strong, b, th { font-weight: 500; }
 /* Progress ring fill — slow token, fires on mount/completion only */
 .ring-progress { transition: stroke-dashoffset var(--duration-slow) var(--ease-out); }
 
+/* Course-outline disclosure (spec §11.4). Our own chevron replaces the native
+   marker, and it turns from the [open] state so the accordion needs no client
+   JS. The panel itself does not animate: an outline is navigation, and §10.5
+   gives navigation no motion — a height transition would also need a clipped
+   max-height, which the bento rule forbids. */
+.disclosure > summary { list-style: none; }
+.disclosure > summary::-webkit-details-marker { display: none; }
+.disclosure > summary .chev { transition: transform var(--duration-fast) var(--ease-out); }
+.disclosure[open] > summary .chev { transform: rotate(180deg); }
+
 @media (prefers-reduced-motion: reduce) {
   .animate-enter, .animate-slide-up { animation: ll-fade var(--duration-base) var(--ease-out); }
   .animate-stagger { animation: ll-fade var(--duration-base) var(--ease-out) both; }
   .pressable:active { transform: none; }
   .ring-progress { transition: none; }
   .skeleton, .skeleton-delayed { animation: none; opacity: 1; }
+  .disclosure > summary .chev { transition: none; }
 }
 
 /* Bidi isolation for LTR chips inside RTL text (spec FR-5.12) */

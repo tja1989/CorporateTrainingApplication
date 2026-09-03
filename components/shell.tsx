@@ -5,6 +5,7 @@ import type { CurrentUser } from "@/lib/auth/guard";
 import { logout, switchWorkspace } from "@/lib/auth/login";
 import { readFlash } from "@/lib/flash";
 import { LearnerTabs, SideNav, type NavItem } from "./nav";
+import { LearnerContainer } from "@/components/learner-container";
 import { ThemeToggle } from "./theme-toggle";
 import { CommandPalette } from "./palette";
 import { ToastProvider } from "./toast";
@@ -88,10 +89,10 @@ export async function LearnerShell({ user, children }: { user: CurrentUser; chil
     <ToastProvider initial={flash}>
       <div className="min-h-dvh">
         <Header user={user} unread={unread} inboxHref="/inbox" />
-        <div className="mx-auto flex max-w-5xl">
+        <LearnerContainer>
           <LearnerTabs items={LEARNER_TABS} />
           <main className="learner-main min-w-0 flex-1 px-4 pt-6">{children}</main>
-        </div>
+        </LearnerContainer>
       </div>
     </ToastProvider>
   );

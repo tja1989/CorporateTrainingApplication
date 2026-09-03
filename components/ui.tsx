@@ -43,14 +43,28 @@ export function ButtonLink({
 /* Pill — a 24px secondary action (suggestions, scope toggles, quick actions).
    `.hit-area` extends the tap target to 44px without inflating the pill. */
 const pillBase =
-  "pressable hit-area inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted hover:bg-surface-2 disabled:opacity-50 disabled:pointer-events-none";
+  "pressable hit-area inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium disabled:opacity-50 disabled:pointer-events-none";
+/* Idle and active are mutually exclusive, never layered: Tailwind resolves two
+   competing `bg-*` utilities by stylesheet order, not by class order, so an
+   active pill that kept the idle background rendered its own text invisible. */
+const pillIdle = "border-border bg-surface text-muted hover:bg-surface-2";
 
 export function PillButton({ active, className, ...props }: ComponentProps<"button"> & { active?: boolean }) {
-  return <button className={cx(pillBase, active && "border-primary text-foreground", className)} {...props} />;
+  return (
+    <button
+      className={cx(pillBase, active ? "border-primary bg-surface text-foreground hover:bg-surface-2" : pillIdle, className)}
+      {...props}
+    />
+  );
 }
 
 export function PillLink({ active, className, ...props }: ComponentProps<typeof Link> & { active?: boolean }) {
-  return <Link className={cx(pillBase, active && "border-primary bg-primary text-primary-fg hover:opacity-90", className)} {...props} />;
+  return (
+    <Link
+      className={cx(pillBase, active ? "border-primary bg-primary text-primary-fg hover:opacity-90" : pillIdle, className)}
+      {...props}
+    />
+  );
 }
 
 /* ------------------------------ Cards ------------------------------ */
