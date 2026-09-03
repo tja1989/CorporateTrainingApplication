@@ -238,7 +238,6 @@ export async function planFromQuestion(question: string): Promise<QueryPlan> {
       system:
         "Translate an HR admin's question about training data into a report query plan. Choose the single best report and only the filters the question implies. 'Who is overdue' → compliance with complianceStatus OVERDUE. Explanation: one sentence on what the plan does.",
       user: question,
-      schemaName: "query_plan",
       schema: PLAN_SCHEMA as unknown as Record<string, unknown>,
       effort: "low",
       maxTokens: 400,

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import type { CurrentUser } from "@/lib/auth/guard";
@@ -40,6 +41,11 @@ const PALETTE = [
   { label: "My team", href: "/team", group: "Manager" },
   { label: "Learner home", href: "/home", group: "Learner" },
 ];
+
+/** The rail's collapsed state, so the server renders the right width with no flash. */
+async function railCollapsed(): Promise<boolean> {
+  return (await cookies()).get("ll_nav")?.value === "collapsed";
+}
 
 async function unreadCount(userId: string): Promise<number> {
   const [row] = await db
@@ -84,13 +90,13 @@ function Header({ user, unread, inboxHref }: { user: CurrentUser; unread: number
 }
 
 export async function LearnerShell({ user, children }: { user: CurrentUser; children: React.ReactNode }) {
-  const [unread, flash] = await Promise.all([unreadCount(user.id), readFlash()]);
+  const [unread, flash, navCollapsed] = await Promise.all([unreadCount(user.id), readFlash(), railCollapsed()]);
   return (
     <ToastProvider initial={flash}>
       <div className="min-h-dvh">
         <Header user={user} unread={unread} inboxHref="/inbox" />
         <LearnerContainer>
-          <LearnerTabs items={LEARNER_TABS} />
+          <LearnerTabs items={LEARNER_TABS} defaultCollapsed={navCollapsed} />
           <main className="learner-main min-w-0 flex-1 px-4 pt-6">{children}</main>
         </LearnerContainer>
       </div>
@@ -99,14 +105,14 @@ export async function LearnerShell({ user, children }: { user: CurrentUser; chil
 }
 
 export async function WorkspaceShell({ user, children }: { user: CurrentUser; children: React.ReactNode }) {
-  const [unread, flash] = await Promise.all([unreadCount(user.id), readFlash()]);
+  const [unread, flash, navCollapsed] = await Promise.all([unreadCount(user.id), readFlash(), railCollapsed()]);
   const nav = user.session.workspace === "admin" ? ADMIN_NAV : MANAGER_NAV;
   return (
     <ToastProvider initial={flash}>
       <div className="min-h-dvh">
         <Header user={user} unread={unread} inboxHref={user.session.workspace === "admin" ? "/admin/inbox" : "/team/inbox"} />
         <div className="flex">
-          <SideNav items={nav} />
+          <SideNav items={nav} defaultCollapsed={navCollapsed} />
           {/* pt-12 on phones clears the fixed workspace nav strip */}
           <main className="min-w-0 flex-1 px-4 pb-6 pt-12 md:px-6 md:pt-6">
             <div className="mb-3 hidden justify-end md:flex">

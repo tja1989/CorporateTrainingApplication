@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { id } from "@/lib/ids";
@@ -8,6 +9,16 @@ import type { InterviewConfig, LiveEvaluation, LiveTurn } from "@/lib/db/schema"
 import { CONTENT_CHAR_CAP, fallbackEvaluate, interviewContentFor, parseInterviewConfig, pickScopeLessons, scoreEvaluation, type InterviewContent } from "./interview";
 
 /** Persistence for oral checks (spec FR-14.2 v1.4): post-lesson checks and INTERVIEW lessons. */
+
+/** Run work after the response is flushed when we are inside a request; otherwise inline. */
+function deferAfterResponse(fn: () => Promise<void>): void {
+  const guarded = () => fn().catch((err) => console.error("oral check: deferred work failed", err));
+  try {
+    after(guarded);
+  } catch {
+    void guarded();
+  }
+}
 
 export type Interview = typeof t.liveInterviews.$inferSelect;
 
@@ -121,12 +132,19 @@ export async function completeInterview(
     .where(eq(t.liveInterviews.id, interviewId));
 
   const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, row.lessonId)).limit(1);
-  const [user] = await db.select().from(t.users).where(eq(t.users.id, row.userId)).limit(1);
   const lessonTitle = lesson?.title ?? "lesson";
-  await notify(row.userId, "oral_check_result", { lessonTitle, scorePct: scored.pct, outcome: scored.outcome, interviewId }, `oral:${interviewId}`);
-  if (scored.outcome === "FAIL" && user?.managerId) {
-    await notify(user.managerId, "oral_check_review", { learnerName: user.name, lessonTitle, scorePct: scored.pct, interviewId }, `oral-review:${interviewId}`);
-  }
+
+  // The interviewer is blocked on this tool response — the learner hears
+  // silence until it returns. Notifications can reach SMTP, so they run once
+  // the reply is on the wire, not before it.
+  deferAfterResponse(async () => {
+    const [user] = await db.select().from(t.users).where(eq(t.users.id, row.userId)).limit(1);
+    await notify(row.userId, "oral_check_result", { lessonTitle, scorePct: scored.pct, outcome: scored.outcome, interviewId }, `oral:${interviewId}`);
+    if (scored.outcome === "FAIL" && user?.managerId) {
+      await notify(user.managerId, "oral_check_review", { learnerName: user.name, lessonTitle, scorePct: scored.pct, interviewId }, `oral-review:${interviewId}`);
+    }
+  });
+
   if (lesson?.type === "INTERVIEW") {
     const cfg = parseInterviewConfig(lesson.payload.interview);
     if (scored.outcome === "PASS" || !cfg.requirePass) await markLessonComplete(row.userId, row.lessonId);

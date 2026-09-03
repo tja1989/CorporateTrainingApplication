@@ -113,7 +113,7 @@ export async function* tutorAnswer(opts: {
       max_tokens: 2048,
       system: [{ type: "text" as const, text: SYSTEM, cache_control: { type: "ephemeral" as const } }],
       output_config: {
-        format: { type: "json_schema" as const, name: "tutor_answer", schema: TUTOR_SCHEMA as unknown as Record<string, unknown> },
+        format: { type: "json_schema" as const, schema: TUTOR_SCHEMA as unknown as Record<string, unknown> },
       },
       messages: [
         ...opts.history.slice(-8).map((m) => ({ role: m.role, content: m.content })),
@@ -191,7 +191,6 @@ export async function suggestQuestions(chunkTexts: string[]): Promise<string[]> 
       route: "tutor_suggest",
       system: "Generate exactly 3 short questions a retail employee might ask about this training-video excerpt. Plain, practical, ESL-friendly.",
       user: chunkTexts.join("\n\n").slice(0, 4000),
-      schemaName: "suggested_questions",
       schema: {
         type: "object",
         additionalProperties: false,

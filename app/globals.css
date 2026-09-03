@@ -97,6 +97,8 @@
   --spacing-12: 48px;
   /* Layout widths that used to ride the spacing scale */
   --width-rail: 14rem;
+  /* The same rail, collapsed to its icons. */
+  --width-rail-sm: 3.5rem;
   --width-meter: 8rem;
 
   /* Rule 4 — radii: 4 controls / 8 inputs / 12 cards; pills use rounded-full */

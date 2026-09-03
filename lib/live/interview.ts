@@ -1,7 +1,7 @@
-import { Modality, Type, type FunctionDeclaration, type LiveConnectConfig, type Schema } from "@google/genai";
+import { EndSensitivity, Modality, StartSensitivity, Type, type FunctionDeclaration, type LiveConnectConfig, type Schema } from "@google/genai";
 import { z } from "zod";
 import type { InterviewConfig, LiveEvaluation, LiveTurn } from "@/lib/db/schema";
-import { LIVE_VOICE, liveAvailable, textClient } from "./gemini";
+import { LIVE_LANGUAGE, LIVE_VOICE, liveAvailable, textClient } from "./gemini";
 
 /**
  * Oral check (spec FR-14.2): a short spoken interview about one lesson,
@@ -175,7 +175,7 @@ Rules:
 - Ask ONLY about the LESSON CONTENT below. One question at a time, in plain spoken English, ten to twenty words. Wait for the answer.
 - If an answer is thin or unclear, ask one short follow-up. Then move on. Acknowledge briefly ("Thanks", "Okay") — never say whether the answer was right, and never give scores or feedback aloud.
 - Do not give the answers away during the check. If asked, say you will share feedback at the end.
-- Understanding is what counts, not language. If ${opts.learnerFirstName} answers in another language, you may continue in that language.
+- Conduct the whole check in English, and keep your own questions in English throughout. If ${opts.learnerFirstName} answers in another language, say once: \"Could you answer in English, please?\" and repeat the question. Do not switch languages yourself.
 - After the last answer — or if ${opts.learnerFirstName} asks to stop, or you are told time is up — say thank you, then call submit_evaluation exactly once with every question you asked. Scores: 3 accurate and complete, 2 mostly right, 1 partly right, 0 wrong or no answer. Feedback must be specific and encouraging.
 - After the tool call, close with one sentence: the result is on screen now. Then stop talking.
 - Keep the whole check under ${opts.maxMinutes} minutes.${focusLine}${objectivesLine}
@@ -187,8 +187,22 @@ ${opts.content.text}`;
     systemInstruction: system,
     tools: [{ functionDeclarations: [EVALUATION_TOOL] }],
     speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: opts.voice ?? LIVE_VOICE } } },
-    inputAudioTranscription: {},
+    // Pin the transcription language. Left to auto-detect, a learner speaking
+    // accented English gets transcribed into Hindi or Malayalam mid-answer.
+    inputAudioTranscription: { languageCodes: [LIVE_LANGUAGE] },
     outputAudioTranscription: {},
+    // The default end-of-turn threshold makes the interviewer feel slow to
+    // answer. 800ms is well short of the default but still leaves room for the
+    // pauses people take while recalling something they have just learned —
+    // the assistant, which is pure conversation, sits at 500ms.
+    realtimeInputConfig: {
+      automaticActivityDetection: {
+        startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_HIGH,
+        endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_HIGH,
+        prefixPaddingMs: 100,
+        silenceDurationMs: 800,
+      },
+    },
     sessionResumption: opts.resumeHandle ? { handle: opts.resumeHandle } : {},
   };
 }

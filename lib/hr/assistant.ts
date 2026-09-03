@@ -190,7 +190,7 @@ export async function* hrAnswer(opts: {
       max_tokens: 1500,
       system: [{ type: "text" as const, text: SYSTEM, cache_control: { type: "ephemeral" as const } }],
       output_config: {
-        format: { type: "json_schema" as const, name: "hr_answer", schema: HR_SCHEMA as unknown as Record<string, unknown> },
+        format: { type: "json_schema" as const, schema: HR_SCHEMA as unknown as Record<string, unknown> },
       },
       messages: [{ role: "user" as const, content: `Policy excerpts:\n\n${excerpts}\n\nEmployee question: ${safeQuestion}` }],
     } as Parameters<typeof anthropic.messages.stream>[0]);

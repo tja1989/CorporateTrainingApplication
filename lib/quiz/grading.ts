@@ -67,7 +67,6 @@ export async function gradeFreeText(opts: {
     user: `Question: ${opts.question}\n\nRubric criteria:\n${opts.rubric.criteria
       .map((c) => `- ${c.name} (max ${c.points})`)
       .join("\n")}\n\nModel answer: ${opts.rubric.modelAnswer}\n\nLearner answer: ${safeAnswer}`,
-    schemaName: "grade",
     schema: {
       type: "object",
       additionalProperties: false,

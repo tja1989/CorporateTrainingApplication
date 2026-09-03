@@ -51,7 +51,9 @@ Background jobs: `npm run worker` (queue) and `npm run sweep` (nightly complianc
 | `YOUTUBE_API_KEY` | Embed/privacy validation at ingest + weekly link health | Validation skipped; player errors handled gracefully at view time |
 | `SUPADATA_API_KEY` | Vendor transcript fetch (**demo-only**; scraping shifts ToS risk, it doesn't remove it) | Manual SRT/VTT upload — the lawful default; production path is a company-owned channel + official captions API |
 | `SMTP_URL` | Email channel (`console` logs in dev) | In-app inbox still delivers everything; manager digests remain the certified reach path |
-| `GEMINI_API_KEY` (+`GEMINI_LIVE_MODEL`, `GEMINI_LIVE_VOICE`) | **Voice**: the oral check after a lesson and the HR assistant's live mode, on the Gemini Live API through one-use ephemeral tokens | Both screens run as a **typed offline demo** with the same policy tools and the same offline grader — labeled, nothing crashes |
+| `GEMINI_API_KEY` (+`GEMINI_LIVE_MODEL`, `GEMINI_LIVE_VOICE`, `GEMINI_LIVE_LANGUAGE`) | **Voice**: the oral check after a lesson and the HR assistant's live mode, on the Gemini Live API through one-use ephemeral tokens | Both screens run as a **typed offline demo** with the same policy tools and the same offline grader — labeled, nothing crashes |
+
+`GEMINI_LIVE_LANGUAGE` (default `en-US`) pins the language a spoken session is conducted in — it becomes the Live API's transcription hint. Left to auto-detect, accented English is regularly transcribed into another language mid-answer. `GEMINI_LIVE_MODEL` pins a model; unset, the newest Live-capable model the key exposes is chosen at runtime.
 
 Every AI surface degrades to a clear labeled state — nothing crashes without keys.
 

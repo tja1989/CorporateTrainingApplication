@@ -63,7 +63,10 @@ export async function runDeployInit(): Promise<void> {
     console.log(`deploy-init: ${rows[0].n} user(s) present — skipping seed`);
   }
   if (process.env.DEMO_MODE === "true") {
-    // Idempotent: gives an already-seeded demo the oral-check lessons without a reseed.
+    // Idempotent: brings an already-seeded demo up to date without a reseed.
+    const { ensureDemoContentLessons } = await import("./seed-content");
+    const content = await ensureDemoContentLessons();
+    console.log(`deploy-init: demo content lessons ensured (${content} added)`);
     const { ensureDemoInterviewLessons } = await import("./seed-interviews");
     const added = await ensureDemoInterviewLessons();
     console.log(`deploy-init: demo oral-check lessons ensured (${added} added)`);

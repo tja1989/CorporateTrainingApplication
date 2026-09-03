@@ -71,7 +71,17 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
         {lesson.type === "PDF" ? (
           <Card className="mb-6 max-w-3xl p-4">
             {lesson.payload.fileUrl ? (
-              <iframe src={lesson.payload.fileUrl} title={lesson.title} className="h-[70vh] w-full rounded-card border border-border" />
+              <>
+                <iframe src={lesson.payload.fileUrl} title={lesson.title} className="h-[70vh] w-full rounded-card border border-border" />
+                {/* Some browsers refuse to render a PDF inline; never dead-end the lesson. */}
+                <p className="mt-3 text-sm text-muted">
+                  Not showing?{" "}
+                  <a className="text-primary hover:underline" href={lesson.payload.fileUrl} target="_blank" rel="noreferrer">
+                    Open it in a new tab
+                  </a>
+                  .
+                </p>
+              </>
             ) : (
               <p className="text-sm text-muted">Document unavailable.</p>
             )}

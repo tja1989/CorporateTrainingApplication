@@ -20,6 +20,14 @@ export const LIVE_MODEL_CANDIDATES = [
 
 export const LIVE_VOICE = process.env.GEMINI_LIVE_VOICE ?? "Kore";
 
+/**
+ * The language the spoken sessions are conducted in (BCP-47). Passed to the
+ * Live API as a transcription hint: without it the transcriber auto-detects
+ * per utterance and a learner speaking accented English is regularly
+ * transcribed into another language entirely.
+ */
+export const LIVE_LANGUAGE = process.env.GEMINI_LIVE_LANGUAGE ?? "en-US";
+
 /** Approximate Gemini Live list prices in $/MTok — the one place to adjust (spec FR-13.7). */
 export const LIVE_PRICES = { textIn: 0.5, audioIn: 3.0, textOut: 2.0, audioOut: 12.0 } as const;
 
@@ -54,9 +62,30 @@ export function pickLiveModel(available: string[], override?: string | null): { 
     if (set.size === 0 || set.has(m)) return { model: m };
     return { model: m, warning: `GEMINI_LIVE_MODEL "${m}" is not in this key's model list — trying it anyway.` };
   }
-  for (const c of LIVE_MODEL_CANDIDATES) if (set.has(c)) return { model: c };
   if (set.size === 0) return { model: LIVE_MODEL_CANDIDATES[0], warning: "Model list unavailable — using the default Live model." };
+  // Prefer whatever the key actually exposes, ranked — so a newer native-audio
+  // family is picked up the day it ships, without editing the candidate list.
+  const best = [...set].sort((a, b) => scoreLiveModel(b) - scoreLiveModel(a))[0];
+  const bestScore = scoreLiveModel(best);
+  const curated = LIVE_MODEL_CANDIDATES.find((c) => set.has(c));
+  if (curated && scoreLiveModel(curated) >= bestScore) return { model: curated };
+  if (bestScore > 0) return { model: best };
   return { model: null, warning: "This API key has no Live-capable (bidiGenerateContent) model." };
+}
+
+/**
+ * Rank a Live-capable model id. Newer family first, native audio over
+ * half-cascade, stable aliases over dated previews. Returns 0 for anything
+ * that does not look like a Live model, so it is never chosen.
+ */
+export function scoreLiveModel(model: string): number {
+  const m = stripPrefix(model);
+  const version = Number(m.match(/gemini-(\d+(?:\.\d+)?)/)?.[1] ?? 0);
+  if (!version) return 0;
+  if (!/native-audio|live/.test(m)) return 0;
+  const nativeAudio = /native-audio/.test(m) ? 4 : 0;
+  const stable = /-latest$/.test(m) ? 2 : /preview|exp/.test(m) ? 0 : 1;
+  return version * 10 + nativeAudio + stable;
 }
 
 let modelCache: { at: number; models: string[] } | null = null;

@@ -71,7 +71,6 @@ export async function structuredCall<T>(opts: {
   route: string;
   system: string;
   user: string;
-  schemaName: string;
   schema: Record<string, unknown>;
   effort?: Effort;
   maxTokens?: number;
@@ -84,9 +83,10 @@ export async function structuredCall<T>(opts: {
     system: [{ type: "text" as const, text: opts.system, cache_control: { type: "ephemeral" as const } }],
     output_config: {
       effort: opts.effort ?? "high",
+      // `format` accepts exactly `type` and `schema` — a `name` field is rejected
+      // with 400 output_config.format.name: Extra inputs are not permitted.
       format: {
         type: "json_schema" as const,
-        name: opts.schemaName,
         schema: opts.schema,
       },
     },

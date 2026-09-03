@@ -47,7 +47,6 @@ export async function generateDraftQuestions(videoId: string): Promise<number> {
       system:
         "Generate 4-6 quiz questions from this training-video transcript for retail employees. Target specific facts and procedures actually stated. Each MCQ has 4 options with plausible distractors; include an explanation and the transcript timestamp (sourceStartSec) the answer comes from. ESL-friendly wording.",
       user: transcript.slice(0, 24000),
-      schemaName: "draft_questions",
       schema: {
         type: "object",
         additionalProperties: false,
