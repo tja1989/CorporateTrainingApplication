@@ -586,118 +586,231 @@
       "source": "app/(workspace)/team/actions.ts",
       "action": "issueResetAction",
       "status": "NOT_TESTED"
+    },
+    {
+      "source": "lib/auth/login.ts",
+      "action": "login",
+      "status": "NOT_TESTED",
+      "note": "Shared auth action; some also reached through app wrappers."
+    },
+    {
+      "source": "lib/auth/login.ts",
+      "action": "activate",
+      "status": "NOT_TESTED",
+      "note": "Shared auth action; some also reached through app wrappers."
+    },
+    {
+      "source": "lib/auth/login.ts",
+      "action": "verifyMfa",
+      "status": "NOT_TESTED",
+      "note": "Shared auth action; some also reached through app wrappers."
+    },
+    {
+      "source": "lib/auth/login.ts",
+      "action": "acknowledgePrivacyNotice",
+      "status": "NOT_TESTED",
+      "note": "Shared auth action; some also reached through app wrappers."
+    },
+    {
+      "source": "lib/auth/login.ts",
+      "action": "logout",
+      "status": "NOT_TESTED",
+      "note": "Shared auth action; some also reached through app wrappers."
+    },
+    {
+      "source": "lib/auth/login.ts",
+      "action": "issueResetCode",
+      "status": "NOT_TESTED",
+      "note": "Shared auth action; some also reached through app wrappers."
+    },
+    {
+      "source": "lib/auth/login.ts",
+      "action": "switchWorkspace",
+      "status": "NOT_TESTED",
+      "note": "Shared auth action; some also reached through app wrappers."
     }
   ],
   "apiRoutes": [
     {
       "route": "/api/admin/dsr/[userId]",
       "source": "app/api/admin/dsr/[userId]/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "GET",
+        "DELETE"
+      ]
     },
     {
       "route": "/api/attempt/[attemptId]/appeal",
       "source": "app/api/attempt/[attemptId]/appeal/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
     },
     {
       "route": "/api/attempt/[attemptId]",
       "source": "app/api/attempt/[attemptId]/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "PATCH",
+        "POST"
+      ]
     },
     {
       "route": "/api/attempt/appeal-latest",
       "source": "app/api/attempt/appeal-latest/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
     },
     {
       "route": "/api/certificates/[certId]",
       "source": "app/api/certificates/[certId]/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "GET"
+      ]
     },
     {
       "route": "/api/drill",
       "source": "app/api/drill/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "GET",
+        "POST"
+      ]
     },
     {
       "route": "/api/events",
       "source": "app/api/events/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
     },
     {
       "route": "/api/health",
       "source": "app/api/health/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "GET"
+      ]
     },
     {
       "route": "/api/hr/escalate",
       "source": "app/api/hr/escalate/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
     },
     {
       "route": "/api/hr/feedback",
       "source": "app/api/hr/feedback/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
     },
     {
       "route": "/api/hr",
       "source": "app/api/hr/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST",
+        "GET"
+      ]
     },
     {
       "route": "/api/live/hr/event",
       "source": "app/api/live/hr/event/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
     },
     {
       "route": "/api/live/hr/session",
       "source": "app/api/live/hr/session/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
     },
     {
       "route": "/api/live/interview/event",
       "source": "app/api/live/interview/event/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
     },
     {
       "route": "/api/live/interview/session",
       "source": "app/api/live/interview/session/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
     },
     {
       "route": "/api/progress",
       "source": "app/api/progress/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
     },
     {
       "route": "/api/quiz/[quizId]/consent-info",
       "source": "app/api/quiz/[quizId]/consent-info/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "GET",
+        "POST"
+      ]
     },
     {
       "route": "/api/quiz/[quizId]/start",
       "source": "app/api/quiz/[quizId]/start/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
     },
     {
       "route": "/api/reports/[reportId]/csv",
       "source": "app/api/reports/[reportId]/csv/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "GET"
+      ]
     },
     {
       "route": "/api/reports/ask",
       "source": "app/api/reports/ask/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
     },
     {
       "route": "/api/tutor",
       "source": "app/api/tutor/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
     },
     {
       "route": "/api/tutor/suggest",
       "source": "app/api/tutor/suggest/route.ts",
-      "status": "NOT_TESTED"
+      "status": "NOT_TESTED",
+      "methods": [
+        "GET"
+      ]
     }
   ]
 }

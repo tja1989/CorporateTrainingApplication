@@ -1,5 +1,5 @@
 {
-  "name": "lulu-learn",
+  "name": "welearn",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,7 +12,9 @@
     "worker": "tsx scripts/worker.ts",
     "sweep": "tsx scripts/sweep.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
@@ -28,6 +30,8 @@
     "zod": "^3.25.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.1.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.0.0",

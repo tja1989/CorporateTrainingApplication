@@ -1,0 +1,686 @@
+[
+  {
+    "id": "AUTH:invalid",
+    "expected": "Invalid credentials preserve ID; correction signs in.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "AUTH:activation",
+    "expected": "Valid one-time activation; invalid/expired/mismatch recovery; code cannot be reused.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "AUTH:privacy",
+    "expected": "New user acknowledges notice once; consent persists.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "AUTH:destinations",
+    "expected": "All three roles reach their correct workspace.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "AUTH:mfa",
+    "expected": "Admin setup and verification mandatory; invalid code recoverable; direct links cannot bypass.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "AUTH:reset",
+    "expected": "Manager-issued reset code activates only the intended account and is one-time.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "AUTH:logout",
+    "expected": "Logout and expired session hide protected content; back/direct URL cannot restore access.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "NAV:learner",
+    "expected": "Home, Learning, Practice, HR Help, profile and inbox usable via intended nav.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "NAV:workspace",
+    "expected": "Manager/admin labeled sidebar or drawer; active state; role switching and return.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "NAV:history",
+    "expected": "Back/Forward/direct links preserve view/filter context; no dead ends.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "NAV:keyboard",
+    "expected": "Skip link, menus, drawers/dialogs keyboard access, Escape/focus restoration.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "DISCOVER:search",
+    "expected": "Search results/counts and course destinations agree; one action opens course.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "DISCOVER:filters",
+    "expected": "Tag/language/duration/status filters derive from metadata and persist in URL.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "DISCOVER:views",
+    "expected": "My courses/paths/browse tabs, pagination, clear, empty state survive refresh/history.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "PATH:order",
+    "expected": "Course order, current/completed/locked status and overall progress agree.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "PATH:unlock",
+    "expected": "Completing prerequisite unlocks next; direct URL does not bypass server-enforced lock.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "CONTENT:text",
+    "expected": "Complete text; direct next eligible step; refresh persists and all progress surfaces agree.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "CONTENT:pdf",
+    "expected": "Readable PDF/link fallback; completion and next step persist.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "CONTENT:locked",
+    "expected": "Lesson lock reason and prerequisite route work; incomplete prerequisite cannot be bypassed.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "VIDEO:playback",
+    "expected": "Actual player play/pause/leave/resume restores within heartbeat interval.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "VIDEO:seek",
+    "expected": "Transcript and tutor citation seek correctly; seeking alone never earns coverage.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "VIDEO:threshold",
+    "expected": "90% watched coverage triggers completion once; earlier coverage does not.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "TUTOR:grounded",
+    "expected": "Real grounded question streams answer with valid citation and lesson scope.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "TUTOR:unavailable",
+    "expected": "Provider failure/network error is recoverable without fabricated success.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "QUIZ:types",
+    "expected": "Single, multiple, true/false, ordering, matching, fill-in-the-blank and free-text answers all save and score correctly.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "QUIZ:navigation",
+    "expected": "Question navigation and refresh preserve answers and server timer.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "QUIZ:offline",
+    "expected": "60-second disconnect/reconnect preserves queued answers and honest save state.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "QUIZ:submit",
+    "expected": "Unanswered confirmation, cancel/confirm, duplicate submit protection and stored result.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "QUIZ-RULES:feedback",
+    "expected": "Practice/exam feedback respects release policy; sealed answers remain sealed.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "QUIZ-RULES:window",
+    "expected": "Not-yet-open/closed/timeout correctly block or autosubmit.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "QUIZ-RULES:attempts",
+    "expected": "Cooldown/max attempts/time accommodation enforce server rules and useful recovery.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "REVIEW:pending",
+    "expected": "Provisional/pending does not finalize compliance or award certificate.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "REVIEW:decision",
+    "expected": "Admin confirms or adjusts; learner final result and notification agree.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "REVIEW:appeal",
+    "expected": "Appeal/retry state persists and human decision remains authoritative.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "VOICE:consent",
+    "expected": "Consent and connect/listen/respond/end state/captions visible.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "VOICE:assessment",
+    "expected": "Real oral pass/fail/retake/human overturn persist across roles.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "VOICE:fallback",
+    "expected": "Mic denial/disconnect/reconnect/typed fallback labeled; transcript remains.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "VOICE:cleanup",
+    "expected": "Mic ends on end/navigation; no ongoing capture.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "VOICE:ios",
+    "expected": "Real Safari/iOS microphone and playback verified on hardware.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "HR:citation",
+    "expected": "Question/citation/policy-section and scopes correct; unsupported answer abstains.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "HR:sensitive",
+    "expected": "Sensitive-topic routing offers human assistance.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "HR:escalation",
+    "expected": "Preview payload; cancel creates no ticket; confirm creates exactly one.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "TICKET:thread",
+    "expected": "Learner escalation \u2192 admin reply/resolution \u2192 learner sees shared thread/status.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "TICKET:isolation",
+    "expected": "Unrelated learner/manager cannot see another HR conversation or ticket.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "PRACTICE:locked",
+    "expected": "Practice locked until eligibility; reason and next action provided.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "PRACTICE:session",
+    "expected": "Unlocked question/confidence/result/return saves optional state; mandatory compliance unchanged.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "MANAGER:team",
+    "expected": "Search/filter and member details correct; mobile usable.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "MANAGER:assign",
+    "expected": "Course/path assignment persists once with correct due; learner notification and completion visible.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "MANAGER:nudge",
+    "expected": "Nudge produces intended learner notification, no duplicates from double-submit.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "MANAGER:isolation",
+    "expected": "Second manager cannot inspect or mutate first manager team.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "PEOPLE:import",
+    "expected": "CSV valid/invalid/duplicate has row-level recovery; valid rows persist without duplicates.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "PEOPLE:edit",
+    "expected": "Person edit/group create/group membership persist and validation retains input.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "PEOPLE:rules",
+    "expected": "Create/disable/enable rule affects correct users without duplicate enrollments.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "AUTHOR:draft",
+    "expected": "Create draft; save settings/cover/objectives; refresh persists.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "AUTHOR:types",
+    "expected": "Add all five lesson types with relevant fields and validation.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "AUTHOR:order",
+    "expected": "Reorder lessons/modules; author and learner order agrees.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "AUTHOR:publish",
+    "expected": "Publish/unpublish preserves content and correct learner visibility.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "AUTHOR:ingest",
+    "expected": "Ingestion failure/retry status accurate, no silent fake success.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "POLICY:version",
+    "expected": "Publish/ingest/query/supersede/query: active allowed version used, old citation reconstructable.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "POLICY:failure",
+    "expected": "Policy ingestion failure/retry recoverable and no stale active answer misrepresented.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "INTEGRITY:consent",
+    "expected": "Consent before monitored attempt; fullscreen unsupported gracefully degrades.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "INTEGRITY:events",
+    "expected": "Focus/fullscreen events persist and are reviewable; flags do not auto-fail.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "INTEGRITY:decision",
+    "expected": "Admin clear/void/reason/retry persist; void completion/cert consequences correct.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "REPORTS:six",
+    "expected": "All six reports for both roles: filters/counts/table and exported CSV agree.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "REPORTS:ask",
+    "expected": "Ask Reports typed interpretation displayed and uses proper role scope.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "REPORTS:reset",
+    "expected": "Apply/reset and empty result states clear; mobile table scroll region labeled.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "COMPLIANCE:due",
+    "expected": "Due/reminder transitions agree across learner/manager/admin.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "COMPLIANCE:certificate",
+    "expected": "Completion produces correct downloadable certificate once.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "COMPLIANCE:recert",
+    "expected": "Expiry/recert keeps historical completion immutable and reassigns once.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "ACCOUNT/SYSTEM:profile",
+    "expected": "History/certificates/oral results/account links accurate.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "ACCOUNT/SYSTEM:inbox",
+    "expected": "Unread/read and destinations work across three workspaces.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "ACCOUNT/SYSTEM:dsr",
+    "expected": "Authorized export/erasure on disposable fixture only; scopes enforced.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "ACCOUNT/SYSTEM:states",
+    "expected": "Loading/empty/error/404 recoverable and correctly styled.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "ACCOUNT/SYSTEM:responsive",
+    "expected": "Every template at360/390/768/1280/1440; no page overflow/clipped action.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "ACCOUNT/SYSTEM:accessibility",
+    "expected": "Both themes, keyboard,200% zoom, RTL/reduced motion and automated AA checks.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  },
+  {
+    "id": "ACCOUNT/SYSTEM:performance",
+    "expected": "Home/catalog/course/lesson/manager/admin median3 production mobile runs meet LCP/CLS/interaction budgets.",
+    "status": "NOT_TESTED",
+    "actual": null,
+    "evidence": [],
+    "commit": null,
+    "browserViewport": []
+  }
+]
