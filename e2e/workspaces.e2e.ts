@@ -310,25 +310,41 @@ test("@core Report API endpoints enforce MFA and privacy before returning data",
   expect((await page.request.post("/api/reports/ask", { data: { question: "Show engagement" } })).status()).toBe(403);
 });
 
-test("@core All seven question formats remain reviewable, with approval and discard recorded", async ({ page }, info) => {
+test("@core @template All seven question formats remain reviewable, with approval and discard recorded", async ({ page }, info) => {
   test.setTimeout(120_000);
   const admin = await createPerson("ADMIN"), bank = randomUUID();
   const types = ["mcq_single", "mcq_multi", "truefalse", "fill_blank", "matching", "ordering", "free_text"];
   const ids = types.map(() => randomUUID());
+  const bodies = [
+    { options: ["Report the spill", "Walk past it"], correct: [0] },
+    { options: ["Wear gloves", "Wash hands", "Ignore the hazard"], correct: [0, 1] },
+    { correct: [1] },
+    { acceptedAnswers: ["supervisor", "manager"] },
+    { pairs: [{ left: "Wet floor", right: "Use a warning sign" }, { left: "Damaged tool", right: "Remove it from use" }] },
+    { orderItems: ["Listen to the request", "Clarify the need", "Offer suitable help"] },
+    { stimulus: "A customer is unsure which product meets their needs." },
+  ];
   await withDb(async db => {
     await db.query("INSERT INTO question_banks(id,name) VALUES($1,'QA seven-format review bank')", [bank]);
     for (let i = 0; i < types.length; i++) {
-      await db.query("INSERT INTO questions(id,bank_id,type,status,body,rubric,created_by) VALUES($1,$2,$3,'DRAFT',$4,$5,'ai')", [ids[i],bank,types[i],JSON.stringify({ prompt: `QA ${types[i]} review ${bank.slice(0,8)}`, options: ["Safe", "Unsafe"], correct: [0], acceptedAnswers: ["safe"], pairs: [{ left: "Hazard", right: "Report" }], orderItems: ["Listen", "Help"], explanation: "Use the relevant source content." }), types[i] === "free_text" ? JSON.stringify({ criteria: [{ name: "Helpful", points: 1 }], modelAnswer: "Listen and help." }) : null]);
+      await db.query("INSERT INTO questions(id,bank_id,type,status,body,rubric,created_by) VALUES($1,$2,$3,'DRAFT',$4,$5,'ai')", [ids[i],bank,types[i],JSON.stringify({ prompt: `QA ${types[i]} review ${bank.slice(0,8)}`, ...bodies[i], explanation: "Use the relevant source content." }), types[i] === "free_text" ? JSON.stringify({ criteria: [{ name: "Clarifies the customer need", points: 2 }, { name: "Offers suitable help", points: 3 }], modelAnswer: "Listen, clarify the need and offer suitable help." }) : null]);
     }
   });
   await signIn(page,admin);
   for (let i = 0; i < types.length; i++) {
     await page.goto(`/admin/reviews?view=drafts&item=${ids[i]}`);
-    await page.getByText("All question fields and marking criteria", { exact: true }).click();
-    await expect(page.locator("pre")).toContainText(`QA ${types[i]} review`);
-    if (types[i] === "free_text") await expect(page.locator("pre")).toContainText("Listen and help.");
+    const guide = page.getByRole("region", { name: "Question answer guide", exact: true });
+    await expect(guide).toBeVisible();
+    if (page.viewportSize()!.width < 1200) await expect(guide).toBeInViewport();
+    if (types[i] === "mcq_single") { await expect(guide.getByRole("listitem").filter({ hasText: "Report the spill" })).toContainText("Correct answer"); await expect(guide).toContainText("Walk past it"); }
+    if (types[i] === "mcq_multi") { for (const answer of ["Wear gloves", "Wash hands"]) await expect(guide.getByRole("listitem").filter({ hasText: answer })).toContainText("Correct answer"); }
+    if (types[i] === "truefalse") await expect(guide.getByText("False", { exact: true })).toBeVisible();
+    if (types[i] === "fill_blank") { await expect(guide.getByRole("list", { name: "Accepted answers" })).toContainText("supervisor"); await expect(guide).toContainText("manager"); }
+    if (types[i] === "matching") { const pairs = guide.getByRole("list", { name: "Correct pairs" }); await expect(pairs.getByRole("listitem").nth(0)).toHaveText("Wet floor → Use a warning sign"); await expect(pairs.getByRole("listitem").nth(1)).toHaveText("Damaged tool → Remove it from use"); }
+    if (types[i] === "ordering") await expect(guide.getByRole("list", { name: "Correct order" }).getByRole("listitem")).toHaveText(["Listen to the request", "Clarify the need", "Offer suitable help"]);
+    if (types[i] === "free_text") { await expect(guide).toContainText("Clarifies the customer need · 2 points"); await expect(guide).toContainText("Offers suitable help · 3 points"); await expect(guide).toContainText("Listen, clarify the need and offer suitable help."); await expect(guide).toContainText("A customer is unsure which product meets their needs."); }
     await expectNoPageOverflow(page);
-    if (types[i] === "matching") await capture(page,info,"question-matching-review");
+    await page.evaluate(() => window.scrollTo(0, 0)); await capture(page,info,`question-${types[i]}-review`);
     await saveAndReload(page, page.getByRole("button", { name: i === 6 ? "Discard" : "Approve", exact: true }));
     expect(await withDb(async db => (await db.query("SELECT status FROM questions WHERE id=$1", [ids[i]])).rows[0].status)).toBe(i === 6 ? "RETIRED" : "APPROVED");
   }

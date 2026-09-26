@@ -1,6 +1,6 @@
 import { WorkspaceTabs } from "@/components/workspace-ui";
 import { WorkspaceForm, SubmitButton } from "@/components/workspace-form";
-import { Icon } from "@/components/icons";
+import { QuestionGuide, questionTypeLabels } from "./question-guide";
 import { asc, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
@@ -45,7 +45,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
         {pendingGrades.length === 0 ? (
           <EmptyState title="Nothing pending" body="Free-text answers that AI fails, grades with low confidence, or that learners appeal land here." />
         ) : (
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><nav aria-label="Pending grades" className="flex flex-col gap-2">{pendingGrades.map(r => <a key={r.id} href={`/admin/reviews?view=grades&item=${r.id}`} aria-current={(item ?? pendingGrades[0]?.id) === r.id ? "page" : undefined} className="rounded-input border border-border bg-surface p-4 hover:bg-surface-2 aria-[current]:border-primary"><span className="block font-medium text-link">{nameOf.get(attemptOf.get(r.attemptId)?.userId ?? "") ?? "Employee"}</span><span className="mt-1 block text-sm text-muted">{questionOf.get(r.questionId)?.body.prompt}</span><span className="mt-2 block text-sm">{r.reason.replaceAll("_", " ")}</span></a>)}</nav><div className="min-w-0">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><nav id="pending-grades" aria-label="Pending grades" className="order-2 flex flex-col gap-2 xl:order-1">{pendingGrades.map(r => <a key={r.id} href={`/admin/reviews?view=grades&item=${r.id}`} aria-current={(item ?? pendingGrades[0]?.id) === r.id ? "page" : undefined} className="rounded-input border border-border bg-surface p-4 hover:bg-surface-2 aria-[current]:border-primary"><span className="block font-medium text-link">{nameOf.get(attemptOf.get(r.attemptId)?.userId ?? "") ?? "Employee"}</span><span className="mt-1 block text-sm text-muted">{questionOf.get(r.questionId)?.body.prompt}</span><span className="mt-2 block text-sm">{r.reason.replaceAll("_", " ")}</span></a>)}</nav><div className="order-1 min-w-0 xl:order-2">
             {pendingGrades.filter(r => r.id === (item ?? pendingGrades[0]?.id)).map((review) => {
               const attempt = attemptOf.get(review.attemptId);
               const q = questionOf.get(review.questionId);
@@ -54,7 +54,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
               const aiTotal = (review.aiScores ?? []).reduce((s, c) => s + c.points, 0);
               const aiMax = (review.aiScores ?? []).reduce((s, c) => s + c.max, 0);
               return (
-                <Card key={review.id} className="p-4 text-sm">
+                <Card key={review.id} className="p-4 text-sm"><a href="#pending-grades" className="link mb-3 inline-flex touch-target xl:hidden">Choose another grading review ↓</a>
                   <div className="mb-1 flex flex-wrap items-center gap-2">
                     <span className="font-medium">{nameOf.get(attempt?.userId ?? "") ?? "—"}</span>
                     <Chip variant={review.reason === "ai_fail" ? "destructive" : review.reason === "appeal" ? "warning" : "neutral"}>
@@ -88,24 +88,15 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
         {drafts.length === 0 ? (
           <EmptyState title="No drafts" body="Questions generated from ingested videos appear here for approval." />
         ) : (
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><nav aria-label="Question drafts" className="flex flex-col gap-2">{drafts.map(d => <a key={d.id} href={`/admin/reviews?view=drafts&item=${d.id}`} aria-current={(item ?? drafts[0]?.id) === d.id ? "page" : undefined} className="rounded-input border border-border bg-surface p-4 hover:bg-surface-2 aria-[current]:border-primary"><span className="block text-sm text-muted">{d.type.replaceAll("_", " ")}</span><span className="mt-1 block font-medium text-link">{d.body.prompt}</span></a>)}</nav><div className="min-w-0">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><nav id="question-drafts" aria-label="Question drafts" className="order-2 flex flex-col gap-2 xl:order-1">{drafts.map(d => <a key={d.id} href={`/admin/reviews?view=drafts&item=${d.id}`} aria-current={(item ?? drafts[0]?.id) === d.id ? "page" : undefined} className="rounded-input border border-border bg-surface p-4 hover:bg-surface-2 aria-[current]:border-primary"><span className="block text-sm text-muted">{questionTypeLabels[d.type]}</span><span className="mt-1 block font-medium text-link">{d.body.prompt}</span></a>)}</nav><div className="order-1 min-w-0 xl:order-2">
             {drafts.filter(d => d.id === (item ?? drafts[0]?.id)).map((d) => (
-              <Card key={d.id} className="p-4 text-sm">
+              <Card key={d.id} className="p-4 text-sm"><a href="#question-drafts" className="link mb-3 inline-flex touch-target xl:hidden">Choose another question ↓</a>
                 <div className="mb-1 flex items-center gap-2">
-                  <Chip variant="ai">AI draft · {d.type}</Chip>
+                  <Chip variant="ai">AI draft · {questionTypeLabels[d.type]}</Chip>
                   {d.source?.startSec !== undefined ? <span className="text-xs text-muted">from video @ {d.source?.startSec}s</span> : null}
                 </div>
                 <p className="mb-1 font-medium">{d.body.prompt}</p>
-                {d.body.options ? (
-                  <ul className="mb-1 flex flex-col gap-1 text-muted">
-                    {d.body.options.map((opt, i) => (
-                      <li key={i}>{d.body.correct?.includes(i) ? <Icon name="check" size={12} className="me-1 inline align-text-bottom text-success-fg" /> : "· "}{opt}</li>
-                    ))}
-                  </ul>
-                ) : null}
-                {d.body.acceptedAnswers ? <p className="mb-1 text-muted">Accepted: {d.body.acceptedAnswers.join(", ")}</p> : null}
-                {d.body.explanation ? <p className="mb-2 text-xs text-muted">{d.body.explanation}</p> : null}
-                <details className="mb-3"><summary className="touch-target flex items-center text-link">All question fields and marking criteria</summary><pre className="whitespace-pre-wrap break-words rounded-input bg-surface-2 p-3 text-sm">{JSON.stringify({ ...d.body, ...(d.rubric ? { rubric: d.rubric } : {}) }, null, 2)}</pre></details>
+                <QuestionGuide type={d.type} body={d.body} rubric={d.rubric} />
                 <div className="flex gap-2">
                   <WorkspaceForm action={approveDraftAction.bind(null, d.id)}>
                     <SubmitButton variant="secondary">Approve</SubmitButton>
@@ -125,9 +116,9 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
         {oralReviews.length === 0 ? (
           <EmptyState icon="mic" tone="ai" title="No failed oral checks waiting" body="Checks under the pass mark land here for a human look — confirm the fail, or overturn it to a pass." />
         ) : (
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><nav aria-label="Pending oral checks" className="flex flex-col gap-2">{oralReviews.map(r => <a key={r.id} href={`/admin/reviews?view=oral&item=${r.id}`} aria-current={(item ?? oralReviews[0]?.id) === r.id ? "page" : undefined} className="rounded-input border border-border bg-surface p-4 hover:bg-surface-2 aria-[current]:border-primary"><span className="block font-medium text-link">{r.learnerName}</span><span className="mt-1 block text-sm text-muted">{r.lessonTitle} · {r.scorePct ?? 0}%</span></a>)}</nav><div className="min-w-0">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><nav id="pending-oral-checks" aria-label="Pending oral checks" className="order-2 flex flex-col gap-2 xl:order-1">{oralReviews.map(r => <a key={r.id} href={`/admin/reviews?view=oral&item=${r.id}`} aria-current={(item ?? oralReviews[0]?.id) === r.id ? "page" : undefined} className="rounded-input border border-border bg-surface p-4 hover:bg-surface-2 aria-[current]:border-primary"><span className="block font-medium text-link">{r.learnerName}</span><span className="mt-1 block text-sm text-muted">{r.lessonTitle} · {r.scorePct ?? 0}%</span></a>)}</nav><div className="order-1 min-w-0 xl:order-2">
             {oralReviews.filter(r => r.id === (item ?? oralReviews[0]?.id)).map((r) => (
-              <Card key={r.id} className="p-4">
+              <Card key={r.id} className="p-4"><a href="#pending-oral-checks" className="link mb-3 inline-flex touch-target xl:hidden">Choose another oral check ↓</a>
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <span className="text-sm font-medium">{r.learnerName}</span>
                   <span className="flex gap-2">
