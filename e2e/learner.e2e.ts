@@ -229,3 +229,82 @@ test("@core Offline HR voice starts typing without waiting for microphone permis
   await expect(page.getByRole("link", { name: "Continue in text", exact: true })).toBeVisible();
   await expect.poll(async () => withDb(async db => (await db.query("SELECT count(*)::int AS n FROM hr_messages m JOIN hr_conversations c ON c.id=m.conversation_id WHERE c.user_id=$1 AND m.role='user' AND m.content='What training is due for me?'", [person.id])).rows[0].n)).toBe(1);
 });
+
+test("@core HR changed preview requires another review and Cancel never shares the new turn", async ({ page }) => {
+  const person = await createPerson("LEARNER");
+  const conversation = randomUUID();
+  await withDb(async db => {
+    await db.query("INSERT INTO hr_conversations (id,user_id) VALUES ($1,$2)", [conversation, person.id]);
+    await db.query("INSERT INTO hr_messages (id,conversation_id,role,content) VALUES ($1,$2,'user','Previewed question.')", [randomUUID(), conversation]);
+  });
+  await signIn(page, person);
+  await page.goto("/ask-hr");
+  await page.getByRole("button", { name: "Talk to a person", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Review what you will share with HR" });
+  await expect(dialog.getByLabel("Conversation to share")).toContainText("Previewed question.");
+  await withDb(db => db.query("INSERT INTO hr_messages (id,conversation_id,role,content) VALUES ($1,$2,'user','A new private turn arrived while reviewing.')", [randomUUID(), conversation]));
+  await dialog.getByRole("button", { name: "Share and create ticket" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("conversation changed");
+  await expect(dialog.getByRole("button", { name: "Share and create ticket" })).toBeDisabled();
+  await dialog.getByRole("button", { name: "Review updated conversation" }).click();
+  await expect(dialog.getByLabel("Conversation to share")).toContainText("A new private turn arrived while reviewing.");
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  expect(await withDb(async db => (await db.query("SELECT count(*)::int AS n FROM hr_tickets WHERE conversation_id=$1", [conversation])).rows[0].n)).toBe(0);
+  await page.getByRole("button", { name: "Talk to a person", exact: true }).click();
+  const approvedBody = await dialog.getByLabel("Conversation to share").innerText();
+  await dialog.getByRole("button", { name: "Share and create ticket" }).click();
+  await expect(page.getByRole("link", { name: "View your ticket" })).toBeVisible();
+  const stored = await withDb(async db => (await db.query("SELECT m.body, c.version FROM hr_tickets t JOIN hr_ticket_messages m ON m.ticket_id=t.id JOIN consents c ON c.version=t.id AND c.kind='escalation' WHERE t.conversation_id=$1 AND t.user_id=$2", [conversation, person.id])).rows);
+  expect(stored).toHaveLength(1);
+  expect(stored[0].body).toBe(approvedBody);
+});
+
+test("@core Voice escalation rejects late flushed turns and another user's preview version", async ({ page }) => {
+  const owner = await createPerson("LEARNER"), stranger = await createPerson("LEARNER");
+  const conversation = randomUUID();
+  await withDb(async db => {
+    await db.query("INSERT INTO hr_conversations (id,user_id,mode) VALUES ($1,$2,'voice')", [conversation, owner.id]);
+    await db.query("INSERT INTO hr_messages (id,conversation_id,role,content) VALUES ($1,$2,'user','Approved voice turn.')", [randomUUID(), conversation]);
+  });
+  await signIn(page, owner);
+  const preview = await (await page.request.get(`/api/hr/escalate?conversationId=${conversation}`)).json();
+  const turn = await page.request.post("/api/live/hr/event", { data: { type: "turn", conversationId: conversation, turns: [{ role: "user", text: "Late microphone turn." }] } });
+  expect(turn.ok()).toBe(true);
+  const changed = await page.request.post("/api/live/hr/event", { data: { type: "escalate", conversationId: conversation, previewVersion: preview.version } });
+  expect(changed.status()).toBe(409);
+  expect(await withDb(async db => (await db.query("SELECT count(*)::int AS n FROM hr_tickets WHERE conversation_id=$1", [conversation])).rows[0].n)).toBe(0);
+  const updated = await (await page.request.get(`/api/hr/escalate?conversationId=${conversation}`)).json();
+  await page.context().clearCookies();
+  await signIn(page, stranger);
+  expect((await page.request.get(`/api/hr/escalate?conversationId=${conversation}`)).status()).toBe(404);
+  expect((await page.request.post("/api/live/hr/event", { data: { type: "escalate", conversationId: conversation, previewVersion: updated.version } })).status()).toBe(404);
+  await page.context().clearCookies();
+  await signIn(page, owner);
+  const confirmed = await page.request.post("/api/live/hr/event", { data: { type: "escalate", conversationId: conversation, previewVersion: updated.version } });
+  expect(confirmed.ok()).toBe(true);
+  const { ticketId } = await confirmed.json();
+  const body = await withDb(async db => (await db.query("SELECT body FROM hr_ticket_messages WHERE ticket_id=$1", [ticketId])).rows[0].body);
+  expect(body).toBe(updated.body);
+});
+
+test("@core Offline voice dialog sends only the version explicitly reviewed after a new turn", async ({ page }) => {
+  const person = await createPerson("LEARNER");
+  await signIn(page, person);
+  await page.goto("/ask-hr/live");
+  const started = page.waitForResponse(response => response.url().endsWith("/api/live/hr/session"));
+  await page.getByRole("button", { name: "Start talking", exact: true }).click();
+  const { conversationId } = await (await started).json();
+  await page.getByRole("button", { name: "Talk to a person", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Review what you will share with HR" });
+  await expect(dialog.getByLabel("Conversation to share")).toBeVisible();
+  await page.request.post("/api/live/hr/event", { data: { type: "turn", conversationId, turns: [{ role: "user", text: "New turn during the voice preview." }] } });
+  await dialog.getByRole("button", { name: "Share and create ticket" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("conversation changed");
+  await dialog.getByRole("button", { name: "Review updated conversation" }).click();
+  await expect(dialog.getByLabel("Conversation to share")).toContainText("New turn during the voice preview.");
+  const approvedBody = await dialog.getByLabel("Conversation to share").innerText();
+  await dialog.getByRole("button", { name: "Share and create ticket" }).click();
+  await expect(page.getByText("Ticket sent to HR", { exact: true })).toBeVisible();
+  const rows = await withDb(async db => (await db.query("SELECT m.body FROM hr_tickets t JOIN hr_ticket_messages m ON m.ticket_id=t.id WHERE t.conversation_id=$1", [conversationId])).rows);
+  expect(rows).toEqual([{ body: approvedBody }]);
+});

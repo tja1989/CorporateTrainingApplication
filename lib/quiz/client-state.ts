@@ -10,7 +10,9 @@ export function resultStatus(result: { gradingState: string; state: string; pass
   return result.gradingState !== "FINAL" || result.state !== "GRADED" || result.passed === null ? "pending" : result.passed ? "pass" : "fail";
 }
 export class AttemptSaveError extends Error {
-  constructor(message: string, public submitted: boolean) { super(message); }
+  constructor(message: string, public submitted: boolean) {
+    super(message);
+  }
 }
 export async function saveAttemptAnswers(attemptId: string, answers: Record<string, Answer>, events: Array<{ kind: string; detail?: Record<string, unknown> }>, fetcher: typeof fetch = fetch) {
   const res = await fetcher(`/api/attempt/${attemptId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers, events }) });
@@ -20,8 +22,11 @@ export async function saveAttemptAnswers(attemptId: string, answers: Record<stri
   }
 }
 export async function submitSavedAttempt(attemptId: string, answers: Record<string, Answer>, events: Array<{ kind: string; detail?: Record<string, unknown> }>, fetcher: typeof fetch = fetch) {
-  try { await saveAttemptAnswers(attemptId, answers, events, fetcher); }
-  catch (error) { if (!(error instanceof AttemptSaveError && error.submitted)) throw error; }
+  try {
+    await saveAttemptAnswers(attemptId, answers, events, fetcher);
+  } catch (error) {
+    if (!(error instanceof AttemptSaveError && error.submitted)) throw error;
+  }
   const res = await fetcher(`/api/attempt/${attemptId}`, { method: "POST" });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error ?? "Submission failed. Your saved answers are safe; try again.");

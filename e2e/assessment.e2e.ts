@@ -67,6 +67,7 @@ test("@core Failed answer save retains typed input and blocks stale submission u
   await page.getByRole("button", { name: "Submit anyway" }).click();
   await expect(page.getByRole("main").getByRole("alert")).toContainText("Temporary save failure");
   await expect(answer).toHaveValue("Hello");
+  await expect(answer).toBeEnabled();
   expect(submissions).toBe(0);
   await page.unroute("**/api/attempt/*");
   await page.getByRole("button", { name: "Submit assessment", exact: true }).click();
@@ -170,4 +171,82 @@ test("@core Quiz lesson opens preflight and a final pass unlocks the next lesson
   await page.getByRole("link", { name: "Return to lesson", exact: true }).click();
   await expect(page.getByText("Lesson complete", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Next lesson", exact: true })).toHaveAttribute("href", `/lesson/${next}`);
+});
+
+test("@core Delayed autosave cannot overwrite the final answer snapshot or grade", async ({ page }) => {
+  const person = await createPerson("LEARNER"), quiz = await assessmentFixture();
+  const questionId = await withDb(async db => {
+    const row = (await db.query("SELECT sections FROM quizzes WHERE id=$1", [quiz])).rows[0];
+    const question = row.sections[0].fixed[0];
+    await db.query("UPDATE quizzes SET sections=$2 WHERE id=$1", [quiz, JSON.stringify([{ fixed: [question] }])]);
+    return question as string;
+  });
+  await signIn(page, person);
+  await page.goto(`/quiz/${quiz}`);
+  await page.getByRole("button", { name: "Start assessment", exact: true }).click();
+  await page.getByRole("radio", { name: "Ignore", exact: true }).check();
+
+  let releaseOld!: () => void;
+  const oldGate = new Promise<void>(resolve => { releaseOld = resolve; });
+  let oldSaved!: () => void;
+  const oldDone = new Promise<void>(resolve => { oldSaved = resolve; });
+  const operations: string[] = [];
+  let patchCount = 0;
+  await page.route("**/api/attempt/*", async route => {
+    if (route.request().method() !== "PATCH") return route.continue();
+    const current = ++patchCount;
+    operations.push(`start ${current}`);
+    if (current === 1) {
+      await oldGate;
+      const response = await route.fetch();
+      operations.push("saved 1");
+      oldSaved();
+      return route.fulfill({ response });
+    }
+    const response = await route.fetch();
+    operations.push(`saved ${current}`);
+    releaseOld();
+    await oldDone;
+    return route.fulfill({ response });
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect.poll(() => patchCount).toBe(1);
+  await page.getByRole("radio", { name: "Hello", exact: true }).check();
+  await page.getByRole("button", { name: "Submit assessment", exact: true }).click();
+  // The old implementation sends B immediately. Deliver A after B reaches the
+  // real server, but before B's response allows grading. The fixed queue must
+  // finish A first; this bounded network delay then lets B proceed normally.
+  const releaseTimer = setTimeout(releaseOld, 1500);
+  try {
+    await expect.soft(page.getByRole("radio", { name: "Hello", exact: true })).toBeDisabled({ timeout: 500 });
+    await expect(page.getByText(/^Final result:/)).toBeVisible();
+  } finally {
+    clearTimeout(releaseTimer);
+    releaseOld();
+  }
+  expect.soft(operations.indexOf("saved 1")).toBeLessThan(operations.indexOf("start 2"));
+  const stored = await withDb(async db => (await db.query("SELECT answers, passed, score, max_score FROM attempts WHERE user_id=$1 AND quiz_id=$2", [person.id, quiz])).rows[0]);
+  expect.soft(stored.answers[questionId]).toEqual({ kind: "choice", selected: [0] });
+  expect.soft(stored.passed).toBe(true);
+  expect(stored.score).toBe(stored.max_score);
+  await expect(page.getByText("Final result: passed", { exact: true })).toBeVisible();
+});
+
+test("@core Assessment timer submits the last saved answer when the server deadline closes", async ({ page }) => {
+  const person = await createPerson("LEARNER"), quiz = await assessmentFixture();
+  await withDb(async db => {
+    const row = (await db.query("SELECT sections FROM quizzes WHERE id=$1", [quiz])).rows[0];
+    await db.query("UPDATE quizzes SET sections=$2, settings=settings || '{\"timeLimitSec\":5,\"graceSec\":1}'::jsonb WHERE id=$1", [quiz, JSON.stringify([{ fixed: [row.sections[0].fixed[0]] }])]);
+  });
+  await signIn(page, person);
+  await page.goto(`/quiz/${quiz}`);
+  await page.getByRole("button", { name: "Start assessment", exact: true }).click();
+  await page.getByRole("radio", { name: "Hello", exact: true }).check();
+  const saved = page.waitForResponse(response => response.url().includes("/api/attempt/") && response.request().method() === "PATCH");
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  expect((await saved).ok()).toBe(true);
+  // Do not click Submit: the real countdown and server deadline must finish it.
+  await expect(page.getByText("Final result: passed", { exact: true })).toBeVisible({ timeout: 15_000 });
+  const stored = await withDb(async db => (await db.query("SELECT state, passed FROM attempts WHERE user_id=$1 AND quiz_id=$2", [person.id, quiz])).rows[0]);
+  expect(stored).toEqual({ state: "GRADED", passed: true });
 });

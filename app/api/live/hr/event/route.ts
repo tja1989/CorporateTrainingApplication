@@ -59,8 +59,9 @@ export async function POST(req: Request) {
       return Response.json(result);
     }
     case "escalate": {
-      const created = await createTicketFromConversation(user, conv.id, body.subject);
+      const created = await createTicketFromConversation(user, conv.id, body.previewVersion, body.subject);
       if (!created) return new Response("Not found", { status: 404 });
+      if ("previewChanged" in created) return Response.json({ code: "preview_changed" }, { status: 409 });
       return Response.json({ ok: true, ticketId: created.ticketId });
     }
     case "end": {

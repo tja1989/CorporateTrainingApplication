@@ -127,7 +127,15 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
         </>
       ) : null}
 
-      <EscalationPreview open={confirmOpen || v.pendingEscalation} load={v.previewEscalation} confirm={async () => { await v.escalate(); }} close={() => { setConfirmOpen(false); v.dismissEscalation(); }} />
+      <EscalationPreview
+        open={confirmOpen || v.pendingEscalation}
+        load={v.previewEscalation}
+        confirm={async (version) => { await v.escalate(version); }}
+        close={() => {
+          setConfirmOpen(false);
+          v.dismissEscalation();
+        }}
+      />
     </section>
   );
 }

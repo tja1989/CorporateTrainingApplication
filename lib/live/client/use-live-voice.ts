@@ -1,5 +1,6 @@
 "use client";
 
+import { EscalationPreviewChangedError } from "@/lib/hr/escalation";
 import type { CourseOutlineView } from "@/lib/lms/outline";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createMicCapture, createPlayer, micSupported, type MicCapture, type Player } from "./audio";
@@ -125,7 +126,13 @@ export function useLiveVoice(opts: { configured: boolean; kind: LiveKind; sessio
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ ...body, [idKey]: idRef.current }),
       });
-      if (!res.ok) throw new Error((await res.text().catch(() => "")) || `Request failed (${res.status})`);
+      if (!res.ok) {
+        if (res.status === 409) {
+          const data = await res.clone().json().catch(() => null);
+          if (data?.code === "preview_changed") throw new EscalationPreviewChangedError();
+        }
+        throw new Error((await res.text().catch(() => "")) || `Request failed (${res.status})`);
+      }
       return (await res.json()) as Record<string, unknown>;
     },
     [opts.eventUrl, idKey],
@@ -517,9 +524,9 @@ export function useLiveVoice(opts: { configured: boolean; kind: LiveKind; sessio
   }, [update]);
 
   const escalate = useCallback(
-    async (subject?: string) => {
+    async (previewVersion: string) => {
       await flushTurns();
-      const res = await postEvent({ type: "escalate", subject });
+      const res = await postEvent({ type: "escalate", previewVersion });
       update({ ticketId: typeof res.ticketId === "string" ? res.ticketId : null, pendingEscalation: false });
       return typeof res.ticketId === "string" ? res.ticketId : null;
     },

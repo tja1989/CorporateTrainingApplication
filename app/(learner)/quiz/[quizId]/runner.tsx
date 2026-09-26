@@ -50,6 +50,16 @@ export function QuizRunner({
   const [busy, setBusy] = useState(false);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
   const submitting = useRef(false);
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
+  const autosavePending = useRef(false);
+
+  // Autosave and final save/submit share one queue. Rejection is returned to the
+  // caller without poisoning the queue, so a retained answer can be retried.
+  const serialize = useCallback(<T,>(operation: () => Promise<T>): Promise<T> => {
+    const result = saveQueue.current.then(operation);
+    saveQueue.current = result.then(() => undefined, () => undefined);
+    return result;
+  }, []);
   const [appealSent, setAppealSent] = useState(false);
   const pendingEvents = useRef<Array<{ kind: string; detail?: Record<string, unknown> }>>([]);
   const answersRef = useRef(answers);
@@ -60,29 +70,34 @@ export function QuizRunner({
     setError(null);
     setBusy(true);
     try {
-    const res = await fetch(`/api/quiz/${quizId}/start`, { method: "POST" });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error ?? "Could not start the assessment.");
-      setPhase("preflight");
-      return;
-    }
-    setAttemptId(data.attemptId);
-    setServed(data.served);
-    setSettings(data.settings);
-    setAnswers(data.answers ?? {});
-    setDeadline(data.deadlineAt ? new Date(data.deadlineAt) : null);
-    setPhase("running");
-    if (data.settings.integrityMode) {
-      const el = document.documentElement as HTMLElement & { requestFullscreen?: () => Promise<void> };
-      if (el.requestFullscreen) {
-        el.requestFullscreen().catch(() => pendingEvents.current.push({ kind: "fullscreen_denied" }));
-      } else {
-        // iOS Safari has no programmatic fullscreen — informational, monitoring proceeds (spec FR-7.1)
-        pendingEvents.current.push({ kind: "fullscreen_unavailable", detail: { platform: navigator.userAgent.slice(0, 60) } });
+      const res = await fetch(`/api/quiz/${quizId}/start`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Could not start the assessment.");
+        setPhase("preflight");
+        return;
       }
+      setAttemptId(data.attemptId);
+      setServed(data.served);
+      setSettings(data.settings);
+      setAnswers(data.answers ?? {});
+      setDeadline(data.deadlineAt ? new Date(data.deadlineAt) : null);
+      setPhase("running");
+      if (data.settings.integrityMode) {
+        const el = document.documentElement as HTMLElement & { requestFullscreen?: () => Promise<void> };
+        if (el.requestFullscreen) {
+          el.requestFullscreen().catch(() => pendingEvents.current.push({ kind: "fullscreen_denied" }));
+        } else {
+          // iOS Safari has no programmatic fullscreen — informational, monitoring proceeds (spec FR-7.1)
+          pendingEvents.current.push({ kind: "fullscreen_unavailable", detail: { platform: navigator.userAgent.slice(0, 60) } });
+        }
+      }
+    } catch {
+      setError("Could not connect. Try starting again.");
+      setPhase("preflight");
+    } finally {
+      setBusy(false);
     }
-    } catch { setError("Could not connect. Try starting again."); setPhase("preflight"); } finally { setBusy(false); }
   }, [quizId]);
 
   // integrity listeners
@@ -135,48 +150,74 @@ export function QuizRunner({
     submitting.current = true;
     setBusy(true);
     setError(null);
-    const events = [...pendingEvents.current];
+    const snapshot = answersRef.current;
     try {
-      const data = await submitSavedAttempt(attemptId, answersRef.current, events);
-      pendingEvents.current.splice(0, events.length);
+      const data = await serialize(async () => {
+        // Prior saves have now settled and removed their acknowledged events.
+        const events = [...pendingEvents.current];
+        const result = await submitSavedAttempt(attemptId, snapshot, events);
+        pendingEvents.current.splice(0, events.length);
+        return result;
+      });
+      setSaved(true);
+      setOffline(false);
       setResult(data);
       setPhase("result");
       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     } catch (error) {
+      setSaved(false);
       setOffline(true);
       setError(error instanceof Error ? error.message : "Submission failed. Keep this page open and retry.");
-    } finally { submitting.current = false; setBusy(false); }
-  }, [attemptId]);
+    } finally {
+      submitting.current = false;
+      setBusy(false);
+    }
+  }, [attemptId, serialize]);
 
   // Answers remain in this open tab until acknowledged by the server. Do not
   // claim durable local storage or mark a newer edit saved by an older request.
   useEffect(() => {
     if (phase !== "running" || !attemptId) return;
-    let saving = false;
     const save = async () => {
-      if (saving || submitting.current) return;
-      saving = true;
-      const snapshot = answersRef.current;
-      const events = [...pendingEvents.current];
+      if (autosavePending.current || submitting.current) return;
+      autosavePending.current = true;
       try {
-        await saveAttemptAnswers(attemptId, snapshot, events);
-        pendingEvents.current.splice(0, events.length);
-        setOffline(false);
-        setSaved(answersRef.current === snapshot);
-        setError(null);
+        await serialize(async () => {
+          const snapshot = answersRef.current;
+          const events = [...pendingEvents.current];
+          await saveAttemptAnswers(attemptId, snapshot, events);
+          pendingEvents.current.splice(0, events.length);
+          if (!submitting.current) {
+            setOffline(false);
+            setSaved(answersRef.current === snapshot);
+            setError(null);
+          }
+        });
       } catch (error) {
-        setSaved(false);
-        if (error instanceof AttemptSaveError && error.submitted) { await submit(); }
-        else { setOffline(true); setError("Answers are not saved yet. Keep this tab open; we will retry when connected."); }
-      } finally { saving = false; }
+        if (error instanceof AttemptSaveError && error.submitted) {
+          await submit();
+        } else if (!submitting.current) {
+          setSaved(false);
+          setOffline(true);
+          setError("Answers are not saved yet. Keep this tab open; we will retry when connected.");
+        }
+      } finally {
+        autosavePending.current = false;
+      }
     };
     const iv = setInterval(save, 10_000);
     window.addEventListener("online", save);
-    return () => { clearInterval(iv); window.removeEventListener("online", save); };
-  }, [phase, attemptId, submit]);
+    return () => {
+      clearInterval(iv);
+      window.removeEventListener("online", save);
+    };
+  }, [phase, attemptId, serialize, submit]);
 
-  const setAnswer = (qid: string, a: Answer) => {
-    setAnswers((prev) => ({ ...prev, [qid]: a }));
+  const setAnswer = (qid: string, answer: Answer) => {
+    if (submitting.current) return;
+    const next = { ...answersRef.current, [qid]: answer };
+    answersRef.current = next;
+    setAnswers(next);
     setSaved(false);
   };
 
@@ -284,9 +325,11 @@ export function QuizRunner({
 
       {error ? <p role="alert" className="mb-4 rounded-control bg-warning-tint p-3 text-sm text-warning-fg">{error}</p> : null}
       <nav aria-label="Question navigation" className="mb-4 flex flex-wrap gap-2">{served.map((q, i) => <button key={q.questionId} type="button" disabled={busy || (settings.noBacktrack && i < index)} aria-current={settings.oneAtATime && index === i ? "step" : undefined} aria-label={`Question ${i + 1}, ${isAnswered(q, answers[q.questionId]) ? "answered" : "unanswered"}`} className={cx("touch-target rounded-control border px-3 text-sm", index === i ? "border-primary bg-accent-tint text-primary" : "border-border", "disabled:opacity-50")} onClick={() => { if (settings.oneAtATime) setIndex(i); else document.getElementById(`question-${q.questionId}`)?.scrollIntoView({ block: "center" }); }}>{i + 1}</button>)}</nav>
-      {visible.map((q) => (
-        <QuestionInput key={q.questionId} q={q} answer={answers[q.questionId]} onChange={(a) => setAnswer(q.questionId, a)} />
-      ))}
+      <fieldset disabled={busy} aria-label="Assessment answers" aria-busy={busy} className="min-w-0">
+        {visible.map((q) => (
+          <QuestionInput key={q.questionId} q={q} answer={answers[q.questionId]} onChange={(a) => setAnswer(q.questionId, a)} />
+        ))}
+      </fieldset>
 
       <div className="mt-4 flex items-center gap-2">
         {settings.oneAtATime && index > 0 && !settings.noBacktrack ? (
@@ -341,10 +384,17 @@ function ConsentGate({ quizId, onProceed, onCancel }: { quizId: string; onProcee
         <Button
           autoFocus disabled={consentBusy}
           onClick={async () => {
-            setConsentBusy(true); setConsentError(null);
-            try { const response = await fetch(`/api/quiz/${quizId}/consent-info`, { method: "POST" }); if (!response.ok) throw new Error(); onProceed(); }
-            catch { setConsentError("Acknowledgment could not be saved. Please try again."); }
-            finally { setConsentBusy(false); }
+            setConsentBusy(true);
+            setConsentError(null);
+            try {
+              const response = await fetch(`/api/quiz/${quizId}/consent-info`, { method: "POST" });
+              if (!response.ok) throw new Error();
+              onProceed();
+            } catch {
+              setConsentError("Acknowledgment could not be saved. Please try again.");
+            } finally {
+              setConsentBusy(false);
+            }
           }}
         >
           I understand — start

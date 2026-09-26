@@ -4,6 +4,7 @@ import { Icon, IconDisc } from "@/components/icons";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiSurface, Button, Card, Chip, Input, PillButton, PillLink, Skeleton, cx } from "@/components/ui";
 import Link from "next/link";
+import { EscalationPreviewChangedError } from "@/lib/hr/escalation";
 import { EscalationPreview } from "@/components/escalation-preview";
 import { CitationChips } from "@/components/citations";
 
@@ -112,18 +113,22 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
     [streaming],
   );
 
-  const escalate = useCallback(async () => {
+  const escalate = useCallback(async (previewVersion: string) => {
     if (!conversationRef.current) throw new Error("No conversation");
     const res = await fetch("/api/hr/escalate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ conversationId: conversationRef.current }),
+      body: JSON.stringify({ conversationId: conversationRef.current, previewVersion }),
     });
     if (res.ok) {
       const d = await res.json();
       setTicketSent(d.ticketId);
       setEscalateOffer(false);
-    } else throw new Error("Ticket failed");
+    } else if (res.status === 409) {
+      throw new EscalationPreviewChangedError();
+    } else {
+      throw new Error("Ticket failed");
+    }
   }, []);
   const previewEscalation = useCallback(async () => {
     const res = await fetch(`/api/hr/escalate?conversationId=${encodeURIComponent(conversationRef.current ?? "")}`);
