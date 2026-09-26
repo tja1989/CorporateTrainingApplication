@@ -8,8 +8,7 @@ import type { LessonState, LessonType } from "@/lib/lms/outline";
  * different weights per platform and the microphone arrives as a colour emoji,
  * which the closed palette cannot tone down. These are one 16px line set on the
  * same hairline weight as the rest of the chrome, in `currentColor`, sized by
- * SVG attributes — the theme declares no `--spacing-5`, so a classed `size-5`
- * would silently emit nothing.
+ * SVG attributes for consistent strokes at each control size.
  *
  * Completion and lock are drawn *beside* the type, never over it: a learner
  * scanning what is left still needs to see what each item is.

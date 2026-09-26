@@ -16,7 +16,8 @@ export async function currentUser(): Promise<CurrentUser | null> {
 export async function requireUser(): Promise<CurrentUser> {
   const user = await currentUser();
   if (!user) redirect("/login");
-  if (user.role === "ADMIN" && user.totpSecret && !user.session.mfa) redirect("/login/mfa");
+  if (user.role === "ADMIN" && !user.totpSecret) redirect("/login/mfa-setup");
+  if (user.role === "ADMIN" && !user.session.mfa) redirect("/login/mfa");
   if (user.privacyNoticeVersion < 1) redirect("/privacy-notice");
   return user;
 }

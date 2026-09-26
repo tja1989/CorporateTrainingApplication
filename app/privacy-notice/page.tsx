@@ -1,16 +1,19 @@
 import { redirect } from "next/navigation";
 import { readSession } from "@/lib/auth/session";
 import { acknowledgePrivacyNotice } from "@/lib/auth/login";
+import { Brand } from "@/components/brand";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button, Card } from "@/components/ui";
 
 export default async function PrivacyNoticePage() {
   const session = await readSession();
   if (!session) redirect("/login");
   return (
-    <main className="flex min-h-dvh items-center justify-center px-4 py-8">
-      <Card className="animate-enter w-full max-w-xl p-6">
-        <h1 className="display mb-2 text-xl">How LuLu Learn uses your data</h1>
-        <div className="prose-ll text-sm">
+    <main className="auth-page">
+      <div className="auth-topbar"><Brand /><ThemeToggle /></div>
+      <Card className="mx-auto my-8 w-full max-w-3xl p-6 md:p-8">
+        <h1 className="display mb-4 text-xl md:text-2xl">How welearn uses your data</h1>
+        <div className="prose-ll text-base">
           <p>Before you start, here is what this platform records and why — in plain language.</p>
           <h3>What we collect</h3>
           <ul>

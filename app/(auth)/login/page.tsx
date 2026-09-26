@@ -1,49 +1,24 @@
 "use client";
-
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { loginAction } from "../actions";
-import { Button, Card, Field, Input } from "@/components/ui";
-import { Brand } from "@/components/brand";
-import { Icon } from "@/components/icons";
+import { Button, Field, Input } from "@/components/ui";
+import { AuthFrame } from "@/components/auth-frame";
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(loginAction, null);
-  return (
-    <main className="auth-hero flex min-h-dvh items-center justify-center px-4">
-      <Card className="animate-enter w-full max-w-sm p-6 shadow-card">
-        <Brand className="mb-4" />
-        <h1 className="display mb-1 text-2xl">Welcome back</h1>
-        <p className="mb-6 text-sm text-muted">Sign in with your employee ID.</p>
-        <form action={action}>
-          <Field label="Employee ID">
-            <Input name="employeeId" autoComplete="username" required autoFocus placeholder="e.g. AE10023" />
-          </Field>
-          <Field label="Password">
-            <Input name="password" type="password" autoComplete="current-password" required />
-          </Field>
-          <label className="mb-4 flex items-center gap-2 text-sm text-muted">
-            <input type="checkbox" name="shared" className="size-4 accent-primary" />
-            This is a shared device
-          </label>
-          {state?.error ? (
-            <p role="alert" className="animate-enter mb-3 flex items-center gap-2 rounded-input bg-destructive-tint px-3 py-2 text-sm text-destructive-text">
-              <Icon name="warning" size={16} className="shrink-0" />
-              {state.error}
-            </p>
-          ) : null}
-          <Button type="submit" disabled={pending} className="w-full">
-            {pending ? "Signing in…" : "Sign in"}
-            {!pending ? <Icon name="arrow-right" size={16} className="nudge" /> : null}
-          </Button>
-        </form>
-        <div className="mt-4 flex items-center justify-between text-sm">
-          <Link className="link text-link" href="/activate">
-            First time? Activate
-          </Link>
-          <span className="text-muted" title="Ask your manager to issue a reset code">Forgot? Ask your manager</span>
-        </div>
-      </Card>
-    </main>
-  );
+  const [employeeId, setEmployeeId] = useState("");
+  const [password, setPassword] = useState("");
+  const [shared, setShared] = useState(false);
+  return <AuthFrame title="Welcome back" description="Sign in with your employee ID and password.">
+    <form action={action} aria-busy={pending}>
+      <Field label="Employee ID"><Input name="employeeId" value={employeeId} onChange={e => setEmployeeId(e.target.value)} autoComplete="username" required autoFocus placeholder="e.g. AE10023" /></Field>
+      <Field label="Password"><Input name="password" value={password} onChange={e => setPassword(e.target.value)} type="password" autoComplete="current-password" required /></Field>
+      <label className="touch-target mb-4 flex items-center gap-3 text-sm"><input type="checkbox" name="shared" checked={shared} onChange={e => setShared(e.target.checked)} className="size-4 accent-primary" />This is a shared device</label>
+      {state?.error ? <p role="alert" className="mb-4 rounded-input bg-destructive-tint p-3 text-sm text-destructive-text">{state.error}</p> : null}
+      <Button type="submit" disabled={pending} className="w-full">{pending ? "Signing in…" : "Sign in"}</Button>
+    </form>
+    <p className="mt-6 text-sm">First time here? <Link className="link" href="/activate">Activate your account</Link></p>
+    <p className="mt-4 text-sm text-muted">Forgot your password? Ask your manager for a reset code, then <Link className="link" href="/activate">set a new password</Link>.</p>
+  </AuthFrame>;
 }

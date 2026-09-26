@@ -11,7 +11,7 @@ import { Icon } from "./icons";
  */
 export function CitationChips({ citations, className }: { citations: LiveCitation[]; className?: string }) {
   if (citations.length === 0) return null;
-  const chip = "bidi-isolate pressable hit-area inline-flex items-center gap-1 rounded-full bg-surface px-2 py-1 text-xs font-medium text-ai-fg hover:bg-ai hover:text-ai-tint";
+  const chip = "bidi-isolate pressable touch-target inline-flex items-center gap-1 rounded-control bg-surface px-2 py-1 text-sm font-medium text-ai-fg hover:bg-accent-tint";
   return (
     <span className={`mt-2 flex flex-wrap gap-2 ${className ?? ""}`}>
       {citations.map((c, i) =>

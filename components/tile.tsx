@@ -5,9 +5,7 @@ import { Icon } from "./icons";
 import { AnimatedNumber } from "./animated-number";
 import { ProgressRing } from "./ring";
 
-/* Surfaces stay neutral, as in the reference stat cards (white / sand / stone);
-   a tone shows as a legend dot beside the label and, for the two states that
-   need a second look, in the number itself. */
+/* Neutral summary surfaces; status hues carry meaning only. */
 const tones = {
   default: { card: "border-border bg-surface", value: "text-foreground", dot: null },
   muted: { card: "border-transparent bg-surface-2", value: "text-muted", dot: null },
@@ -17,11 +15,7 @@ const tones = {
   ai: { card: "border-transparent bg-ai-tint", value: "text-ai-fg", dot: null },
 } as const;
 
-/**
- * Bento tile — answers ONE question at a glance and links to where the answer
- * lives. Never a list, never a scroller (spec §10.7 v1.2). Numeric values count
- * up on mount; a linked tile lifts under the pointer and its arrow nudges.
- */
+/** Compact summary compatible with existing reporting pages. */
 export function Tile({
   label,
   value,
@@ -53,7 +47,7 @@ export function Tile({
         <p className={cx("truncate", numeric ? "stat text-2xl" : "display text-lg", t.value)}>
           {numeric ? <AnimatedNumber value={value} suffix={suffix} /> : value}
         </p>
-        <p className="eyebrow mt-1 flex items-start gap-2 text-muted">
+        <p className="mt-1 text-sm flex items-start gap-2 text-muted">
           {t.dot ? <span className={cx("mt-1 size-2 shrink-0 rounded-full", t.dot)} aria-hidden /> : null}
           <span>{label}</span>
         </p>
@@ -62,7 +56,7 @@ export function Tile({
       {ring !== undefined ? (
         <ProgressRing pct={ring} size={48} />
       ) : href && !disabled ? (
-        <span className="nudge flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-2 text-foreground" aria-hidden>
+        <span className="nudge flex size-6 shrink-0 items-center justify-center rounded-control bg-surface-2 text-foreground" aria-hidden>
           <Icon name="arrow-right" size={14} />
         </span>
       ) : null}

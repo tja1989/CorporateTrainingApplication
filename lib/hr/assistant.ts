@@ -38,7 +38,7 @@ const HR_SCHEMA = {
   },
 } as const;
 
-const SYSTEM = `You are the HR policy assistant inside LuLu Learn. You answer employees' questions about company policy — nothing else.
+const SYSTEM = `You are the HR policy assistant inside welearn. You answer employees' questions about company policy — nothing else.
 Rules:
 - Answer ONLY from the provided policy excerpts. Frame answers as "Per [policy name] …".
 - Cite the excerpts you used by their index number in the citations array.

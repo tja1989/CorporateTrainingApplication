@@ -8,7 +8,7 @@ import { Icon } from "./icons";
  * read from the root class after mount so the server markup never disagrees
  * with the cookie-set theme.
  */
-export function ThemeToggle({ className }: { className?: string }) {
+export function ThemeToggle({ className, showLabel = false }: { className?: string; showLabel?: boolean }) {
   const [dark, setDark] = useState(false);
   useEffect(() => {
     setDark(document.documentElement.classList.contains("dark"));
@@ -18,7 +18,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       type="button"
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
       title={dark ? "Light mode" : "Dark mode"}
-      className={className ?? "pressable touch-target rounded-full px-2 hover:bg-surface-2"}
+      className={className ?? "pressable touch-target rounded-control px-2 hover:bg-surface-2"}
       onClick={() => {
         const root = document.documentElement;
         const next = root.classList.toggle("dark");
@@ -26,9 +26,10 @@ export function ThemeToggle({ className }: { className?: string }) {
         setDark(next);
       }}
     >
-      <span key={dark ? "sun" : "moon"} className="animate-pop inline-flex">
+      <span key={dark ? "sun" : "moon"} className="inline-flex">
         <Icon name={dark ? "sun" : "moon"} />
       </span>
+      {showLabel ? <span>{dark ? "Light mode" : "Dark mode"}</span> : null}
     </button>
   );
 }

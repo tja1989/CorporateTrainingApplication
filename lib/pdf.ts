@@ -17,11 +17,11 @@ export function makePdf(lines: PdfLine[]): Buffer {
     const font = line.bold ? "/F2" : "/F1";
     const approxWidth = line.text.length * line.size * (line.bold ? 0.53 : 0.5);
     const x = Math.max(40, (W - approxWidth) / 2);
-    const [r, g, b] = line.color ?? [0.12, 0.12, 0.1];
+    const [r, g, b] = line.color ?? [0.09, 0.169, 0.302];
     content += `BT ${font} ${line.size} Tf ${r} ${g} ${b} rg 1 0 0 1 ${x.toFixed(1)} ${line.y} Tm (${esc(line.text)}) Tj ET\n`;
   }
   // border
-  content += `0.32 0.51 0.4 RG 2 w 30 30 ${W - 60} ${H - 60} re S\n`;
+  content += `0.082 0.349 0.788 RG 2 w 30 30 ${W - 60} ${H - 60} re S\n`;
 
   const objects: string[] = [];
   objects.push("<< /Type /Catalog /Pages 2 0 R >>");
@@ -55,7 +55,7 @@ export function certificatePdf(opts: {
 }): Buffer {
   const fmt = (d: Date) => d.toISOString().slice(0, 10);
   const lines: PdfLine[] = [
-    { text: "LuLu Learn", size: 18, y: 500, bold: true, color: [0.32, 0.51, 0.4] },
+    { text: "welearn", size: 18, y: 500, bold: true, color: [0.082, 0.349, 0.788] },
     { text: "Certificate of Completion", size: 34, y: 430, bold: true },
     { text: "This certifies that", size: 14, y: 380 },
     { text: opts.learnerName, size: 26, y: 340, bold: true },

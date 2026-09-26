@@ -1,4 +1,4 @@
-# LuLu Learn — AI-Native Corporate Training Platform
+# welearn — AI-Native Corporate Training Platform
 
 ## Feature Requirements & Design Specification (MVP v1.4)
 
@@ -10,7 +10,7 @@
 **Previous:** v1.5 (Sep 2026) — the course outline, plus a nav rail that opens on hover (§10.7) and voice fixes: the spoken sessions pin their language, the interviewer's end-of-turn is tuned, and its result notifications leave the tool-response path (FR-14.2/14.5). The course outline: modules render as a collapsible accordion on the course page and as a course-contents navigator on every lesson page, with drawn per-type lesson icons, derived durations and lock states. FR-2.7 added, §11.4/§11.5 rewritten.
 **Previous:** v1.4 (Sep 2026) — voice round 2: INTERVIEW lessons (admin-configured oral checks with pass/fail and optional completion gating), a course-aware assistant with learner context and non-blocking tool calls, and a demo script. FR-14.2/14.3 rewritten, FR-6.10a amended.
 **Previous:** v1.3 — live voice on the Gemini Live API (§7.12, FR-14): an oral check after a lesson and a live mode for the HR assistant, both on one-use constrained ephemeral tokens with tool-only grounding, per-session consent, transcript-only retention and cost logging; the offline demo mode covers both without a key.
-**Earlier:** v1.2 — design language tightened to six enforced rules: a 7-step spacing scale, the bento tile rule, three elevation levels with no glass, 4/8/12/pill radii, 150/250/400ms motion tokens with two easings, and one variable sans at weights 400/500 on a five-size scale. The serif "AI voice" is replaced by the AI surface (tint + label). Enforced by the closed Tailwind theme in `app/globals.css` and `tests/design-guardrails.test.ts`.
+**Current visual update:** welearn uses the white/blue learning design in `DESIGN.md`. Earlier visual prescriptions are superseded; domain requirements and permission boundaries are retained.
 **Earlier:** v1.1 — revised after a three-lens adversarial review (buildability / HR-stakeholder & legal / design). All LuLu-specific figures are sourced or tagged `[ASSUMPTION]`.
 
 ---
@@ -448,109 +448,24 @@ All model calls go through a single server-side `ai/` module (provider SDK: `@an
 
 ---
 
-## 10. Design language ("Reimagined, live and dynamic" — made concrete)
+## 10. welearn design language
 
-> **v2.0 visual refresh (Sept 2026).** The language below still governs *what* the UI is (bento rule, motion budget, closed vocabulary, honesty surfaces); this refresh changed *how it looks*, after the v1 palette read as pale. The palette is lifted from a reference ERP dashboard and is deliberately quiet: neutrals carry everything, one accent does the pointing. What moved:
-> - **Colour.** Warm light-grey canvas (`#e9e8e3`); **charcoal chrome** (`--rail` `#1a1a1a`, with `-fg`, `-muted`, `-hover`) for the header, nav rail and tab bar in both themes; white, **sand** (`#f3efdc`, the `warning-tint`) and **stone** (`#dedcd5`, `surface-2`) cards; **ink `--primary`** (`#1a1a1a`, cream in dark mode) for buttons and active outlines; **one chromatic accent, lime `--accent` `#d7e05a`** (+`-fg`, `-tint`, `-glow`) for the active nav row, progress, focus rings and selection. Mint `#a3e0cb`, yellow `#e9dc55` and pink `#e7a9cc` are the reference's legend hues and appear only as chip/tile dots and pale chip tints — never as whole surfaces. The AI surface is the reference's warm greige. Links are ink with a drawn underline. Every text pair is still ≥ 4.5:1 and the guardrail test enumerates them; the hex each token came from is noted beside it in `globals.css`.
-> - **Type.** Two families: **Manrope** for UI and reading text at 400/500, **Inter Tight** for display (`.display`, `.stat`) at 600 — the one weight above 500 that exists. Scale gains `2xl` 32/36 and `3xl` 44/48 for page titles and tile numbers; `.eyebrow` is the tracked-caps label of a bento card and of the rail.
-> - **Shape & depth.** Radii 8 / 12 / 20 + pill; buttons are pills. L1 cards gain a soft `--shadow-card` only while hovered (`.lift`); `--shadow-glow` is the lime halo of the one thing that is "on".
-> - **Nav rail.** One position everywhere, and one width: the rail is anchored to the viewport's start edge on every desktop page (learner and workspace alike) and holds the same 14rem gutter open or collapsed, so the page content centres in the remaining width and never shifts — between the home and lesson measures, or between the rail's own states. The active row is lime text with a lime edge bar and a soft lime glow fading out behind the label; idle rows are the rail's muted grey. Phones keep the bottom tab bar.
-> - **Icons.** One drawn 24-unit line set (`components/icons.tsx`, 1.75 stroke, `currentColor`) replaces every typed glyph and emoji; the guardrail test rejects new ones.
-> - **Micro-motion**, all on the existing tokens: primary buttons turn lime under the pointer, cards lift 2px, trailing arrows nudge, links draw their underline, the active tab icon rises into a lime pill, chips/badges/toast icons pop in, the progress ring sweeps lime→mint. Navigation still gets no entry animation.
+**Current visual authority:** [DESIGN.md](../DESIGN.md) and the user-approved [welearn rework plan](WELEARN_REWORK_PLAN.md) replace the former dashboard palette, rail, bento, and motion prescriptions. Functional requirements in this document remain in force.
 
-### 10.1 Direction: committed editorial/humanist
-
-2026 product design has split into two shipping languages: techno-futurist (dark-first, neon accent — Linear, Vercel, Raycast) and **editorial/humanist** (warm paper neutrals, serif accents, generous whitespace — Claude, Perplexity, Notion-adjacent, Sana). AI-forward learning products have converged on the second because it reads human and trustworthy. **This product commits to editorial/humanist, light-first.** A workforce LMS on shared/retail-floor and mobile devices needs light-first with strong contrast; dark mode ships as the complete token set below + toggle, not the identity. Mixing both languages (dark hero + cream cards + neon chips) is the trend-collage failure — do not.
-
-Restraint IS the design language (the Linear lesson): one accent, **one type family at two weights**, exactly three radii + pill, **three elevation levels**, a closed token vocabulary — closed literally: the Tailwind theme declares only these values, so an off-system class emits no CSS and the guardrail test names it.
-
-### 10.2 Color tokens (OKLCH, CSS variables — complete light AND dark sets)
-
-Tailwind v4 + shadcn/ui; all colors as OKLCH custom properties. Semantic colors always ship as a pair (`--x` surface/accent + `--x-fg` text-safe). **Status chips render as tinted background + dark text** (never light-hue text on paper).
-
-```
-:root {
-  --background:       oklch(0.985 0.004 85);  /* warm paper */
-  --surface:          oklch(1 0 0);
-  --surface-2:        oklch(0.97 0.004 85);
-  --border:           oklch(0.922 0.006 85);
-  --foreground:       oklch(0.185 0.01 85);
-  --muted-foreground: oklch(0.45 0.012 85);
-  --primary:          oklch(0.52 0.13 155);   /* deep green — accent as punctuation */
-  --primary-fg:       oklch(0.985 0 0);
-  --success:          oklch(0.55 0.12 155);  --success-fg:     oklch(0.32 0.09 155);
-  --success-tint:     oklch(0.95 0.03 155);
-  --warning:          oklch(0.72 0.13 75);   --warning-fg:     oklch(0.42 0.11 75);
-  --warning-tint:     oklch(0.96 0.045 85);
-  --destructive:      oklch(0.55 0.19 25);   --destructive-fg: oklch(0.985 0 0);
-  --destructive-text: oklch(0.44 0.17 25);   --destructive-tint: oklch(0.96 0.025 25);
-  --ai:               oklch(0.55 0.09 300);  --ai-fg:          oklch(0.36 0.08 300);
-  --ai-tint:          oklch(0.965 0.02 300);
-}
-.dark {
-  --background:       oklch(0.16 0.008 85);
-  --surface:          oklch(0.205 0.008 85);
-  --surface-2:        oklch(0.245 0.009 85);
-  --border:           oklch(0.31 0.01 85);
-  --foreground:       oklch(0.93 0.006 85);
-  --muted-foreground: oklch(0.68 0.01 85);
-  --primary:          oklch(0.68 0.13 155);  --primary-fg:     oklch(0.16 0.03 155);
-  --success:          oklch(0.68 0.12 155);  --success-fg:     oklch(0.85 0.08 155);
-  --success-tint:     oklch(0.26 0.035 155);
-  --warning:          oklch(0.78 0.13 80);   --warning-fg:     oklch(0.87 0.1 80);
-  --warning-tint:     oklch(0.27 0.04 80);
-  --destructive:      oklch(0.66 0.18 25);   --destructive-fg: oklch(0.16 0.02 25);
-  --destructive-text: oklch(0.78 0.14 25);   --destructive-tint: oklch(0.27 0.035 25);
-  --ai:               oklch(0.72 0.1 300);   --ai-fg:          oklch(0.86 0.07 300);
-  --ai-tint:          oklch(0.27 0.035 300);
-}
-```
-
-Rules: neutrals carry the UI; `--primary` appears only on primary actions, active states, progress. `--ai` is reserved **exclusively for genuinely model-generated content** (tutor/assistant bubbles, citation chips, AI draft cards) — an honesty affordance; rule-based recommendations and any non-model UI never use it (FR-4.2). Celebration moments use `--primary` + the motion treatment — there is no separate celebration hue (one fewer color, one clearer meaning). AI-generated text renders on the **AI surface** (`--ai-tint` background + a small `✳ AI` label in `--ai-fg`, `<AiSurface>`): the surface, not a typeface, is the honesty affordance. Verify ≥ 4.5:1 for body text and chip text in both themes (the `-fg`/`-text` variants above are chosen to pass; validate in CI with an automated contrast check).
-
-### 10.3 Typography (v1.2)
-
-- **One variable sans-serif for everything:** Inter Variable (`wght` + `opsz` axes), `font-feature-settings: 'cv01', 'ss03', 'zero'`; body 16px/1.5.
-- **Two weights only — 400 and 500.** No 600/700 anywhere, including headings, `<strong>`, table headers and SVG text (heavy headings are the fastest way to look dated). The theme declares only `font-normal`/`font-medium`; `font-semibold`/`font-bold` emit nothing.
-- **Five sizes, nothing larger exists in the theme:** `xs` 12/16 · `sm` 14/20 · `base` 16/24 · `lg` 20/28 · `xl` 24/32 (page titles, −1% tracking).
-- **No serif.** Model-generated text is distinguished by the AI surface (§10.2), never by a typeface.
-- **Per-script stack:** `"Inter", "IBM Plex Sans Arabic", "Noto Sans Devanagari", "Noto Sans Malayalam", system-ui, sans-serif`; non-Latin subsets load on demand (unicode-range) to protect the performance budget.
-
-### 10.4 Shape, space & depth (v1.2)
-
-- **Radii as a scale:** `4px` controls (buttons, menu rows, focus ring), `8px` inputs (fields, selects, selectable option rows), `12px` cards (tiles, dialogs, toasts), pill (`9999px`) for chips and tags. Tokens `--radius-control / --radius-input / --radius-card`; nothing else exists.
-- **Spacing is a scale, not "some padding":** exactly seven steps — 4/8/12/16/24/32/48px (`--spacing-1/2/3/4/6/8/12`). The theme declares no other steps, so `p-5` or `gap-1.5` emit no CSS.
-- **Depth — exactly three elevation levels, hairline borders:** L0 page (`--background`); L1 card (`--surface` + 1px `--border`, **no shadow**); L2 overlay (command palette, dialog, toast: `--surface` + hairline + the single `--shadow-overlay`). `--surface-2` is an inset well / hover tint, not a level.
-- **No frosted glass anywhere.** Overlays sit on a flat `--color-scrim`; translucency and `backdrop-filter` are forbidden (glass already reads as 2023, and blur behind text costs legibility).
-
-### 10.5 Motion budget (the "live and dynamic" spine — written, enforced)
-
-- **Three duration tokens, used everywhere (v1.2):** `--duration-fast` 150ms (press, hover, colour, tab indicator), `--duration-base` 250ms (page/list entry, dialogs, toasts, tab slide), `--duration-slow` 400ms (progress-ring fill, counters, celebration). Looping indicators derive from the slow token (shimmer ×3, cursor ×2.5). Mirrored in `lib/motion.ts`; the guardrail test asserts parity. Consistency of timing is what makes the interface feel like one product.
-- **Two easings only:** `--ease-out cubic-bezier(0.23, 1, 0.32, 1)` for entries and exits; `--ease-in-out cubic-bezier(0.77, 0, 0.175, 1)` for on-screen movement. Never `ease-in`.
-- **Live components (the "dynamic" layer):** animated counters on tiles (`<AnimatedNumber>`), ring fill on mount (`<ProgressRing>`), sliding tab indicator (`<Tabs>`/`<LinkTabs>`), 40ms staggered rails capped at 8 items (`<Stagger>`), L2 toasts for server-action outcomes (`<ToastProvider>` + `setFlash`), layout-matching skeleton boundaries (`loading.tsx`) after 300ms.
-- Presses scale to `0.97`; entries from `scale(0.95) + opacity 0`; animate only `transform` + `opacity`, vertical offsets only (RTL-neutral).
-- Frequency framework: 100+×/day actions (nav, palette) get **no** animation; occasional (modals, toasts) standard; rare (course completion, badge, streak milestone) get the one delight moment — progress-ring fill + a single celebratory sweep.
-- **The one named exception (v1.5):** the nav rail's hover reveal (§10.7). A width change that snapped would read as a glitch rather than a reveal, so it moves — on the fast token, `width` only (the panel sits inside the gutter the rail reserves, so it overlays nothing and casts no shadow), and opening is delayed by one fast token so a cursor merely crossing the rail never triggers it. Closing is immediate. Under `prefers-reduced-motion` the rail still opens, without the slide.
-- `prefers-reduced-motion`: keep opacity/color fades, remove positional motion.
-
-### 10.6 Streaming-AI surface conventions (baseline, not optional)
-
-- Token streaming into the DOM with a 2px blinking cursor (500ms) that disappears on completion; Stop and Regenerate controls.
-- Loading tiers: 0–300ms nothing; 300ms–1s subtle inline spinner; 1s+ **skeletons that match the real layout** (never generic boxes, never spinners for content areas); >10s progress + status text. Pre-first-token gap gets a shimmer skeleton in the answer slot.
-- Multi-step AI work (ingestion, report queries) renders **collapsible status rows** (queued → running → done/error), the ChatGPT/Claude tool-disclosure convention.
-- **Citation chips** (the Perplexity pattern, our trust centerpiece): inline chips at claim ends — `[12:34]` for video, `[Policy §3.2]` for HR — hover/tap preview of the exact source text, tap to deep-link (seek / open section). A chip that doesn't preview *and* deep-link is decoration; both are required — and every chip is server-validated before render (FR-5.11/FR-8.6).
-- Generative-UI kit, fixed components only (production-safe pattern; no free-form UI generation): QuizCard, FlashcardCard, ProgressCard, RecommendationCard, CitationChip, EscalationCard. The model *selects* components via structured output; React renders them.
-
-### 10.7 Layout & navigation
-
-- Learner (mobile-first): bottom tab bar — Home / Learn / Drill / Ask HR / Profile (each specced in §11). Desktop: left rail, same five. **The desktop rail reserves one 14rem gutter in the flow in every state, and collapses to a 4rem icon strip inside it (v1.6)** — the chevron, the hover reveal and keyboard focus all widen the *panel*, never the gutter, so the rail can neither reflow the page beside it nor cover it; collapsed, the rest of the gutter is page background. The chevron pins it open and that choice is a cookie, so the server renders the right state with no flash. Collapsed is the default. Hover-opening is gated on `@media (hover: hover)` and suppressed while the pointer still rests on a rail the chevron has just collapsed, so the collapse is visible at once instead of being undone by the hover the click sits in. Keyboard focus opens it through `:has(:focus-visible)` — not `:focus-within`, which a mouse click leaves true on the row it activated and which therefore held the rail open long after the pointer had gone. The labels stay in the DOM at every width so assistive tech always reads them. Phones keep the tab bar either way.
-- Admin/Manager (desktop-first responsive): left nav + **⌘K command palette** (cmdk via shadcn Command): jump to course/learner/report, quick actions. Palette opens instantly — no animation (frequency rule). Learners get search-first UI, not the palette. Managers switch between the manager shell and their own learner workspace via the switcher (§11.9a).
-- **The bento rule (v1.2):** a tile earns its place only if it answers **one question at a glance** and links to where the answer lives; a tile that would need a scrollbar becomes a page. No internal vertical scroll regions anywhere — chat threads, transcripts and lists flow in the page with sticky composers/toolbars; data tables may scroll horizontally. Bento only where a summary mosaic is honest: the learner Home at-a-glance band, the admin overview, team status tiles, course-landing stats — never as the app shell; task flows stay linear.
-- Progress rings (Apple Activity style, SVG stroke-dashoffset) for course and weekly-goal progress: card corners, profile header; ring fill animates only on completion events.
+- White/blue professional learning surfaces inspired by Coursera discovery and LinkedIn Learning's focused lesson workspace. Product name: **welearn**. LuLu remains the customer organization.
+- Light tokens: white surface, `#F7F9FC` page, `#172B4D` text, `#526477` secondary text, `#1559C9` actions/links. Complete semantic dark counterparts; supported text pairs are tested at WCAG AA 4.5:1.
+- System UI sans with multilingual fallbacks. Body 16px; supporting text 14px; page titles 24px on phones and 28–32px on desktop. Controls/inputs 8px, cards 12px; pills reserved for tags/status. Restrained borders and shadows, no glow.
+- 44px interactive targets, visible focus, proper labels, reduced-motion support and logical direction spacing. Forms retain entered values after validation failure. Drawers/dialogs provide focus containment, Escape and return focus.
+- Learner top navigation: Home, My Learning, Practice, HR Help, course search, notifications and profile. Mobile tabs: Home, Learning, Practice, HR Help, Profile. Manager/admin use labeled persistent sidebars and mobile drawers; admin groups Learning, People, HR and Oversight.
+- Lessons use a compact header, prominent content/player and a 320px contents panel at 1200px+, with contents available by drawer on smaller screens. Overview, Transcript and Tutor belong below the player.
+- Motion is feedback only, 150–250ms. No decorative counters, page-load sequences, floating ornament or hover-expanded navigation. Necessary internal scrolling is allowed.
+- AI-generated text retains the labeled AI surface, citations, disclosure and honest offline states. Course covers use real `coverUrl` media or subject fallback; no invented ratings, instructors or learner counts.
 
 ---
 
-## 11. Screen-by-screen spec (build order within each milestone)
+## 11. Functional screen inventory
+
+Visual layout and updated journey behavior follow [WELEARN_REWORK_PLAN.md](WELEARN_REWORK_PLAN.md). The inventory below records the original functional coverage; superseded presentation details are not design requirements.
 
 1. **Login & onboarding** — employee ID + password; "This is a shared device" checkbox (short session); one-tap Switch user; activation flow: ID + one-time code → password set screen → privacy notice acknowledgement (FR-13.1) → home. Language switcher on login.
 2. **Learner Home ("For You")** — greeting; Continue-learning resume card (cover, progress ring, "12 min left"); Due-soon rail (compliance chips: `--warning-tint` DUE SOON / `--destructive-tint` OVERDUE, dark text); Daily-drill card (locked state before first completed lesson: "unlocks after your first lesson"); Recommended rail with reason lines. Caught-up state: celebrate the clear queue ("You're all caught up 🎉— explore the catalog") and pivot to Browse. No persistent chat input (FR-4.1).

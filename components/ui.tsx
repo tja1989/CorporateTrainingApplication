@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ComponentProps, ReactNode } from "react";
+import { cloneElement, isValidElement, useId, type ComponentProps, type ReactNode } from "react";
 import { Icon, IconDisc, type IconName } from "./icons";
 
 function cx(...parts: Array<string | false | null | undefined>) {
@@ -18,13 +18,12 @@ export type { IconName } from "./icons";
 
 /* ----------------------------- Buttons ----------------------------- */
 
-/* Pills, like the inspiration's dark "Try now" — the primary turns lime under
-   the pointer, so the accent answers the hand before the click lands. */
+/* 44px primary and secondary controls; pills are reserved for status tags. */
 const buttonBase =
-  "pressable touch-target inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:pointer-events-none";
+  "pressable touch-target inline-flex items-center justify-center gap-2 rounded-control px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed";
 const buttonVariants = {
-  primary: "bg-primary text-primary-fg hover:bg-accent hover:text-accent-fg",
-  accent: "bg-accent text-accent-fg hover:bg-primary hover:text-primary-fg",
+  primary: "bg-primary text-primary-fg hover:bg-primary-hover",
+  accent: "bg-primary text-primary-fg hover:bg-primary-hover",
   secondary: "bg-surface border border-border text-foreground hover:border-foreground hover:bg-surface-2",
   ghost: "text-foreground hover:bg-surface-2",
   destructive: "bg-destructive text-destructive-fg hover:opacity-90",
@@ -46,10 +45,9 @@ export function ButtonLink({
   return <Link className={cx(buttonBase, buttonVariants[variant], className)} {...props} />;
 }
 
-/* Pill — a 24px secondary action (suggestions, scope toggles, quick actions).
-   `.hit-area` extends the tap target to 44px without inflating the pill. */
+/* Compatibility names for compact actions; they use the shared control shape. */
 const pillBase =
-  "pressable hit-area inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium disabled:opacity-50 disabled:pointer-events-none";
+  "pressable touch-target inline-flex items-center justify-center gap-2 rounded-control border px-3 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed";
 /* Idle and active are mutually exclusive, never layered: Tailwind resolves two
    competing `bg-*` utilities by stylesheet order, not by class order, so an
    active pill that kept the idle background rendered its own text invisible. */
@@ -112,7 +110,7 @@ export function complianceChip(status: string): { label: string; variant: keyof 
 /* ------------------------------ Forms ------------------------------ */
 
 const fieldBase =
-  "touch-target w-full rounded-input border border-border bg-surface px-3 py-2 text-base placeholder:text-muted transition-colors hover:border-muted focus:border-foreground";
+  "touch-target w-full rounded-input border border-control-border bg-surface px-3 py-2 text-base placeholder:text-muted transition-colors hover:border-muted focus:border-primary disabled:opacity-60 disabled:cursor-not-allowed aria-invalid:border-destructive";
 
 export function Input({ className, ...props }: ComponentProps<"input">) {
   return <input className={cx(fieldBase, className)} {...props} />;
@@ -137,16 +135,17 @@ export function Label({ className, children, ...props }: ComponentProps<"label">
 /* min-w-0 so a field laid out in a grid or flex row may shrink past its
    content's intrinsic width — a <select> is as wide as its longest option, and
    without this it widens the whole page rather than the control. */
-export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
-  return (
-    <div className="mb-4 min-w-0">
-      <Label>{label}</Label>
-      {children}
-      {/* hints carry things like a CSV header line — one long comma-run with no
-          spaces to break at, which would otherwise widen the page */}
-      {hint ? <p className="mt-1 break-words text-xs text-muted">{hint}</p> : null}
-    </div>
-  );
+export function Field({ label, children, hint, error }: { label: string; children: ReactNode; hint?: string; error?: string }) {
+  const generatedId = useId();
+  const child = isValidElement<{ id?: string; "aria-describedby"?: string; "aria-invalid"?: boolean }>(children) ? children : null;
+  const id = child?.props.id ?? generatedId;
+  const description = [child?.props["aria-describedby"], hint ? `${id}-hint` : null, error ? `${id}-error` : null].filter(Boolean).join(" ");
+  return <div className="mb-4 min-w-0">
+    <Label htmlFor={id}>{label}</Label>
+    {child ? cloneElement(child, { id, "aria-describedby": description || undefined, "aria-invalid": error ? true : child.props["aria-invalid"] }) : children}
+    {hint ? <p id={`${id}-hint`} className="mt-2 break-words text-sm text-muted">{hint}</p> : null}
+    {error ? <p id={`${id}-error`} role="alert" className="mt-2 text-sm text-destructive-text">{error}</p> : null}
+  </div>;
 }
 
 /* --------------------------- Empty states --------------------------- */
@@ -165,8 +164,8 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="animate-enter flex flex-col items-center justify-center gap-2 rounded-card border border-dashed border-border px-6 py-12 text-center">
-      {icon ? <IconDisc name={icon} tone={tone} size={56} className="animate-pop mb-2" /> : null}
+    <div className="flex flex-col items-center justify-center gap-2 rounded-card border border-border bg-surface px-6 py-12 text-center">
+      {icon ? <IconDisc name={icon} tone={tone} size={56} className="mb-2" /> : null}
       <h3 className="display text-lg">{title}</h3>
       {body ? <p className="max-w-sm text-sm text-muted">{body}</p> : null}
       {action ? <div className="mt-2">{action}</div> : null}
@@ -180,16 +179,16 @@ export function Skeleton({ className, delayed }: { className?: string; delayed?:
 
 /* ------------------------------ Page bits ---------------------------- */
 
-/** Page header: display title (32px, 44px from md), optional sub line and an actions slot. */
+/** Page header: title (24px, 32px from md), optional sub line and an actions slot. */
 export function PageHeader({ title, sub, actions, children }: { title: ReactNode; sub?: ReactNode; actions?: ReactNode; children?: ReactNode }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
-        <h1 className="display text-2xl md:text-3xl">{title}</h1>
+        <h1 className="display text-xl md:text-3xl">{title}</h1>
         {sub ? <p className="mt-1 text-sm text-muted">{sub}</p> : null}
         {children}
       </div>
-      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
   );
 }
@@ -199,9 +198,9 @@ export function PageTitle({ children, sub }: { children: ReactNode; sub?: string
   return <PageHeader title={children} sub={sub} />;
 }
 
-/** Section eyebrow — the small tracked caps that label a bento group. */
+/** Section heading with clear hierarchy below the page title. */
 export function SectionTitle({ children, className }: { children: ReactNode; className?: string }) {
-  return <h2 className={cx("eyebrow mb-2 text-muted", className)}>{children}</h2>;
+  return <h2 className={cx("mb-3 text-lg font-semibold text-foreground", className)}>{children}</h2>;
 }
 
 export function DemoBanner() {
