@@ -63,6 +63,12 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                     <Chip variant="ai">AI: {aiTotal}/{aiMax} · conf {Math.round((review.aiConfidence ?? 0) * 100)}%</Chip>
                   </div>
                   <p className="mb-1 text-muted">{q?.body.prompt}</p>
+                  {q?.body.stimulus ? (
+                    <section aria-label="Question scenario" className="mb-3">
+                      <h3 className="mb-1 font-semibold">Scenario</h3>
+                      <p className="whitespace-pre-wrap break-words">{q.body.stimulus}</p>
+                    </section>
+                  ) : null}
                   <blockquote className="mb-2 rounded-control bg-surface-2 p-2 whitespace-pre-wrap">{answerText}</blockquote>
                   {q?.rubric ? <details className="mb-3"><summary className="touch-target flex items-center font-medium text-link">Marking rubric and model answer</summary><ul className="my-2 list-disc ps-5">{q.rubric.criteria.map(c => <li key={c.name}>{c.name} · {c.points} points</li>)}</ul><p className="whitespace-pre-wrap break-words text-muted">{q.rubric.modelAnswer}</p></details> : null}
                   {review.aiScores?.length ? <ul aria-label="AI criterion scores" className="mb-3 text-sm">{review.aiScores.map(c => <li key={c.criterion} className="flex flex-wrap justify-between gap-2 border-b border-border py-2"><span>{c.criterion}</span><span>{c.points}/{c.max}</span></li>)}</ul> : null}

@@ -152,9 +152,10 @@ test("@core @template Human grade decisions, ticket replies and integrity outcom
   const admin = await createPerson("ADMIN"), learner = await createPerson("LEARNER", { name: `QA review ${randomUUID().slice(0,6)}` });
   const bank = randomUUID(), question = randomUUID(), quiz = randomUUID(), attempt = randomUUID(), review = randomUUID(), ticket = randomUUID(), integrity = randomUUID();
   const ticketTitle = `QA HR request ${ticket.slice(0,8)}`;
+  const scenario = "A customer reports a damaged package and asks for a replacement. The item is out of stock at your store.";
   await withDb(async db => {
     await db.query("INSERT INTO question_banks (id,name) VALUES ($1,'QA human decision bank')", [bank]);
-    await db.query("INSERT INTO questions (id,bank_id,type,status,points,body,rubric) VALUES ($1,$2,'free_text','APPROVED',2,$3,$4)", [question, bank, JSON.stringify({ prompt: "How would you help the customer?" }), JSON.stringify({ criteria: [{ name: "Helpful response", points: 2 }], modelAnswer: "Listen and find appropriate help." })]);
+    await db.query("INSERT INTO questions (id,bank_id,type,status,points,body,rubric) VALUES ($1,$2,'free_text','APPROVED',2,$3,$4)", [question, bank, JSON.stringify({ prompt: "How would you help the customer?", stimulus: scenario }), JSON.stringify({ criteria: [{ name: "Helpful response", points: 2 }], modelAnswer: "Listen and find appropriate help." })]);
     const settings = { attemptsLimit: 3, cooldownMinutes: 0, gradingMethod: "highest", passPct: 50, shuffleQuestions: false, shuffleChoices: false, oneAtATime: false, noBacktrack: false, feedbackMode: "PRACTICE", graceSec: 0, integrityMode: true };
     await db.query("INSERT INTO quizzes (id,title,settings,sections) VALUES ($1,'QA human decision quiz',$2,'[]')", [quiz, JSON.stringify(settings)]);
     await db.query("INSERT INTO attempts (id,quiz_id,user_id,served_items,answers,score,max_score,grading_state,state,integrity_mode) VALUES ($1,$2,$3,$4,$5,0,2,'PROVISIONAL','GRADED',true)", [attempt, quiz, learner.id, JSON.stringify([{ questionId: question, type: "free_text" }]), JSON.stringify({ [question]: { kind: "text", text: "I would listen and ask a supervisor for support." } })]);
@@ -167,7 +168,14 @@ test("@core @template Human grade decisions, ticket replies and integrity outcom
   });
   await signIn(page, admin);
   await page.goto(`/admin/reviews?view=grades&item=${review}`);
-  await expect(page.getByText("I would listen and ask a supervisor for support.", { exact: true })).toBeVisible();
+  const context = page.getByRole("region", { name: "Question scenario", exact: true });
+  await expect(context).toContainText(scenario);
+  await expect(context.getByRole("heading", { name: "Scenario", exact: true })).toBeVisible();
+  const learnerAnswer = page.getByText("I would listen and ask a supervisor for support.", { exact: true });
+  await expect(learnerAnswer).toBeVisible();
+  const scenarioBox = await context.boundingBox(), answerBox = await learnerAnswer.boundingBox();
+  expect(scenarioBox!.y + scenarioBox!.height).toBeLessThanOrEqual(answerBox!.y);
+  await expectNoPageOverflow(page); await capture(page, info, "human-grade-scenario");
   await page.getByLabel("Adjusted points (of 2)").fill("2");
   await saveAndReload(page, page.getByRole("button", { name: "Adjust & finalize", exact: true }));
   await expect.poll(async () => withDb(async db => (await db.query("SELECT state,reviewer_id FROM grading_reviews WHERE id=$1", [review])).rows[0])).toEqual({ state: "ADJUSTED", reviewer_id: admin.id });
@@ -200,8 +208,28 @@ test("@core @template Type-specific authoring preserves all lesson types and the
     await db.query("INSERT INTO questions(id,bank_id,type,status,body) VALUES($1,$2,'truefalse','APPROVED',$3)", [randomUUID(), bank, JSON.stringify({ prompt: "Keep walkways clear?", correct: [0] })]);
   });
   await signIn(page, admin); await page.goto(`/admin/courses/${course}`);
+  await page.getByText("Add lesson to Authoring module", { exact: true }).click();
+  await page.getByLabel("Lesson title", { exact: true }).fill("QA type-switch validation");
+  await page.getByLabel("Lesson type").selectOption("QUIZ");
+  await page.getByLabel("Question bank").selectOption(bank);
+  await page.getByLabel("Questions to draw").fill("101");
+  await page.getByRole("button", { name: "Add lesson", exact: true }).click();
+  expect(await page.getByLabel("Questions to draw").evaluate(el => (el as HTMLInputElement).validity.rangeOverflow)).toBe(true);
+  expect(await withDb(async db => (await db.query("SELECT count(*)::int n FROM lessons WHERE module_id=$1", [mod])).rows[0].n)).toBe(0);
+  await page.getByLabel("Lesson type").selectOption("INTERVIEW");
+  await page.getByLabel("Questions (1–6)", { exact: true }).fill("7");
+  await page.getByRole("button", { name: "Add lesson", exact: true }).click();
+  expect(await page.getByLabel("Questions (1–6)", { exact: true }).evaluate(el => (el as HTMLInputElement).validity.rangeOverflow)).toBe(true);
+  expect(await withDb(async db => (await db.query("SELECT count(*)::int n FROM lessons WHERE module_id=$1", [mod])).rows[0].n)).toBe(0);
+  await page.getByLabel("Lesson type").selectOption("QUIZ");
+  await expect(page.getByLabel("Questions to draw")).toHaveValue("101");
+  await page.getByLabel("Lesson type").selectOption("INTERVIEW");
+  await expect(page.getByLabel("Questions (1–6)", { exact: true })).toHaveValue("7");
+  await page.getByLabel("Lesson type").selectOption("TEXT");
+  await expect(page.getByLabel("Questions to draw")).toBeDisabled();
+  await expect(page.getByLabel("Questions (1–6)", { exact: true })).toBeDisabled();
   for (const type of ["TEXT", "PDF", "VIDEO", "QUIZ", "INTERVIEW"]) {
-    await page.getByText("Add lesson to Authoring module", { exact: true }).click();
+    if (type !== "TEXT") await page.getByText("Add lesson to Authoring module", { exact: true }).click();
     await page.getByLabel("Lesson type").selectOption(type);
     await page.getByLabel("Lesson title", { exact: true }).fill(`QA ${type} lesson`);
     await expect(page.getByLabel("Lesson content", { exact: true })).toBeVisible({ visible: type === "TEXT" });
