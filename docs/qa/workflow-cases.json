@@ -83,11 +83,11 @@
   {
     "id": "AUTH:reset",
     "expected": "Manager-issued reset code activates only the intended account and is one-time.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "status": "PARTIAL",
+    "actual": "Desktop passes second-manager page denial, team navigation, reset issuance/audit, prior-password rejection, activation/code consumption and new-session login. Mobile fails the first team-member navigation before issuance; Task4 must fix and repeat all core engines.",
+    "evidence": [".artifacts/auth-reset-initial.log", ".artifacts/auth-reset-before-task4/"],
+    "commit": "Production source915339e; controller test added during Task3",
+    "browserViewport": ["Chromium153 1440x900 passed", "Chromium153 390x844 failed"]
   },
   {
     "id": "AUTH:logout",
