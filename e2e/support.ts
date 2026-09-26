@@ -57,7 +57,16 @@ export async function signIn(page: Page, person: Person) {
 }
 
 export async function capture(page: Page, testInfo: TestInfo, label: string) {
-  const screenshot = await page.screenshot({ fullPage: true, animations: "disabled" });
+  let screenshot: Buffer;
+  if (testInfo.project.name === "chromium-native-zoom") {
+    // Playwright's clip calculation shifts scrolled content at native zoom.
+    // Chromium's un-clipped viewport capture matches the observed CSS geometry.
+    const session = await page.context().newCDPSession(page);
+    try {
+      const captured = await session.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
+      screenshot = Buffer.from(captured.data, "base64");
+    } finally { await session.detach(); }
+  } else screenshot = await page.screenshot({ fullPage: true, animations: "disabled" });
   await testInfo.attach(label, { body: screenshot, contentType: "image/png" });
 }
 

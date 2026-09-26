@@ -25,7 +25,7 @@ type Entry = { startTime: number; value?: number; hadRecentInput?: boolean; dura
 type Measurements = { lcp: Entry[]; shifts: Entry[]; events: Entry[]; eventSupported: boolean; clickCount: number; keydownCount: number };
 type Run = { route: string; family: string; repetition: number; lcpMs: number | null; cls: number; interactionMsUpperBound: number | null; interaction: string; screenshot: string };
 const local = (value: string) => ["localhost", "127.0.0.1"].includes(new URL(value).hostname);
-if (!local(base) || !local(process.env.DATABASE_URL ?? "https://invalid") || !new URL(process.env.DATABASE_URL!).pathname.startsWith("/welearn_")) throw new Error("Performance qualification requires isolated local welearn services");
+if (!local(base) || !local(process.env.DATABASE_URL ?? "https://invalid") || new URL(process.env.DATABASE_URL!).pathname !== "/welearn_dev") throw new Error("Performance qualification requires the local welearn_dev dataset");
 
 async function login(page: Page, db: Client, employeeId: string) {
   await page.goto(`${base}/login`);

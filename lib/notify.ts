@@ -1,6 +1,7 @@
 import { and, eq, gte } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { id } from "@/lib/ids";
+import type { LearningWriteContext } from "@/lib/lms/learning-cycle";
 
 /**
  * Fixed notification catalog (spec FR-9.1). In-app always; email when the user
@@ -45,9 +46,11 @@ export async function notify(
   payload: Record<string, unknown>,
   dedupeKey?: string,
   dedupeWithinMs?: number,
+  transaction?: LearningWriteContext,
 ): Promise<void> {
+  const connection = transaction?.connection ?? db;
   if (dedupeKey) {
-    const dup = await db
+    const dup = await connection
       .select({ id: t.notifications.id })
       .from(t.notifications)
       .where(and(eq(t.notifications.userId, userId), eq(t.notifications.dedupeKey, dedupeKey), dedupeWithinMs !== undefined ? gte(t.notifications.sentAt, new Date(Date.now() - dedupeWithinMs)) : undefined))
@@ -55,14 +58,16 @@ export async function notify(
     if (dup.length > 0) return;
   }
   const channels = ["inapp"];
-  const [user] = await db.select().from(t.users).where(eq(t.users.id, userId)).limit(1);
+  const [user] = await connection.select().from(t.users).where(eq(t.users.id, userId)).limit(1);
   if (user?.email && process.env.SMTP_URL) channels.push("email");
-  await db.insert(t.notifications).values({ id: id(), userId, kind, payload, channels, dedupeKey });
+  await connection.insert(t.notifications).values({ id: id(), userId, kind, payload, channels, dedupeKey });
   if (channels.includes("email") && user?.email) {
     const tpl = TEMPLATES[kind](payload);
-    await sendEmail(user.email, tpl.title, tpl.body).catch(() => {
-      /* email failures never block; in-app already delivered */
+    const deliver = () => sendEmail(user.email!, tpl.title, tpl.body).catch(() => {
+      /* email failures never block; in-app already committed */
     });
+    if (transaction) transaction.afterCommit.push(deliver);
+    else await deliver();
   }
 }
 

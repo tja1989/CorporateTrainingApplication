@@ -4,34 +4,34 @@ import { id, certificateSerial } from "@/lib/ids";
 import { computeComplianceStatus } from "./compliance";
 import { isoWeekStart, localDate } from "@/lib/time";
 import { notify } from "@/lib/notify";
-import { currentCycleStart, lessonCourseId, lockLearningCourse, type LearningDatabase } from "./learning-cycle";
+import { currentCycleStart, lessonCourseId, lockLearningCourse, type LearningDatabase, type LearningWriteContext } from "./learning-cycle";
 
 /** Award points once per (kind, refId) per user. */
-export async function awardPoints(userId: string, kind: string, refId: string, amount: number): Promise<void> {
-  const existing = await db
+export async function awardPoints(userId: string, kind: string, refId: string, amount: number, connection: LearningDatabase = db): Promise<void> {
+  const existing = await connection
     .select({ id: t.pointsLedger.id })
     .from(t.pointsLedger)
     .where(and(eq(t.pointsLedger.userId, userId), eq(t.pointsLedger.kind, kind), eq(t.pointsLedger.refId, refId)))
     .limit(1);
   if (existing.length > 0) return;
-  await db.insert(t.pointsLedger).values({ id: id(), userId, kind, refId, amount });
+  await connection.insert(t.pointsLedger).values({ id: id(), userId, kind, refId, amount });
 }
 
-export async function awardBadge(userId: string, badge: "first_course" | "five_courses" | "four_week_streak" | "perfect_quiz") {
-  await db.insert(t.badges).values({ id: id(), userId, badge }).onConflictDoNothing();
+export async function awardBadge(userId: string, badge: "first_course" | "five_courses" | "four_week_streak" | "perfect_quiz", connection: LearningDatabase = db) {
+  await connection.insert(t.badges).values({ id: id(), userId, badge }).onConflictDoNothing();
 }
 
 /** Record learning activity for the weekly-goal streak (3 distinct days / ISO week). */
-export async function recordActivityDay(userId: string): Promise<void> {
+export async function recordActivityDay(userId: string, connection: LearningDatabase = db): Promise<void> {
   const week = isoWeekStart();
   const today = localDate();
-  const [row] = await db
+  const [row] = await connection
     .select()
     .from(t.streakState)
     .where(and(eq(t.streakState.userId, userId), eq(t.streakState.weekStart, week)));
   if (!row) {
     // carry streak weeks forward from the latest previous row
-    const prev = await db
+    const prev = await connection
       .select()
       .from(t.streakState)
       .where(eq(t.streakState.userId, userId))
@@ -39,7 +39,7 @@ export async function recordActivityDay(userId: string): Promise<void> {
       .limit(1);
     const prevRow = prev[0];
     const prevMet = prevRow ? prevRow.daysActive.length >= 3 : false;
-    await db.insert(t.streakState).values({
+    await connection.insert(t.streakState).values({
       id: id(),
       userId,
       weekStart: week,
@@ -54,34 +54,37 @@ export async function recordActivityDay(userId: string): Promise<void> {
     const updates: Partial<typeof t.streakState.$inferInsert> = { daysActive: days };
     if (days.length === 3) {
       updates.currentStreakWeeks = row.currentStreakWeeks + 1;
-      if (row.currentStreakWeeks + 1 >= 4) await awardBadge(userId, "four_week_streak");
+      if (row.currentStreakWeeks + 1 >= 4) await awardBadge(userId, "four_week_streak", connection);
     }
-    await db.update(t.streakState).set(updates).where(eq(t.streakState.id, row.id));
+    await connection.update(t.streakState).set(updates).where(eq(t.streakState.id, row.id));
   }
+}
+
+/** Credit inside an existing learning transaction without borrowing another client. */
+export async function markLessonCompleteInTransaction(context: LearningWriteContext, userId: string, lessonId: string, courseId: string, evidenceStartedAt?: Date): Promise<boolean> {
+  const { connection } = context;
+  await lockLearningCourse(connection, userId, courseId);
+  const cycle = await currentCycleStart(userId, courseId, connection);
+  if (evidenceStartedAt && cycle && evidenceStartedAt < cycle) return false;
+  await connection.insert(t.lessonProgress).values({ id: id(), userId, lessonId, status: "COMPLETED" })
+    .onConflictDoUpdate({ target: [t.lessonProgress.userId, t.lessonProgress.lessonId], set: { status: "COMPLETED", updatedAt: new Date() } });
+  await checkCourseCompletion(userId, courseId, context);
+  await awardPoints(userId, "lesson_complete", lessonId, 10, connection);
+  await recordActivityDay(userId, connection);
+  return true;
 }
 
 export async function markLessonComplete(userId: string, lessonId: string, evidenceStartedAt?: Date): Promise<void> {
   const courseId = await lessonCourseId(lessonId);
   if (!courseId) return;
-  const credited = await db.transaction(async tx => {
-    await lockLearningCourse(tx, userId, courseId);
-    const cycle = await currentCycleStart(userId, courseId, tx);
-    // Finishing or reviewing an old sitting preserves its result/history but
-    // cannot complete a lesson in a later renewal assignment.
-    if (evidenceStartedAt && cycle && evidenceStartedAt < cycle) return false;
-    await tx.insert(t.lessonProgress).values({ id: id(), userId, lessonId, status: "COMPLETED" })
-      .onConflictDoUpdate({ target: [t.lessonProgress.userId, t.lessonProgress.lessonId], set: { status: "COMPLETED", updatedAt: new Date() } });
-    await checkCourseCompletion(userId, courseId, tx);
-    return true;
-  });
-  if (credited) {
-    await awardPoints(userId, "lesson_complete", lessonId, 10);
-    await recordActivityDay(userId);
-  }
+  const afterCommit: LearningWriteContext["afterCommit"] = [];
+  await db.transaction(connection => markLessonCompleteInTransaction({ connection, afterCommit }, userId, lessonId, courseId, evidenceStartedAt));
+  for (const effect of afterCommit) await effect();
 }
 
 /** Course completes when all lessons of all modules complete (spec FR-2.4). */
-export async function checkCourseCompletion(userId: string, courseId: string, connection: LearningDatabase = db): Promise<boolean> {
+export async function checkCourseCompletion(userId: string, courseId: string, context?: LearningWriteContext): Promise<boolean> {
+  const connection = context?.connection ?? db;
   const mods = await connection.select().from(t.modules).where(eq(t.modules.courseId, courseId));
   if (mods.length === 0) return false;
   const lessonRows = await connection
@@ -103,11 +106,12 @@ export async function checkCourseCompletion(userId: string, courseId: string, co
       .where(and(eq(t.enrollments.userId, userId), eq(t.enrollments.courseId, courseId), eq(t.enrollments.status, "NOT_STARTED")));
     return false;
   }
-  await completeCourse(userId, courseId, connection);
+  await completeCourse(userId, courseId, context);
   return true;
 }
 
-export async function completeCourse(userId: string, courseId: string, connection: LearningDatabase = db): Promise<void> {
+export async function completeCourse(userId: string, courseId: string, context?: LearningWriteContext): Promise<void> {
+  const connection = context?.connection ?? db;
   const enrollments = await connection
     .select()
     .from(t.enrollments)
@@ -146,14 +150,14 @@ export async function completeCourse(userId: string, courseId: string, connectio
     })
     .where(eq(t.enrollments.id, active.id));
 
-  await awardPoints(userId, "course_complete", courseId, 50);
+  await awardPoints(userId, "course_complete", courseId, 50, connection);
   const [countRow] = await connection
     .select({ n: sql<number>`count(*)::int` })
     .from(t.completionRecords)
     .where(eq(t.completionRecords.userId, userId));
   const completions = countRow?.n ?? 0;
-  if (completions >= 1) await awardBadge(userId, "first_course");
-  if (completions >= 5) await awardBadge(userId, "five_courses");
+  if (completions >= 1) await awardBadge(userId, "first_course", connection);
+  if (completions >= 5) await awardBadge(userId, "five_courses", connection);
 
-  await notify(userId, "course_completed", { courseId, courseTitle: course?.title ?? "Course" });
+  await notify(userId, "course_completed", { courseId, courseTitle: course?.title ?? "Course" }, undefined, undefined, context);
 }

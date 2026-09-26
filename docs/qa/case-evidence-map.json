@@ -163,7 +163,7 @@
       "browserTests": [
         "Mocked player restores saved position"
       ],
-      "manual": "Controller actual public YouTube journey; final source equivalence or affected-step rerun required"
+      "manual": "Controller complete real public YouTube journey on the exact final clean build; structured status, scope, runtime and artifacts validated by qa_manual_evidence.py"
     },
     {
       "id": "VIDEO:seek",
@@ -173,7 +173,7 @@
         "Tutor retries a network failure",
         "Mocked player restores saved position"
       ],
-      "manual": "Controller actual public YouTube seek-only non-completion"
+      "manual": "Controller complete real public YouTube journey on the exact final clean build; structured status, scope, runtime and artifacts validated by qa_manual_evidence.py"
     },
     {
       "id": "VIDEO:threshold",
@@ -181,7 +181,8 @@
       "browserTests": [
         "Crossing the video completion threshold"
       ],
-      "manual": "Controller actual public YouTube continuous coverage and persisted completion"
+      "manual": "Controller complete real public YouTube journey on the exact final clean build; structured status, scope, runtime and artifacts validated by qa_manual_evidence.py",
+      "service": "qa-service: interleaved heartbeat and renewal; stale one-bucket request rejected, fresh playback completes normally"
     },
     {
       "id": "TUTOR:grounded",
@@ -555,7 +556,8 @@
       "browserTests": [
         "Earned certificate preserves long",
         "Admin publishes, manager assigns"
-      ]
+      ],
+      "service": "qa-service: pool saturation completes once; forced commit rollback leaves no awards, notification or email; retry delivers once"
     },
     {
       "id": "COMPLIANCE:recert",
@@ -564,7 +566,7 @@
         "Renewal gives a fresh assessment",
         "Reviewing an old oral check"
       ],
-      "service": "qa-service: expiry and UI renewal preserve history"
+      "service": "qa-service: expiry/UI renewal preserve history; shared-lock heartbeat reset and pre-renewal receipt boundary"
     },
     {
       "id": "ACCOUNT/SYSTEM:profile",
@@ -622,7 +624,8 @@
         "keyboard skip link",
         "Stored legacy, missing",
         "workspace navigation and return"
-      ]
+      ],
+      "note": "All quality traversals run CSS zoom 200% with RTL in standard projects; separate chromium-native-zoom uses real Chromium tabs.setZoom(2) at 1280\u00d7800 (640\u00d7400 CSS viewport), without stacking CSS zoom. Native screenshots use Chromium Page.captureScreenshot without a clip (captureBeyondViewport:false); standard Playwright clipped capture shifts scrolled native-zoom content."
     },
     {
       "id": "ACCOUNT/SYSTEM:performance",

@@ -4,7 +4,7 @@ import { db, t } from "@/lib/db/client";
 import { id } from "@/lib/ids";
 import { notify } from "@/lib/notify";
 import { markLessonComplete } from "@/lib/lms/completion";
-import { cycleStartsByCourse } from "@/lib/lms/learning-cycle";
+import { cycleStartsByCourse, type LearningDatabase } from "@/lib/lms/learning-cycle";
 import { courseOutline } from "@/lib/lms/queries";
 import type { InterviewConfig, LiveEvaluation, LiveTurn } from "@/lib/db/schema";
 import { CONTENT_CHAR_CAP, fallbackEvaluate, interviewContentFor, parseInterviewConfig, pickScopeLessons, scoreEvaluation, type InterviewContent } from "./interview";
@@ -192,14 +192,14 @@ export async function overturnInterview(interviewId: string, reviewerId: string)
 }
 
 /** Latest interview per lesson for a learner (completed rows win over abandoned ones). */
-export async function latestInterviewsByLesson(userId: string, lessonIds: string[]): Promise<Map<string, Interview>> {
+export async function latestInterviewsByLesson(userId: string, lessonIds: string[], connection: LearningDatabase = db): Promise<Map<string, Interview>> {
   if (lessonIds.length === 0) return new Map();
-  const rows = await db
+  const rows = await connection
     .select()
     .from(t.liveInterviews)
     .where(and(eq(t.liveInterviews.userId, userId), inArray(t.liveInterviews.lessonId, lessonIds)))
     .orderBy(desc(t.liveInterviews.startedAt));
-  const starts = await cycleStartsByCourse(userId, [...new Set(rows.map(r => r.courseId))]);
+  const starts = await cycleStartsByCourse(userId, [...new Set(rows.map(r => r.courseId))], connection);
   const map = new Map<string, Interview>();
   for (const r of rows) {
     const cycle = starts.get(r.courseId);

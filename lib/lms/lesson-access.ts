@@ -1,3 +1,4 @@
+import type { LearningDatabase } from "./learning-cycle";
 import { eq, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { buildCourseOutline } from "./course-outline";
@@ -6,17 +7,17 @@ import { flatLessons } from "./outline";
 
 /** The same published-course and sequential rules feed pages and mutations.
  * Published courses remain open to learners, without introducing enrollment gates. */
-export async function learnerLesson(userId: string, lessonId: string) {
-  const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, lessonId)).limit(1);
+export async function learnerLesson(userId: string, lessonId: string, connection: LearningDatabase = db) {
+  const [lesson] = await connection.select().from(t.lessons).where(eq(t.lessons.id, lessonId)).limit(1);
   if (!lesson) return null;
-  const [mod] = await db.select().from(t.modules).where(eq(t.modules.id, lesson.moduleId)).limit(1);
+  const [mod] = await connection.select().from(t.modules).where(eq(t.modules.id, lesson.moduleId)).limit(1);
   if (!mod) return null;
-  const [course] = await db.select().from(t.courses).where(eq(t.courses.id, mod.courseId)).limit(1);
+  const [course] = await connection.select().from(t.courses).where(eq(t.courses.id, mod.courseId)).limit(1);
   if (!course || course.status !== "PUBLISHED") return null;
-  const view = await buildCourseOutline({ courseId: course.id, userId, sequentialLock: course.sequentialLock, currentLessonId: lesson.id });
+  const view = await buildCourseOutline({ courseId: course.id, userId, sequentialLock: course.sequentialLock, currentLessonId: lesson.id }, connection);
   const self = flatLessons(view).find(l => l.id === lesson.id);
   if (!self) return null;
-  const pathLock = await pathPrerequisite(userId, course.id);
+  const pathLock = await pathPrerequisite(userId, course.id, connection);
   return { lesson, mod, course, view, self: pathLock ? { ...self, locked: true } : self, pathLock };
 }
 

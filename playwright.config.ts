@@ -32,6 +32,7 @@ export default defineConfig({
     navigationTimeout: 30_000,
   },
   projects: [
+    { name: "chromium-native-zoom", testMatch: "**/quality-qualification.e2e.ts", use: { browserName: "chromium", viewport: { width: 1280, height: 800 } } },
     { name: "chromium-desktop", use: { browserName: "chromium", viewport: { width: 1440, height: 900 } } },
     { name: "chromium-mobile", use: { browserName: "chromium", viewport: { width: 390, height: 844 }, hasTouch: true } },
     { name: "chromium-small", grep: /@template/, use: { browserName: "chromium", viewport: { width: 360, height: 800 }, hasTouch: true } },

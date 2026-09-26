@@ -4,6 +4,7 @@ This script never infers a pass from a source file or a test title alone.
 """
 import argparse, json
 from pathlib import Path
+from qa_manual_evidence import validate_manual_video
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--runs', nargs=2, required=True)
@@ -40,13 +41,22 @@ expected={(t['file'],t['title'],t['project']) for t in planned}
 assert all({(t['file'],t['title'],t['project']) for t in run['tests']}==expected for run in runs),'Executed matrix omits planned tests/projects'
 services=[read(f'{folder}/results.json') for folder in args.services]
 assert all(s['evidence'][-1]['step']=='PASSED' for s in services),'Service qualification incomplete'
+required_service_steps = {
+    'due-soon sweep and notification dedupe', 'overdue transition followed by actual UI completion',
+    'expiry and UI renewal preserve history', 'real queue handler failure and retry',
+    'saturated pool completes once with atomic awards and notification', 'forced rollback persistence',
+    'rollback recovery produces one real completion notification and one post-commit console email',
+    'interleaved real heartbeat and renewal', 'one-bucket pre-renewal receipt cannot credit new cycle',
+    'fresh one-bucket playback completes renewed cycle normally',
+}
+assert all(required_service_steps <= {entry['step'] for entry in s['evidence']} for s in services), 'A focused service subset cannot qualify the complete service gate'
 assert all(s['sourceBuildCommit']==runs[0]['env']['runtimeBuildCommit'] and s['buildId']==runs[0]['env']['runtimeBuildId'] and s['buildDirty']=='0' for s in services),'Service runtime does not match'
 performance=read(args.performance)
 assert {row['family'] for row in performance.get('summary', [])}=={'home','catalog','course','lesson','manager','admin'},'All six performance families required'
 assert all(row['passed'] for row in performance['summary']),'Performance budgets not met'
 assert performance['metadata']['buildCommit']==runs[0]['env']['runtimeBuildCommit'] and performance['metadata']['runtimeBuildId']==runs[0]['env']['runtimeBuildId'] and not performance['metadata']['buildDirty'],'Performance runtime does not match'
 assert len(performance['runs'])==18 and all(sum(row['family']==family for row in performance['runs'])==3 for family in {'home','catalog','course','lesson','manager','admin'}),'Three performance samples per family required'
-assert Path(args.manual_video).is_file(),'Actual public-video evidence is required, not a mock pass'
+manual_video=validate_manual_video(args.manual_video, runs[0]['env']['runtimeBuildCommit'], runs[0]['env']['runtimeBuildId'])
 
 mapping=read('docs/qa/case-evidence-map.json'); cases=[]
 roles={'AUTH':['all roles'],'NAV':['all roles'],'DISCOVER':['LEARNER'],'PATH':['LEARNER','MANAGER','ADMIN'],'CONTENT':['LEARNER'],'VIDEO':['LEARNER'],'TUTOR':['LEARNER'],'QUIZ':['LEARNER'],'QUIZ-RULES':['LEARNER'],'REVIEW':['LEARNER','ADMIN'],'VOICE':['LEARNER','ADMIN'],'HR':['LEARNER','MANAGER'],'TICKET':['LEARNER','ADMIN'],'PRACTICE':['LEARNER'],'MANAGER':['MANAGER','LEARNER'],'PEOPLE':['ADMIN'],'AUTHOR':['ADMIN','LEARNER'],'POLICY':['ADMIN','LEARNER'],'INTEGRITY':['LEARNER','ADMIN'],'REPORTS':['MANAGER','ADMIN'],'COMPLIANCE':['LEARNER','MANAGER','ADMIN'],'ACCOUNT/SYSTEM':['all roles']}
@@ -60,7 +70,7 @@ for record in mapping['cases']:
     tests=sorted({t['title'] for t in selected}); projects=sorted({t['project'] for t in selected})
     evidence=[f"{r['folder']}/results.json" for r in runs] if selected else []
     if record.get('service'):evidence += [f'{folder}/results.json' for folder in args.services]
-    if record.get('manual'):evidence += [args.manual_video]
+    if record.get('manual'):evidence += manual_video[record['id']]
     if record.get('performance'):evidence += [args.performance]
     status='UNVERIFIED' if record.get('unverified') else 'PASSED'
     local_status='PASSED' if selected or record.get('service') or record.get('manual') or record.get('performance') else 'NOT_APPLICABLE'

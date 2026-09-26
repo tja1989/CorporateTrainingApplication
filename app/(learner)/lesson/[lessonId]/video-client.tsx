@@ -352,97 +352,100 @@ function TutorPanel({
         </PillButton>
       </div>
 
-      <div className="flex flex-col gap-3" dir="auto">
-        {messages.length === 0 && streaming === null ? (
-          <p className="text-sm text-muted">Ask anything about this video — answers come only from the lesson content, with timestamps you can tap.</p>
-        ) : null}
-        {messages.map((m, i) => (
-          <div key={i} className={cx(m.role === "user" ? "text-end" : "")} dir="auto">
-            {m.role === "user" ? (
-              <div className="inline-block max-w-[92%] rounded-card bg-surface-2 px-3 py-2 text-start text-sm">
-                <span className="whitespace-pre-wrap">{m.content}</span>
-              </div>
-            ) : (
-              <AiSurface mock={m.mock}>
-                <span className="whitespace-pre-wrap">{m.content}</span>
-                {m.citations && m.citations.length > 0 ? (
-                  <span className="mt-2 flex flex-wrap gap-2">
-                    {m.citations.map((c, j) => !c.lessonId ? (
-                      <span key={j} className="text-sm text-muted">Source unavailable · {fmtTime(c.startSec)}</span>
-                    ) : c.lessonId !== lessonId ? (
-                      <a key={j} href={`/lesson/${encodeURIComponent(c.lessonId)}?t=${c.startSec}`} title={c.quote} className="bidi-isolate touch-target inline-flex items-center gap-1 rounded-control bg-surface px-2 py-1 text-sm font-medium text-ai-fg hover:bg-accent-tint">
-                        <Icon name="play" size={12} /> {c.lessonTitle} · {fmtTime(c.startSec)}
-                      </a>
-                    ) : (
-                      <button
-                        key={j}
-                        onClick={() => onSeek(c.startSec)}
-                        title={c.quote}
-                        className="bidi-isolate pressable hit-area inline-flex items-center gap-1 rounded-control bg-surface px-2 py-1 text-xs font-medium text-ai-fg hover:bg-ai hover:text-ai-tint"
-                      >
-                        <Icon name="play" size={12} /> {fmtTime(c.startSec)}
-                      </button>
-                    ))}
-                  </span>
-                ) : null}
-              </AiSurface>
-            )}
-          </div>
-        ))}
-        {streaming !== null ? (
-          <div dir="auto">
-            <AiSurface>
-              {streaming.length === 0 ? <Skeleton className="h-4 w-[160px]" /> : <span className="whitespace-pre-wrap">{streaming}</span>}
-              <span className="ms-2 text-sm text-muted" role="status">Responding…</span>
-            </AiSurface>
-          </div>
-        ) : null}
-        <div ref={endRef} />
-      </div>
-
-      {suggestions.length > 0 && messages.length === 0 ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {suggestions.map((s) => (
-            <PillButton key={s} onClick={() => ask(s)}>
-              {s}
-            </PillButton>
-          ))}
-        </div>
-      ) : null}
-
-      <div className="composer-sticky z-10 mt-4 border-t border-border bg-background pt-2">
-        <div className="mb-2 flex flex-wrap gap-2">
-          <PillButton onClick={() => ask("Explain this part in simpler words.")} disabled={streaming !== null}>
-            Explain simpler
-          </PillButton>
-          <PillButton onClick={() => ask("Quiz me on this section with 3 quick questions, then give the answers.")} disabled={streaming !== null}>
-            Quiz me
-          </PillButton>
-          {streaming !== null ? (
-            <PillButton onClick={() => abortRef.current?.abort()} className="ms-auto text-destructive-text">
-              <Icon name="stop" size={12} /> Stop
-            </PillButton>
+      {/* Keep the sticky composer below the scope header, including at native zoom. */}
+      <div className="min-w-0">
+        <div className="flex flex-col gap-3" dir="auto">
+          {messages.length === 0 && streaming === null ? (
+            <p className="text-sm text-muted">Ask anything about this video — answers come only from the lesson content, with timestamps you can tap.</p>
           ) : null}
+          {messages.map((m, i) => (
+            <div key={i} className={cx(m.role === "user" ? "text-end" : "")} dir="auto">
+              {m.role === "user" ? (
+                <div className="inline-block max-w-[92%] rounded-card bg-surface-2 px-3 py-2 text-start text-sm">
+                  <span className="whitespace-pre-wrap">{m.content}</span>
+                </div>
+              ) : (
+                <AiSurface mock={m.mock}>
+                  <span className="whitespace-pre-wrap">{m.content}</span>
+                  {m.citations && m.citations.length > 0 ? (
+                    <span className="mt-2 flex flex-wrap gap-2">
+                      {m.citations.map((c, j) => !c.lessonId ? (
+                        <span key={j} className="text-sm text-muted">Source unavailable · {fmtTime(c.startSec)}</span>
+                      ) : c.lessonId !== lessonId ? (
+                        <a key={j} href={`/lesson/${encodeURIComponent(c.lessonId)}?t=${c.startSec}`} title={c.quote} className="bidi-isolate touch-target inline-flex items-center gap-1 rounded-control bg-surface px-2 py-1 text-sm font-medium text-ai-fg hover:bg-accent-tint">
+                          <Icon name="play" size={12} /> {c.lessonTitle} · {fmtTime(c.startSec)}
+                        </a>
+                      ) : (
+                        <button
+                          key={j}
+                          onClick={() => onSeek(c.startSec)}
+                          title={c.quote}
+                          className="bidi-isolate pressable hit-area inline-flex items-center gap-1 rounded-control bg-surface px-2 py-1 text-xs font-medium text-ai-fg hover:bg-ai hover:text-ai-tint"
+                        >
+                          <Icon name="play" size={12} /> {fmtTime(c.startSec)}
+                        </button>
+                      ))}
+                    </span>
+                  ) : null}
+                </AiSurface>
+              )}
+            </div>
+          ))}
+          {streaming !== null ? (
+            <div dir="auto">
+              <AiSurface>
+                {streaming.length === 0 ? <Skeleton className="h-4 w-[160px]" /> : <span className="whitespace-pre-wrap">{streaming}</span>}
+                <span className="ms-2 text-sm text-muted" role="status">Responding…</span>
+              </AiSurface>
+            </div>
+          ) : null}
+          <div ref={endRef} />
         </div>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            ask(input);
-          }}
-          className="flex gap-2 pb-2"
-        >
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about this lesson…"
-            aria-label="Ask the tutor"
-            dir="auto"
-            className="min-w-0 flex-1"
-          />
-          <Button type="submit" disabled={streaming !== null || !input.trim()} className="px-3" aria-label="Send">
-            <Icon name="arrow-up" size={18} />
-          </Button>
-        </form>
+
+        {suggestions.length > 0 && messages.length === 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {suggestions.map((s) => (
+              <PillButton key={s} onClick={() => ask(s)}>
+                {s}
+              </PillButton>
+            ))}
+          </div>
+        ) : null}
+
+        <div className={cx(messages.length > 0 || streaming !== null ? "composer-sticky" : "", "z-10 mt-4 border-t border-border bg-background pt-2")}>
+          <div className="mb-2 flex flex-wrap gap-2">
+            <PillButton onClick={() => ask("Explain this part in simpler words.")} disabled={streaming !== null}>
+              Explain simpler
+            </PillButton>
+            <PillButton onClick={() => ask("Quiz me on this section with 3 quick questions, then give the answers.")} disabled={streaming !== null}>
+              Quiz me
+            </PillButton>
+            {streaming !== null ? (
+              <PillButton onClick={() => abortRef.current?.abort()} className="ms-auto text-destructive-text">
+                <Icon name="stop" size={12} /> Stop
+              </PillButton>
+            ) : null}
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              ask(input);
+            }}
+            className="flex gap-2 pb-2"
+          >
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask about this lesson…"
+              aria-label="Ask the tutor"
+              dir="auto"
+              className="min-w-0 flex-1"
+            />
+            <Button type="submit" disabled={streaming !== null || !input.trim()} className="px-3" aria-label="Send">
+              <Icon name="arrow-up" size={18} />
+            </Button>
+          </form>
+        </div>
       </div>
     </section>
   );

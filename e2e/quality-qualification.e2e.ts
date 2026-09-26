@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { test, expect, type Page, type TestInfo } from "@playwright/test";
+import { type Page, type TestInfo } from "@playwright/test";
+import { test, expect } from "./native-zoom-test";
 import AxeBuilder from "@axe-core/playwright";
 import { createPerson, signIn, withDb, capture, expectNoPageOverflow, QA_PASSWORD } from "./support";
 import { textCourse, smallQuiz, assessmentFixture, tutorFixture } from "./qualification-fixtures";
@@ -31,15 +32,18 @@ async function inspect(page:Page,info:TestInfo,label:string){
   await info.attach(`${label}-targets`,{body:JSON.stringify(small),contentType:"application/json"});
   expect.soft(small,`${label} product control targets`).toEqual([]);
   await capture(page,info,label);
-  await page.evaluate(()=>{document.documentElement.dir="rtl";document.documentElement.style.zoom="2";});
+  await page.evaluate(native=>{document.documentElement.dir="rtl";if(!native)document.documentElement.style.zoom="2";},info.project.name==="chromium-native-zoom");
   await overflow(page,info,label);await capture(page,info,`${label}-rtl-200percent`);
   await page.evaluate(()=>{document.documentElement.dir="ltr";document.documentElement.style.zoom="";});
   await page.keyboard.press("Control+Home");
   await page.evaluate(()=>{(document.activeElement as HTMLElement)?.blur();window.scrollTo(0,0);});
   await page.keyboard.press("Tab");
-  const focus=await page.evaluate(()=>{const el=document.activeElement as HTMLElement,r=el.getBoundingClientRect(),s=getComputedStyle(el);return {tag:el.tagName,visible:r.width>0&&r.height>0,outline:s.outlineStyle,boxShadow:s.boxShadow};});
+  const focus=await page.evaluate(()=>{const el=document.activeElement as HTMLElement,r=el.getBoundingClientRect(),s=getComputedStyle(el);const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {tag:el.tagName,name:el.getAttribute("aria-label")||el.textContent,rect:r.toJSON(),viewport:{width:innerWidth,height:innerHeight},hit:hit?{tag:hit.tagName,text:hit.textContent?.slice(0,120),rect:hit.getBoundingClientRect().toJSON()}:null,visible:r.width>0&&r.height>0,unobscured:!!hit&&(el===hit||el.contains(hit)),outline:s.outlineStyle,boxShadow:s.boxShadow};});
+  await info.attach(`${label}-focus`,{body:JSON.stringify(focus),contentType:"application/json"});
   expect.soft(focus.visible,`${label} first keyboard focus visible`).toBe(true);
+  expect.soft(focus.unobscured,`${label} keyboard focus covered: ${focus.name}`).toBe(true);
   expect.soft(focus.outline!=="none"||focus.boxShadow!=="none",`${label} first keyboard focus styled`).toBe(true);
+  if(info.project.name==="chromium-native-zoom")await capture(page,info,`${label}-keyboard-focus`);
 }
 
 for(const theme of ["light","dark"] as const){
@@ -58,7 +62,30 @@ for(const theme of ["light","dark"] as const){
     await expect(page.getByText("Final result: not passed",{exact:true})).toBeVisible();await inspect(page,info,`${theme}-assessment-result`);
     await page.goto(`/lesson/${pdf.lesson}`);await inspect(page,info,`${theme}-pdf-fallback`);
     await page.goto(`/lesson/${video.lessons[0]}`);
-    for(const tab of ["Overview","Transcript","Tutor"]){await page.getByRole("tab",{name:tab,exact:true}).click();await inspect(page,info,`${theme}-video-${tab}`);}
+    for(const tab of ["Overview","Transcript","Tutor"]){
+      await page.getByRole("tab",{name:tab,exact:true}).click();
+      if(tab==="Tutor"&&(page.viewportSize()?.width??0)<=390){
+        await expect(page.getByRole("button",{name:"Can you summarize this part in two sentences?",exact:true})).toBeVisible();
+        const hit=await page.getByRole("button",{name:"Toggle retrieval scope",exact:true}).evaluate(el=>{const r=el.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return !!hit&&(el===hit||el.contains(hit));});
+        expect.soft(hit,"Empty Tutor scope must be tappable before any automatic scrolling").toBe(true);
+      }
+      await inspect(page,info,`${theme}-video-${tab}`);
+    }
+    // The keyboard sweep can move the roving tab back to Overview.
+    await page.getByRole("tab",{name:"Tutor",exact:true}).click();
+    const tutor=page.getByRole("region",{name:"Lesson Tutor",exact:true});
+    await tutor.getByRole("textbox",{name:"Ask the tutor",exact:true}).fill("When should I wash hands?");
+    await tutor.getByRole("button",{name:"Send",exact:true}).click();
+    await expect(tutor.getByText(/Offline demo answer/)).toBeVisible();
+    await expect(tutor.getByRole("button",{name:"Explain simpler",exact:true})).toBeEnabled();
+    await page.getByRole("tab",{name:"Tutor",exact:true}).click();
+    await page.keyboard.press("Tab");
+    const scope=tutor.getByRole("button",{name:"Toggle retrieval scope",exact:true});
+    await expect(scope).toBeFocused();
+    const scopeHit=await scope.evaluate(el=>{const r=el.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {rect:r.toJSON(),hit:hit?.textContent,unobscured:!!hit&&(el===hit||el.contains(hit))};});
+    await info.attach(`${theme}-active-tutor-scope-focus`,{body:JSON.stringify(scopeHit),contentType:"application/json"});
+    expect.soft(scopeHit.unobscured,"Active Tutor scope keyboard focus must stay above its sticky composer").toBe(true);
+    await inspect(page,info,`${theme}-tutor-answer`);
     let release:()=>void=()=>{};const held=new Promise<void>(resolve=>{release=resolve;});
     await page.route("**/api/hr",async route=>{if(route.request().method()==="GET"){await held;await route.fulfill({status:503,body:"Unavailable"});}else await route.continue();});
     await page.goto("/ask-hr");await inspect(page,info,`${theme}-hr-loading`);release();
