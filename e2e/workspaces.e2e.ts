@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { test, expect, type Page, type Locator } from "@playwright/test";
-import { createPerson, signIn, withDb, expectNoPageOverflow, capture } from "./support";
+import { test, expect, type Page, type Locator, type TestInfo } from "@playwright/test";
+import { createPerson, signIn, withDb, expectNoPageOverflow, capture as captureBase } from "./support";
 
+async function capture(page: Page, info: TestInfo, label: string) { await page.evaluate(() => window.scrollTo(0, 0)); await captureBase(page, info, label); }
 async function saveAndReload(page: Page, button: Locator) { await Promise.all([page.waitForEvent("load"), button.click()]); }
 const reports = ["completion", "compliance", "transcript", "cert_expiry", "engagement", "quiz_results"];
 async function freshSignIn(page: Page, person: Awaited<ReturnType<typeof createPerson>>) { await page.context().clearCookies(); await signIn(page, person); }
@@ -410,8 +411,10 @@ test("@core @template Failed video ingestion recovers with a replacement transcr
 
 test("@core Workspace mutation forms cannot submit before client handlers are ready", async ({ page, browser }) => {
   const admin = await createPerson("ADMIN"), learner = await createPerson("LEARNER"); await signIn(page, admin);
-  const unhydrated = await browser.newContext({ storageState: await page.context().storageState(), javaScriptEnabled: false, ignoreHTTPSErrors: true });
+  const unhydrated = await browser.newContext({ storageState: await page.context().storageState(), ignoreHTTPSErrors: true });
   try {
+    // Allow inline streaming reveal scripts while withholding the application handlers.
+    await unhydrated.route(/\/_next\/static\/.*\.js(?:\?.*)?$/, route => route.abort());
     const initial = await unhydrated.newPage();
     await initial.goto(new URL("/admin/courses", page.url()).href);
     await expect(initial.getByRole("button", { name: "Create draft", exact: true })).toBeDisabled();
