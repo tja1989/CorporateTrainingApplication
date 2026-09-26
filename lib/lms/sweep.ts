@@ -21,10 +21,10 @@ export async function runDailySweep(now = new Date()): Promise<Record<string, nu
     .from(t.enrollments)
     .where(inArray(t.enrollments.status, ["NOT_STARTED", "IN_PROGRESS", "COMPLETED"]));
   const certRows = await db.select().from(t.certificates);
-  const certByUserCourse = new Map(certRows.map((c) => [`${c.userId}:${c.courseId}`, c]));
+  certRows.sort((a, b) => b.issuedAt.getTime() - a.issuedAt.getTime());
 
   for (const e of open) {
-    const cert = certByUserCourse.get(`${e.userId}:${e.courseId}`);
+    const cert = e.completedAt ? certRows.find(c => c.userId === e.userId && c.courseId === e.courseId && c.issuedAt <= e.completedAt!) : undefined;
     const next = computeComplianceStatus({
       status: e.status,
       dueAt: e.dueAt,

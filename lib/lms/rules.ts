@@ -1,6 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { id } from "@/lib/ids";
+import { lockLearningCourse } from "./learning-cycle";
 import { endOfDayInTz } from "@/lib/time";
 import type { DueRule, RuleCriteria } from "@/lib/db/schema";
 
@@ -151,22 +152,30 @@ export async function enrollUser(
           .map((r) => r.courseId);
   let n = 0;
   for (const courseId of courseIds) {
-    const existing = await db
-      .select()
-      .from(t.enrollments)
-      .where(and(eq(t.enrollments.userId, userId), eq(t.enrollments.courseId, courseId)));
-    if (existing.some((e) => e.status === "NOT_STARTED" || e.status === "IN_PROGRESS")) continue;
-    await db.insert(t.enrollments).values({
-      id: id(),
-      userId,
-      courseId,
-      source: target.type === "path" ? "path" : source,
-      sourceId: target.type === "path" ? target.id : sourceId,
-      dueAt,
-      status: "NOT_STARTED",
-      complianceStatus: "ON_TRACK",
+    const created = await db.transaction(async tx => {
+      await lockLearningCourse(tx, userId, courseId);
+      const existing = await tx.select().from(t.enrollments)
+        .where(and(eq(t.enrollments.userId, userId), eq(t.enrollments.courseId, courseId)));
+      if (existing.some(e => e.status === "NOT_STARTED" || e.status === "IN_PROGRESS")) return false;
+      // A repeated/concurrent sweep of the same certificate cannot create a
+      // second renewal even if its first assignment has already completed.
+      if (source === "recert" && existing.some(e => e.source === "recert" && e.sourceId === sourceId)) return false;
+      await tx.insert(t.enrollments).values({
+        id: id(), userId, courseId,
+        source: target.type === "path" ? "path" : source,
+        sourceId: target.type === "path" ? target.id : sourceId,
+        dueAt, status: "NOT_STARTED", complianceStatus: "ON_TRACK",
+      });
+      if (source === "recert") {
+        const lessons = await tx.select({ id: t.lessons.id }).from(t.lessons)
+          .innerJoin(t.modules, eq(t.lessons.moduleId, t.modules.id)).where(eq(t.modules.courseId, courseId));
+        if (lessons.length) await tx.update(t.lessonProgress)
+          .set({ status: "NOT_STARTED", watchedBuckets: [], lastPositionSec: 0, updatedAt: new Date() })
+          .where(and(eq(t.lessonProgress.userId, userId), inArray(t.lessonProgress.lessonId, lessons.map(l => l.id))));
+      }
+      return true;
     });
-    n++;
+    if (created) n++;
   }
   return n;
 }

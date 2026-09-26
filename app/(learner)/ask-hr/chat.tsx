@@ -246,7 +246,7 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
           e.preventDefault();
           ask(input);
         }}
-        className="composer-sticky z-10 mt-4 flex gap-2 border-t border-border bg-background py-2"
+        className={cx((!!messages?.length || streaming !== null) && "composer-sticky", "z-10 mt-4 flex gap-2 border-t border-border bg-background py-2")}
       >
         <Input
           value={input}

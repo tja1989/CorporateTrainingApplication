@@ -98,7 +98,7 @@ export function VoiceConsent({
         <PillButton type="button" onClick={onTestSpeaker}>
           Test speaker
         </PillButton>
-        <Link href="/privacy-notice" className="link text-xs text-link">
+        <Link href="/privacy-notice" className="link touch-target inline-flex items-center text-xs text-link">
           Privacy notice
         </Link>
       </div>

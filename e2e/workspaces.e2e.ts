@@ -91,6 +91,17 @@ test("@core @template Admin publishes, manager assigns, learner earns a certific
     await expect(table).toContainText(learner.employeeId);
     await expectNoPageOverflow(page); await capture(page, info, `${person.role.toLowerCase()}-same-record-report`);
   }
+  await page.goto(`/admin/courses/${courseId}?view=settings`);
+  await saveAndReload(page, page.getByRole("button", { name: "Unpublish", exact: true }));
+  await freshSignIn(page, learner); await page.goto(`/course/${courseId}`);
+  await expect(page.getByRole("heading", { name: /not found/i })).toBeVisible();
+  await page.goto(`/learn?view=browse&q=${encodeURIComponent(title)}`);
+  await expect(page.locator(`a[href='/course/${courseId}']`)).toHaveCount(0);
+  await freshSignIn(page, admin); await page.goto(`/admin/courses/${courseId}?view=settings`);
+  await saveAndReload(page, page.getByRole("button", { name: "Publish", exact: true }));
+  await freshSignIn(page, learner); await page.goto(`/course/${courseId}`);
+  await expect(page.getByRole("link", { name: /certificate/i })).toBeVisible();
+  expect(await withDb(async db => (await db.query("SELECT count(*)::int n FROM certificates WHERE user_id=$1 AND course_id=$2", [learner.id, courseId])).rows[0].n)).toBe(1);
 });
 
 test("@core Empty-manager reports, CSV and Ask Reports never include outside users", async ({ page }) => {
@@ -130,6 +141,9 @@ test("@core @template Admin navigation, import, groups and rules are distinct pe
   await expect(page.getByRole("region", { name: "One-time activation codes" })).toContainText(employeeId);
   expect(page.url()).not.toContain("codes=");
   await expect.poll(async () => withDb(async db => (await db.query("SELECT manager_id FROM users WHERE employee_id=$1", [employeeId])).rows[0]?.manager_id)).toBe(manager.id);
+  await page.getByRole("button", { name: "Import employees", exact: true }).click();
+  await expect(page.locator("main").getByRole("alert")).toContainText("already exists; skipped");
+  expect(await withDb(async db => (await db.query("SELECT count(*)::int n FROM users WHERE employee_id=$1", [employeeId])).rows[0].n)).toBe(1);
   await page.getByRole("link", { name: "People", exact: true }).last().click();
   await page.getByLabel("Search people").fill(employeeId); await page.getByRole("button", { name: "Search", exact: true }).click();
   await page.locator("main details summary").click();
@@ -144,6 +158,22 @@ test("@core @template Admin navigation, import, groups and rules are distinct pe
   await expect.poll(async () => withDb(async db => (await db.query("SELECT count(*)::int n FROM enrollments e JOIN users u ON u.id=e.user_id WHERE u.employee_id=$1 AND e.source='rule'", [employeeId])).rows[0].n)).toBeGreaterThan(0);
   await saveAndReload(page, rule.getByRole("button", { name: "disable", exact: true }));
   await expect(rule.getByRole("button", { name: "enable", exact: true })).toBeVisible();
+  await saveAndReload(page, rule.getByRole("button", { name: "enable", exact: true }));
+  await expect(rule.getByRole("button", { name: "disable", exact: true })).toBeVisible();
+  const activeCount = () => withDb(async db => (await db.query("SELECT count(*)::int n FROM enrollments e JOIN users u ON u.id=e.user_id WHERE u.employee_id=$1 AND e.source='rule' AND e.status IN ('NOT_STARTED','IN_PROGRESS')", [employeeId])).rows[0].n);
+  expect(await activeCount()).toBe(1);
+  await page.goto(`/admin/people?q=${employeeId}`); await page.locator("main details summary").click();
+  await page.getByLabel("Group", { exact: true }).selectOption("");
+  await saveAndReload(page, page.getByRole("button", { name: "Save", exact: true }));
+  expect(await activeCount()).toBe(0);
+  await page.locator("main details summary").click(); await page.getByLabel("Group", { exact: true }).selectOption({ label: `QA group ${token}` });
+  await saveAndReload(page, page.getByRole("button", { name: "Save", exact: true }));
+  expect(await activeCount()).toBe(1);
+  await page.locator("main details summary").click();
+  await page.getByRole("button", { name: "Issue reset/activation code", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Issued reset code", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Hide code", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Issued reset code", exact: true })).toHaveCount(0);
   await expectNoPageOverflow(page); await capture(page, info, "admin-enrollment-rules");
 });
 

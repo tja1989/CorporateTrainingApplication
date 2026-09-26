@@ -147,7 +147,7 @@
   --default-transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-body { background: var(--background); color: var(--foreground); font-family: var(--font-sans); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+body { overflow-wrap: anywhere; background: var(--background); color: var(--foreground); font-family: var(--font-sans); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
 strong, b, th { font-weight: 600; }
 button, summary { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
@@ -173,7 +173,7 @@ input, select, textarea { min-width: 0; }
 .header-inner { max-width: 1440px; min-height: 76px; margin-inline: auto; display: flex; align-items: center; gap: 24px; padding: 12px 32px; }
 .header-search { display: flex; align-items: center; flex: 1; min-width: 180px; max-width: 380px; border: 1px solid var(--control-border); border-radius: 8px; background: var(--surface); }
 .header-search:focus-within { outline: 2px solid var(--primary); outline-offset: 2px; }
-.header-search input { padding: 10px 12px; width: 100%; background: transparent; outline: none; font-size: 14px; }
+.header-search input { min-height: 44px; padding: 10px 12px; width: 100%; background: transparent; outline: none; font-size: 14px; }
 .header-search input::placeholder { color: var(--muted-foreground); }
 .header-search button { min-width: 44px; min-height: 44px; color: var(--primary); }
 .desktop-learner-nav { display: flex; align-self: stretch; align-items: center; gap: 4px; }

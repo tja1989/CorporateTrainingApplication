@@ -4,6 +4,7 @@ import { id, certificateSerial } from "@/lib/ids";
 import { computeComplianceStatus } from "./compliance";
 import { isoWeekStart, localDate } from "@/lib/time";
 import { notify } from "@/lib/notify";
+import { currentCycleStart, lessonCourseId, lockLearningCourse, type LearningDatabase } from "./learning-cycle";
 
 /** Award points once per (kind, refId) per user. */
 export async function awardPoints(userId: string, kind: string, refId: string, amount: number): Promise<void> {
@@ -59,33 +60,36 @@ export async function recordActivityDay(userId: string): Promise<void> {
   }
 }
 
-export async function markLessonComplete(userId: string, lessonId: string): Promise<void> {
-  await db
-    .insert(t.lessonProgress)
-    .values({ id: id(), userId, lessonId, status: "COMPLETED" })
-    .onConflictDoUpdate({
-      target: [t.lessonProgress.userId, t.lessonProgress.lessonId],
-      set: { status: "COMPLETED", updatedAt: new Date() },
-    });
-  await awardPoints(userId, "lesson_complete", lessonId, 10);
-  await recordActivityDay(userId);
-  const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, lessonId)).limit(1);
-  if (lesson) {
-    const [mod] = await db.select().from(t.modules).where(eq(t.modules.id, lesson.moduleId)).limit(1);
-    if (mod) await checkCourseCompletion(userId, mod.courseId);
+export async function markLessonComplete(userId: string, lessonId: string, evidenceStartedAt?: Date): Promise<void> {
+  const courseId = await lessonCourseId(lessonId);
+  if (!courseId) return;
+  const credited = await db.transaction(async tx => {
+    await lockLearningCourse(tx, userId, courseId);
+    const cycle = await currentCycleStart(userId, courseId, tx);
+    // Finishing or reviewing an old sitting preserves its result/history but
+    // cannot complete a lesson in a later renewal assignment.
+    if (evidenceStartedAt && cycle && evidenceStartedAt < cycle) return false;
+    await tx.insert(t.lessonProgress).values({ id: id(), userId, lessonId, status: "COMPLETED" })
+      .onConflictDoUpdate({ target: [t.lessonProgress.userId, t.lessonProgress.lessonId], set: { status: "COMPLETED", updatedAt: new Date() } });
+    await checkCourseCompletion(userId, courseId, tx);
+    return true;
+  });
+  if (credited) {
+    await awardPoints(userId, "lesson_complete", lessonId, 10);
+    await recordActivityDay(userId);
   }
 }
 
 /** Course completes when all lessons of all modules complete (spec FR-2.4). */
-export async function checkCourseCompletion(userId: string, courseId: string): Promise<boolean> {
-  const mods = await db.select().from(t.modules).where(eq(t.modules.courseId, courseId));
+export async function checkCourseCompletion(userId: string, courseId: string, connection: LearningDatabase = db): Promise<boolean> {
+  const mods = await connection.select().from(t.modules).where(eq(t.modules.courseId, courseId));
   if (mods.length === 0) return false;
-  const lessonRows = await db
+  const lessonRows = await connection
     .select()
     .from(t.lessons)
     .where(inArray(t.lessons.moduleId, mods.map((m) => m.id)));
   if (lessonRows.length === 0) return false;
-  const progress = await db
+  const progress = await connection
     .select()
     .from(t.lessonProgress)
     .where(and(eq(t.lessonProgress.userId, userId), inArray(t.lessonProgress.lessonId, lessonRows.map((l) => l.id))));
@@ -93,18 +97,18 @@ export async function checkCourseCompletion(userId: string, courseId: string): P
   const allDone = lessonRows.every((l) => done.has(l.id));
   if (!allDone) {
     // mark active enrollment in progress
-    await db
+    await connection
       .update(t.enrollments)
       .set({ status: "IN_PROGRESS" })
       .where(and(eq(t.enrollments.userId, userId), eq(t.enrollments.courseId, courseId), eq(t.enrollments.status, "NOT_STARTED")));
     return false;
   }
-  await completeCourse(userId, courseId);
+  await completeCourse(userId, courseId, connection);
   return true;
 }
 
-export async function completeCourse(userId: string, courseId: string): Promise<void> {
-  const enrollments = await db
+export async function completeCourse(userId: string, courseId: string, connection: LearningDatabase = db): Promise<void> {
+  const enrollments = await connection
     .select()
     .from(t.enrollments)
     .where(and(eq(t.enrollments.userId, userId), eq(t.enrollments.courseId, courseId)));
@@ -112,17 +116,17 @@ export async function completeCourse(userId: string, courseId: string): Promise<
   if (!active) return; // already completed or no enrollment
 
   const now = new Date();
-  const [course] = await db.select().from(t.courses).where(eq(t.courses.id, courseId)).limit(1);
+  const [course] = await connection.select().from(t.courses).where(eq(t.courses.id, courseId)).limit(1);
 
   // Immutable completion record (append-only)
-  await db.insert(t.completionRecords).values({ id: id(), userId, courseId, completedAt: now });
+  await connection.insert(t.completionRecords).values({ id: id(), userId, courseId, completedAt: now });
 
   let certExpiresAt: Date | null = null;
   if (course?.certificateEnabled) {
     certExpiresAt = course.certificateValidityDays
       ? new Date(now.getTime() + course.certificateValidityDays * 24 * 3600_000)
       : null;
-    await db.insert(t.certificates).values({
+    await connection.insert(t.certificates).values({
       id: id(),
       userId,
       courseId,
@@ -133,7 +137,7 @@ export async function completeCourse(userId: string, courseId: string): Promise<
     });
   }
 
-  await db
+  await connection
     .update(t.enrollments)
     .set({
       status: "COMPLETED",
@@ -143,7 +147,7 @@ export async function completeCourse(userId: string, courseId: string): Promise<
     .where(eq(t.enrollments.id, active.id));
 
   await awardPoints(userId, "course_complete", courseId, 50);
-  const [countRow] = await db
+  const [countRow] = await connection
     .select({ n: sql<number>`count(*)::int` })
     .from(t.completionRecords)
     .where(eq(t.completionRecords.userId, userId));

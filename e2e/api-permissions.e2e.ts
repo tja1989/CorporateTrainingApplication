@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { test, expect } from "@playwright/test";
 import { createPerson, signIn, withDb, QA_PASSWORD } from "./support";
-import { textCourse } from "./qualification-fixtures";
+import { textCourse, smallQuiz } from "./qualification-fixtures";
 
 test("@core Certificate and learner API data require completed MFA and privacy acknowledgment", async ({ page }) => {
   const learner = await createPerson("LEARNER"), admin = await createPerson("ADMIN"), unconsented = await createPerson("LEARNER", { privacy: 0 });
@@ -35,6 +35,31 @@ test("@core Certificate and learner API data require completed MFA and privacy a
   expect((await page.request.get("/api/drill")).status()).toBe(200);
   await page.context().clearCookies(); await signIn(page, admin);
   expect((await page.request.get(`/api/certificates/${certificate}`)).status()).toBe(200);
+});
+
+test("Root follows the authenticated workspace; the local health endpoint reports its real database check", async ({ page }) => {
+  await page.goto("/"); await expect(page).toHaveURL(/\/login$/);
+  for (const [role, route] of [["LEARNER", "/home"], ["MANAGER", "/team"], ["ADMIN", "/admin"]] as const) {
+    await page.context().clearCookies(); await signIn(page, await createPerson(role)); await page.goto("/");
+    expect(new URL(page.url()).pathname).toBe(route);
+  }
+  const response = await page.request.get("/api/health"); expect(response.status()).toBe(200);
+  const health = await response.json(); expect(health.databasePing).toBe("ok"); expect(health.seededUsers).toBeGreaterThan(0);
+  expect(health.aiConfigured).toBe(false); expect(health.voiceConfigured).toBe(false);
+});
+
+test("API-only legacy attempt appeal preserves the first decision, creates one pending review and denies another learner", async ({ page }) => {
+  const learner = await createPerson("LEARNER"), outsider = await createPerson("LEARNER"), q = await smallQuiz(), attempt = randomUUID(), review = randomUUID();
+  await withDb(async db => {
+    await db.query("INSERT INTO attempts(id,user_id,quiz_id,state,grading_state,served_items) VALUES($1,$2,$3,'GRADED','FINAL','[]')", [attempt, learner.id, q.quiz]);
+    await db.query("INSERT INTO grading_reviews(id,attempt_id,question_id,ai_scores,ai_rationale,ai_confidence,reason,state) VALUES($1,$2,$3,'[]','QA historical review',0.3,'low_conf','CONFIRMED')", [review, attempt, q.questions[0]]);
+  });
+  await signIn(page, outsider); expect((await page.request.post(`/api/attempt/${attempt}/appeal`)).status()).toBe(404);
+  await page.context().clearCookies(); await signIn(page, learner);
+  expect((await page.request.post(`/api/attempt/${attempt}/appeal`)).status()).toBe(200);
+  expect((await page.request.post(`/api/attempt/${attempt}/appeal`)).status()).toBe(400);
+  expect(await withDb(async db => (await db.query("SELECT state FROM grading_reviews WHERE id=$1", [review])).rows[0].state)).toBe("CONFIRMED");
+  expect(await withDb(async db => (await db.query("SELECT count(*)::int n FROM grading_reviews WHERE attempt_id=$1 AND reason='appeal' AND state='PENDING'", [attempt])).rows[0].n)).toBe(1);
 });
 
 test("DSR export and erasure operate only on the disposable subject and deny non-admin callers", async ({ page }, info) => {

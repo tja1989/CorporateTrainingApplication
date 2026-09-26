@@ -46,7 +46,7 @@ export default async function CorpusPage({ searchParams }: { searchParams: Promi
       <div className="max-w-5xl">
         {view === "documents" ? <section aria-label="Documents">
           <h2 className="eyebrow mb-2 text-muted">Documents</h2>
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><nav aria-label="Policy versions" className="flex flex-col gap-2">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><nav aria-label="Policy versions" className="flex min-w-0 flex-col gap-2">
             {docs.map((doc) => (
               <a key={doc.id} href={`/admin/corpus?doc=${doc.id}`} aria-current={doc.id === (docId ?? docs[0]?.id) ? "page" : undefined} className="flex flex-wrap items-center justify-between gap-2 rounded-input border border-border bg-surface p-4 text-sm hover:bg-surface-2 aria-[current]:border-primary">
                 <div className="min-w-0">

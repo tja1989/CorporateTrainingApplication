@@ -15,12 +15,12 @@ export default async function DrillPage() {
     .where(and(eq(t.lessonProgress.userId, user.id), eq(t.lessonProgress.status, "COMPLETED")));
   if ((completedLessons?.n ?? 0) === 0) {
     return (
-      <EmptyState
+      <div><PageTitle sub="A few questions to refresh what you have learned. Optional and never graded.">Practice</PageTitle><EmptyState
         icon="target"
         title="Practice unlocks after your first lesson"
         body="Finish any lesson and the daily practice will start serving you quick practice questions. Optional, never graded."
         action={<ButtonLink variant="secondary" href="/learn">Go to my courses</ButtonLink>}
-      />
+      /></div>
     );
   }
   const week = isoWeekStart();

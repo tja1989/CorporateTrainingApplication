@@ -1,10 +1,11 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { id } from "@/lib/ids";
 import { scoreQuiz, scoreQuestion, shuffleChoices, type Answer } from "./scoring";
 import { gradeFreeText, gradeRouting } from "./grading";
 import { markLessonComplete, awardPoints, awardBadge, recordActivityDay } from "@/lib/lms/completion";
 import { notify } from "@/lib/notify";
+import { currentCycleStart, lessonCourseId } from "@/lib/lms/learning-cycle";
 import type { QuizSettings, ServedItem } from "@/lib/db/schema";
 
 type Quiz = typeof t.quizzes.$inferSelect;
@@ -40,6 +41,23 @@ export function canRevealAnswers(s: QuizSettings, now = new Date()): boolean {
   return false;
 }
 
+/** Current allowance and result exclude historical sittings from prior renewals. */
+export async function currentQuizAttempts(quiz: Pick<Quiz, "id" | "lessonId">, userId: string) {
+  const rows = await db.select().from(t.attempts)
+    .where(and(eq(t.attempts.quizId, quiz.id), eq(t.attempts.userId, userId))).orderBy(desc(t.attempts.startedAt));
+  const lessonId = await attachedLessonId(quiz);
+  const courseId = lessonId ? await lessonCourseId(lessonId) : null;
+  const cycle = courseId ? await currentCycleStart(userId, courseId) : null;
+  return cycle ? rows.filter(row => row.startedAt >= cycle) : rows;
+}
+
+async function attachedLessonId(quiz: Pick<Quiz, "id" | "lessonId">) {
+  if (quiz.lessonId) return quiz.lessonId;
+  const [lesson] = await db.select({ id: t.lessons.id }).from(t.lessons)
+    .where(sql`${t.lessons.payload}->>'quizId' = ${quiz.id}`).limit(1);
+  return lesson?.id ?? null;
+}
+
 export async function canStart(
   quiz: Quiz,
   userId: string,
@@ -50,11 +68,7 @@ export async function canStart(
   if (ws === "before") return { ok: false, reason: `This assessment opens ${new Date(s.availableFrom!).toLocaleString()}.` };
   if (ws === "closed") return { ok: false, reason: "This assessment window has closed." };
 
-  const previous = await db
-    .select()
-    .from(t.attempts)
-    .where(and(eq(t.attempts.quizId, quiz.id), eq(t.attempts.userId, userId)))
-    .orderBy(desc(t.attempts.startedAt));
+  const previous = await currentQuizAttempts(quiz, userId);
 
   const open = previous.find((a) => a.state === "IN_PROGRESS");
   if (open) return { ok: true, resume: open };
@@ -174,8 +188,9 @@ export function unmapAnswer(q: Question, served: ServedItem, answer: Answer | un
 }
 
 async function quizGatesRequiredCompletion(quiz: Quiz): Promise<{ lessonId: string | null; courseId: string | null; required: boolean }> {
-  if (!quiz.lessonId) return { lessonId: null, courseId: null, required: false };
-  const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, quiz.lessonId)).limit(1);
+  const lessonId = await attachedLessonId(quiz);
+  if (!lessonId) return { lessonId: null, courseId: null, required: false };
+  const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, lessonId)).limit(1);
   if (!lesson) return { lessonId: null, courseId: null, required: false };
   const [mod] = await db.select().from(t.modules).where(eq(t.modules.id, lesson.moduleId)).limit(1);
   return { lessonId: lesson.id, courseId: mod?.courseId ?? null, required: true };
@@ -283,7 +298,7 @@ export async function submitAttempt(attemptId: string, opts: { auto?: boolean } 
   if (gradingState === "FINAL" && passed && gate.lessonId) {
     await awardPoints(attempt.userId, "quiz_pass", quiz.id, 20);
     if (score.pct === 100) await awardBadge(attempt.userId, "perfect_quiz");
-    await markLessonComplete(attempt.userId, gate.lessonId);
+    await markLessonComplete(attempt.userId, gate.lessonId, attempt.startedAt);
   }
   await notify(attempt.userId, "quiz_graded", {
     quizId: quiz.id,
@@ -321,7 +336,10 @@ export async function finalizeReview(reviewId: string, reviewerId: string, final
     .from(t.questions)
     .where(inArray(t.questions.id, attempt.servedItems.map((s) => s.questionId)));
   const byId = new Map(questionRows.map((q) => [q.id, q]));
-  const reviews = await db.select().from(t.gradingReviews).where(eq(t.gradingReviews.attemptId, attempt.id));
+  // An appeal appends a new decision; the latest review for each question is
+  // authoritative while all earlier decisions stay available for audit.
+  const reviews = await db.select().from(t.gradingReviews).where(eq(t.gradingReviews.attemptId, attempt.id))
+    .orderBy(desc(t.gradingReviews.createdAt));
 
   const items = attempt.servedItems.map((served) => {
     const q = byId.get(served.questionId)!;
@@ -346,7 +364,7 @@ export async function finalizeReview(reviewId: string, reviewerId: string, final
   if (passed && gate.lessonId) {
     await awardPoints(attempt.userId, "quiz_pass", quiz.id, 20);
     if (score.pct === 100) await awardBadge(attempt.userId, "perfect_quiz");
-    await markLessonComplete(attempt.userId, gate.lessonId);
+    await markLessonComplete(attempt.userId, gate.lessonId, attempt.startedAt);
   }
   await notify(attempt.userId, "quiz_graded", {
     quizId: quiz.id,

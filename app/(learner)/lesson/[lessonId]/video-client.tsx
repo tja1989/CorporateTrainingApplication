@@ -268,12 +268,12 @@ function TutorPanel({
   const stickRef = useRef(true);
 
   useEffect(() => {
-    fetch(`/api/tutor/suggest?videoId=${videoId}&pos=${Math.round(getPosition())}`)
+    fetch(`/api/tutor/suggest?lessonId=${lessonId}&videoId=${videoId}&pos=${Math.round(getPosition())}`)
       .then((r) => (r.ok ? r.json() : { questions: [] }))
       .then((d) => setSuggestions(d.questions ?? []))
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoId]);
+  }, [lessonId, videoId]);
 
   // Follow the stream only while the reader is already near the bottom of the page.
   useEffect(() => {

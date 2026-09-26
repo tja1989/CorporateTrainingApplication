@@ -1,7 +1,7 @@
 import { loadEnv } from "../lib/env";
 import { chromium, type Page, type BrowserContext } from "@playwright/test";
 import { Client } from "pg";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { cpus, platform, release } from "node:os";
 import { totpCode } from "../lib/auth/totp";
@@ -114,9 +114,10 @@ async function main() {
   const course = (await db.query("SELECT id FROM courses WHERE title='Food Safety Essentials' AND status='PUBLISHED' LIMIT 1")).rows[0]?.id;
   const lesson = (await db.query("SELECT l.id FROM lessons l JOIN modules m ON m.id=l.module_id WHERE m.course_id=$1 AND l.type='VIDEO' ORDER BY m.sort,l.sort LIMIT 1", [course])).rows[0]?.id;
   if (!course || !lesson) throw new Error("Seeded performance content is missing");
+  const dataset = (await db.query("SELECT (SELECT count(*)::int FROM users) users,(SELECT count(*)::int FROM courses) courses,(SELECT count(*)::int FROM courses WHERE status='PUBLISHED') published_courses,(SELECT count(*)::int FROM enrollments) enrollments,(SELECT count(*)::int FROM attempts) attempts,(SELECT count(*)::int FROM hr_tickets) tickets")).rows[0];
   const browser = await chromium.launch();
   const runs: Run[] = [];
-  const metadata = { measuredAt: new Date().toISOString(), buildCommit: process.env.QA_BUILD_COMMIT, buildDirty: process.env.QA_BUILD_DIRTY === "1", checkoutCommit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(), checkoutDirty: !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(), base, database: new URL(process.env.DATABASE_URL!).pathname.slice(1), browser: browser.version(), host: { platform: platform(), release: release(), cpu: cpus()[0]?.model }, config, requestedFamilies, limitations: "Production-build local lab measurements with simulated mobile CPU/network and cold browser cache. Single representative interactions, instrumented with traces; not field Core Web Vitals or physical-device results. Public video embeds remain real network requests. A subset run does not qualify omitted families." };
+  const metadata = { runtimeBuildId: readFileSync(".next/BUILD_ID", "utf8").trim(), measuredAt: new Date().toISOString(), buildCommit: process.env.QA_BUILD_COMMIT, buildDirty: process.env.QA_BUILD_DIRTY === "1", checkoutCommit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(), checkoutDirty: !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(), base, dataset, database: new URL(process.env.DATABASE_URL!).pathname.slice(1), browser: browser.version(), host: { platform: platform(), release: release(), cpu: cpus()[0]?.model }, config, requestedFamilies, limitations: "Production-build local lab measurements with simulated mobile CPU/network and cold browser cache. Single representative interactions, instrumented with traces; not field Core Web Vitals or physical-device results. Public video embeds remain real network requests. A subset run does not qualify omitted families." };
   try {
     for (const persona of [
       { employeeId: "AE10023", routes: [{ family: "home", route: "/home" }, { family: "catalog", route: "/learn?view=browse" }, { family: "course", route: `/course/${course}` }, { family: "lesson", route: `/lesson/${lesson}` }] },

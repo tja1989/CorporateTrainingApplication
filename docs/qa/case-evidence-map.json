@@ -1,0 +1,634 @@
+{
+  "qualification": "CANDIDATE MAPPING ONLY \u2014 titles identify assertions to reconcile against executed final results; source/title enumeration is not a pass",
+  "baselineRequiredCases": 76,
+  "matching": "Case-sensitive substring of executed Playwright test title; every matching required browser project must pass in each complete run",
+  "cases": [
+    {
+      "id": "AUTH:invalid",
+      "expected": "Invalid credentials preserve ID; correction signs in.",
+      "browserTests": [
+        "invalid credentials retain"
+      ]
+    },
+    {
+      "id": "AUTH:activation",
+      "expected": "Valid one-time activation; invalid/expired/mismatch recovery; code cannot be reused.",
+      "browserTests": [
+        "activation validates matching",
+        "wrong and expired activation"
+      ]
+    },
+    {
+      "id": "AUTH:privacy",
+      "expected": "New user acknowledges notice once; consent persists.",
+      "browserTests": [
+        "privacy acknowledgment persists",
+        "Certificate and learner API data require"
+      ]
+    },
+    {
+      "id": "AUTH:destinations",
+      "expected": "All three roles reach their correct workspace.",
+      "browserTests": [
+        "Root follows the authenticated workspace",
+        "workspace navigation and return"
+      ]
+    },
+    {
+      "id": "AUTH:mfa",
+      "expected": "Admin setup and verification mandatory; invalid code recoverable; direct links cannot bypass.",
+      "browserTests": [
+        "admin cannot bypass mandatory MFA",
+        "admin setup requires a valid code",
+        "Certificate and learner API data require"
+      ]
+    },
+    {
+      "id": "AUTH:reset",
+      "expected": "Manager-issued reset code activates only the intended account and is one-time.",
+      "browserTests": [
+        "manager-issued reset is scoped",
+        "import, groups and rules"
+      ]
+    },
+    {
+      "id": "AUTH:logout",
+      "expected": "Logout and expired session hide protected content; back/direct URL cannot restore access.",
+      "browserTests": [
+        "theme persistence and logout",
+        "expired session returns"
+      ]
+    },
+    {
+      "id": "NAV:learner",
+      "expected": "Home, Learning, Practice, HR Help, profile and inbox usable via intended nav.",
+      "browserTests": [
+        "learner navigation, profile disclosure",
+        "HR shows its heading",
+        "Learning path shows prerequisites"
+      ]
+    },
+    {
+      "id": "NAV:workspace",
+      "expected": "Manager/admin labeled sidebar or drawer; active state; role switching and return.",
+      "browserTests": [
+        "workspace navigation and return",
+        "My profile opens a coherent"
+      ]
+    },
+    {
+      "id": "NAV:history",
+      "expected": "Back/Forward/direct links preserve view/filter context; no dead ends.",
+      "browserTests": [
+        "Catalog pagination, language",
+        "Catalog filters survive refresh"
+      ]
+    },
+    {
+      "id": "NAV:keyboard",
+      "expected": "Skip link, menus, drawers/dialogs keyboard access, Escape/focus restoration.",
+      "browserTests": [
+        "keyboard skip link moves focus",
+        "workspace navigation and return",
+        "Stored legacy, missing",
+        "Active assessment, dialogs"
+      ]
+    },
+    {
+      "id": "DISCOVER:search",
+      "expected": "Search results/counts and course destinations agree; one action opens course.",
+      "browserTests": [
+        "Catalog filters survive refresh"
+      ]
+    },
+    {
+      "id": "DISCOVER:filters",
+      "expected": "Tag/language/duration/status filters derive from metadata and persist in URL.",
+      "browserTests": [
+        "Catalog pagination, language",
+        "Catalog filters survive refresh"
+      ]
+    },
+    {
+      "id": "DISCOVER:views",
+      "expected": "My courses/paths/browse tabs, pagination, clear, empty state survive refresh/history.",
+      "browserTests": [
+        "Catalog pagination, language",
+        "Catalog filters survive refresh"
+      ]
+    },
+    {
+      "id": "PATH:order",
+      "expected": "Course order, current/completed/locked status and overall progress agree.",
+      "browserTests": [
+        "assignment guards direct entry",
+        "Manager path assignment fans out"
+      ]
+    },
+    {
+      "id": "PATH:unlock",
+      "expected": "Completing prerequisite unlocks next; direct URL does not bypass server-enforced lock.",
+      "browserTests": [
+        "assignment guards direct entry",
+        "Manager path assignment fans out"
+      ]
+    },
+    {
+      "id": "CONTENT:text",
+      "expected": "Complete text; direct next eligible step; refresh persists and all progress surfaces agree.",
+      "browserTests": [
+        "Home resumes directly",
+        "Earned certificate preserves long"
+      ]
+    },
+    {
+      "id": "CONTENT:pdf",
+      "expected": "Readable PDF/link fallback; completion and next step persist.",
+      "browserTests": [
+        "PDF fallback delivers",
+        "Home resumes directly"
+      ]
+    },
+    {
+      "id": "CONTENT:locked",
+      "expected": "Lesson lock reason and prerequisite route work; incomplete prerequisite cannot be bypassed.",
+      "browserTests": [
+        "assignment guards direct entry",
+        "Locked video rejects"
+      ]
+    },
+    {
+      "id": "VIDEO:playback",
+      "expected": "Actual player play/pause/leave/resume restores within heartbeat interval.",
+      "browserTests": [
+        "Mocked player restores saved position"
+      ],
+      "manual": "Controller actual public YouTube journey; final source equivalence or affected-step rerun required"
+    },
+    {
+      "id": "VIDEO:seek",
+      "expected": "Transcript and tutor citation seek correctly; seeking alone never earns coverage.",
+      "browserTests": [
+        "Stored legacy, missing",
+        "Tutor retries a network failure",
+        "Mocked player restores saved position"
+      ],
+      "manual": "Controller actual public YouTube seek-only non-completion"
+    },
+    {
+      "id": "VIDEO:threshold",
+      "expected": "90% watched coverage triggers completion once; earlier coverage does not.",
+      "browserTests": [
+        "Crossing the video completion threshold"
+      ],
+      "manual": "Controller actual public YouTube continuous coverage and persisted completion"
+    },
+    {
+      "id": "TUTOR:grounded",
+      "expected": "Real grounded question streams answer with valid citation and lesson scope.",
+      "browserTests": [
+        "Tutor retries a network failure",
+        "Stored legacy, missing",
+        "Tutor suggestions reject"
+      ],
+      "unverified": "Real AI service unavailable; deterministic retrieval, SSE, persistence, allowed citations and suggestions are locally qualified separately"
+    },
+    {
+      "id": "TUTOR:unavailable",
+      "expected": "Provider failure/network error is recoverable without fabricated success.",
+      "browserTests": [
+        "Tutor retries a network failure"
+      ]
+    },
+    {
+      "id": "QUIZ:types",
+      "expected": "Single, multiple, true/false, ordering, matching, fill-in-the-blank and free-text answers all save and score correctly.",
+      "browserTests": [
+        "All seven question types support"
+      ]
+    },
+    {
+      "id": "QUIZ:navigation",
+      "expected": "Question navigation and refresh preserve answers and server timer.",
+      "browserTests": [
+        "Assessment navigation and refresh",
+        "Delayed autosave cannot overwrite"
+      ]
+    },
+    {
+      "id": "QUIZ:offline",
+      "expected": "60-second disconnect/reconnect preserves queued answers and honest save state.",
+      "browserTests": [
+        "Sixty-second disconnect"
+      ]
+    },
+    {
+      "id": "QUIZ:submit",
+      "expected": "Unanswered confirmation, cancel/confirm, duplicate submit protection and stored result.",
+      "browserTests": [
+        "All seven question types support",
+        "Failed answer save",
+        "Delayed autosave cannot overwrite",
+        "Sixty-second disconnect"
+      ]
+    },
+    {
+      "id": "QUIZ-RULES:feedback",
+      "expected": "Practice/exam feedback respects release policy; sealed answers remain sealed.",
+      "browserTests": [
+        "exam answer sealing"
+      ]
+    },
+    {
+      "id": "QUIZ-RULES:window",
+      "expected": "Not-yet-open/closed/timeout correctly block or autosubmit.",
+      "browserTests": [
+        "exam answer sealing",
+        "Assessment timer submits"
+      ]
+    },
+    {
+      "id": "QUIZ-RULES:attempts",
+      "expected": "Cooldown/max attempts/time accommodation enforce server rules and useful recovery.",
+      "browserTests": [
+        "exam answer sealing",
+        "Assessment navigation and refresh",
+        "Renewal gives a fresh assessment"
+      ]
+    },
+    {
+      "id": "REVIEW:pending",
+      "expected": "Provisional/pending does not finalize compliance or award certificate.",
+      "browserTests": [
+        "A submitted answer stays provisional",
+        "Provisional results remain pending"
+      ]
+    },
+    {
+      "id": "REVIEW:decision",
+      "expected": "Admin confirms or adjusts; learner final result and notification agree.",
+      "browserTests": [
+        "A submitted answer stays provisional",
+        "API-only legacy attempt appeal",
+        "Renewal gives a fresh assessment"
+      ]
+    },
+    {
+      "id": "REVIEW:appeal",
+      "expected": "Appeal/retry state persists and human decision remains authoritative.",
+      "browserTests": [
+        "A submitted answer stays provisional",
+        "API-only legacy attempt appeal",
+        "Renewal gives a fresh assessment"
+      ]
+    },
+    {
+      "id": "VOICE:consent",
+      "expected": "Consent and connect/listen/respond/end state/captions visible.",
+      "browserTests": [
+        "Offline oral-check demo",
+        "Monitored assessment requires consent",
+        "Configured voice microphone denial",
+        "Configured voice reconnects"
+      ]
+    },
+    {
+      "id": "VOICE:assessment",
+      "expected": "Real oral pass/fail/retake/human overturn persist across roles.",
+      "browserTests": [
+        "Offline oral-check demo",
+        "Human oral-check review",
+        "Reviewing an old oral check"
+      ],
+      "unverified": "Real voice provider unavailable; local offline typed assessment and human review persistence qualified separately"
+    },
+    {
+      "id": "VOICE:fallback",
+      "expected": "Mic denial/disconnect/reconnect/typed fallback labeled; transcript remains.",
+      "browserTests": [
+        "Configured voice microphone denial",
+        "Ending a pending microphone",
+        "Configured voice reconnects",
+        "Offline voice return to text"
+      ]
+    },
+    {
+      "id": "VOICE:cleanup",
+      "expected": "Mic ends on end/navigation; no ongoing capture.",
+      "browserTests": [
+        "Ending a pending microphone",
+        "Configured voice reconnects"
+      ],
+      "note": "Synthetic MediaStream and local WebSocket transport prove cleanup contract; physical microphone remains unverified"
+    },
+    {
+      "id": "VOICE:ios",
+      "expected": "Real Safari/iOS microphone and playback verified on hardware.",
+      "browserTests": [],
+      "unverified": "Physical iPhone Safari microphone/media hardware unavailable by user-confirmed limitation"
+    },
+    {
+      "id": "HR:citation",
+      "expected": "Question/citation/policy-section and scopes correct; unsupported answer abstains.",
+      "browserTests": [
+        "Policy citations target readable",
+        "HR retrieval enforces country",
+        "Policy ingestion failure preserves"
+      ]
+    },
+    {
+      "id": "HR:sensitive",
+      "expected": "Sensitive-topic routing offers human assistance.",
+      "browserTests": [
+        "Sensitive and unsupported HR questions"
+      ]
+    },
+    {
+      "id": "HR:escalation",
+      "expected": "Preview payload; cancel creates no ticket; confirm creates exactly one.",
+      "browserTests": [
+        "HR shows its heading",
+        "HR changed preview",
+        "Voice escalation rejects",
+        "Offline voice dialog sends"
+      ]
+    },
+    {
+      "id": "TICKET:thread",
+      "expected": "Learner escalation \u2192 admin reply/resolution \u2192 learner sees shared thread/status.",
+      "browserTests": [
+        "Sensitive and unsupported HR questions",
+        "Human grade decisions, ticket replies"
+      ]
+    },
+    {
+      "id": "TICKET:isolation",
+      "expected": "Unrelated learner/manager cannot see another HR conversation or ticket.",
+      "browserTests": [
+        "Sensitive and unsupported HR questions",
+        "Human grade decisions, ticket replies"
+      ]
+    },
+    {
+      "id": "PRACTICE:locked",
+      "expected": "Practice locked until eligibility; reason and next action provided.",
+      "browserTests": [
+        "Practice locked state"
+      ]
+    },
+    {
+      "id": "PRACTICE:session",
+      "expected": "Unlocked question/confidence/result/return saves optional state; mandatory compliance unchanged.",
+      "browserTests": [
+        "Practice supports every eligible"
+      ]
+    },
+    {
+      "id": "MANAGER:team",
+      "expected": "Search/filter and member details correct; mobile usable.",
+      "browserTests": [
+        "Admin publishes, manager assigns",
+        "manager-issued reset is scoped"
+      ]
+    },
+    {
+      "id": "MANAGER:assign",
+      "expected": "Course/path assignment persists once with correct due; learner notification and completion visible.",
+      "browserTests": [
+        "Admin publishes, manager assigns",
+        "Manager path assignment fans out"
+      ]
+    },
+    {
+      "id": "MANAGER:nudge",
+      "expected": "Nudge produces intended learner notification, no duplicates from double-submit.",
+      "browserTests": [
+        "Admin publishes, manager assigns",
+        "A reminder can be sent again"
+      ]
+    },
+    {
+      "id": "MANAGER:isolation",
+      "expected": "Second manager cannot inspect or mutate first manager team.",
+      "browserTests": [
+        "manager-issued reset is scoped",
+        "Empty-manager reports",
+        "MANAGER six report filters"
+      ]
+    },
+    {
+      "id": "PEOPLE:import",
+      "expected": "CSV valid/invalid/duplicate has row-level recovery; valid rows persist without duplicates.",
+      "browserTests": [
+        "import, groups and rules"
+      ]
+    },
+    {
+      "id": "PEOPLE:edit",
+      "expected": "Person edit/group create/group membership persist and validation retains input.",
+      "browserTests": [
+        "import, groups and rules"
+      ]
+    },
+    {
+      "id": "PEOPLE:rules",
+      "expected": "Create/disable/enable rule affects correct users without duplicate enrollments.",
+      "browserTests": [
+        "import, groups and rules"
+      ]
+    },
+    {
+      "id": "AUTHOR:draft",
+      "expected": "Create draft; save settings/cover/objectives; refresh persists.",
+      "browserTests": [
+        "Admin publishes, manager assigns",
+        "Type-specific authoring"
+      ]
+    },
+    {
+      "id": "AUTHOR:types",
+      "expected": "Add all five lesson types with relevant fields and validation.",
+      "browserTests": [
+        "Type-specific authoring",
+        "Workspace mutation forms cannot submit"
+      ]
+    },
+    {
+      "id": "AUTHOR:order",
+      "expected": "Reorder lessons/modules; author and learner order agrees.",
+      "browserTests": [
+        "Type-specific authoring",
+        "Module order controls persist"
+      ]
+    },
+    {
+      "id": "AUTHOR:publish",
+      "expected": "Publish/unpublish preserves content and correct learner visibility.",
+      "browserTests": [
+        "Admin publishes, manager assigns"
+      ]
+    },
+    {
+      "id": "AUTHOR:ingest",
+      "expected": "Ingestion failure/retry status accurate, no silent fake success.",
+      "browserTests": [
+        "Failed video ingestion recovers"
+      ]
+    },
+    {
+      "id": "POLICY:version",
+      "expected": "Publish/ingest/query/supersede/query: active allowed version used, old citation reconstructable.",
+      "browserTests": [
+        "Policy ingestion failure preserves",
+        "Policy publishing keeps previous"
+      ],
+      "service": "qa-service: real queue handler failure and retry"
+    },
+    {
+      "id": "POLICY:failure",
+      "expected": "Policy ingestion failure/retry recoverable and no stale active answer misrepresented.",
+      "browserTests": [
+        "Policy ingestion failure preserves",
+        "Policy publishing keeps previous"
+      ],
+      "service": "qa-service: real queue handler failure and retry"
+    },
+    {
+      "id": "INTEGRITY:consent",
+      "expected": "Consent before monitored attempt; fullscreen unsupported gracefully degrades.",
+      "browserTests": [
+        "Monitored assessment requires consent",
+        "Monitored events are informational"
+      ]
+    },
+    {
+      "id": "INTEGRITY:events",
+      "expected": "Focus/fullscreen events persist and are reviewable; flags do not auto-fail.",
+      "browserTests": [
+        "Monitored events are informational",
+        "Human grade decisions, ticket replies"
+      ]
+    },
+    {
+      "id": "INTEGRITY:decision",
+      "expected": "Admin clear/void/reason/retry persist; void completion/cert consequences correct.",
+      "browserTests": [
+        "Monitored events are informational",
+        "Human grade decisions, ticket replies"
+      ]
+    },
+    {
+      "id": "REPORTS:six",
+      "expected": "All six reports for both roles: filters/counts/table and exported CSV agree.",
+      "browserTests": [
+        "six report filters and actual downloaded CSV",
+        "Empty-manager reports"
+      ]
+    },
+    {
+      "id": "REPORTS:ask",
+      "expected": "Ask Reports typed interpretation displayed and uses proper role scope.",
+      "browserTests": [
+        "six report filters and actual downloaded CSV",
+        "Empty-manager reports"
+      ]
+    },
+    {
+      "id": "REPORTS:reset",
+      "expected": "Apply/reset and empty result states clear; mobile table scroll region labeled.",
+      "browserTests": [
+        "six report filters and actual downloaded CSV",
+        "Empty-manager reports"
+      ]
+    },
+    {
+      "id": "COMPLIANCE:due",
+      "expected": "Due/reminder transitions agree across learner/manager/admin.",
+      "browserTests": [
+        "Admin publishes, manager assigns"
+      ],
+      "service": "qa-service: due-soon sweep and notification dedupe; overdue across learner/manager/admin; weekly manager digest"
+    },
+    {
+      "id": "COMPLIANCE:certificate",
+      "expected": "Completion produces correct downloadable certificate once.",
+      "browserTests": [
+        "Earned certificate preserves long",
+        "Admin publishes, manager assigns"
+      ]
+    },
+    {
+      "id": "COMPLIANCE:recert",
+      "expected": "Expiry/recert keeps historical completion immutable and reassigns once.",
+      "browserTests": [
+        "Renewal gives a fresh assessment",
+        "Reviewing an old oral check"
+      ],
+      "service": "qa-service: expiry and UI renewal preserve history"
+    },
+    {
+      "id": "ACCOUNT/SYSTEM:profile",
+      "expected": "History/certificates/oral results/account links accurate.",
+      "browserTests": [
+        "Learning path shows prerequisites",
+        "Earned certificate preserves long",
+        "My profile opens a coherent"
+      ]
+    },
+    {
+      "id": "ACCOUNT/SYSTEM:inbox",
+      "expected": "Unread/read and destinations work across three workspaces.",
+      "browserTests": [
+        "All workspace destinations fit",
+        "Learning path shows prerequisites",
+        "Manager path assignment fans out",
+        "A submitted answer stays provisional"
+      ]
+    },
+    {
+      "id": "ACCOUNT/SYSTEM:dsr",
+      "expected": "Authorized export/erasure on disposable fixture only; scopes enforced.",
+      "browserTests": [
+        "DSR export and erasure"
+      ],
+      "note": "API-only administrative operation; browser authentication and actual UI completion prerequisite; request/DB verification on disposable subject"
+    },
+    {
+      "id": "ACCOUNT/SYSTEM:states",
+      "expected": "Loading/empty/error/404 recoverable and correctly styled.",
+      "browserTests": [
+        "Active assessment, dialogs",
+        "Learner templates, long multilingual",
+        "Root follows the authenticated workspace",
+        "Failed answer save"
+      ]
+    },
+    {
+      "id": "ACCOUNT/SYSTEM:responsive",
+      "expected": "Every template at360/390/768/1280/1440; no page overflow/clipped action.",
+      "browserTests": [
+        "meet quality gates",
+        "fit small screens",
+        "fits small screens",
+        "All seven question formats remain reviewable",
+        "Module order controls persist"
+      ]
+    },
+    {
+      "id": "ACCOUNT/SYSTEM:accessibility",
+      "expected": "Both themes, keyboard,200% zoom, RTL/reduced motion and automated AA checks.",
+      "browserTests": [
+        "meet quality gates",
+        "keyboard skip link",
+        "Stored legacy, missing",
+        "workspace navigation and return"
+      ]
+    },
+    {
+      "id": "ACCOUNT/SYSTEM:performance",
+      "expected": "Home/catalog/course/lesson/manager/admin median3 production mobile runs meet LCP/CLS/interaction budgets.",
+      "browserTests": [],
+      "performance": "qa-performance: all six families, median of three production mobile runs"
+    }
+  ]
+}

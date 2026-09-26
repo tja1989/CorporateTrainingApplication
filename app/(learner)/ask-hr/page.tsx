@@ -22,10 +22,10 @@ export default async function AskHrPage() {
     <div className="animate-slide-up mx-auto max-w-2xl">
       <PageTitle sub="Ask about company policies, with sources you can read.">HR Help</PageTitle>
       {tickets.length > 0 ? (
-        <details className="mb-5 rounded-card border border-border bg-surface p-4"><summary className="cursor-pointer font-medium">Your HR tickets ({tickets.length})</summary><div className="mt-3 flex flex-col gap-2" aria-label="Your HR tickets">
+        <details className="mb-5 rounded-card border border-border bg-surface p-4"><summary className="touch-target flex items-center font-medium">Your HR tickets ({tickets.length})</summary><div className="mt-3 flex flex-col gap-2" aria-label="Your HR tickets">
           {tickets.map((ticket) => (
-            <a key={ticket.id} href={`/ask-hr/tickets/${ticket.id}`}>
-              <Card className="lift pressable flex items-center justify-between gap-2 px-3 py-2 text-sm hover:bg-surface-2">
+            <a key={ticket.id} className="touch-target block" href={`/ask-hr/tickets/${ticket.id}`}>
+              <Card className="lift pressable touch-target flex items-center justify-between gap-2 px-3 py-2 text-sm hover:bg-surface-2">
                 <span className="flex min-w-0 items-center gap-2"><Icon name="mail" size={14} className="shrink-0 text-muted" /><span className="truncate">{ticket.subject}</span></span>
                 <Chip variant={ticket.state === "RESOLVED" ? "success" : ticket.state === "IN_PROGRESS" ? "warning" : "neutral"}>
                   {ticket.state.toLowerCase().replace("_", " ")}
@@ -36,10 +36,10 @@ export default async function AskHrPage() {
         </div></details>
       ) : null}
       <a href="/ask-hr/live" className="mb-4 block">
-        <Card className="lift pressable flex items-center justify-between gap-3 p-3 hover:bg-surface-2">
-          <span className="flex items-center gap-3">
+        <Card className="lift pressable flex flex-wrap items-center justify-between gap-3 p-3 hover:bg-surface-2">
+          <span className="flex min-w-0 flex-1 items-center gap-3">
             <IconDisc name="mic" tone="ai" size={48} />
-            <span>
+            <span className="min-w-0">
               <span className="block text-sm font-medium">Talk to your assistant</span>
               <span className="block text-xs text-muted">Live voice — HR policy, your courses, and what&#39;s due, with sources cited.</span>
             </span>

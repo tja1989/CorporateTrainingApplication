@@ -3,25 +3,7 @@ import { test, expect } from "@playwright/test";
 import { createPerson, signIn, withDb, expectNoPageOverflow, capture } from "./support";
 import { DEFAULT_SETTINGS } from "../lib/quiz/engine";
 
-async function assessmentFixture() {
-  const quiz = randomUUID(), bank = randomUUID();
-  const questions = [
-    { type: "mcq_single", body: { prompt: "Choose the safe greeting", options: ["Hello", "Ignore"], correct: [0] } },
-    { type: "mcq_multi", body: { prompt: "Choose the safety checks", options: ["Wash", "Clean", "Skip"], correct: [0, 1] } },
-    { type: "truefalse", body: { prompt: "Clean hands protect customers", correct: [0] } },
-    { type: "fill_blank", body: { prompt: "Name the greeting", acceptedAnswers: ["Hello"] } },
-    { type: "matching", body: { prompt: "Match the task", pairs: [{ left: "Hands", right: "Wash" }, { left: "Counter", right: "Clean" }] } },
-    { type: "ordering", body: { prompt: "Order the steps", orderItems: ["Wet", "Wash", "Dry"] } },
-    { type: "free_text", body: { prompt: "Explain safe service" } },
-  ];
-  const ids = questions.map(() => randomUUID());
-  await withDb(async db => {
-    await db.query("INSERT INTO question_banks (id,name) VALUES ($1,'QA assessment bank')", [bank]);
-    for (let i = 0; i < questions.length; i++) await db.query("INSERT INTO questions (id,bank_id,type,status,body) VALUES ($1,$2,$3,'APPROVED',$4)", [ids[i], bank, questions[i].type, JSON.stringify(questions[i].body)]);
-    await db.query("INSERT INTO quizzes (id,title,settings,sections) VALUES ($1,'QA seven question assessment',$2,$3)", [quiz, JSON.stringify({ ...DEFAULT_SETTINGS, shuffleQuestions: false, shuffleChoices: false }), JSON.stringify([{ fixed: ids }])]);
-  });
-  return quiz;
-}
+import { assessmentFixture } from "./qualification-fixtures";
 
 test("@core @template All seven question types support accessible input and unanswered submission confirmation", async ({ page }, info) => {
   const person = await createPerson("LEARNER");

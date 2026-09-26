@@ -210,6 +210,26 @@ export async function retryIngestAction(courseId: string, videoId: string, form:
   return { success: "Video ingestion retried." };
 }
 
+export async function moveModuleAction(courseId: string, moduleId: string, dir: number): Promise<void> {
+  await requireRole("ADMIN");
+  if (dir !== -1 && dir !== 1) return;
+  await db.transaction(async tx => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${`curriculum:${courseId}`}, 0))`);
+    const modules = (await tx.select().from(t.modules).where(eq(t.modules.courseId, courseId)))
+      .sort((a, b) => a.sort - b.sort || a.id.localeCompare(b.id));
+    const index = modules.findIndex(module => module.id === moduleId);
+    if (index < 0 || !modules[index + dir]) return;
+    [modules[index], modules[index + dir]] = [modules[index + dir], modules[index]];
+    // Normalize within this course, including older equal-sort rows. IDs and
+    // every lesson/history association remain unchanged.
+    for (let sort = 0; sort < modules.length; sort++) {
+      if (modules[sort].sort !== sort) await tx.update(t.modules).set({ sort }).where(eq(t.modules.id, modules[sort].id));
+    }
+  });
+  revalidatePath(`/admin/courses/${courseId}`);
+  revalidatePath(`/course/${courseId}`);
+}
+
 export async function moveLessonAction(courseId: string, lessonId: string, dir: number): Promise<void> {
   await requireRole("ADMIN");
   const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, lessonId)).limit(1);

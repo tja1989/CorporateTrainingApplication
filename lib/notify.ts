@@ -27,7 +27,7 @@ const TEMPLATES: Record<NotificationKind, (p: Record<string, unknown>) => { titl
   overdue: (p) => ({ title: "Training overdue", body: `“${p.courseTitle}” is overdue. Please complete it as soon as you can.` }),
   cert_expiring: (p) => ({ title: "Certificate expiring", body: `Your “${p.courseTitle}” certificate expires in ${p.days} day(s). Renewal training has been assigned.` }),
   quiz_graded: (p) => ({ title: "Quiz result ready", body: `Your result for “${p.quizTitle}” is ${p.state === "FINAL" ? "final" : "provisional"}: ${p.outcome}.` }),
-  hr_ticket_updated: (p) => ({ title: "HR replied", body: `Your HR ticket “${p.subject}” has an update.` }),
+  hr_ticket_updated: (p) => ({ title: "HR ticket updated", body: `Your HR ticket “${p.subject}” has an update.` }),
   manager_digest: (p) => ({ title: "Weekly team digest", body: String(p.summary ?? "") }),
   course_completed: (p) => ({ title: "Course completed 🎉", body: `You completed “${p.courseTitle}”. Nice work.` }),
   oral_check_result: (p) => ({

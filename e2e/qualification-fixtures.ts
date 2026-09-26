@@ -24,3 +24,38 @@ export async function smallQuiz(settings: Partial<QuizSettings> = {}) {
   });
   return { quiz, questions };
 }
+
+export async function assessmentFixture() {
+  const quiz = randomUUID(), bank = randomUUID();
+  const questions = [
+    { type: "mcq_single", body: { prompt: "Choose the safe greeting", options: ["Hello", "Ignore"], correct: [0] } },
+    { type: "mcq_multi", body: { prompt: "Choose the safety checks", options: ["Wash", "Clean", "Skip"], correct: [0, 1] } },
+    { type: "truefalse", body: { prompt: "Clean hands protect customers", correct: [0] } },
+    { type: "fill_blank", body: { prompt: "Name the greeting", acceptedAnswers: ["Hello"] } },
+    { type: "matching", body: { prompt: "Match the task", pairs: [{ left: "Hands", right: "Wash" }, { left: "Counter", right: "Clean" }] } },
+    { type: "ordering", body: { prompt: "Order the steps", orderItems: ["Wet", "Wash", "Dry"] } },
+    { type: "free_text", body: { prompt: "Explain safe service" } },
+  ];
+  const ids = questions.map(() => randomUUID());
+  await withDb(async db => {
+    await db.query("INSERT INTO question_banks (id,name) VALUES ($1,'QA assessment bank')", [bank]);
+    for (let i = 0; i < questions.length; i++) await db.query("INSERT INTO questions (id,bank_id,type,status,body) VALUES ($1,$2,$3,'APPROVED',$4)", [ids[i], bank, questions[i].type, JSON.stringify(questions[i].body)]);
+    await db.query("INSERT INTO quizzes (id,title,settings,sections) VALUES ($1,'QA seven question assessment',$2,$3)", [quiz, JSON.stringify({ ...DEFAULT_SETTINGS, shuffleQuestions: false, shuffleChoices: false }), JSON.stringify([{ fixed: ids }])]);
+  });
+  return quiz;
+}
+
+
+export async function tutorFixture() {
+  const course = randomUUID(), module = randomUUID(), lessons = [randomUUID(), randomUUID()], videos = [randomUUID(), randomUUID()];
+  await withDb(async db => {
+    await db.query("INSERT INTO courses(id,title,status) VALUES($1,'QA tutor scoped course','PUBLISHED')", [course]);
+    await db.query("INSERT INTO modules(id,course_id,title) VALUES($1,$2,'Video sources')", [module, course]);
+    for (let i=0; i<2; i++) {
+      await db.query("INSERT INTO videos(id,youtube_id,title,duration_sec,ingestion_status) VALUES($1,$2,$3,100,'READY')", [videos[i], `QA${videos[i].slice(0,9)}`, `QA source ${i+1}`]);
+      await db.query("INSERT INTO lessons(id,module_id,type,title,sort,payload) VALUES($1,$2,'VIDEO',$3,$4,$5)", [lessons[i], module, `QA video ${i+1}`, i, JSON.stringify({videoId:videos[i]})]);
+      await db.query("INSERT INTO video_chunks(id,video_id,start_sec,end_sec,text) VALUES($1,$2,10,20,$3)", [randomUUID(), videos[i], i===0 ? "Wash hands before serving food." : "Inspect extinguishers before an emergency."]);
+    }
+  });
+  return { course, module, lessons, videos };
+}

@@ -22,7 +22,7 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
   if (self.locked) return <div><PageTitle sub="Complete the previous lessons to unlock this lesson.">{lesson.title}</PageTitle>{view.nextLessonId ? <ButtonLink href={`/lesson/${view.nextLessonId}`}>Open the next available lesson</ButtonLink> : <ButtonLink href={`/course/${course.id}`}>Back to course</ButtonLink>}</div>;
   const { prev, index, total } = lessonNeighbours(view, lesson.id);
   return <LessonProgressProvider key={lesson.id} initialView={view}><div>
-    <nav className="mb-3 text-sm text-muted" aria-label="Breadcrumb"><Link className="hover:underline" href={`/course/${course.id}`}>{course.title}</Link><span className="mx-2" aria-hidden>/</span>{mod.title}</nav>
+    <nav className="mb-3 flex flex-wrap items-center text-sm text-muted" aria-label="Breadcrumb"><Link className="touch-target inline-flex max-w-full items-center hover:underline" href={`/course/${course.id}`}>{course.title}</Link><span className="mx-2" aria-hidden>/</span>{mod.title}</nav>
     <div className="mb-5 flex flex-wrap items-center justify-between gap-4"><div><p className="mb-1 text-sm text-muted">Lesson {index + 1} of {total} · {self.type.toLowerCase()}{self.minutes ? ` · ${self.minutes} min` : ""}</p><h1 className="text-2xl font-semibold sm:text-[32px]">{lesson.title}</h1></div><LessonContents view={view} /></div>
     <div className="lesson-workspace">
       <div className="min-w-0">

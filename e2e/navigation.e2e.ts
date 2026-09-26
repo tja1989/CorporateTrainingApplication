@@ -2,6 +2,15 @@ import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { createPerson, signIn, capture, expectNoPageOverflow } from "./support";
 
+test("NAV: keyboard skip link moves focus to content in learner and both workspaces @core", async ({ page }) => {
+  for (const role of ["LEARNER", "MANAGER", "ADMIN"] as const) {
+    await page.context().clearCookies(); await signIn(page, await createPerson(role));
+    await page.reload(); await page.keyboard.press("Tab");
+    await expect(page.getByRole("link", { name: "Skip to content", exact: true })).toBeFocused();
+    await page.keyboard.press("Enter"); await expect(page.locator("#main-content")).toBeFocused();
+  }
+});
+
 test("NAV: learner navigation, profile disclosure, theme persistence and logout @core @template", async ({ page }, info) => {
   const person = await createPerson("LEARNER");
   await signIn(page, person);

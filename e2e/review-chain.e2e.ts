@@ -1,0 +1,88 @@
+import { randomUUID } from "node:crypto";
+import { test, expect } from "@playwright/test";
+import { createPerson, signIn, withDb, capture } from "./support";
+import { textCourse, smallQuiz } from "./qualification-fixtures";
+import { DEFAULT_SETTINGS } from "../lib/quiz/engine";
+
+test("@core A submitted answer stays provisional until review; confirmed fail can be appealed and adjusted to a certified pass", async ({ page }, info) => {
+  const learner = await createPerson("LEARNER"), admin = await createPerson("ADMIN"), f = await textCourse(learner.id,{ certificate:true });
+  const quiz=randomUUID(), bank=randomUUID(), question=randomUUID();
+  await withDb(async db=>{
+    await db.query("INSERT INTO question_banks(id,name) VALUES($1,'QA appeal chain')",[bank]);
+    await db.query("INSERT INTO questions(id,bank_id,type,status,points,body,rubric) VALUES($1,$2,'free_text','APPROVED',2,$3,$4)",[question,bank,JSON.stringify({prompt:"Explain the customer support procedure"}),JSON.stringify({criteria:[{name:"Helpful support",points:2}],modelAnswer:"Listen carefully and contact the supervisor"})]);
+    await db.query("INSERT INTO quizzes(id,title,lesson_id,settings,sections) VALUES($1,'QA appeal chain assessment',$2,$3,$4)",[quiz,f.lesson,JSON.stringify({...DEFAULT_SETTINGS,cooldownMinutes:0}),JSON.stringify([{fixed:[question]}])]);
+    await db.query("UPDATE lessons SET type='QUIZ',payload=$2 WHERE id=$1",[f.lesson,JSON.stringify({quizId:quiz})]);
+  });
+  await signIn(page,learner); await page.goto(`/lesson/${f.lesson}`);
+  await page.getByRole("link",{name:"Open assessment",exact:true}).click();
+  await page.getByRole("button",{name:"Start assessment",exact:true}).click();
+  await page.getByRole("textbox",{name:"Explain the customer support procedure",exact:true}).fill("I would ask someone nearby for help.");
+  await page.getByRole("button",{name:"Submit assessment",exact:true}).click();
+  await expect(page.getByText("Pending confirmation",{exact:true})).toBeVisible();
+  const attempt = await withDb(async db=>(await db.query("SELECT id,grading_state,passed FROM attempts WHERE user_id=$1 AND quiz_id=$2",[learner.id,quiz])).rows[0]);
+  expect(attempt.grading_state).toBe("PROVISIONAL");
+  const certificates = ()=>withDb(async db=>(await db.query("SELECT count(*)::int n FROM certificates WHERE user_id=$1 AND course_id=$2",[learner.id,f.course])).rows[0].n);
+  expect(await certificates()).toBe(0);
+  expect(await withDb(async db=>(await db.query("SELECT status FROM enrollments WHERE user_id=$1 AND course_id=$2",[learner.id,f.course])).rows[0].status)).not.toBe("COMPLETED");
+  const review = await withDb(async db=>(await db.query("SELECT id FROM grading_reviews WHERE attempt_id=$1 AND state='PENDING'",[attempt.id])).rows[0].id);
+  await page.context().clearCookies(); await signIn(page,admin); await page.goto(`/admin/reviews?view=grades&item=${review}`);
+  await expect(page.getByText("I would ask someone nearby for help.",{exact:true})).toBeVisible();
+  await Promise.all([page.waitForEvent("load"),page.getByRole("button",{name:"Confirm AI grade",exact:true}).click()]);
+  await page.context().clearCookies(); await signIn(page,learner); await page.goto("/inbox");
+  await page.locator(`a[href='/quiz/${quiz}']`).first().click();
+  await expect(page.getByText("Not passed",{exact:true})).toBeVisible(); expect(await certificates()).toBe(0);
+  await page.getByRole("button",{name:"Request human re-review of the AI-graded answers",exact:true}).click();
+  await expect(page.getByText("Appeal sent — a reviewer will confirm your grade.",{exact:true})).toBeVisible();
+  await page.reload(); await expect(page.getByText("Pending confirmation",{exact:true})).toBeVisible();
+  await expect(page.getByRole("button",{name:"Request human re-review of the AI-graded answers",exact:true})).toHaveCount(0);
+  const appeal=await withDb(async db=>(await db.query("SELECT id FROM grading_reviews WHERE attempt_id=$1 AND reason='appeal'",[attempt.id])).rows[0].id);
+  await page.context().clearCookies(); await signIn(page,admin); await page.goto(`/admin/reviews?view=grades&item=${appeal}`);
+  await page.getByLabel("Adjusted points (of 2)").fill("2");
+  await Promise.all([page.waitForEvent("load"),page.getByRole("button",{name:"Adjust & finalize",exact:true}).click()]);
+  await page.context().clearCookies(); await signIn(page,learner); await page.goto("/inbox");
+  await page.locator(`a[href='/quiz/${quiz}']`).first().click();
+  await expect(page.getByText("Passed",{exact:true})).toBeVisible();
+  await page.getByRole("link",{name:"Back to lesson",exact:true}).click();
+  await expect(page.getByText("Lesson complete",{exact:true})).toBeVisible();
+  await page.goto(`/course/${f.course}`); await expect(page.getByRole("link",{name:/certificate/i})).toBeVisible();
+  await page.reload(); expect(await certificates()).toBe(1);
+  expect(await withDb(async db=>(await db.query("SELECT grading_state,passed,score FROM attempts WHERE id=$1",[attempt.id])).rows[0])).toEqual({grading_state:"FINAL",passed:true,score:2});
+  expect(await withDb(async db=>(await db.query("SELECT count(*)::int n FROM completion_records WHERE user_id=$1 AND course_id=$2",[learner.id,f.course])).rows[0].n)).toBe(1);
+  await capture(page,info,"appeal-to-certified-pass");
+});
+
+test("@core Monitored events are informational until human clearance or void, and void grants a fresh attempt", async ({page})=>{
+  const learner=await createPerson("LEARNER"),admin=await createPerson("ADMIN"),f=await smallQuiz({integrityMode:true,attemptsLimit:1,cooldownMinutes:0});
+  await page.addInitScript(()=>Object.defineProperty(Element.prototype,"requestFullscreen",{value:undefined,configurable:true}));
+  await signIn(page,learner); await page.goto(`/quiz/${f.quiz}`);
+  await page.getByRole("button",{name:"Start assessment",exact:true}).click();
+  await page.getByRole("dialog").getByRole("button",{name:"I understand — start",exact:true}).click();
+  await page.getByRole("radio",{name:"Wash hands",exact:true}).check();
+  await page.getByRole("textbox",{name:"Type the safety word",exact:true}).fill("safe");
+  // Browser-platform fault injection exercises the actual page listener and save.
+  await page.getByRole("textbox",{name:"Type the safety word",exact:true}).dispatchEvent("paste");
+  await page.getByRole("button",{name:"Submit assessment",exact:true}).click();
+  await expect(page.getByText("Final result: passed",{exact:true})).toBeVisible();
+  const attempt=await withDb(async db=>(await db.query("SELECT id FROM attempts WHERE user_id=$1 AND quiz_id=$2",[learner.id,f.quiz])).rows[0].id);
+  const events=await withDb(async db=>(await db.query("SELECT kind FROM integrity_events WHERE attempt_id=$1",[attempt])).rows.map(r=>r.kind));
+  expect(events).toEqual(expect.arrayContaining(["fullscreen_unavailable","paste_blocked"]));
+  await page.context().clearCookies(); await signIn(page,admin); await page.goto(`/admin/integrity/${attempt}`);
+  await expect(page.getByText("fullscreen unavailable",{exact:true})).toBeVisible();
+  await Promise.all([page.waitForEvent("load"),page.getByRole("button",{name:"Clear — result stands",exact:true}).click()]);
+  await expect(page.getByText("Cleared — result stands",{exact:true})).toBeVisible();
+  expect(await withDb(async db=>(await db.query("SELECT state,passed FROM attempts WHERE id=$1",[attempt])).rows[0])).toEqual({state:"CLEARED",passed:true});
+  // A second sitting is a separate learner so no decision is rewritten.
+  const second=await createPerson("LEARNER"); await page.context().clearCookies();await signIn(page,second); await page.goto(`/quiz/${f.quiz}`);
+  await page.getByRole("button",{name:"Start assessment",exact:true}).click();await page.getByRole("dialog").getByRole("button",{name:"I understand — start",exact:true}).click();
+  await page.getByRole("radio",{name:"Skip washing",exact:true}).check();await page.getByRole("textbox",{name:"Type the safety word",exact:true}).fill("wrong");
+  await page.getByRole("button",{name:"Submit assessment",exact:true}).click();await expect(page.getByText("Final result: not passed",{exact:true})).toBeVisible();
+  const voidId=await withDb(async db=>(await db.query("SELECT id FROM attempts WHERE user_id=$1 AND quiz_id=$2",[second.id,f.quiz])).rows[0].id);
+  await page.context().clearCookies();await signIn(page,admin);await page.goto(`/admin/integrity/${voidId}`);
+  await page.getByLabel("Void reason (required)").fill("QA confirmed interrupted sitting");
+  await Promise.all([page.waitForEvent("load"),page.getByRole("button",{name:"Void — grant fresh attempt",exact:true}).click()]);
+  await page.context().clearCookies();await signIn(page,second);await page.goto(`/quiz/${f.quiz}`);
+  await page.getByRole("button",{name:"Start assessment",exact:true}).click();
+  await page.getByRole("dialog").getByRole("button",{name:"I understand — start",exact:true}).click();
+  await page.getByRole("radio",{name:"Wash hands",exact:true}).check();
+  expect(await withDb(async db=>(await db.query("SELECT count(*)::int n FROM attempts WHERE user_id=$1 AND quiz_id=$2 AND state='IN_PROGRESS'",[second.id,f.quiz])).rows[0].n)).toBe(1);
+});

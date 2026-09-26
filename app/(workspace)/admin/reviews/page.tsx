@@ -106,7 +106,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                 </div>
                 <p className="mb-1 font-medium">{d.body.prompt}</p>
                 <QuestionGuide type={d.type} body={d.body} rubric={d.rubric} />
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <WorkspaceForm action={approveDraftAction.bind(null, d.id)}>
                     <SubmitButton variant="secondary">Approve</SubmitButton>
                   </WorkspaceForm>
@@ -151,7 +151,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                   </AiSurface>
                 ) : null}
                 <details className="mb-3 text-sm">
-                  <summary className="cursor-pointer text-xs text-muted">Transcript ({r.transcript.length} turns)</summary>
+                  <summary className="touch-target flex items-center text-xs text-muted">Transcript ({r.transcript.length} turns)</summary>
                   <div className="mt-2 flex flex-col gap-1" dir="auto">
                     {r.transcript.map((turn, i) => (
                       <p key={i} className="rounded-control bg-surface-2 px-3 py-1 text-xs">

@@ -4,6 +4,7 @@ import { db, t } from "@/lib/db/client";
 import { id } from "@/lib/ids";
 import { notify } from "@/lib/notify";
 import { markLessonComplete } from "@/lib/lms/completion";
+import { cycleStartsByCourse } from "@/lib/lms/learning-cycle";
 import { courseOutline } from "@/lib/lms/queries";
 import type { InterviewConfig, LiveEvaluation, LiveTurn } from "@/lib/db/schema";
 import { CONTENT_CHAR_CAP, fallbackEvaluate, interviewContentFor, parseInterviewConfig, pickScopeLessons, scoreEvaluation, type InterviewContent } from "./interview";
@@ -147,7 +148,7 @@ export async function completeInterview(
 
   if (lesson?.type === "INTERVIEW") {
     const cfg = parseInterviewConfig(lesson.payload.interview);
-    if (scored.outcome === "PASS" || !cfg.requirePass) await markLessonComplete(row.userId, row.lessonId);
+    if (scored.outcome === "PASS" || !cfg.requirePass) await markLessonComplete(row.userId, row.lessonId, row.startedAt);
   }
   return scored;
 }
@@ -181,7 +182,7 @@ export async function overturnInterview(interviewId: string, reviewerId: string)
     .set({ outcome: "PASS", reviewedBy: reviewerId, reviewedAt: new Date() })
     .where(eq(t.liveInterviews.id, interviewId));
   const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, row.lessonId)).limit(1);
-  if (lesson?.type === "INTERVIEW") await markLessonComplete(row.userId, row.lessonId);
+  if (lesson?.type === "INTERVIEW") await markLessonComplete(row.userId, row.lessonId, row.startedAt);
   await notify(
     row.userId,
     "oral_check_result",
@@ -198,8 +199,11 @@ export async function latestInterviewsByLesson(userId: string, lessonIds: string
     .from(t.liveInterviews)
     .where(and(eq(t.liveInterviews.userId, userId), inArray(t.liveInterviews.lessonId, lessonIds)))
     .orderBy(desc(t.liveInterviews.startedAt));
+  const starts = await cycleStartsByCourse(userId, [...new Set(rows.map(r => r.courseId))]);
   const map = new Map<string, Interview>();
   for (const r of rows) {
+    const cycle = starts.get(r.courseId);
+    if (cycle && r.startedAt < cycle) continue;
     const cur = map.get(r.lessonId);
     if (!cur || (cur.state !== "COMPLETED" && r.state === "COMPLETED")) map.set(r.lessonId, r);
   }

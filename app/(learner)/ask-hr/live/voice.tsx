@@ -10,7 +10,7 @@ import { LiveControls } from "@/components/live-controls";
 import { VoiceConsent } from "@/components/voice-consent";
 import { CitationChips } from "@/components/citations";
 import { EscalationPreview } from "@/components/escalation-preview";
-import { Button, ButtonLink, Card, Chip, PillButton, PillLink } from "@/components/ui";
+import { Button, ButtonAnchor, Card, Chip, PillButton, PillLink } from "@/components/ui";
 
 const SUGGESTED = [
   "How many days of annual leave do I get?",
@@ -55,7 +55,7 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
       </p>
       {demoMode ? (
         <details className="rounded-card border border-border bg-surface px-3 py-2 text-sm">
-          <summary className="cursor-pointer text-xs font-medium text-muted">Demo tips</summary>
+          <summary className="touch-target flex items-center text-xs font-medium text-muted">Demo tips</summary>
           <ul className="mt-2 flex flex-col gap-1 text-xs text-muted">
             <li>1. Tap Start, allow the microphone, and wait for the greeting — the assistant speaks first.</li>
             <li>2. Ask a policy question, then a follow-up (&quot;and sick leave?&quot;) — it re-checks the policy each time.</li>
@@ -104,9 +104,9 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
                 {v.status === "error" ? "The session could not continue." : `Conversation ended${v.closeInfo?.reason ? ` (${v.closeInfo.reason})` : ""}. Your transcript is saved in the text chat.`}
               </p>
               <Button onClick={() => void v.start()}>Talk again</Button>
-              <ButtonLink variant="secondary" href="/ask-hr">
+              <ButtonAnchor variant="secondary" href="/ask-hr">
                 Continue in text
-              </ButtonLink>
+              </ButtonAnchor>
             </Card>
           ) : (
             <LiveControls

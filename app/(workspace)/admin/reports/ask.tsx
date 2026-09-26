@@ -90,7 +90,7 @@ export function AskReports({ scope }: { scope?: "team" } = {}) {
           </div>
           {/* Structured-query disclosure (trust + debuggability, spec FR-10.3) */}
           <details className="text-xs text-muted">
-            <summary className="cursor-pointer">View interpreted report and filters {result.mock ? "· offline planner" : ""}</summary>
+            <summary className="touch-target flex cursor-pointer items-center">View interpreted report and filters {result.mock ? "· offline planner" : ""}</summary>
             <pre className="mt-1 overflow-x-auto rounded-control bg-surface-2 p-2">{JSON.stringify(result.plan, null, 2)}</pre>
           </details>
         </div>

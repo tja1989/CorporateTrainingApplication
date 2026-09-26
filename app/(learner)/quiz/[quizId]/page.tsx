@@ -4,7 +4,7 @@ import { db, t } from "@/lib/db/client";
 import { resultStatus } from "@/lib/quiz/client-state";
 import { learnerQuizLesson } from "@/lib/lms/lesson-access";
 import { requireUser } from "@/lib/auth/guard";
-import { canStart, windowState } from "@/lib/quiz/engine";
+import { canStart, currentQuizAttempts, windowState } from "@/lib/quiz/engine";
 import { Card, PageTitle, Chip, ButtonLink } from "@/components/ui";
 import { QuizRunner } from "./runner";
 
@@ -21,11 +21,7 @@ export default async function QuizPage({ params }: { params: Promise<{ quizId: s
     if (access.self.locked) return <div><PageTitle sub="Complete the earlier lessons before taking this assessment.">{quiz.title}</PageTitle><ButtonLink href={`/course/${access.course.id}`}>View course contents</ButtonLink></div>;
   }
 
-  const previous = await db
-    .select()
-    .from(t.attempts)
-    .where(and(eq(t.attempts.quizId, quiz.id), eq(t.attempts.userId, user.id)))
-    .orderBy(desc(t.attempts.startedAt));
+  const previous = await currentQuizAttempts(quiz, user.id);
   const counted = previous.filter((a) => a.state !== "VOIDED");
   const attemptsLeft = quiz.settings.attemptsLimit === null ? null : Math.max(0, quiz.settings.attemptsLimit - counted.length);
   const ws = windowState(quiz.settings);
