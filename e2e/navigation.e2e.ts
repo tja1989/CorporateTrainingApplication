@@ -40,6 +40,43 @@ test("NAV: learner navigation, profile disclosure, theme persistence and logout 
 });
 
 for (const role of ["MANAGER", "ADMIN"] as const) {
+  test(`NAV: ${role.toLowerCase()} My profile opens a coherent learner workspace @core @template`, async ({ page }, info) => {
+    const person = await createPerson(role);
+    await signIn(page, person);
+    const home = role === "ADMIN" ? "/admin" : "/team";
+    const mobile = (page.viewportSize()?.width ?? 1440) < 768;
+    const account = page.locator('summary[aria-label="Profile and account"]');
+    await account.click();
+    await page.getByRole("link", { name: "My profile", exact: true }).click();
+    await expect(page).toHaveURL(/\/profile$/);
+    const nav = page.getByRole("navigation", { name: mobile ? "Mobile main" : "Main", exact: true });
+    for (const refresh of [false, true]) {
+      if (refresh) await page.reload();
+      await expect(page).toHaveURL(/\/profile$/);
+      await expect(nav).toBeVisible();
+      await expect(page.getByRole("search", { name: "Course search", exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: `Open ${role.toLowerCase()} workspace navigation`, exact: true })).toHaveCount(0);
+      await account.click();
+      await expect(page.getByText("Learning workspace", { exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: `Switch to ${role.toLowerCase()}`, exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: "View as learner", exact: true })).toHaveCount(0);
+      await page.keyboard.press("Escape");
+    }
+    await expectNoPageOverflow(page);
+    await capture(page, info, `${role.toLowerCase()}-learner-profile`);
+    await nav.getByRole("link", { name: mobile ? "Learning" : "My Learning", exact: true }).click();
+    await expect(page).toHaveURL(/\/learn$/);
+    await expect(nav.getByRole("link", { name: mobile ? "Learning" : "My Learning", exact: true })).toHaveAttribute("aria-current", "page");
+    await nav.getByRole("link", { name: "Home", exact: true }).click();
+    await expect(page).toHaveURL(/\/home$/);
+    await account.click();
+    await page.getByRole("button", { name: `Switch to ${role.toLowerCase()}`, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`${home}$`));
+    await expect(page.getByText(`${role === "ADMIN" ? "Admin" : "Manager"} workspace`, { exact: true }).filter({ visible: true })).toBeVisible();
+    if (mobile) await expect(page.getByRole("button", { name: `Open ${role.toLowerCase()} workspace navigation`, exact: true })).toBeVisible();
+    else await expect(page.getByRole("navigation", { name: "Workspace", exact: true }).filter({ visible: true })).toBeVisible();
+  });
+
   test(`NAV: ${role.toLowerCase()} workspace navigation and return from learner view @core @template`, async ({ page }, info) => {
     const person = await createPerson(role);
     await signIn(page, person);

@@ -27,6 +27,8 @@ All37 page routes/auth/system states, both themes, all roles. docs/WELEARN_REWOR
 
 `components/shell.tsx` retains server session, notification and role-switch actions. `lib/navigation.ts` owns destinations and segment-safe current-route selection. LearnerFrame suppresses full navigation for lesson routes. `.content-container` caps ordinary pages at 1280px; `.lesson-workspace` and `.lesson-contents-panel` establish the 1200px / 320px lesson split. `.lesson-shell-main` remains available for focused lesson pages.
 
+LearnerShell derives its header and account-action workspace from the learner route context, including direct profile links from manager/admin sessions. Role authorization and session changes remain server-controlled; the displayed learner account action returns to the user's permitted workspace.
+
 `CourseCover` accepts existing `coverUrl`, `title`, `tags`, optional `alt` and `priority`; it reserves a 16:9 region and falls back on load error. Adjacent title copies use decorative image alt by default. `Field` associates label and hint with its child control. `Dialog` uses the native modal element and accepts `returnFocusRef` when an explicit opener must receive focus after dismissal. Existing `Tile`, `ProgressRing`, `AnimatedNumber`, `Stagger` and button exports remain compatible; counts and page lists render immediately.
 
 Spacing tokens: 0, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80 and 96px. System stack supports platform UI fonts plus Arabic, Devanagari and Malayalam fallbacks without a network-font dependency. Existing `ll_theme`, `ll_lang`, session and data identifiers remain compatible; retired `ll_nav` preferences are harmless and no longer control layout.

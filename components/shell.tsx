@@ -18,17 +18,16 @@ async function unreadCount(userId: string): Promise<number> {
   return row?.n ?? 0;
 }
 const workspaceNames = { learner: "Learning workspace", admin: "Admin workspace", manager: "Manager workspace" };
-function AccountActions({ user }: { user: CurrentUser }) {
-  const ws = user.session.workspace;
+type Workspace = CurrentUser["session"]["workspace"];
+function AccountActions({ user, workspace }: { user: CurrentUser; workspace: Workspace }) {
   return <>
-    {user.role !== "LEARNER" ? <form action={switchWorkspace.bind(null, ws === "learner" ? (user.role === "ADMIN" ? "admin" : "manager") : "learner")}>
-      <button type="submit" className="header-control gap-2 px-3 text-sm"><Icon name="swap" size={18} />{ws === "learner" ? `Switch to ${user.role === "ADMIN" ? "admin" : "manager"}` : "View as learner"}</button>
+    {user.role !== "LEARNER" ? <form action={switchWorkspace.bind(null, workspace === "learner" ? (user.role === "ADMIN" ? "admin" : "manager") : "learner")}>
+      <button type="submit" className="header-control gap-2 px-3 text-sm"><Icon name="swap" size={18} />{workspace === "learner" ? `Switch to ${user.role === "ADMIN" ? "admin" : "manager"}` : "View as learner"}</button>
     </form> : null}
     <form action={logout}><button type="submit" className="header-control gap-2 px-3 text-sm"><Icon name="logout" size={18} />Sign out</button></form>
   </>;
 }
-function Header({ user, unread, compact = false }: { user: CurrentUser; unread: number; compact?: boolean }) {
-  const ws = user.session.workspace;
+function Header({ user, workspace: ws, unread, compact = false }: { user: CurrentUser; workspace: Workspace; unread: number; compact?: boolean }) {
   const learner = ws === "learner";
   const home = learner ? "/home" : ws === "admin" ? "/admin" : "/team";
   const inbox = learner ? "/inbox" : `${home}/inbox`;
@@ -48,14 +47,15 @@ function Header({ user, unread, compact = false }: { user: CurrentUser; unread: 
         <Link href={inbox} aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`} className="header-control relative">
           <Icon name="bell" />{unread > 0 ? <span className="absolute end-0 top-0 rounded-full bg-primary px-1 text-xs font-semibold text-primary-fg">{unread > 99 ? "99+" : unread}</span> : null}
         </Link>
-        <AccountMenu name={user.name} workspace={workspaceNames[ws]} actions={<AccountActions user={user} />} />
+        <AccountMenu name={user.name} workspace={workspaceNames[ws]} actions={<AccountActions user={user} workspace={ws} />} />
       </div>
     </div>
   </header>;
 }
 export async function LearnerShell({ user, children }: { user: CurrentUser; children: React.ReactNode }) {
   const [unread, flash] = await Promise.all([unreadCount(user.id), readFlash()]);
-  return <ToastProvider initial={flash}><LearnerFrame header={<Header user={user} unread={unread} />} lessonHeader={<Header user={user} unread={unread} compact />} tabs={<LearnerTabs items={LEARNER_NAV} />}>{children}</LearnerFrame></ToastProvider>;
+  // Learner routes stay coherent when opened directly from a manager/admin session.
+  return <ToastProvider initial={flash}><LearnerFrame header={<Header user={user} workspace="learner" unread={unread} />} lessonHeader={<Header user={user} workspace="learner" unread={unread} compact />} tabs={<LearnerTabs items={LEARNER_NAV} />}>{children}</LearnerFrame></ToastProvider>;
 }
 export async function WorkspaceShell({ user, children }: { user: CurrentUser; children: React.ReactNode }) {
   const [unread, flash] = await Promise.all([unreadCount(user.id), readFlash()]);
@@ -63,7 +63,7 @@ export async function WorkspaceShell({ user, children }: { user: CurrentUser; ch
   const entries = [...nav.map(item => ({ label: item.label, href: item.href, group: item.group ?? "Workspace" })), { label: "Learner home", href: "/home", group: "Learner" }];
   return <ToastProvider initial={flash}><div className="min-h-dvh">
     <a href="#main-content" className="skip-link">Skip to content</a>
-    <Header user={user} unread={unread} />
+    <Header user={user} workspace={user.session.workspace} unread={unread} />
     <div className="workspace-body"><SideNav items={nav} /><main id="main-content" tabIndex={-1} className="workspace-main"><div className="content-container">{children}</div></main></div>
     <CommandPalette entries={entries} />
   </div></ToastProvider>;
