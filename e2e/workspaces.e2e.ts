@@ -344,7 +344,8 @@ test("@core @template All seven question formats remain reviewable, with approva
     if (types[i] === "ordering") await expect(guide.getByRole("list", { name: "Correct order" }).getByRole("listitem")).toHaveText(["Listen to the request", "Clarify the need", "Offer suitable help"]);
     if (types[i] === "free_text") { await expect(guide).toContainText("Clarifies the customer need · 2 points"); await expect(guide).toContainText("Offers suitable help · 3 points"); await expect(guide).toContainText("Listen, clarify the need and offer suitable help."); await expect(guide).toContainText("A customer is unsure which product meets their needs."); }
     await expectNoPageOverflow(page);
-    await page.evaluate(() => window.scrollTo(0, 0)); await capture(page,info,`question-${types[i]}-review`);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await info.attach(`question-${types[i]}-review`, { body: await page.screenshot({ fullPage: false, animations: "disabled" }), contentType: "image/png" });
     await saveAndReload(page, page.getByRole("button", { name: i === 6 ? "Discard" : "Approve", exact: true }));
     expect(await withDb(async db => (await db.query("SELECT status FROM questions WHERE id=$1", [ids[i]])).rows[0].status)).toBe(i === 6 ? "RETIRED" : "APPROVED");
   }
@@ -405,4 +406,25 @@ test("@core @template Failed video ingestion recovers with a replacement transcr
   await saveAndReload(page, page.getByRole("button", { name: "Retry ingestion", exact: true }));
   await expect(page.getByText("Video ready", { exact: true })).toBeVisible();
   expect(await withDb(async db => (await db.query("SELECT ingestion_status,failure_reason FROM videos WHERE id=$1", [videoId])).rows[0])).toEqual({ ingestion_status: "READY", failure_reason: null });
+});
+
+test("@core Workspace mutation forms cannot submit before client handlers are ready", async ({ page, browser }) => {
+  const admin = await createPerson("ADMIN"), learner = await createPerson("LEARNER"); await signIn(page, admin);
+  const unhydrated = await browser.newContext({ storageState: await page.context().storageState(), javaScriptEnabled: false, ignoreHTTPSErrors: true });
+  try {
+    const initial = await unhydrated.newPage();
+    await initial.goto(new URL("/admin/courses", page.url()).href);
+    await expect(initial.getByRole("button", { name: "Create draft", exact: true })).toBeDisabled();
+    await expect(initial.getByRole("region", { name: "New course", exact: true }).locator("form")).toHaveAttribute("method", "post");
+    await expect(initial.getByRole("status").filter({ hasText: "Preparing form" })).toBeVisible();
+    await initial.goto(new URL(`/team/${learner.id}`, page.url()).href);
+    await expect(initial.getByRole("button", { name: "Issue password reset code", exact: true })).toBeDisabled();
+    await expect(initial.getByRole("status").filter({ hasText: "Preparing account help" })).toBeVisible();
+  } finally { await unhydrated.close(); }
+  await page.goto("/admin/courses");
+  await expect(page.getByRole("button", { name: "Create draft", exact: true })).toBeEnabled();
+  await page.goto(`/team/${learner.id}`);
+  await page.getByRole("button", { name: "Issue password reset code", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Reset code issued", exact: true })).toBeVisible();
+  expect(new URL(page.url()).search).toBe("");
 });

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition, type ReactNode } from "react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { Button, cx } from "./ui";
 
@@ -10,8 +10,10 @@ export function WorkspaceForm({ action, children, className, success = "Changes 
   children: ReactNode; className?: string; success?: string; reload?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
   const [result, setResult] = useState<ActionResult | null>(null);
-  return <form className={className} aria-busy={pending} onSubmit={event => {
+  return <form method="post" className={className} aria-busy={!ready || pending} onSubmit={event => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     setResult(null);
@@ -27,7 +29,9 @@ export function WorkspaceForm({ action, children, className, success = "Changes 
       }
     });
   }}>
-    <fieldset disabled={pending} className="min-w-0">{children}</fieldset>
+    <fieldset disabled={!ready || pending} className="min-w-0">{children}</fieldset>
+    {!ready ? <p role="status" className="mt-3 text-sm text-muted">Preparing form…</p> : null}
+    <noscript><p className="mt-3 text-sm text-muted">Enable JavaScript to use this form.</p></noscript>
     {pending ? <p role="status" className="mt-3 text-sm text-muted">Saving…</p> : null}
     {result?.error ? <p role="alert" className="mt-3 whitespace-pre-line rounded-input bg-destructive-tint p-3 text-sm text-destructive-text">{result.error}</p> : null}
     {result?.success ? <p role="status" className="mt-3 text-sm text-success-fg">{result.success}</p> : null}
