@@ -21,7 +21,7 @@ The final deterministic suite must pass twice consecutively without retries. The
 | Area | Current result | Qualification limit |
 |---|---|---|
 | Baseline and shared foundation | Accepted; unit/build/typecheck, auth and navigation browser evidence in progress log | Whole-product qualification remains |
-| Learner implementation | 148 units and 36 Chromium desktop/mobile cases passed on the recorded Task3 build | Independent review found two asynchronous races; fixes and scoped review required |
+| Learner implementation | Accepted after independent review;148 units,36 browser slice cases and18 focused review regressions passed | Full cross-engine/branch qualification remains; review races corrected in6b10a63 |
 | Migration | Additive resume column applied twice; historical fixture rows and old-column hashes preserved | Production migration has not been run |
 | Real public video | Actual YouTube playback, pause, leave, resume and completion observed locally | Final build/provider matrix remains; shipped demo transcript is illustrative and has cues outside the placeholder video's duration |
 | Manager/admin | Pending rework and qualification | Existing empty-team report scope and navigation defects must be resolved |

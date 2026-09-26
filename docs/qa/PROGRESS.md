@@ -2,14 +2,14 @@
 
 Plan: ../WELEARN_REWORK_PLAN.md
 
-Overall: **25%**. Baseline and shared foundation accepted; learner workflows in progress.
+Overall: **50%**. Baseline, shared foundation and learner workflows accepted; manager/admin workflows next.
 
 | Phase | Weight | Status | Evidence |
 |---|---:|---|---|
 | Baseline/inventory/environment | 10% | Complete | baseline117 tests + typecheck + build; PG16+pgvector;26 before screenshots |
 | Design system/branding/shells | 15% | Complete |126 units/build/typecheck;51 auth +45 nav +4 shared-surface browser checks; independent review approved |
-| Learner workflows | 25% | In progress | Astra/xhigh implementer; Task3 |
-| Manager/admin workflows | 20% | Pending | |
+| Learner workflows | 25% | Complete | 148 units/build/typecheck;36 browser slice cases plus18 review regressions; scoped review approved |
+| Manager/admin workflows | 20% | In progress | Task4 begins after accepted learner review |
 | Browser qualification | 25% | Pending | |
 | Review/handoff | 5% | Pending | |
 
@@ -76,3 +76,6 @@ Overall: **25%**. Baseline and shared foundation accepted; learner workflows in 
 
 - Rebuilt mobile manual checks pass for offline typed start without microphone, ended-session recovery, semantic citation focus, full-width search with persistent query and all six Practice answer types through a5/6 final result. Ordered-path red test definitively exposed two forbidden lesson links before the new guard; the rebuilt four manual/rule path browser cases pass in the current expanded run. Final learner suite still has other failures under diagnosis; phase remains25%.
 - Learner rebuilt desktop/mobile suite passes36/36 with no retries (`.artifacts/task-3-final-browser.log`): ordered path and rule assignments, all five content entries, seven assessment inputs, six Practice inputs, persisted completion/reply, policy citation/read states, offline typed consent/results, catalog Back restoration and video completion without player teardown. Unit148/typecheck/build pass. Native course-card links restore browser history; authoritative scoped completion outlines update the lesson footer and contents without a refresh race. Independent Task3 review is next; accepted progress remains25% until review passes.
+
+- Task3 independent review found HRpreview/confirmationdrift and delayedautosave overwriting finalanswers. Both reproduced inbrowser, including wrongstoredanswer and0/1grade, thenfixedin6b10a63. Eighteenfocuseddesktop/mobilechecks,148units/typecheck/buildpass; scopedreviewapproved bothfixesandformatting withno newCritical/Importantfindings. Learnerphaseaccepted:50%. FinalmatrixremainsTask5.
+- Task3 rulings: optionaloralcheck preserves baseline-supportedTEXT/VIDEO; PDFextractionwasneverexistingfunctionality andisnotaddedfromambiguousbriefwording. RealPDF rendering/fallback andillustrativeWHOtranscripttimestampmismatchremainexplicitTask5checks. Historicalfixlogcolorwarningsarepreserved; removeNO_COLOR/FORCE_COLORconflict fromfinalqualificationenvironment.
