@@ -25,7 +25,7 @@ The final deterministic suite must pass twice consecutively without retries. The
 | Migration | Additive resume column applied twice; historical fixture rows and old-column hashes preserved | Production migration has not been run |
 | Real public video | Actual YouTube playback, pause, leave, resume and completion observed locally | Final build/provider matrix remains; shipped demo transcript is illustrative and has cues outside the placeholder video's duration |
 | Learner cross-engine slice | Initial run:91/92. The HR ticket handoff repair then passed the unchanged case6/6 across all core browser/device projects | Historical failure remains in `.artifacts/task-3-cross-engine-initial/`; repaired evidence is `.artifacts/task-4/hr-handoff/`. Final complete matrix remains required |
-| Manager/admin | Implementation and browser slices complete; independent review required two fixes now undergoing targeted qualification | Report scope, reset authorization and navigation repairs have browser evidence. Hidden lesson-field validation and omitted grading scenario must pass scoped re-review before phase acceptance |
+| Manager/admin | Accepted after scoped re-review of `730a293`; 173 units/build/typecheck and 12 amended browser cases passed | Earlier 84 workflow/auth passes, 6 readiness checks and 16 narrow-screen checks remain scoped evidence. The complete final matrix is still required |
 | Full workflow/visual/accessibility/performance matrix | Pending | Initial route/action enumeration does not prove coverage |
 
 ## Accepted external limitations

@@ -2,15 +2,15 @@
 
 Plan: ../WELEARN_REWORK_PLAN.md
 
-Overall: **50%**. Baseline, shared foundation and learner workflows accepted; manager/admin implementation is under independent review.
+Overall: **70%**. Baseline, shared foundation, learner and manager/admin workflows accepted; full browser qualification is in progress.
 
 | Phase | Weight | Status | Evidence |
 |---|---:|---|---|
 | Baseline/inventory/environment | 10% | Complete | baseline117 tests + typecheck + build; PG16+pgvector;26 before screenshots |
 | Design system/branding/shells | 15% | Complete |126 units/build/typecheck;51 auth +45 nav +4 shared-surface browser checks; independent review approved |
 | Learner workflows | 25% | Complete | 148 units/build/typecheck;36 browser slice cases plus18 review regressions; scoped review approved |
-| Manager/admin workflows | 20% | Independent review | 173 units/build/typecheck; 84 workflow/auth cases, 6 corrected readiness checks and 16 narrow-screen checks passed |
-| Browser qualification | 25% | Pending | |
+| Manager/admin workflows | 20% | Complete | 173 units/build/typecheck; 84 workflow/auth cases, 6 readiness checks, 16 narrow-screen checks and 12 review regressions passed; scoped re-review approved |
+| Browser qualification | 25% | In progress | Remaining branches, full matrix twice, accessibility/responsive/performance and dependency gates |
 | Review/handoff | 5% | Pending | |
 
 ## Decisions
@@ -93,3 +93,5 @@ Overall: **50%**. Baseline, shared foundation and learner workflows accepted; ma
 - Final Task4 application build `96f6f81` passed 173 unit tests, typecheck and build. Across the six core browser projects, 84 workflow/auth cases passed; six failures were confined to a new JavaScript-disabled test fixture that prevented streamed HTML from appearing. The corrected bundle-blocking readiness case passed 6/6 on the same application build. The separate 360/390px template run passed 16/16. Final test-only source commit is `5a64410`; report distinguishes each run and preserves the failures. Evidence: `.artifacts/task-4/final-six-core/`, `hydration-six-core/`, `small-final/` and matching logs.
 - Fresh independent Task4 review covers original base `5df07ac` through `5a64410`. Acceptance remains 50% until review is resolved. Controller also verified 360px course navigation/settings and readable matching-pair review personally.
 - Prepared a separate local `welearn_preview` database with 30 fictional users and 4 courses for a clean final preview. It is not yet serving a runtime and is not qualification evidence. The growing `welearn_dev` test database and historical failures remain preserved.
+
+- Task4 review fixes in `730a293` passed 12/12 amended browser cases across all six core projects, plus 173 unit tests, typecheck and build. Inactive lesson fields are disabled without losing entered values; human grading includes the scenario before the answer. Scoped re-review found both Important issues addressed and no new Critical/Important breakage. Manager/admin phase accepted: **70%**. Queue-selection feedback and compressed JSX remain documented minor items for final triage.
