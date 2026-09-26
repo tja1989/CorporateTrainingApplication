@@ -2,13 +2,13 @@
 
 Plan: ../WELEARN_REWORK_PLAN.md
 
-Overall: **10%**. Baseline complete; shared design implementation in progress.
+Overall: **25%**. Baseline and shared foundation accepted; learner workflows in progress.
 
 | Phase | Weight | Status | Evidence |
 |---|---:|---|---|
 | Baseline/inventory/environment | 10% | Complete | baseline117 tests + typecheck + build; PG16+pgvector;26 before screenshots |
-| Design system/branding/shells | 15% | In progress | Astra/xhigh implementer; acceptance and review pending |
-| Learner workflows | 25% | Pending | |
+| Design system/branding/shells | 15% | Complete |126 units/build/typecheck;51 auth +45 nav +4 shared-surface browser checks; independent review approved |
+| Learner workflows | 25% | In progress | Astra/xhigh implementer; Task3 |
 | Manager/admin workflows | 20% | Pending | |
 | Browser qualification | 25% | Pending | |
 | Review/handoff | 5% | Pending | |
@@ -60,3 +60,5 @@ Overall: **10%**. Baseline complete; shared design implementation in progress.
 - Review minor carried into Task3: restore visible provisional/streaming indicator removed with legacy .stream-cursor CSS. All-flow keyboard/RTL/zoom remains Task5; no final qualification claimed.
 - Shared visual gap resolved: compact lesson header and 404 recovery surface pass4/4 at1440/390 in light/dark; header/system axe has no serious/critical violations; Go home recovery works. Personally inspected all8 screenshots for readable text, unclipped shell controls and correct theme. Evidence:`.artifacts/task-2-shared-surfaces-final.log`, `.artifacts/task-2-shared-surfaces-qualified/`. Lesson content layout is still Task3 scope.
 - Profile fix committed915339e. Expanded navigation suite45/45 passes all9 engine/viewport projects, including18 manager/admin profile-entry/refresh/continued-navigation/role-return cases; manual manager browser check also passed. Scoped re-review pending. Evidence:`.artifacts/task-2-profile-nav-qualified.log`, `.artifacts/task-2-profile-qualified/`.
+
+- Task2 scoped review approved915339e: profile finding addressed, no new Critical/Important breakage. Baseline/shared phases accepted:25%. Streaming indicator minor is explicitly assigned to Task3. Historical red log had conflicting color-environment warnings; final build/navigation logs clean, historical evidence retained unedited.
