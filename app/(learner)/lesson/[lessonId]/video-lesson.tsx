@@ -4,16 +4,20 @@ import { clampVideoPosition, videoCoverage } from "@/lib/lms/video-progress";
 import { currentUser } from "@/lib/auth/guard";
 import { Card } from "@/components/ui";
 import { VideoLessonClient } from "./video-client";
+import { allowedTutorSources, resolveTutorCitations } from "@/lib/ai/tutor-sources";
+import type { TutorCitation } from "@/lib/db/schema";
 
 /** Video lesson: player + Tutor + transcript (spec FR-5.6..5.13, §11.5). */
 export async function VideoLesson({
   lesson,
   courseId,
   isDone,
+  requestedPosition,
 }: {
   lesson: typeof t.lessons.$inferSelect;
   courseId: string;
   isDone: boolean;
+  requestedPosition?: number;
 }) {
   const user = await currentUser();
   const videoId = lesson.payload.videoId;
@@ -42,7 +46,7 @@ export async function VideoLesson({
     .where(eq(t.videoChunks.videoId, video.id))
     .orderBy(asc(t.videoChunks.startSec));
 
-  let initialMessages: Array<{ role: "user" | "assistant"; content: string; citations?: { startSec: number; endSec: number; quote: string }[] }> = [];
+  let initialMessages: Array<{ role: "user" | "assistant"; content: string; citations?: TutorCitation[] }> = [];
   let threadId: string | null = null;
   if (user) {
     const [thread] = await db
@@ -51,6 +55,7 @@ export async function VideoLesson({
       .where(and(eq(t.tutorThreads.userId, user.id), eq(t.tutorThreads.courseId, courseId)))
       .limit(1);
     if (thread) {
+      const allowed = await allowedTutorSources(user.id, lesson.id);
       threadId = thread.id;
       const msgs = await db
         .select()
@@ -60,7 +65,7 @@ export async function VideoLesson({
       initialMessages = msgs.slice(-20).map((m) => ({
         role: m.role,
         content: m.content,
-        citations: m.citations ?? undefined,
+        citations: resolveTutorCitations(m.citations ?? [], allowed?.sources ?? []),
       }));
     }
   }
@@ -76,7 +81,8 @@ export async function VideoLesson({
       initialMessages={initialMessages}
       initialThreadId={threadId}
       initialCompleted={isDone}
-      initialPositionSec={clampVideoPosition(progress?.lastPositionSec ?? 0, video.durationSec) ?? 0}
+      initialPositionSec={clampVideoPosition(requestedPosition ?? progress?.lastPositionSec ?? 0, video.durationSec) ?? 0}
+      durationSec={video.durationSec}
       initialCoverage={videoCoverage(progress?.watchedBuckets ?? [], video.durationSec)}
     />
   );

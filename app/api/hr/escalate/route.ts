@@ -1,4 +1,4 @@
-import { currentUser } from "@/lib/auth/guard";
+import { apiUser as currentUser } from "@/lib/auth/guard";
 import { createTicketFromConversation, previewTicketFromConversation } from "@/lib/hr/tickets";
 
 /**

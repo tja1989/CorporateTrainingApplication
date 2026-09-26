@@ -10,9 +10,11 @@ import { LessonContents } from "@/components/lesson-contents";
 import { VideoLesson } from "./video-lesson";
 import { InterviewLesson } from "./interview-lesson";
 export const dynamic = "force-dynamic";
-export default async function LessonPage({ params }: { params: Promise<{ lessonId: string }> }) {
+export default async function LessonPage({ params, searchParams }: { params: Promise<{ lessonId: string }>; searchParams: Promise<{ t?: string }> }) {
   const user = await requireUser();
   const { lessonId } = await params;
+  const timestamp = Number((await searchParams).t);
+  const requestedPosition = Number.isFinite(timestamp) && timestamp >= 0 ? timestamp : undefined;
   const access = await learnerLesson(user.id, lessonId);
   if (!access) notFound();
   const { lesson, mod, course, view, self } = access;
@@ -26,7 +28,7 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
       <div className="min-w-0">
         {lesson.type === "TEXT" ? <Card className="mb-6 p-5 sm:p-8"><div className="max-w-[72ch]"><Markdown text={lesson.payload.body ?? ""} headingOffset={1} /></div></Card> : null}
         {lesson.type === "PDF" ? <Card className="mb-6 p-4">{lesson.payload.fileUrl ? <><iframe src={lesson.payload.fileUrl} title={lesson.title} className="h-[65vh] w-full rounded-control border border-border" /><p className="mt-3 text-sm text-muted">Document not showing? <a className="link text-link" href={lesson.payload.fileUrl} target="_blank" rel="noreferrer">Open document in a new tab</a>.</p></> : <p className="text-muted">The document is unavailable. Contact your training team to restore it.</p>}</Card> : null}
-        {lesson.type === "VIDEO" ? <VideoLesson lesson={lesson} courseId={course.id} isDone={self.done} /> : null}
+        {lesson.type === "VIDEO" ? <VideoLesson lesson={lesson} courseId={course.id} isDone={self.done} requestedPosition={requestedPosition} /> : null}
         {lesson.type === "INTERVIEW" ? <InterviewLesson lessonId={lesson.id} userId={user.id} timeMultiplier={user.timeMultiplier} backHref={`/lesson/${lesson.id}`} /> : null}
         {lesson.type === "QUIZ" ? <Card className="mb-6 p-6">{lesson.payload.quizId ? <><h2 className="mb-2 text-lg font-semibold">Check your understanding</h2><p className="mb-4 text-muted">{self.done ? "You have passed this assessment. You can review your result or try again if attempts are available." : "Review the time limit, attempt allowance and consent information before you begin."}</p><ButtonLink href={`/quiz/${lesson.payload.quizId}`}>{self.done ? "Review assessment" : "Open assessment"}</ButtonLink></> : <p className="text-muted">The assessment is being prepared. Check back soon.</p>}</Card> : null}
         <LessonCompletion lessonId={lesson.id} />

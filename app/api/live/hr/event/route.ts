@@ -1,7 +1,7 @@
 import { after } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
-import { currentUser } from "@/lib/auth/guard";
+import { apiUser as currentUser } from "@/lib/auth/guard";
 import { id } from "@/lib/ids";
 import { auditHrTurn } from "@/lib/hr/assistant";
 import { detectLanguage } from "@/lib/hr/guardrails";

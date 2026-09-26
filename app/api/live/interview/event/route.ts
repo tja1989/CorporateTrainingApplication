@@ -1,5 +1,5 @@
 import { learnerLesson } from "@/lib/lms/lesson-access";
-import { currentUser } from "@/lib/auth/guard";
+import { apiUser as currentUser } from "@/lib/auth/guard";
 import { liveAvailable, logLiveUsage } from "@/lib/live/gemini";
 import { EvaluationSchema, mockEvaluate } from "@/lib/live/interview";
 import { appendInterviewTurns, completeInterview, finishInterview, getInterview, loadLessonContent } from "@/lib/live/store";

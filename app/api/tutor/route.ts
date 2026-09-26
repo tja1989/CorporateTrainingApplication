@@ -1,9 +1,10 @@
 import { and, asc, eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
-import { currentUser } from "@/lib/auth/guard";
+import { apiUser as currentUser } from "@/lib/auth/guard";
 import { id } from "@/lib/ids";
 import { tutorAnswer } from "@/lib/ai/tutor";
 import { recordActivityDay } from "@/lib/lms/completion";
+import { allowedTutorSources, resolveTutorCitations } from "@/lib/ai/tutor-sources";
 
 export const maxDuration = 60;
 
@@ -14,33 +15,28 @@ export const maxDuration = 60;
 export async function POST(req: Request) {
   const user = await currentUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
+  if ((user.role === "ADMIN" && !user.session.mfa) || user.privacyNoticeVersion < 1) return new Response("Complete sign-in first", { status: 403 });
   const body = (await req.json()) as { lessonId: string; message: string; scope?: "lesson" | "course"; threadId?: string };
   if (!body.lessonId || !body.message?.trim() || body.message.length > 2000) {
     return new Response("Bad request", { status: 400 });
   }
 
   // resolve lesson → video + course
-  const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, body.lessonId)).limit(1);
-  if (!lesson || lesson.type !== "VIDEO" || !lesson.payload.videoId) return new Response("Not a video lesson", { status: 400 });
-  const [mod] = await db.select().from(t.modules).where(eq(t.modules.id, lesson.moduleId)).limit(1);
-  if (!mod) return new Response("Not found", { status: 404 });
+  const allowed = await allowedTutorSources(user.id, body.lessonId);
+  if (!allowed) return new Response("Lesson unavailable", { status: 403 });
+  const { lesson, mod } = allowed.access;
 
   // scope: this lesson's video, or all videos in the course (spec FR-5.10)
   let scope: { videoId?: string; videoIds?: string[] } = { videoId: lesson.payload.videoId };
   if (body.scope === "course") {
-    const mods = await db.select().from(t.modules).where(eq(t.modules.courseId, mod.courseId));
-    const lessonRows = await db.select().from(t.lessons);
-    const videoIds = lessonRows
-      .filter((l) => mods.some((m) => m.id === l.moduleId) && l.type === "VIDEO" && l.payload.videoId)
-      .map((l) => l.payload.videoId!) ;
-    scope = { videoIds };
+    scope = { videoIds: allowed.sources.map(s => s.videoId) };
   }
 
   // thread
   let threadId = body.threadId ?? null;
   if (threadId) {
     const [thread] = await db.select().from(t.tutorThreads).where(eq(t.tutorThreads.id, threadId)).limit(1);
-    if (!thread || thread.userId !== user.id) threadId = null;
+    if (!thread || thread.userId !== user.id || thread.courseId !== mod.courseId) threadId = null;
   }
   if (!threadId) {
     const [existing] = await db
@@ -71,14 +67,15 @@ export async function POST(req: Request) {
       send({ type: "thread", threadId: tid });
       try {
         for await (const event of tutorAnswer({ question: body.message.trim(), scope, history })) {
-          send(event);
+          const delivered = event.type === "final" ? { ...event, citations: resolveTutorCitations(event.citations, allowed.sources) } : event;
+          send(delivered);
           if (event.type === "final") {
             await db.insert(t.tutorMessages).values({
               id: id(),
               threadId: tid,
               role: "assistant",
               content: event.answer,
-              citations: event.citations,
+              citations: delivered.type === "final" ? delivered.citations : [],
             });
           }
         }

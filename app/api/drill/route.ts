@@ -1,4 +1,4 @@
-import { currentUser } from "@/lib/auth/guard";
+import { apiUser as currentUser } from "@/lib/auth/guard";
 import { buildDrillSession, recordDrillAnswer, completeDrillSession } from "@/lib/quiz/drill";
 import { scoreQuestion, type Answer } from "@/lib/quiz/scoring";
 import { db, t } from "@/lib/db/client";

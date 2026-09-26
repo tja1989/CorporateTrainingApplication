@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AiSurface, Button, Card, Chip, Input, PillButton, Skeleton, cx } from "@/components/ui";
 import { useLessonProgress } from "@/components/lesson-progress";
 import { Tabs } from "@/components/tabs";
+import type { TutorCitation } from "@/lib/db/schema";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
@@ -14,7 +15,7 @@ declare global {
   }
 }
 
-type Citation = { startSec: number; endSec: number; quote: string };
+type Citation = TutorCitation;
 type Msg = { role: "user" | "assistant"; content: string; citations?: Citation[]; mock?: boolean };
 type Chunk = { id: string; startSec: number; endSec: number; text: string };
 
@@ -40,6 +41,7 @@ export function VideoLessonClient({
   initialCompleted,
   initialPositionSec,
   initialCoverage,
+  durationSec,
 }: {
   lessonId: string;
   youtubeId: string;
@@ -50,6 +52,7 @@ export function VideoLessonClient({
   initialCompleted: boolean;
   initialPositionSec: number;
   initialCoverage: number;
+  durationSec: number;
 }) {
   const progress = useLessonProgress();
   const confirmRef = useRef(progress?.confirm);
@@ -218,10 +221,12 @@ export function VideoLessonClient({
                 <li key={c.id}>
                   <button
                     onClick={() => seekTo(c.startSec)}
-                    className="w-full rounded-control px-2 py-2 text-start text-sm hover:bg-surface-2"
+                    disabled={c.startSec >= durationSec}
+                    className="touch-target w-full rounded-control px-2 py-2 text-start text-sm hover:bg-surface-2 disabled:cursor-not-allowed disabled:text-muted"
                   >
                     <span className="bidi-isolate me-2 font-mono text-xs text-link">{fmtTime(c.startSec)}</span>
                     {c.text}
+                    {c.startSec >= durationSec ? <span className="block text-sm">Timestamp is outside this video. Ask your training team to update the transcript.</span> : null}
                   </button>
                 </li>
               ))}
@@ -362,7 +367,13 @@ function TutorPanel({
                 <span className="whitespace-pre-wrap">{m.content}</span>
                 {m.citations && m.citations.length > 0 ? (
                   <span className="mt-2 flex flex-wrap gap-2">
-                    {m.citations.map((c, j) => (
+                    {m.citations.map((c, j) => !c.lessonId ? (
+                      <span key={j} className="text-sm text-muted">Source unavailable · {fmtTime(c.startSec)}</span>
+                    ) : c.lessonId !== lessonId ? (
+                      <a key={j} href={`/lesson/${encodeURIComponent(c.lessonId)}?t=${c.startSec}`} title={c.quote} className="bidi-isolate touch-target inline-flex items-center gap-1 rounded-control bg-surface px-2 py-1 text-sm font-medium text-ai-fg hover:bg-accent-tint">
+                        <Icon name="play" size={12} /> {c.lessonTitle} · {fmtTime(c.startSec)}
+                      </a>
+                    ) : (
                       <button
                         key={j}
                         onClick={() => onSeek(c.startSec)}

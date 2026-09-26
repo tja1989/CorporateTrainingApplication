@@ -46,24 +46,14 @@ export function makePdf(lines: PdfLine[]): Buffer {
   return Buffer.from(pdf, "latin1");
 }
 
-export function certificatePdf(opts: {
+export async function certificatePdf(opts: {
   learnerName: string;
   courseTitle: string;
   completedAt: Date;
   expiresAt: Date | null;
   serial: string;
-}): Buffer {
+}): Promise<Buffer> {
+  const { certificateDocument } = await import("./certificate-document");
   const fmt = (d: Date) => d.toISOString().slice(0, 10);
-  const lines: PdfLine[] = [
-    { text: "welearn", size: 18, y: 500, bold: true, color: [0.082, 0.349, 0.788] },
-    { text: "Certificate of Completion", size: 34, y: 430, bold: true },
-    { text: "This certifies that", size: 14, y: 380 },
-    { text: opts.learnerName, size: 26, y: 340, bold: true },
-    { text: "has completed", size: 14, y: 300 },
-    { text: opts.courseTitle, size: 22, y: 262, bold: true },
-    { text: `Completed on ${fmt(opts.completedAt)}${opts.expiresAt ? `  ·  Valid until ${fmt(opts.expiresAt)}` : ""}`, size: 12, y: 215 },
-    { text: `Verification ID: ${opts.serial}`, size: 10, y: 185, color: [0.35, 0.35, 0.33] },
-    { text: "Internal training record — not an accredited or government certification.", size: 9, y: 70, color: [0.45, 0.45, 0.42] },
-  ];
-  return makePdf(lines);
+  return certificateDocument({ ...opts, dateLine: `Completed on ${fmt(opts.completedAt)}${opts.expiresAt ? ` · Valid until ${fmt(opts.expiresAt)}` : ""}` });
 }

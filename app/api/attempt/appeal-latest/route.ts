@@ -1,6 +1,6 @@
 import { and, desc, eq, ne } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
-import { currentUser } from "@/lib/auth/guard";
+import { apiUser as currentUser } from "@/lib/auth/guard";
 import { id } from "@/lib/ids";
 
 /** Appeal the latest finalized attempt on a quiz (spec FR-6.10 — once per attempt). */

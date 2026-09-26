@@ -45,6 +45,11 @@ export function ButtonLink({
   return <Link className={cx(buttonBase, buttonVariants[variant], className)} {...props} />;
 }
 
+/** Native document navigation for GET-filtered views and browser history. */
+export function ButtonAnchor({ variant = "primary", className, ...props }: ComponentProps<"a"> & { variant?: keyof typeof buttonVariants }) {
+  return <a className={cx(buttonBase, buttonVariants[variant], className)} {...props} />;
+}
+
 /* Compatibility names for compact actions; they use the shared control shape. */
 const pillBase =
   "pressable touch-target inline-flex items-center justify-center gap-2 rounded-control border px-3 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed";

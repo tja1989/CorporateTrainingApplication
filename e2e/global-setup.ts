@@ -9,10 +9,13 @@ export default async function globalSetup() {
     const result = await db.query("SELECT count(*)::int AS n FROM courses WHERE status='PUBLISHED'");
     if (!result.rows[0].n) throw new Error("Seed the dedicated QA database before browser qualification.");
   });
-  mkdirSync("test-results", { recursive: true });
-  writeFileSync("test-results/environment.json", JSON.stringify({
+  const out = process.env.QA_OUT ?? "test-results";
+  mkdirSync(out, { recursive: true });
+  writeFileSync(`${out}/environment.json`, JSON.stringify({
     commit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
     dirty: !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(),
+    runtimeBuildCommit: process.env.QA_BUILD_COMMIT ?? null,
+    runtimeBuildDirty: process.env.QA_BUILD_DIRTY === "1",
     baseURL: process.env.QA_BASE ?? "https://localhost:3443",
     time: new Date().toISOString(),
     platform: process.platform,

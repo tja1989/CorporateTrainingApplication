@@ -34,6 +34,9 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   const questionRows = allQids.length ? await db.select().from(t.questions).where(inArray(t.questions.id, allQids)) : [];
   const questionOf = new Map(questionRows.map((q) => [q.id, q]));
   const oralReviews = await pendingInterviewReviews();
+  const selectedGrade = pendingGrades.some(r => r.id === item) ? item : pendingGrades[0]?.id;
+  const selectedDraft = drafts.some(r => r.id === item) ? item : drafts[0]?.id;
+  const selectedOral = oralReviews.some(r => r.id === item) ? item : oralReviews[0]?.id;
 
   return (
     <div className="animate-slide-up">
@@ -45,8 +48,8 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
         {pendingGrades.length === 0 ? (
           <EmptyState title="Nothing pending" body="Free-text answers that AI fails, grades with low confidence, or that learners appeal land here." />
         ) : (
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><nav id="pending-grades" aria-label="Pending grades" className="order-2 flex flex-col gap-2 xl:order-1">{pendingGrades.map(r => <a key={r.id} href={`/admin/reviews?view=grades&item=${r.id}`} aria-current={(item ?? pendingGrades[0]?.id) === r.id ? "page" : undefined} className="rounded-input border border-border bg-surface p-4 hover:bg-surface-2 aria-[current]:border-primary"><span className="block font-medium text-link">{nameOf.get(attemptOf.get(r.attemptId)?.userId ?? "") ?? "Employee"}</span><span className="mt-1 block text-sm text-muted">{questionOf.get(r.questionId)?.body.prompt}</span><span className="mt-2 block text-sm">{r.reason.replaceAll("_", " ")}</span></a>)}</nav><div className="order-1 min-w-0 xl:order-2">
-            {pendingGrades.filter(r => r.id === (item ?? pendingGrades[0]?.id)).map((review) => {
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><nav id="pending-grades" aria-label="Pending grades" className="order-2 flex flex-col gap-2 xl:order-1">{pendingGrades.map(r => <a key={r.id} href={`/admin/reviews?view=grades&item=${r.id}`} aria-current={selectedGrade === r.id ? "page" : undefined} className="rounded-input border border-border bg-surface p-4 hover:bg-surface-2 aria-[current]:border-primary"><span className="block font-medium text-link">{nameOf.get(attemptOf.get(r.attemptId)?.userId ?? "") ?? "Employee"}</span><span className="mt-1 block text-sm text-muted">{questionOf.get(r.questionId)?.body.prompt}</span><span className="mt-2 block text-sm">{r.reason.replaceAll("_", " ")}</span></a>)}</nav><div className="order-1 min-w-0 xl:order-2">
+            {pendingGrades.filter(r => r.id === selectedGrade).map((review) => {
               const attempt = attemptOf.get(review.attemptId);
               const q = questionOf.get(review.questionId);
               const answers = (attempt?.answers ?? {}) as Record<string, { kind: string; text?: string }>;
@@ -94,8 +97,8 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
         {drafts.length === 0 ? (
           <EmptyState title="No drafts" body="Questions generated from ingested videos appear here for approval." />
         ) : (
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><nav id="question-drafts" aria-label="Question drafts" className="order-2 flex flex-col gap-2 xl:order-1">{drafts.map(d => <a key={d.id} href={`/admin/reviews?view=drafts&item=${d.id}`} aria-current={(item ?? drafts[0]?.id) === d.id ? "page" : undefined} className="rounded-input border border-border bg-surface p-4 hover:bg-surface-2 aria-[current]:border-primary"><span className="block text-sm text-muted">{questionTypeLabels[d.type]}</span><span className="mt-1 block font-medium text-link">{d.body.prompt}</span></a>)}</nav><div className="order-1 min-w-0 xl:order-2">
-            {drafts.filter(d => d.id === (item ?? drafts[0]?.id)).map((d) => (
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><nav id="question-drafts" aria-label="Question drafts" className="order-2 flex flex-col gap-2 xl:order-1">{drafts.map(d => <a key={d.id} href={`/admin/reviews?view=drafts&item=${d.id}`} aria-current={selectedDraft === d.id ? "page" : undefined} className="rounded-input border border-border bg-surface p-4 hover:bg-surface-2 aria-[current]:border-primary"><span className="block text-sm text-muted">{questionTypeLabels[d.type]}</span><span className="mt-1 block font-medium text-link">{d.body.prompt}</span></a>)}</nav><div className="order-1 min-w-0 xl:order-2">
+            {drafts.filter(d => d.id === selectedDraft).map((d) => (
               <Card key={d.id} className="p-4 text-sm"><a href="#question-drafts" className="link mb-3 inline-flex touch-target xl:hidden">Choose another question ↓</a>
                 <div className="mb-1 flex items-center gap-2">
                   <Chip variant="ai">AI draft · {questionTypeLabels[d.type]}</Chip>
@@ -122,8 +125,8 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
         {oralReviews.length === 0 ? (
           <EmptyState icon="mic" tone="ai" title="No failed oral checks waiting" body="Checks under the pass mark land here for a human look — confirm the fail, or overturn it to a pass." />
         ) : (
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><nav id="pending-oral-checks" aria-label="Pending oral checks" className="order-2 flex flex-col gap-2 xl:order-1">{oralReviews.map(r => <a key={r.id} href={`/admin/reviews?view=oral&item=${r.id}`} aria-current={(item ?? oralReviews[0]?.id) === r.id ? "page" : undefined} className="rounded-input border border-border bg-surface p-4 hover:bg-surface-2 aria-[current]:border-primary"><span className="block font-medium text-link">{r.learnerName}</span><span className="mt-1 block text-sm text-muted">{r.lessonTitle} · {r.scorePct ?? 0}%</span></a>)}</nav><div className="order-1 min-w-0 xl:order-2">
-            {oralReviews.filter(r => r.id === (item ?? oralReviews[0]?.id)).map((r) => (
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><nav id="pending-oral-checks" aria-label="Pending oral checks" className="order-2 flex flex-col gap-2 xl:order-1">{oralReviews.map(r => <a key={r.id} href={`/admin/reviews?view=oral&item=${r.id}`} aria-current={selectedOral === r.id ? "page" : undefined} className="rounded-input border border-border bg-surface p-4 hover:bg-surface-2 aria-[current]:border-primary"><span className="block font-medium text-link">{r.learnerName}</span><span className="mt-1 block text-sm text-muted">{r.lessonTitle} · {r.scorePct ?? 0}%</span></a>)}</nav><div className="order-1 min-w-0 xl:order-2">
+            {oralReviews.filter(r => r.id === selectedOral).map((r) => (
               <Card key={r.id} className="p-4"><a href="#pending-oral-checks" className="link mb-3 inline-flex touch-target xl:hidden">Choose another oral check ↓</a>
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <span className="text-sm font-medium">{r.learnerName}</span>

@@ -1,6 +1,6 @@
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
-import { currentUser } from "@/lib/auth/guard";
+import { apiUser as currentUser } from "@/lib/auth/guard";
 import { suggestQuestions } from "@/lib/ai/tutor";
 
 /** Suggested questions for the chunks around the playhead (spec FR-5.9). */

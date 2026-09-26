@@ -3,6 +3,7 @@ import { loadEnv } from "./lib/env";
 
 loadEnv();
 const baseURL = process.env.QA_BASE ?? "https://localhost:3443";
+const outputDir = process.env.QA_OUT ?? "test-results";
 if (!["localhost", "127.0.0.1"].includes(new URL(baseURL).hostname)) {
   throw new Error("Browser qualification must use the isolated local application.");
 }
@@ -17,8 +18,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   timeout: 60_000,
   expect: { timeout: 10_000 },
-  outputDir: "test-results",
-  reporter: [["list"], ["html", { open: "never" }], ["json", { outputFile: "test-results/results.json" }]],
+  outputDir: `${outputDir}/test-results`,
+  reporter: [["list"], ["html", { open: "never", outputFolder: `${outputDir}/html` }], ["json", { outputFile: `${outputDir}/results.json` }]],
   use: {
     baseURL,
     // Only the local QA certificate is self-signed; the hostname guard above

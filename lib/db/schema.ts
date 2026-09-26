@@ -538,7 +538,7 @@ export const tutorThreads = pgTable("tutor_threads", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export type TutorCitation = { startSec: number; endSec: number; quote: string };
+export type TutorCitation = { startSec: number; endSec: number; quote: string; videoId?: string; lessonId?: string; lessonTitle?: string };
 
 export const tutorMessages = pgTable(
   "tutor_messages",
