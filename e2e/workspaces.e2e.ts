@@ -80,12 +80,14 @@ test("@core @template Admin publishes, manager assigns, learner earns a certific
     await page.getByLabel("Course title", { exact: true }).fill(title);
     await page.getByLabel("Employee ID", { exact: true }).fill(learner.employeeId);
     await page.getByRole("button", { name: "Apply filters" }).click();
+    await page.waitForURL(url => url.pathname === base && url.searchParams.get("course") === title && url.searchParams.get("employee") === learner.employeeId);
     const table = page.getByRole("region", { name: "Learner transcript table", exact: true });
     await expect(table).toContainText(title); await expect(table).toContainText(learner.employeeId);
     const href = await page.getByRole("link", { name: "Export CSV" }).getAttribute("href");
     const csv = await (await page.request.get(href!)).text();
     expect(csv).toContain(title); expect(csv).toContain(learner.employeeId); expect(csv.trim().split("\n")).toHaveLength(2);
     await page.reload(); await expect(page.getByLabel("Course title", { exact: true })).toHaveValue(title);
+    await expect(table).toContainText(learner.employeeId);
     await expectNoPageOverflow(page); await capture(page, info, `${person.role.toLowerCase()}-same-record-report`);
   }
 });
@@ -354,4 +356,37 @@ test("@core Human oral-check review confirms a fail or overturns it to a persist
   expect(passed).toEqual({ outcome: "PASS", reviewed_by: admin.id });
   expect(await withDb(async db => (await db.query("SELECT status FROM lesson_progress WHERE lesson_id=$1 AND user_id=$2", [lesson,learner.id])).rows[0].status)).toBe("COMPLETED");
   await expectNoPageOverflow(page); await capture(page,info,"oral-review-completed");
+});
+
+test("@core @template Failed video ingestion recovers with a replacement transcript and can retry the saved transcript", async ({ page }, info) => {
+  const admin = await createPerson("ADMIN"); const course = randomUUID(), mod = randomUUID();
+  await withDb(async db => {
+    await db.query("INSERT INTO courses(id,title) VALUES($1,'QA video recovery')", [course]);
+    await db.query("INSERT INTO modules(id,course_id,title) VALUES($1,$2,'Recovery module')", [mod, course]);
+  });
+  await signIn(page, admin); await page.goto(`/admin/courses/${course}`);
+  await page.getByText("Add lesson to Recovery module", { exact: true }).click();
+  await page.getByLabel("Lesson type").selectOption("VIDEO");
+  await page.getByLabel("Lesson title", { exact: true }).fill("QA failed video");
+  await page.getByLabel("YouTube URL or video ID").fill(`QA${course.replaceAll("-", "").slice(0,9)}`);
+  await page.getByLabel("Transcript (SRT or VTT)", { exact: true }).fill("An invalid transcript with no timestamps");
+  await saveAndReload(page, page.getByRole("button", { name: "Add lesson", exact: true }));
+  await expect(page.getByText("Video failed", { exact: true })).toBeVisible();
+  const videoId = await withDb(async db => (await db.query("SELECT payload->>'videoId' id FROM lessons WHERE module_id=$1", [mod])).rows[0].id);
+  await page.getByText("Retry video ingestion", { exact: true }).click();
+  await page.getByLabel("Replacement transcript (SRT or VTT)").fill("Still invalid");
+  await page.getByRole("button", { name: "Retry ingestion", exact: true }).click();
+  await expect(page.locator("main").getByRole("alert")).toContainText("SRT or VTT");
+  await expect(page.getByLabel("Replacement transcript (SRT or VTT)")).toHaveValue("Still invalid");
+  await page.getByLabel("Replacement transcript (SRT or VTT)").fill("1\n00:00:00,000 --> 00:00:10,000\nKeep walkways clear and report hazards to your supervisor.");
+  await expectNoPageOverflow(page); await capture(page, info, "admin-video-recovery");
+  await saveAndReload(page, page.getByRole("button", { name: "Retry ingestion", exact: true }));
+  await expect(page.getByText("Video ready", { exact: true })).toBeVisible();
+  expect(await withDb(async db => (await db.query("SELECT count(*)::int n FROM video_chunks WHERE video_id=$1", [videoId])).rows[0].n)).toBeGreaterThan(0);
+  // A later service outage must reuse the saved transcript instead of losing it on retry.
+  await withDb(async db => db.query("UPDATE videos SET ingestion_status='FAILED',failure_reason='QA transient embedding outage' WHERE id=$1", [videoId]));
+  await page.reload(); await page.getByText("Retry video ingestion", { exact: true }).click();
+  await saveAndReload(page, page.getByRole("button", { name: "Retry ingestion", exact: true }));
+  await expect(page.getByText("Video ready", { exact: true })).toBeVisible();
+  expect(await withDb(async db => (await db.query("SELECT ingestion_status,failure_reason FROM videos WHERE id=$1", [videoId])).rows[0])).toEqual({ ingestion_status: "READY", failure_reason: null });
 });

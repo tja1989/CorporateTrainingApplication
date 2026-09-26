@@ -3,7 +3,7 @@
 import type { ActionResult } from "@/components/workspace-form";
 import { parseCoverUrl } from "@/lib/workspace-inputs";
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
 import { id } from "@/lib/ids";
@@ -11,6 +11,7 @@ import { enqueue } from "@/lib/jobs/queue";
 import { handlers } from "@/lib/jobs/handlers";
 import { drain } from "@/lib/jobs/queue";
 import { validateYoutubeVideo } from "@/lib/video/ingest";
+import { parseSrtVtt } from "@/lib/video/transcript";
 import { setFlash } from "@/lib/flash";
 import { parseInterviewConfig } from "@/lib/live/interview";
 
@@ -183,11 +184,30 @@ export async function updateInterviewLessonAction(courseId: string, lessonId: st
   revalidatePath(`/admin/courses/${courseId}`);
 }
 
-export async function retryIngestAction(courseId: string, videoId: string): Promise<void> {
+export async function retryIngestAction(courseId: string, videoId: string, form: FormData): Promise<ActionResult> {
   await requireRole("ADMIN");
-  await enqueue("ingest_video", { videoId });
+  const [video] = await db.select().from(t.videos).where(eq(t.videos.id, videoId)).limit(1);
+  if (!video) return { error: "This video is no longer available. Reload the course." };
+  let rawTranscript = String(form.get("transcript") ?? "").trim();
+  if (!rawTranscript && video.transcriptSource === "manual") {
+    const [previous] = await db.select().from(t.jobs).where(and(
+      eq(t.jobs.kind, "ingest_video"),
+      sql`${t.jobs.payload}->>'videoId' = ${videoId}`,
+      sql`coalesce(${t.jobs.payload}->>'rawTranscript', '') <> ''`,
+    )).orderBy(desc(t.jobs.createdAt)).limit(1);
+    rawTranscript = String(previous?.payload.rawTranscript ?? "");
+  }
+  if (rawTranscript && !parseSrtVtt(rawTranscript).length) return { error: "Use a valid SRT or VTT transcript with timestamps and caption text. Your entry is still here." };
+  if (!rawTranscript && video.transcriptSource !== "vendor") return { error: "Add an SRT or VTT transcript to retry this video." };
+  const provider = rawTranscript ? "manual" : "vendor";
+  await db.update(t.videos).set({ transcriptSource: provider, ingestionStatus: "PENDING", failureReason: null }).where(eq(t.videos.id, videoId));
+  await enqueue("ingest_video", { videoId, provider, rawTranscript: rawTranscript || undefined });
   await drain(handlers, 3);
+  const [updated] = await db.select().from(t.videos).where(eq(t.videos.id, videoId)).limit(1);
+  if (updated?.ingestionStatus === "FAILED") return { error: "Ingestion failed. Check the transcript or try again when the transcript service is available. Your entry is still here." };
+  await setFlash(updated?.ingestionStatus === "READY" ? "Video transcript is ready." : "Video ingestion queued. Refresh to check its progress.");
   revalidatePath(`/admin/courses/${courseId}`);
+  return { success: "Video ingestion retried." };
 }
 
 export async function moveLessonAction(courseId: string, lessonId: string, dir: number): Promise<void> {
