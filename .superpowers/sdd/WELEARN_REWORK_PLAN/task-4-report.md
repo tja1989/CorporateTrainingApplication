@@ -62,7 +62,7 @@ Before reference: `.artifacts/baseline/expanded-screens/`, especially overflowin
 
 ## Final runtime qualification
 
-Final application source is `96f6f81`; build passed (`.artifacts/task-4-build-final.log`). It includes `698e05d` ingestion recovery and `c7e0721` readable reviews. Production-mode local server remains on port 3100, session 57767, with the controller's HTTPS proxy on 3443.
+Initial qualification application source was `96f6f81`; build passed (`.artifacts/task-4-build-final.log`). It includes `698e05d` ingestion recovery and `c7e0721` readable reviews. That initial local runtime used port 3100/session57767 with the controller's HTTPS proxy on3443. The current fix-round runtime is recorded below.
 
 - Broad final run: **84 workflow/auth cases passed; 6 failed**, all six failures in the new JavaScript-disabled readiness fixture because Next's streamed content stayed unrevealed. Duration 10.6 minutes. No application workflow failed. This run is deliberately not called 90/90 green. Log `.artifacts/task-4-final-six-core.log`; complete archive `.artifacts/task-4/final-six-core/`.
 - Corrected readiness fixture, same application build: **6/6 passed** across Chromium/Firefox/WebKit desktop and mobile. It blocks only external app bundles, checks visible disabled forms/reset buttons and preparing messages, then verifies real reset issuance after normal hydration. Log `.artifacts/task-4-hydration-six-core.log`; archive `.artifacts/task-4/hydration-six-core/`.
@@ -120,3 +120,36 @@ Controller also personally confirmed readable matching-pair review on `c7e0721`,
 ## Limits
 
 Live external AI/transcript/voice provider behavior and physical iPhone testing remain explicitly unverified under the accepted project plan. Offline/demo AI results are not represented as a production model evaluation. Browser tests use local lawful manual transcripts and deterministic prerequisites. No deployment or production data was touched. Task 5 owns the complete repeated final matrix, global accessibility/contrast audit, remaining branding asset check, and final qualification acceptance.
+
+## Fix round 1 — review base `5a64410`
+
+Independent review findings: **Inactive lesson fields still participate in validation** and **Human grading omits the question scenario**. Starting HEAD was controller documentation commit `4323991`; the red reproduction ran against unchanged application runtime `96f6f81` on port 3100 / session 57767.
+
+Source commit `730a293` fixes only these two Important findings:
+
+- Each lesson-type section is a hidden **disabled fieldset** while inactive. Its mounted input values survive switching types; inactive inputs no longer participate in native validation or submitted form data. The covering authoring regression enters 101 quiz questions and 7 interview questions, verifies each active constraint blocks submission, switches back to confirm both values remain, then submits a valid Text lesson with those invalid sections inactive. Existing successful creation of all five lesson types, reordering, oral settings and video reuse remains in the case.
+- Human grading renders the question's Scenario before the learner's answer. Its regression uses a damaged-package/out-of-stock scenario, asserts the actual text and heading are visible and positioned before the answer, then performs and verifies the persisted human adjustment/finality decision. Existing ticket reply/resolution and integrity outcome assertions remain.
+
+No changes were made for the deferred queue-selection or compressed-JSX observations, and no business rules, dependencies, environment configuration, review actions or learner behavior changed.
+
+Reproduction:
+
+```sh
+env -u NO_COLOR -u FORCE_COLOR PATH=/Users/USER/.nvm/versions/node/v20.20.2/bin:$PATH npx playwright test e2e/workspaces.e2e.ts --grep 'Type-specific|Human grade decisions' --project=chromium-mobile
+```
+
+Result: **2 expected failures** on `96f6f81` — hidden Questions to draw was enabled; Question scenario region was absent. Log `.artifacts/task-4-fix1-red.log`; archive `.artifacts/task-4/fix1-red/` contains traces, screenshots, HTML/JSON report and error contexts.
+
+Verification on `730a293`:
+
+- `PATH=/Users/USER/.nvm/versions/node/v20.20.2/bin:$PATH npm test`: **173 tests / 25 files passed**; `.artifacts/task-4-fix1-unit.log`.
+- `PATH=/Users/USER/.nvm/versions/node/v20.20.2/bin:$PATH npm run typecheck`: **passed**; `.artifacts/task-4-fix1-typecheck.log`.
+- `git diff --check`: **passed**.
+- `PATH=/Users/USER/.nvm/versions/node/v20.20.2/bin:$PATH npm run build`: **passed** on application source `730a293`; `.artifacts/task-4-fix1-build.log`.
+- Amended covering cases across all six core projects: **12/12 passed** in 1.5 minutes; `.artifacts/task-4-fix1-six-core.log`. Full report/trace archive `.artifacts/task-4/fix1-six-core/`; 48 successful captures `.artifacts/task-4/fix1-screens/`.
+
+```sh
+env -u NO_COLOR -u FORCE_COLOR PATH=/Users/USER/.nvm/versions/node/v20.20.2/bin:$PATH npx playwright test e2e/workspaces.e2e.ts --grep 'Type-specific|Human grade decisions' --project=chromium-desktop --project=chromium-mobile --project=firefox-desktop --project=firefox-mobile --project=webkit-desktop --project=webkit-mobile
+```
+
+Current running application: source/build `730a293`, production-mode local port 3100 / session 29099, HTTPS proxy 3443 unchanged. Controller commit `7b647c0` during verification was documentation-only. No application edits followed this build. Both Important findings are fixed and ready for scoped re-review against `5a64410`; deferred Minor items remain for Task 5 / final triage. External AI/voice staging and physical iPhone gates remain **UNVERIFIED**.
