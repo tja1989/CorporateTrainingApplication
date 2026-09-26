@@ -2,14 +2,14 @@
 
 Plan: ../WELEARN_REWORK_PLAN.md
 
-Overall: **50%**. Baseline, shared foundation and learner workflows accepted; manager/admin workflows next.
+Overall: **50%**. Baseline, shared foundation and learner workflows accepted; manager/admin implementation is under independent review.
 
 | Phase | Weight | Status | Evidence |
 |---|---:|---|---|
 | Baseline/inventory/environment | 10% | Complete | baseline117 tests + typecheck + build; PG16+pgvector;26 before screenshots |
 | Design system/branding/shells | 15% | Complete |126 units/build/typecheck;51 auth +45 nav +4 shared-surface browser checks; independent review approved |
 | Learner workflows | 25% | Complete | 148 units/build/typecheck;36 browser slice cases plus18 review regressions; scoped review approved |
-| Manager/admin workflows | 20% | In progress | Task4 begins after accepted learner review |
+| Manager/admin workflows | 20% | Independent review | 173 units/build/typecheck; 84 workflow/auth cases, 6 corrected readiness checks and 16 narrow-screen checks passed |
 | Browser qualification | 25% | Pending | |
 | Review/handoff | 5% | Pending | |
 
@@ -89,3 +89,7 @@ Overall: **50%**. Baseline, shared foundation and learner workflows accepted; ma
 - Task4 candidate `1a90dff`: 173 unit tests, typecheck and production build passed; 78/78 manager/admin and unchanged reset cases passed across Chromium, Firefox and WebKit at desktop/mobile sizes. The original HR handoff regression also passes 6/6, including mobile WebKit. Evidence: `.artifacts/task-4/browser-six-core/`, `.artifacts/task-4-six-core.log`. Failed-video transcript recovery and readable question-review previews are being completed before independent review.
 - Personal browser control at390px completed all three cross-role chains using synthetic records: admin-authored course→manager assignment→learner notification/completion→certificate/profile→matching manager CSV/admin report; original consented HR escalation→admin reply/resolution→learner thread/refresh; actual free-text submission→offline provisional result with no completion/certificate→human confirmation→learner final notification/result/completion/certificate. Publish-from-Settings acknowledgment was personally rechecked and passed on `1a90dff`. Evidence: `.artifacts/task-4/manual-browser-notes.json` and protected fixture/result files beside it.
 - PDF inspection confirmed the earned certificate is correctly branded and legible. The shipped hygiene reference still contains legacy product branding in its footer, which source-text checks missed. Task5 must update that binary asset and re-render it; training content remains unchanged. This is an open local branding gate, not an accepted external limitation.
+
+- Final Task4 application build `96f6f81` passed 173 unit tests, typecheck and build. Across the six core browser projects, 84 workflow/auth cases passed; six failures were confined to a new JavaScript-disabled test fixture that prevented streamed HTML from appearing. The corrected bundle-blocking readiness case passed 6/6 on the same application build. The separate 360/390px template run passed 16/16. Final test-only source commit is `5a64410`; report distinguishes each run and preserves the failures. Evidence: `.artifacts/task-4/final-six-core/`, `hydration-six-core/`, `small-final/` and matching logs.
+- Fresh independent Task4 review covers original base `5df07ac` through `5a64410`. Acceptance remains 50% until review is resolved. Controller also verified 360px course navigation/settings and readable matching-pair review personally.
+- Prepared a separate local `welearn_preview` database with 30 fictional users and 4 courses for a clean final preview. It is not yet serving a runtime and is not qualification evidence. The growing `welearn_dev` test database and historical failures remain preserved.
