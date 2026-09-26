@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, gte } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { id } from "@/lib/ids";
 
@@ -44,12 +44,13 @@ export async function notify(
   kind: NotificationKind,
   payload: Record<string, unknown>,
   dedupeKey?: string,
+  dedupeWithinMs?: number,
 ): Promise<void> {
   if (dedupeKey) {
     const dup = await db
       .select({ id: t.notifications.id })
       .from(t.notifications)
-      .where(and(eq(t.notifications.userId, userId), eq(t.notifications.dedupeKey, dedupeKey)))
+      .where(and(eq(t.notifications.userId, userId), eq(t.notifications.dedupeKey, dedupeKey), dedupeWithinMs !== undefined ? gte(t.notifications.sentAt, new Date(Date.now() - dedupeWithinMs)) : undefined))
       .limit(1);
     if (dup.length > 0) return;
   }

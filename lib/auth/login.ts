@@ -6,6 +6,7 @@ import { db, t } from "@/lib/db/client";
 import { id, activationCode } from "@/lib/ids";
 import { createSession, readSession, destroySession } from "./session";
 import { verifyTotp } from "./totp";
+import { requireRole } from "./guard";
 import { redirect } from "next/navigation";
 
 const MAX_ATTEMPTS = 10;
@@ -104,7 +105,14 @@ export async function logout(): Promise<void> {
 }
 
 /** Manager/admin-mediated reset: issues a fresh one-time code (audit-logged). */
-export async function issueResetCode(targetUserId: string, issuerId: string): Promise<string> {
+export async function issueResetCode(targetUserId: string, _legacyIssuerId?: string): Promise<string> {
+  // This exported server action is directly callable. Never trust the caller's
+  // issuer ID or rely on the page that happened to render the reset button.
+  const issuer = await requireRole("MANAGER", "ADMIN");
+  const [target] = await db.select().from(t.users).where(eq(t.users.id, targetUserId)).limit(1);
+  if (!target || target.erasedAt || (issuer.role === "MANAGER" && target.managerId !== issuer.id)) {
+    throw new Error("You can only reset accounts you manage.");
+  }
   const code = activationCode();
   await db
     .update(t.users)
@@ -117,7 +125,7 @@ export async function issueResetCode(targetUserId: string, issuerId: string): Pr
     .where(eq(t.users.id, targetUserId));
   await db.insert(t.uiEvents).values({
     id: id(),
-    userId: issuerId,
+    userId: issuer.id,
     kind: "reset_code_issued",
     payload: { targetUserId },
   });

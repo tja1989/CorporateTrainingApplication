@@ -1,15 +1,18 @@
 "use server";
 
+import type { ActionResult } from "@/components/workspace-form";
 import { revalidatePath } from "next/cache";
 import { setFlash } from "@/lib/flash";
 import { requireRole } from "@/lib/auth/guard";
 import { publishPolicyVersion } from "@/lib/hr/ingest";
 
-export async function publishPolicyAction(form: FormData): Promise<void> {
+export async function publishPolicyAction(form: FormData): Promise<ActionResult> {
   await requireRole("ADMIN");
   const title = String(form.get("title") ?? "").trim();
   const body = String(form.get("body") ?? "").trim();
-  if (!title || !body) return;
+  if (!title || !body) return { error: "Enter a policy title and document content." };
+  const date = new Date(String(form.get("effectiveDate") ?? ""));
+  if (Number.isNaN(date.getTime())) return { error: "Choose a valid effective date." };
   await publishPolicyVersion({
     title,
     country: String(form.get("country") ?? "AE").trim().toUpperCase(),
@@ -21,4 +24,5 @@ export async function publishPolicyAction(form: FormData): Promise<void> {
   });
   await setFlash(`Published “${title}” — earlier versions are no longer cited.`);
   revalidatePath("/admin/corpus");
+  return { href: "/admin/corpus" };
 }

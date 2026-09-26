@@ -1,54 +1,14 @@
 import { requireRole, teamOf } from "@/lib/auth/guard";
-import { runReport, type ReportId } from "@/lib/reports";
-import { Card, PageHeader, ButtonLink } from "@/components/ui";
-import { LinkTabs } from "@/components/tabs";
-
+import { runReport } from "@/lib/reports";
+import { REPORTS, reportFilters, type ReportParams } from "@/lib/report-options";
+import { PageHeader } from "@/components/ui";
+import { WorkspaceReports } from "@/components/workspace-reports";
+import { AskReports } from "../../admin/reports/ask";
 export const dynamic = "force-dynamic";
-
-const REPORTS: Array<{ id: ReportId; label: string }> = [
-  { id: "compliance", label: "Compliance" },
-  { id: "completion", label: "Completion" },
-  { id: "cert_expiry", label: "Cert expiry" },
-  { id: "engagement", label: "Engagement" },
-];
-
-/** Team-scoped reports (spec FR-10.1/10.2) — scope injected server-side. */
-export default async function TeamReportsPage({ searchParams }: { searchParams: Promise<{ report?: string }> }) {
-  const manager = await requireRole("MANAGER", "ADMIN");
-  const { report } = await searchParams;
-  const reportId = (REPORTS.find((r) => r.id === report)?.id ?? REPORTS[0].id) as ReportId;
+export default async function TeamReportsPage({ searchParams }: { searchParams: Promise<ReportParams> }) {
+  const manager = await requireRole("MANAGER", "ADMIN"); const params = await searchParams;
+  const report = REPORTS.find(r => r.id === params.report)?.id ?? "compliance";
   const team = await teamOf(manager.id);
-  const result = await runReport(reportId, { userIds: team.map((u) => u.id) });
-
-  return (
-    <div className="animate-slide-up">
-      <PageHeader title="Team reports" sub="Scoped to your direct reports." />
-      <LinkTabs label="Report" param="report" className="mb-4" items={REPORTS.map((r) => ({ href: `/team/reports?report=${r.id}`, label: r.label }))} />
-      <Card className="mb-2 max-w-4xl overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border">
-              {result.columns.map((c) => (
-                <th key={c} className="px-3 py-2 text-start font-medium text-muted">{c}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {result.rows.length === 0 ? (
-              <tr><td colSpan={result.columns.length} className="px-3 py-6 text-center text-muted">No rows.</td></tr>
-            ) : (
-              result.rows.map((row, i) => (
-                <tr key={i} className="border-b border-border last:border-0">
-                  {row.map((cell, j) => (
-                    <td key={j} className="px-3 py-2">{cell}</td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </Card>
-      <ButtonLink variant="secondary" href={`/api/reports/${reportId}/csv`}>Export CSV</ButtonLink>
-    </div>
-  );
+  const result = await runReport(report, { ...reportFilters(params), userIds: team.map(u => u.id) });
+  return <div><PageHeader title="Team reports" sub={`Only your ${team.length} direct reports are included. Filters and exports keep the same team scope.`} /><WorkspaceReports base="/team/reports" report={report} params={params} result={result} /><div className="mt-8"><AskReports scope="team" /></div></div>;
 }

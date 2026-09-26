@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { WorkspaceForm } from "./workspace-form";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/guard";
 import { and, desc, eq, isNull } from "drizzle-orm";
@@ -24,7 +24,7 @@ export async function InboxList({ userId }: { userId: string }) {
   return (
     <div className="animate-slide-up">
       <PageTitle sub={`${unread} unread · Updates about your learning and HR requests.`}>Notifications</PageTitle>
-      {unread > 0 ? <form action={markAllRead} className="mb-4"><Button variant="secondary" type="submit">Mark all as read</Button></form> : null}
+      {unread > 0 ? <WorkspaceForm action={markAllRead} className="mb-4"><Button variant="secondary" type="submit">Mark all as read</Button></WorkspaceForm> : null}
       {rows.length === 0 ? (
         <EmptyState icon="bell" title="Nothing yet" />
       ) : (
@@ -37,7 +37,7 @@ export async function InboxList({ userId }: { userId: string }) {
                   <h2 className="text-base font-medium">{title}</h2><Chip variant={!n.readAt ? "accent" : "neutral"}>{n.readAt ? "Read" : "Unread"}</Chip>
                   <span className="shrink-0 text-xs text-muted">{n.sentAt.toISOString().slice(0, 10)}</span>
                 </div>
-                <p className="mt-2 text-sm text-muted">{body}</p><Link className="mt-2 inline-flex touch-target items-center text-sm text-link underline" href={notificationHref(n.kind, n.payload)}>Open update</Link>
+                <p className="mt-2 text-sm text-muted">{body}</p><a className="mt-2 inline-flex touch-target items-center text-sm text-link underline" href={notificationHref(n.kind, n.payload)}>Open update</a>
               </Card>
             );
           })}
@@ -52,6 +52,7 @@ function notificationHref(kind: string, payload: Record<string, unknown>): strin
   if (kind === "hr_ticket_updated" && value("ticketId")) return `/ask-hr/tickets/${value("ticketId")}`;
   if (kind.startsWith("oral_check") && value("lessonId")) return `/lesson/${value("lessonId")}/interview`;
   if (kind === "quiz_graded" && value("quizId")) return `/quiz/${value("quizId")}`;
+  if (value("pathId")) return `/path/${value("pathId")}`;
   if (value("courseId")) return `/course/${value("courseId")}`;
   if (kind === "manager_digest") return "/team";
   return kind === "hr_ticket_updated" ? "/ask-hr" : kind === "quiz_graded" ? "/learn" : "/profile";

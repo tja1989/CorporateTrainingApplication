@@ -93,9 +93,9 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
           {v.ticketId ? (
             <p className="text-sm">
               <Chip variant="success">Ticket sent to HR</Chip>{" "}
-              <Link href={`/ask-hr/tickets/${v.ticketId}`} className="link text-link">
+              <a href={`/ask-hr/tickets/${v.ticketId}`} className="link text-link">
                 View the ticket
-              </Link>
+              </a>
             </p>
           ) : null}
           {over ? (

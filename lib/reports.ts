@@ -23,7 +23,7 @@ export type ReportResult = { title: string; columns: string[]; rows: Array<Array
 
 async function resolveScope(filters: ReportFilters): Promise<{ userWhere: SQL | undefined; courseIds?: string[] }> {
   const clauses: SQL[] = [];
-  if (filters.userIds && filters.userIds.length > 0) clauses.push(inArray(t.users.id, filters.userIds));
+  if (filters.userIds !== undefined) clauses.push(filters.userIds.length ? inArray(t.users.id, filters.userIds) : sql`false`);
   if (filters.storeName) {
     const stores = await db.select().from(t.orgUnits).where(sql`lower(name) LIKE ${"%" + filters.storeName.toLowerCase() + "%"}`);
     clauses.push(inArray(t.users.storeId, stores.map((s) => s.id).concat(["__none__"])));
@@ -109,7 +109,7 @@ export async function runReport(report: ReportId, filters: ReportFilters): Promi
       return {
         title: "Learner transcript",
         columns: ["Employee", "ID", "Course", "Completed at", "Score"],
-        rows: records.map((r) => [
+        rows: records.filter(r => !courseIds || courseIds.includes(r.courseId)).map((r) => [
           nameOf.get(r.userId)?.name ?? "—",
           nameOf.get(r.userId)?.employeeId ?? "—",
           courseOf.get(r.courseId)?.title ?? r.courseId,
@@ -129,7 +129,7 @@ export async function runReport(report: ReportId, filters: ReportFilters): Promi
         title: `Certificates expiring within ${horizon} days`,
         columns: ["Employee", "ID", "Course", "Expires", "Serial"],
         rows: certs
-          .filter((c) => c.expiresAt && c.expiresAt.getTime() <= cutoff)
+          .filter((c) => (!courseIds || courseIds.includes(c.courseId)) && c.expiresAt && c.expiresAt.getTime() <= cutoff)
           .sort((a, b) => (a.expiresAt!.getTime() - b.expiresAt!.getTime()))
           .map((c) => [
             nameOf.get(c.userId)?.name ?? "—",
@@ -170,6 +170,9 @@ export async function runReport(report: ReportId, filters: ReportFilters): Promi
     }
     case "quiz_results": {
       const quizzes = await db.select().from(t.quizzes);
+      const selectedModules = courseIds?.length ? await db.select().from(t.modules).where(inArray(t.modules.courseId, courseIds)) : [];
+      const selectedLessons = selectedModules.length ? await db.select().from(t.lessons).where(inArray(t.lessons.moduleId, selectedModules.map(m => m.id))) : [];
+      const selectedQuizIds = new Set(selectedLessons.flatMap(l => l.payload.quizId ? [l.payload.quizId] : []));
       const quizOf = new Map(quizzes.map((q) => [q.id, q]));
       const attempts = await db
         .select()
@@ -177,6 +180,7 @@ export async function runReport(report: ReportId, filters: ReportFilters): Promi
         .where(userIds.length ? inArray(t.attempts.userId, userIds) : sql`false`);
       const byQuiz = new Map<string, { attempts: number; passed: number; scoreSum: number }>();
       for (const a of attempts) {
+        if (courseIds && !selectedQuizIds.has(a.quizId)) continue;
         if (a.state === "IN_PROGRESS" || a.state === "VOIDED" || !a.maxScore) continue;
         const s = byQuiz.get(a.quizId) ?? { attempts: 0, passed: 0, scoreSum: 0 };
         s.attempts++;
@@ -272,7 +276,7 @@ export function narrate(result: ReportResult, plan: QueryPlan): string {
   const n = result.rows.length;
   if (n === 0) return `No rows match — ${plan.explanation}`;
   if (plan.report === "compliance" && plan.filters.complianceStatus === "OVERDUE") {
-    return `${n} enrollment(s) are overdue${plan.filters.courseTitle ? ` on “${plan.filters.courseTitle}”` : ""}${plan.filters.storeName ? ` in ${plan.filters.storeName}` : ""}. The longest-overdue rows are at the top of the table.`;
+    return `${n} enrollment(s) are overdue${plan.filters.courseTitle ? ` on “${plan.filters.courseTitle}”` : ""}${plan.filters.storeName ? ` in ${plan.filters.storeName}` : ""}.`;
   }
   if (plan.report === "cert_expiry") return `${n} certificate(s) expire within ${plan.filters.daysWindow ?? 90} days. Renewal training is auto-assigned by the recert loop.`;
   if (plan.report === "engagement") return `${n} people in scope; ${result.rows.filter((r) => r[5] === "INACTIVE").length} have no activity in the window.`;

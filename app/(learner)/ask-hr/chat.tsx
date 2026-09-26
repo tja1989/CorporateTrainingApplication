@@ -3,7 +3,6 @@
 import { Icon, IconDisc } from "@/components/icons";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiSurface, Button, Card, Chip, Input, PillButton, PillLink, Skeleton, cx } from "@/components/ui";
-import Link from "next/link";
 import { EscalationPreviewChangedError } from "@/lib/hr/escalation";
 import { EscalationPreview } from "@/components/escalation-preview";
 import { CitationChips } from "@/components/citations";
@@ -219,7 +218,7 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
             </AiSurface>
           </div>
         ) : null}
-        {ticketSent ? <p role="status" className="text-sm"><Chip variant="success">Ticket sent to HR</Chip> <Link className="text-link underline" href={`/ask-hr/tickets/${ticketSent}`}>View your ticket</Link></p> : null}
+        {ticketSent ? <p role="status" className="text-sm"><Chip variant="success">Ticket sent to HR</Chip> <a className="text-link underline" href={`/ask-hr/tickets/${ticketSent}`}>View your ticket</a></p> : null}
         {error ? <p role="alert" className="text-sm text-destructive-text">{error}</p> : null}
         {feedbackSent ? <p role="status" className="text-sm text-muted">{feedbackSent}</p> : null}
         {escalateOffer && !ticketSent ? (

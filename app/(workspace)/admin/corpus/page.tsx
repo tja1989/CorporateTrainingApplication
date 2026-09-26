@@ -1,3 +1,6 @@
+import { Markdown } from "@/lib/markdown";
+import { WorkspaceTabs, WorkspaceLink } from "@/components/workspace-ui";
+import { WorkspaceForm } from "@/components/workspace-form";
 import { desc, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
@@ -6,7 +9,9 @@ import { publishPolicyAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function CorpusPage() {
+export default async function CorpusPage({ searchParams }: { searchParams: Promise<{ view?: string; doc?: string }> }) {
+  const { view: viewParam, doc: docId } = await searchParams;
+  const view = viewParam === "publish" || viewParam === "quality" ? viewParam : "documents";
   await requireRole("ADMIN");
   const docs = await db.select().from(t.policyDocs).orderBy(desc(t.policyDocs.effectiveDate));
 
@@ -37,31 +42,34 @@ export default async function CorpusPage() {
       <DemoBanner />
       <PageTitle sub="Policy documents, versions, and assistant quality.">HR corpus</PageTitle>
 
-      <div className="mb-6 grid max-w-4xl gap-3 sm:grid-cols-4">
-        <Tile value={deflection} suffix="%" label="Deflection (resolved w/o human)" hint="Benchmark 20–40% typical · 65–75% good" />
-        <Tile value={totals?.escalated ?? 0} label={`Escalations of ${total} exchanges`} href="/admin/tickets" />
-        <Tile value={csat === 0 ? "—" : Math.round(((totals?.up ?? 0) / csat) * 100)} suffix={csat === 0 ? undefined : "%"} label={`CSAT (${csat} rated)`} />
-        <Tile value={totals?.abstained ?? 0} label="Abstentions (content gaps)" tone={(totals?.abstained ?? 0) > 0 ? "warning" : "default"} />
-      </div>
-
-      <div className="grid max-w-5xl gap-6 lg:grid-cols-2">
-        <section aria-label="Documents">
+      <WorkspaceTabs label="HR corpus views" items={[{ href: "/admin/corpus", label: "Policies", active: view === "documents" }, { href: "/admin/corpus?view=publish", label: "Publish a version", active: view === "publish" }, { href: "/admin/corpus?view=quality", label: "Assistant quality", active: view === "quality" }]} />
+      <div className="max-w-5xl">
+        {view === "documents" ? <section aria-label="Documents">
           <h2 className="eyebrow mb-2 text-muted">Documents</h2>
-          <div className="flex flex-col gap-2">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"><nav aria-label="Policy versions" className="flex flex-col gap-2">
             {docs.map((doc) => (
-              <Card key={doc.id} className="flex items-center justify-between gap-2 p-3 text-sm">
+              <a key={doc.id} href={`/admin/corpus?doc=${doc.id}`} aria-current={doc.id === (docId ?? docs[0]?.id) ? "page" : undefined} className="flex flex-wrap items-center justify-between gap-2 rounded-input border border-border bg-surface p-4 text-sm hover:bg-surface-2 aria-[current]:border-primary">
                 <div className="min-w-0">
-                  <p className="truncate font-medium">{doc.title}</p>
+                  <p className="break-words font-medium text-link">{doc.title}</p>
                   <p className="text-xs text-muted">
                     {doc.country} · v{doc.version} · effective {doc.effectiveDate.toISOString().slice(0, 10)} · {doc.audience}
                     {doc.owner ? ` · owner: ${doc.owner}` : ""}
                   </p>
                 </div>
                 <Chip variant={doc.status === "ACTIVE" ? "success" : "neutral"}>{doc.status.toLowerCase()}</Chip>
-              </Card>
+              </a>
             ))}
-          </div>
+          </nav><article className="min-w-0 rounded-card border border-border bg-surface p-4 sm:p-6">{(() => { const doc = docs.find(d => d.id === (docId ?? docs[0]?.id)); return doc ? <><h2 className="mb-2 text-lg font-semibold">{doc.title}</h2><p className="mb-4 text-sm text-muted">Version {doc.version} · {doc.status.toLowerCase()} · {doc.country} · {doc.audience}</p><Markdown text={doc.body} headingOffset={1} /></> : <p className="text-muted">Select a policy version to read its content, or publish your first policy.</p>; })()}</article></div>
 
+        </section> : null}
+        {view === "quality" ? <section aria-label="Assistant quality">      <div className="mb-6 grid max-w-4xl gap-3 sm:grid-cols-4">
+        <Tile value={deflection} suffix="%" label="Deflection (resolved w/o human)" hint="Exchanges without escalation; this does not establish answer correctness." />
+        <Tile value={totals?.escalated ?? 0} label={`Escalations of ${total} exchanges`} />
+        <Tile value={csat === 0 ? "—" : Math.round(((totals?.up ?? 0) / csat) * 100)} suffix={csat === 0 ? undefined : "%"} label={`CSAT (${csat} rated)`} />
+        <Tile value={totals?.abstained ?? 0} label="Abstentions (content gaps)" tone={(totals?.abstained ?? 0) > 0 ? "warning" : "default"} />
+      </div>
+
+          <WorkspaceLink href="/admin/tickets" className="mb-4">Review HR tickets</WorkspaceLink>
           <h2 className="mb-2 mt-6 text-sm font-medium text-muted">Top unanswered questions (content-gap feed)</h2>
           {unanswered.length === 0 ? (
             <p className="text-sm text-muted">No abstentions yet.</p>
@@ -72,16 +80,16 @@ export default async function CorpusPage() {
               ))}
             </ul>
           )}
-        </section>
+        </section> : null}
 
-        <section aria-label="Publish new version">
+        {view === "publish" ? <section aria-label="Publish new version" className="max-w-3xl">
           <h2 className="eyebrow mb-2 text-muted">Publish a policy version</h2>
           <Card className="p-4">
-            <form action={publishPolicyAction}>
+            <WorkspaceForm action={publishPolicyAction}>
               <Field label="Title" hint="Publishing with an existing title supersedes the old version (its chunks are flagged, never deleted).">
                 <Input name="title" required placeholder="e.g. Leave & Time Off Policy" />
               </Field>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Country"><Input name="country" defaultValue="AE" required /></Field>
                 <Field label="Audience">
                   <Select name="audience" defaultValue="all">
@@ -96,9 +104,9 @@ export default async function CorpusPage() {
                 <Textarea name="body" rows={10} required placeholder={"# Policy name\n\n## Section\nPolicy text…"} />
               </Field>
               <Button type="submit">Publish & ingest</Button>
-            </form>
+            </WorkspaceForm>
           </Card>
-        </section>
+        </section> : null}
       </div>
     </div>
   );
