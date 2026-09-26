@@ -4,25 +4,30 @@ import { IconDisc } from "@/components/icons";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { DUR, EASE_OUT } from "@/lib/motion";
-import { AnimatedNumber, Button, Card, Chip, Input, PillButton, Skeleton, cx } from "@/components/ui";
+import { AnimatedNumber, Button, Card, Chip, PillButton, Skeleton, cx } from "@/components/ui";
 
-type Q = { questionId: string; type: string; prompt: string; options: string[] | null };
+import { QuestionFields, type Served } from "@/components/question-input";
+import { isAnswered } from "@/lib/quiz/client-state";
+import type { Answer } from "@/lib/quiz/scoring";
+type Q = Served;
 type Feedback = { correct: boolean; explanation: string | null; correctAnswer: string | null };
 
 export function DrillSession({ daysThisWeek, streakWeeks }: { daysThisWeek: number; streakWeeks: number }) {
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [questions, setQuestions] = useState<Q[] | null>(null);
   const [index, setIndex] = useState(0);
   const [confidence, setConfidence] = useState<"sure" | "unsure" | null>(null);
-  const [textAnswer, setTextAnswer] = useState("");
+  const [response, setResponse] = useState<Answer | undefined>();
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
 
   useEffect(() => {
     fetch("/api/drill")
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((d) => setQuestions(d.questions ?? []))
-      .catch(() => setQuestions([]));
+      .catch(() => { setError("Practice could not load. Refresh the page to try again."); setQuestions([]); });
   }, []);
 
   if (questions === null) {
@@ -38,8 +43,8 @@ export function DrillSession({ daysThisWeek, streakWeeks }: { daysThisWeek: numb
     return (
       <Card className="animate-enter mx-auto max-w-md p-6 text-center">
         <IconDisc name="check" tone="success" size={56} className="animate-pop mb-3" />
-        <h1 className="display mb-1 text-lg">Nothing due right now</h1>
-        <p className="text-sm text-muted">You&#39;re ahead of the scheduler. Come back tomorrow — spaced practice works best with gaps.</p>
+        <h2 className="display mb-1 text-lg">{error ? "Practice unavailable" : "Nothing due right now"}</h2>
+        <p className="text-sm text-muted">{error ?? "You are ahead of the scheduler. Come back tomorrow for more practice."}</p>
       </Card>
     );
   }
@@ -48,9 +53,9 @@ export function DrillSession({ daysThisWeek, streakWeeks }: { daysThisWeek: numb
     return (
       <Card className="animate-enter mx-auto max-w-md p-6 text-center">
         <IconDisc name="flame" tone="accent" size={56} className="animate-pop mb-3" />
-        <h1 className="display mb-1 text-2xl">
+        <h2 className="display mb-1 text-2xl">
           <AnimatedNumber value={score} />/{questions.length} — nice work
-        </h1>
+        </h2>
         <p className="mb-3 text-sm text-muted">+5 points · {Math.min(daysThisWeek + 1, 7)} active day(s) this week{streakWeeks > 0 ? ` · ${streakWeeks}-week streak` : ""}</p>
         <p className="text-xs text-muted">Missed questions come back sooner — that&#39;s the point.</p>
       </Card>
@@ -59,32 +64,39 @@ export function DrillSession({ daysThisWeek, streakWeeks }: { daysThisWeek: numb
 
   const q = questions[index];
 
-  async function answer(a: { kind: "choice"; selected: number[] } | { kind: "text"; text: string }) {
+  async function answer(a: Answer) {
+    if (busy) return;
+    setBusy(true); setError(null);
+    try {
     const res = await fetch("/api/drill", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ questionId: q.questionId, answer: a, confidence }),
     });
+    if (!res.ok) throw new Error();
     const data = (await res.json()) as Feedback;
     setFeedback(data);
     if (data.correct) setScore((s) => s + 1);
+    } catch { setError("Your answer could not be checked. Try again."); } finally { setBusy(false); }
   }
 
   async function next() {
-    setFeedback(null);
-    setConfidence(null);
-    setTextAnswer("");
-    if (index + 1 >= questions!.length) {
-      await fetch("/api/drill", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ done: true }) });
-      setFinished(true);
-    } else {
-      setIndex((i) => i + 1);
-    }
+    if (busy) return;
+    setBusy(true); setError(null);
+    try {
+      if (index + 1 >= questions!.length) {
+        const res = await fetch("/api/drill", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ done: true }) });
+        if (!res.ok) throw new Error();
+        setFinished(true);
+      } else { setIndex(i => i + 1); setFeedback(null); setConfidence(null); setResponse(undefined); }
+    } catch { setError("Practice completion could not be saved. Try Finish again."); }
+    finally { setBusy(false); }
   }
 
   return (
     <div className="mx-auto max-w-md">
-      <div className="mb-3 flex items-center justify-between text-sm text-muted">
+      {error ? <p role="alert" className="mb-4 text-sm text-destructive-text">{error}</p> : null}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-sm text-muted">
         <span>
           Question {index + 1} of {questions.length}
         </span>
@@ -94,54 +106,26 @@ export function DrillSession({ daysThisWeek, streakWeeks }: { daysThisWeek: numb
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={index}
-          initial={{ opacity: 0, y: 8 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: DUR.base, ease: EASE_OUT }}
         >
           <Card className="p-6">
-            <p className="mb-4 font-medium">{q.prompt}</p>
+            {feedback ? <h2 className="mb-4 text-lg font-medium">{q.prompt}</h2> : null}
 
             {feedback === null ? (
               <>
-                {q.options ? (
-                  <div className="mb-4 flex flex-col gap-2">
-                    {q.options.map((opt, i) => (
-                      <button
-                        key={i}
-                        onClick={() => answer({ kind: "choice", selected: [i] })}
-                        className="touch-target pressable rounded-input border border-border px-3 py-2 text-start text-sm hover:bg-surface-2"
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <form
-                    className="mb-4 flex gap-2"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (textAnswer.trim()) answer({ kind: "text", text: textAnswer });
-                    }}
-                  >
-                    <Input
-                      value={textAnswer}
-                      onChange={(e) => setTextAnswer(e.target.value)}
-                      className="min-w-0 flex-1"
-                      placeholder="Type your answer"
-                      aria-label="Your answer"
-                    />
-                    <Button type="submit" disabled={!textAnswer.trim()}>
-                      Go
-                    </Button>
-                  </form>
-                )}
-                <div className="flex items-center gap-2 text-xs text-muted">
+                <fieldset disabled={busy} className="mb-4 min-w-0">
+                  <QuestionFields q={q} answer={response} onChange={setResponse} />
+                </fieldset>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
                   <span>How sure are you?</span>
                   {(["sure", "unsure"] as const).map((c) => (
                     <PillButton
                       key={c}
                       onClick={() => setConfidence(confidence === c ? null : c)}
+                      disabled={busy}
                       aria-pressed={confidence === c}
                       className={cx(confidence === c && "border-primary bg-success-tint text-success-fg")}
                     >
@@ -149,6 +133,7 @@ export function DrillSession({ daysThisWeek, streakWeeks }: { daysThisWeek: numb
                     </PillButton>
                   ))}
                 </div>
+                <Button className="mt-4 w-full" disabled={busy || !isAnswered(q, response)} onClick={() => response && void answer(response)}>{busy ? "Checking…" : "Check answer"}</Button>
               </>
             ) : (
               <div className="animate-enter">
@@ -159,7 +144,7 @@ export function DrillSession({ daysThisWeek, streakWeeks }: { daysThisWeek: numb
                   </p>
                 ) : null}
                 {feedback.explanation ? <p className="mt-2 text-sm text-muted">{feedback.explanation}</p> : null}
-                <Button onClick={next} className="mt-4 w-full">
+                <Button disabled={busy} onClick={next} className="mt-4 w-full">
                   {index + 1 >= questions.length ? "Finish" : "Next"}
                 </Button>
               </div>

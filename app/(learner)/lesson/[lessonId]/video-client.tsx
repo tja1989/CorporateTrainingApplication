@@ -2,7 +2,8 @@
 
 import { Icon } from "@/components/icons";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AiSurface, Button, ButtonLink, Card, Chip, Input, PillButton, Skeleton, cx } from "@/components/ui";
+import { AiSurface, Button, Card, Chip, Input, PillButton, Skeleton, cx } from "@/components/ui";
+import { useLessonProgress } from "@/components/lesson-progress";
 import { Tabs } from "@/components/tabs";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -37,6 +38,8 @@ export function VideoLessonClient({
   initialMessages,
   initialThreadId,
   initialCompleted,
+  initialPositionSec,
+  initialCoverage,
 }: {
   lessonId: string;
   youtubeId: string;
@@ -45,16 +48,25 @@ export function VideoLessonClient({
   initialMessages: Msg[];
   initialThreadId: string | null;
   initialCompleted: boolean;
+  initialPositionSec: number;
+  initialCoverage: number;
 }) {
+  const progress = useLessonProgress();
+  const confirmRef = useRef(progress?.confirm);
+  confirmRef.current = progress?.confirm;
+  const [saveState, setSaveState] = useState<"saved" | "offline">("saved");
   const playerRef = useRef<any>(null);
   const playerHostRef = useRef<HTMLDivElement>(null);
   const playerColumnRef = useRef<HTMLDivElement>(null);
   const [playerError, setPlayerError] = useState<string | null>(null);
-  const [coverage, setCoverage] = useState(0);
+  const [coverage, setCoverage] = useState(initialCoverage);
   const [completed, setCompleted] = useState(initialCompleted);
-  const [tab, setTab] = useState<"tutor" | "transcript">("tutor");
+  const [tab, setTab] = useState<"overview" | "tutor" | "transcript">("overview");
+  const [visitedTutor, setVisitedTutor] = useState(false);
   const [showAll, setShowAll] = useState(false);
-  const positionRef = useRef(0);
+  const positionRef = useRef(initialPositionSec);
+  // A server progress refresh must never restart a player that is already running.
+  const resumePositionRef = useRef(initialPositionSec);
 
   // ---- YouTube IFrame API (spec FR-5.6)
   useEffect(() => {
@@ -65,6 +77,9 @@ export function VideoLessonClient({
         videoId: youtubeId,
         playerVars: { enablejsapi: 1, origin: window.location.origin, rel: 0 },
         events: {
+          onReady: () => {
+            if (resumePositionRef.current > 0) playerRef.current?.seekTo?.(resumePositionRef.current, true);
+          },
           onError: (e: { data: number }) => {
             if (e.data === 101 || e.data === 150) setPlayerError("The video owner has disabled embedding for this video.");
             else if (e.data === 100) setPlayerError("This video is no longer available.");
@@ -96,7 +111,6 @@ export function VideoLessonClient({
 
   // ---- Heartbeat every 5s while PLAYING and visible (spec FR-5.7)
   useEffect(() => {
-    if (completed) return;
     const interval = setInterval(async () => {
       const player = playerRef.current;
       if (!player?.getPlayerState) return;
@@ -113,14 +127,15 @@ export function VideoLessonClient({
         if (res.ok) {
           const data = await res.json();
           setCoverage(data.coveragePct);
-          if (data.completed) setCompleted(true);
-        }
+          setSaveState("saved");
+          if (data.completed) { setCompleted(true); if (data.outline) confirmRef.current?.(data.outline); }
+        } else setSaveState("offline");
       } catch {
-        /* offline heartbeats just skip */
+        setSaveState("offline");
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [lessonId, completed]);
+  }, [lessonId]);
 
   const seekTo = useCallback(
     (sec: number) => {
@@ -142,14 +157,14 @@ export function VideoLessonClient({
   const visibleChunks = showAll ? chunks : chunks.slice(0, TRANSCRIPT_PREVIEW);
 
   return (
-    <div className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+    <div className="mb-6 space-y-5">
       {/* Player column — sticky on desktop so citations always seek a visible player */}
-      <div ref={playerColumnRef} className="scroll-mt-12 lg:sticky lg:top-12 lg:pt-4">
+      <div ref={playerColumnRef} className="scroll-mt-12">
         {playerError ? (
           <Card className="flex aspect-video items-center justify-center p-6 text-center">
             <div>
               <p className="mb-1 font-medium">Video unavailable</p>
-              <p className="text-sm text-muted">{playerError} Your admin has been notified by the weekly link check.</p>
+              <p className="text-sm text-muted">{playerError} Contact your training team if it remains unavailable.</p>
             </div>
           </Card>
         ) : (
@@ -171,40 +186,33 @@ export function VideoLessonClient({
             </>
           )}
         </div>
-        {completed ? (
-          <Card className="mt-3 flex flex-wrap items-center justify-between gap-2 p-3">
-            <div>
-              <p className="text-sm font-medium">Lesson complete</p>
-              <p className="text-xs text-muted">Check your understanding out loud — three short questions, about three minutes.</p>
-            </div>
-            <ButtonLink href={`/lesson/${lessonId}/interview`}>Start the oral check</ButtonLink>
-          </Card>
-        ) : null}
+        {saveState === "offline" ? <p role="status" className="mt-2 text-sm text-warning-fg">Progress could not be saved. Keep this page open; saving retries while the video plays.</p> : <p className="mt-2 text-sm text-muted">{resumePositionRef.current > 0 ? `Resumed from ${fmtTime(resumePositionRef.current)}. ` : ""}Progress saved while playing.</p>}
+
       </div>
 
       <div className="min-w-0">
         <Tabs
           label="Lesson panels"
           value={tab}
-          onChange={(id) => setTab(id as "tutor" | "transcript")}
+          onChange={(id) => { setTab(id as "overview" | "tutor" | "transcript"); if (id === "tutor") setVisitedTutor(true); }}
           tabs={[
-            { id: "tutor", label: <span className="inline-flex items-center gap-1"><Icon name="sparkle" size={14} />Tutor</span> },
-            { id: "transcript", label: "Transcript" },
+            { id: "overview", label: "Overview", panelId: "lesson-overview" },
+            { id: "transcript", label: "Transcript", panelId: "lesson-transcript" },
+            { id: "tutor", panelId: "lesson-tutor", label: <span className="inline-flex items-center gap-1"><Icon name="sparkle" size={14} />Tutor</span> },
           ]}
           className="mb-3"
         />
-        {tab === "tutor" ? (
-          <TutorPanel
+        <section hidden={tab !== "overview"} id="lesson-overview" role="tabpanel" aria-label="Overview" className="rounded-card border border-border bg-surface p-5"><h2 className="mb-2 text-lg font-semibold">About this lesson</h2><p className="text-muted">Watch at least 90% of the video to complete this lesson. Your saved position is restored when you return. Open the transcript to jump to a topic, or ask the Tutor about the lesson.</p></section>
+          <div hidden={tab !== "tutor"} id="lesson-tutor" role="tabpanel" aria-label="Tutor">{visitedTutor ? <TutorPanel
             lessonId={lessonId}
             videoId={videoId}
             initialMessages={initialMessages}
             initialThreadId={initialThreadId}
             onSeek={seekTo}
             getPosition={() => positionRef.current}
-          />
-        ) : (
-          /* Transcript is content: it flows in the page, never inside a scroller (spec §10.7 v1.2) */
-          <Card className="p-3">
+          /> : null}</div>
+          <Card hidden={tab !== "transcript"} id="lesson-transcript" role="tabpanel" aria-label="Transcript" className="p-3">
+            {chunks.length === 0 ? <p className="p-2 text-muted">No transcript is available for this video yet.</p> : null}
             <ol className="flex flex-col gap-1">
               {visibleChunks.map((c) => (
                 <li key={c.id}>
@@ -213,7 +221,7 @@ export function VideoLessonClient({
                     className="w-full rounded-control px-2 py-2 text-start text-sm hover:bg-surface-2"
                   >
                     <span className="bidi-isolate me-2 font-mono text-xs text-link">{fmtTime(c.startSec)}</span>
-                    {c.text.length > 220 ? c.text.slice(0, 220) + "…" : c.text}
+                    {c.text}
                   </button>
                 </li>
               ))}
@@ -224,7 +232,6 @@ export function VideoLessonClient({
               </div>
             ) : null}
           </Card>
-        )}
       </div>
     </div>
   );
@@ -360,7 +367,7 @@ function TutorPanel({
                         key={j}
                         onClick={() => onSeek(c.startSec)}
                         title={c.quote}
-                        className="bidi-isolate pressable hit-area inline-flex items-center gap-1 rounded-full bg-surface px-2 py-1 text-xs font-medium text-ai-fg hover:bg-ai hover:text-ai-tint"
+                        className="bidi-isolate pressable hit-area inline-flex items-center gap-1 rounded-control bg-surface px-2 py-1 text-xs font-medium text-ai-fg hover:bg-ai hover:text-ai-tint"
                       >
                         <Icon name="play" size={12} /> {fmtTime(c.startSec)}
                       </button>
@@ -375,7 +382,7 @@ function TutorPanel({
           <div dir="auto">
             <AiSurface>
               {streaming.length === 0 ? <Skeleton className="h-4 w-[160px]" /> : <span className="whitespace-pre-wrap">{streaming}</span>}
-              <span className="stream-cursor ms-1" aria-hidden />
+              <span className="ms-2 text-sm text-muted" role="status">Responding…</span>
             </AiSurface>
           </div>
         ) : null}
@@ -393,7 +400,7 @@ function TutorPanel({
       ) : null}
 
       <div className="composer-sticky z-10 mt-4 border-t border-border bg-background pt-2">
-        <div className="mb-2 flex gap-2">
+        <div className="mb-2 flex flex-wrap gap-2">
           <PillButton onClick={() => ask("Explain this part in simpler words.")} disabled={streaming !== null}>
             Explain simpler
           </PillButton>

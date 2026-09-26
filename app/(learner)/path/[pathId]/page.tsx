@@ -4,55 +4,25 @@ import { eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/guard";
 import { courseProgress } from "@/lib/lms/queries";
-import { Card, Chip, PageTitle, cx } from "@/components/ui";
-
+import { buildCourseOutline } from "@/lib/lms/course-outline";
+import { CourseCover } from "@/components/course-cover";
+import { LearningProgress } from "@/components/course-card";
+import { Card, Chip, PageTitle, ButtonLink, EmptyState } from "@/components/ui";
 export const dynamic = "force-dynamic";
-
 export default async function PathPage({ params }: { params: Promise<{ pathId: string }> }) {
   const user = await requireUser();
   const { pathId } = await params;
   const [path] = await db.select().from(t.paths).where(eq(t.paths.id, pathId)).limit(1);
   if (!path) notFound();
   const links = (await db.select().from(t.pathCourses).where(eq(t.pathCourses.pathId, pathId))).sort((a, b) => a.sort - b.sort);
-  const courses = links.length
-    ? await db.select().from(t.courses).where(inArray(t.courses.id, links.map((l) => l.courseId)))
-    : [];
-  const byId = new Map(courses.map((c) => [c.id, c]));
-  const progress = await courseProgress(user.id, links.map((l) => l.courseId));
-
+  const courses = links.length ? await db.select().from(t.courses).where(inArray(t.courses.id, links.map(l => l.courseId))) : [];
+  const progress = await courseProgress(user.id, links.map(l => l.courseId));
   let previousDone = true;
-  return (
-    <div className="animate-slide-up">
-      <PageTitle sub={path.description || (path.completeInOrder ? "Complete these courses in order." : "Complete these courses in any order.")}>
-        {path.title}
-      </PageTitle>
-      <ol className="flex max-w-2xl flex-col gap-2">
-        {links.map((link, i) => {
-          const course = byId.get(link.courseId);
-          if (!course) return null;
-          const p = progress.get(course.id) ?? { total: 0, done: 0 };
-          const complete = p.total > 0 && p.done === p.total;
-          const locked = path.completeInOrder && !previousDone;
-          const row = (
-            <Card
-              className={cx("flex items-center gap-3 p-3", locked ? "opacity-50" : "pressable hover:bg-surface-2")}
-            >
-              <span className="flex size-8 items-center justify-center rounded-full bg-surface-2 text-xs font-medium">{i + 1}</span>
-              <div className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">{course.title}</span>
-                <span className="text-xs text-muted">{p.done}/{p.total} lessons</span>
-              </div>
-              {complete ? <Chip variant="success">Done</Chip> : locked ? <Chip variant="neutral">Locked</Chip> : null}
-            </Card>
-          );
-          previousDone = previousDone && complete;
-          return (
-            <li key={link.id}>
-              {locked ? row : <Link href={`/course/${course.id}`}>{row}</Link>}
-            </li>
-          );
-        })}
-      </ol>
-    </div>
-  );
+  const steps = links.flatMap(link => { const course = courses.find(c => c.id === link.courseId); if (!course) return []; const p = progress.get(course.id) ?? { total: 0, done: 0 }; const complete = p.total > 0 && p.done === p.total; const locked = path.completeInOrder && !previousDone; previousDone = previousDone && complete; return [{ course, ...p, complete, locked }]; });
+  const done = steps.filter(s => s.complete).length;
+  const current = steps.find(s => !s.complete && !s.locked && s.course.status === "PUBLISHED");
+  const outline = current ? await buildCourseOutline({ courseId: current.course.id, userId: user.id, sequentialLock: current.course.sequentialLock }) : null;
+  return <div><PageTitle sub={path.description}>{path.title}</PageTitle><div className="mb-8 max-w-xl"><LearningProgress pct={steps.length ? Math.round(done / steps.length * 100) : 0} label={`${done} of ${steps.length} courses complete`} /><p className="mt-3 text-sm text-muted">{path.completeInOrder ? "Complete each course to unlock the next step in this path." : "Take these courses in any order."}</p>{current ? <div className="mt-4"><ButtonLink href={outline?.nextLessonId ? `/lesson/${outline.nextLessonId}` : `/course/${current.course.id}`}>Continue path</ButtonLink></div> : null}</div>
+    {steps.length ? <ol className="flex flex-col gap-4">{steps.map((s, i) => <li key={s.course.id}><Card className="overflow-hidden sm:grid sm:grid-cols-[180px_minmax(0,1fr)]"><CourseCover title={s.course.title} coverUrl={s.course.coverUrl} tags={s.course.tags} /><div className="p-4"><p className="mb-1 text-sm text-muted">Course {i + 1} of {steps.length}</p><div className="mb-2 flex flex-wrap items-center gap-3"><h2 className="text-lg font-semibold">{s.locked || s.course.status !== "PUBLISHED" ? s.course.title : <Link className="hover:underline" href={`/course/${s.course.id}`}>{s.course.title}</Link>}</h2><Chip variant={s.complete ? "success" : s.locked ? "neutral" : "accent"}>{s.complete ? "Completed" : s.locked ? "Locked" : s === current ? "Current step" : "Available"}</Chip></div><p className="text-sm text-muted">{s.done}/{s.total} lessons · {s.course.estMinutes} min</p>{s.locked ? <p className="mt-2 text-sm text-muted">Finish the earlier courses in this path to unlock this step.</p> : s.course.status !== "PUBLISHED" ? <p className="mt-2 text-sm text-muted">This course is being prepared. Contact your manager if you need it now.</p> : null}</div></Card></li>)}</ol> : <EmptyState title="This path is being prepared" body="Courses will appear here when your training team adds them." />}
+  </div>;
 }

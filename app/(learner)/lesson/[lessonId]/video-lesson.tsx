@@ -1,5 +1,6 @@
 import { and, asc, eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
+import { clampVideoPosition, videoCoverage } from "@/lib/lms/video-progress";
 import { currentUser } from "@/lib/auth/guard";
 import { Card } from "@/components/ui";
 import { VideoLessonClient } from "./video-client";
@@ -64,8 +65,10 @@ export async function VideoLesson({
     }
   }
 
+  const [progress] = user ? await db.select().from(t.lessonProgress).where(and(eq(t.lessonProgress.userId, user.id), eq(t.lessonProgress.lessonId, lesson.id))).limit(1) : [];
   return (
     <VideoLessonClient
+      key={lesson.id}
       lessonId={lesson.id}
       youtubeId={video.youtubeId}
       videoId={video.id}
@@ -73,6 +76,8 @@ export async function VideoLesson({
       initialMessages={initialMessages}
       initialThreadId={threadId}
       initialCompleted={isDone}
+      initialPositionSec={clampVideoPosition(progress?.lastPositionSec ?? 0, video.durationSec) ?? 0}
+      initialCoverage={videoCoverage(progress?.watchedBuckets ?? [], video.durationSec)}
     />
   );
 }

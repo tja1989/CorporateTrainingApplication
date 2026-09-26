@@ -24,6 +24,7 @@ export function VoiceConsent({
   maxMinutes,
   starting,
   onStart,
+  onStartTyped,
   onTestSpeaker,
   startLabel,
   gating,
@@ -37,6 +38,7 @@ export function VoiceConsent({
   maxMinutes?: number;
   starting: boolean;
   onStart: () => void;
+  onStartTyped: () => void;
   onTestSpeaker: () => void;
 }) {
   const [micOk, setMicOk] = useState(true);
@@ -92,6 +94,7 @@ export function VoiceConsent({
         <Button type="button" onClick={onStart} disabled={starting}>
           {starting ? "Starting…" : (startLabel ?? (kind === "hr" ? "Start talking" : "Start the oral check"))}
         </Button>
+        {configured ? <Button variant="secondary" type="button" onClick={onStartTyped} disabled={starting}>Start with typing</Button> : null}
         <PillButton type="button" onClick={onTestSpeaker}>
           Test speaker
         </PillButton>

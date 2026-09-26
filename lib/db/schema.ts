@@ -246,6 +246,7 @@ export const lessonProgress = pgTable(
     lessonId: text("lesson_id").notNull(),
     status: text("status").$type<"NOT_STARTED" | "IN_PROGRESS" | "COMPLETED">().notNull().default("NOT_STARTED"),
     watchedBuckets: jsonb("watched_buckets").$type<number[]>(), // 5s bucket indices
+    lastPositionSec: real("last_position_sec"), // resume only; never used as watched coverage
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("lesson_progress_uniq").on(t.userId, t.lessonId)],

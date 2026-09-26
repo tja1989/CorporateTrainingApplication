@@ -46,13 +46,13 @@ export function LiveCaptions({ turns, emptyHint }: { turns: Turn[]; emptyHint?: 
         t.role === "user" ? (
           <div key={t.id} className="max-w-[85%] self-end rounded-card bg-surface-2 px-3 py-2 text-sm" dir="auto">
             {t.text}
-            {!t.final ? <span className="stream-cursor ms-1" aria-hidden /> : null}
+            {!t.final ? <span className="ms-2 text-sm text-muted" role="status">Live…</span> : null}
           </div>
         ) : (
           <AiSurface key={t.id} mock={t.mock} className="max-w-[85%] self-start">
             <p className="whitespace-pre-wrap text-sm" dir="auto">
               {renderLite(t.text)}
-              {!t.final ? <span className="stream-cursor ms-1" aria-hidden /> : null}
+              {!t.final ? <span className="ms-2 text-sm text-muted" role="status">Live…</span> : null}
             </p>
             {t.citations?.length ? <CitationChips citations={t.citations} /> : null}
           </AiSurface>

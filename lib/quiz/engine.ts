@@ -286,6 +286,7 @@ export async function submitAttempt(attemptId: string, opts: { auto?: boolean } 
     await markLessonComplete(attempt.userId, gate.lessonId);
   }
   await notify(attempt.userId, "quiz_graded", {
+    quizId: quiz.id,
     quizTitle: quiz.title,
     state: gradingState,
     outcome: `${Math.round(score.pct)}%${gradingState === "PROVISIONAL" ? " (pending confirmation)" : passed ? " — passed" : " — not passed"}`,
@@ -348,6 +349,7 @@ export async function finalizeReview(reviewId: string, reviewerId: string, final
     await markLessonComplete(attempt.userId, gate.lessonId);
   }
   await notify(attempt.userId, "quiz_graded", {
+    quizId: quiz.id,
     quizTitle: quiz.title,
     state: "FINAL",
     outcome: `${Math.round(score.pct)}%${passed ? " — passed" : " — not passed"}`,

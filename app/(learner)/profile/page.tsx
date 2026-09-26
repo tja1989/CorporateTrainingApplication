@@ -1,128 +1,29 @@
-import { Icon } from "@/components/icons";
-import { desc, eq } from "drizzle-orm";
+import Link from "next/link";
+import { and, desc, eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/guard";
 import { myCourses, totalPoints } from "@/lib/lms/queries";
 import { isoWeekStart } from "@/lib/time";
 import { interviewsForUser } from "@/lib/live/store";
-import { and } from "drizzle-orm";
-import { Card, Chip, PageTitle, ProgressRing, ButtonLink } from "@/components/ui";
-
+import { Card, Chip, PageTitle, ButtonLink } from "@/components/ui";
+const BADGE_LABELS: Record<string, string> = { first_course: "First course", five_courses: "5 courses", four_week_streak: "4-week streak", perfect_quiz: "Perfect quiz" };
 export const dynamic = "force-dynamic";
-
-const BADGE_LABELS: Record<string, string> = {
-  first_course: "First course",
-  five_courses: "5 courses",
-  four_week_streak: "4-week streak",
-  perfect_quiz: "Perfect quiz",
-};
-
 export default async function ProfilePage() {
   const user = await requireUser();
-  const [mine, points, badgeRows, certRows] = await Promise.all([
-    myCourses(user.id),
-    totalPoints(user.id),
-    db.select().from(t.badges).where(eq(t.badges.userId, user.id)),
+  const [mine, points, badges, certificates, history, courses, oral] = await Promise.all([
+    myCourses(user.id), totalPoints(user.id), db.select().from(t.badges).where(eq(t.badges.userId, user.id)),
     db.select().from(t.certificates).where(eq(t.certificates.userId, user.id)).orderBy(desc(t.certificates.issuedAt)),
+    db.select().from(t.completionRecords).where(eq(t.completionRecords.userId, user.id)).orderBy(desc(t.completionRecords.completedAt)),
+    db.select({ id: t.courses.id, title: t.courses.title }).from(t.courses), interviewsForUser(user.id, 50),
   ]);
-  const week = isoWeekStart();
-  const [streak] = await db
-    .select()
-    .from(t.streakState)
-    .where(and(eq(t.streakState.userId, user.id), eq(t.streakState.weekStart, week)));
-  const daysThisWeek = streak?.daysActive.length ?? 0;
-  const completed = mine.filter((c) => c.enrollment?.status === "COMPLETED").length;
-  const active = mine.find((c) => c.enrollment?.status === "IN_PROGRESS");
-  const courseById = new Map(mine.map((m) => [m.course.id, m.course]));
-  const oralChecks = await interviewsForUser(user.id, 10);
-
-  return (
-    <div className="animate-slide-up">
-      <PageTitle sub={`${user.jobTitle ?? "Team member"} · ID ${user.employeeId}`}>{user.name}</PageTitle>
-
-      <div className="mb-6 grid max-w-2xl gap-3 sm:grid-cols-3">
-        <Card className="flex flex-col items-center gap-1 p-4">
-          <ProgressRing pct={(daysThisWeek / 3) * 100} size={56} label={`${daysThisWeek} of 3 weekly goal days`} />
-          <span className="text-xs text-muted">Weekly goal: {daysThisWeek}/3 days</span>
-          <span className="text-xs text-muted">{streak?.currentStreakWeeks ?? 0}-week streak</span>
-        </Card>
-        <Card className="flex flex-col items-center justify-center gap-1 p-4">
-          <span className="stat text-2xl">{points}</span>
-          <span className="text-xs text-muted">points</span>
-        </Card>
-        <Card className="flex flex-col items-center justify-center gap-1 p-4">
-          <span className="stat text-2xl">{completed}</span>
-          <span className="text-xs text-muted">courses completed</span>
-        </Card>
-      </div>
-
-      {active ? (
-        <Card className="mb-6 flex max-w-2xl items-center gap-4 p-4">
-          <ProgressRing pct={active.pct} size={48} />
-          <div>
-            <p className="text-xs text-muted">Active course</p>
-            <p className="text-sm font-medium">{active.course.title}</p>
-          </div>
-        </Card>
-      ) : null}
-
-      <section className="mb-6 max-w-2xl" aria-label="Badges">
-        <h2 className="eyebrow mb-2 text-muted">Badges</h2>
-        <div className="flex flex-wrap gap-2">
-          {badgeRows.length === 0 ? <p className="text-sm text-muted">Complete courses and streaks to earn badges.</p> : null}
-          {badgeRows.map((b) => (
-            <Chip key={b.id} variant="accent" className="animate-pop"><Icon name="star" size={12} /> {BADGE_LABELS[b.badge] ?? b.badge}</Chip>
-          ))}
-        </div>
-      </section>
-
-      <section className="max-w-2xl" aria-label="Certificates">
-        <h2 className="eyebrow mb-2 text-muted">Certificates</h2>
-        {certRows.length === 0 ? (
-          <p className="text-sm text-muted">Certificates you earn will appear here.</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {certRows.map((c) => (
-              <Card key={c.id} className="flex items-center justify-between gap-3 p-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{courseById.get(c.courseId)?.title ?? c.courseId}</p>
-                  <p className="text-xs text-muted">
-                    Issued {c.issuedAt.toISOString().slice(0, 10)}
-                    {c.expiresAt ? ` · valid until ${c.expiresAt.toISOString().slice(0, 10)}` : ""} · {c.serial}
-                  </p>
-                </div>
-                <ButtonLink variant="secondary" href={`/api/certificates/${c.id}`}>PDF</ButtonLink>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="mt-6 max-w-2xl" aria-label="Oral checks">
-        <h2 className="eyebrow mb-2 text-muted">Oral checks</h2>
-        {oralChecks.length === 0 ? (
-          <p className="text-sm text-muted">After a lesson, take a three-minute spoken check — results appear here.</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {oralChecks.map((c) => (
-              <Card key={c.id} className="flex items-center justify-between gap-3 p-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{c.lessonTitle}</p>
-                  <p className="text-xs text-muted">{c.courseTitle} · {c.completedAt?.toISOString().slice(0, 10)}</p>
-                </div>
-                <span className="flex items-center gap-2">
-                  <Chip variant={c.outcome === "PASS" ? "success" : "warning"}>{c.scorePct ?? 0}% · {c.outcome === "PASS" ? "passed" : "not passed"}</Chip>
-                  <ButtonLink variant="secondary" href={`/lesson/${c.lessonId}/interview`}>View</ButtonLink>
-                </span>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <p className="mt-8 text-xs text-muted">
-        Language: {user.preferredLanguage.toUpperCase()} · <a className="underline underline-offset-2" href="/privacy-notice">Privacy notice</a>
-      </p>
-    </div>
-  );
+  const [streak] = await db.select().from(t.streakState).where(and(eq(t.streakState.userId, user.id), eq(t.streakState.weekStart, isoWeekStart())));
+  const byId = new Map(courses.map(c => [c.id, c.title]));
+  return <div><PageTitle sub={`${user.jobTitle ?? "Team member"} · Employee ID ${user.employeeId}`}>{user.name}</PageTitle>
+    <nav aria-label="Profile sections" className="mb-8 flex flex-wrap gap-x-5 gap-y-2 border-b border-border pb-4">{[["history", "Learning history"], ["certificates", "Certificates"], ["oral", "Oral results"], ["account", "Account"]].map(([id, label]) => <a key={id} className="inline-flex touch-target items-center text-link hover:underline" href={`#${id}`}>{label}</a>)}</nav>
+    <section id="history" className="mb-8 scroll-mt-24" aria-labelledby="history-title"><h2 id="history-title" className="mb-4 text-xl font-semibold">Learning history</h2>{history.length ? <div className="divide-y divide-border rounded-card border border-border bg-surface">{history.map(h => <div key={h.id} className="flex flex-wrap items-center justify-between gap-3 p-4"><div><h3 className="font-medium">{byId.get(h.courseId) ?? "Completed course"}</h3><p className="text-sm text-muted">Completed {h.completedAt.toISOString().slice(0, 10)}</p></div><Chip variant="success">Completed</Chip></div>)}</div> : <p className="text-muted">Your completed courses will appear here.</p>}<p className="mt-4 text-sm text-muted">{mine.filter(c => c.enrollment?.status !== "COMPLETED").length} active assigned course(s). <Link className="text-link underline" href="/learn">Open My Learning</Link></p></section>
+    <section id="certificates" className="mb-8 scroll-mt-24" aria-labelledby="certificates-title"><h2 id="certificates-title" className="mb-4 text-xl font-semibold">Certificates</h2>{certificates.length ? <div className="divide-y divide-border rounded-card border border-border bg-surface">{certificates.map(c => <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 p-4"><div className="min-w-0"><h3 className="font-medium">{byId.get(c.courseId) ?? "Course certificate"}</h3><p className="text-sm text-muted">Issued {c.issuedAt.toISOString().slice(0, 10)}{c.expiresAt ? ` · ${c.expiresAt < new Date() ? "Expired" : "Valid until"} ${c.expiresAt.toISOString().slice(0, 10)}` : ""}</p><p className="break-all text-sm text-muted">{c.serial}</p></div><ButtonLink variant="secondary" href={`/api/certificates/${c.id}`}>Download PDF</ButtonLink></div>)}</div> : <p className="text-muted">Certificates you earn will appear here.</p>}</section>
+    <section id="oral" className="mb-8 scroll-mt-24" aria-labelledby="oral-title"><h2 id="oral-title" className="mb-4 text-xl font-semibold">Oral results</h2>{oral.length ? <div className="divide-y divide-border rounded-card border border-border bg-surface">{oral.map(c => <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 p-4"><div><h3 className="font-medium">{c.lessonTitle}</h3><p className="text-sm text-muted">{c.courseTitle} · {c.completedAt?.toISOString().slice(0, 10)}</p></div><div className="flex flex-wrap items-center gap-2"><Chip variant={c.outcome === "PASS" ? "success" : "warning"}>{c.outcome ? `${c.scorePct ?? 0}% · ${c.outcome === "PASS" ? "Passed" : "Not passed"}` : "Pending result"}</Chip><ButtonLink variant="secondary" href={`/lesson/${c.lessonId}/interview`}>Review result</ButtonLink></div></div>)}</div> : <p className="text-muted">Oral check results will appear here after you complete a session.</p>}</section>
+    <section id="account" className="mb-8 scroll-mt-24" aria-labelledby="account-title"><h2 id="account-title" className="mb-4 text-xl font-semibold">Account</h2><Card className="p-5"><dl className="grid gap-4 sm:grid-cols-2"><div><dt className="text-sm text-muted">Employee ID</dt><dd>{user.employeeId}</dd></div><div><dt className="text-sm text-muted">Language</dt><dd>{user.preferredLanguage.toUpperCase()}</dd></div></dl><p className="mt-4 text-sm text-muted">Contact your manager for account updates or password help. Appearance and sign-out controls are in your profile menu.</p><a className="mt-3 inline-flex touch-target items-center text-link underline" href="/privacy-notice">Privacy notice</a></Card></section>
+    <details className="rounded-card border border-border bg-surface p-5"><summary className="cursor-pointer font-medium">Optional practice achievements</summary><p className="mt-4 text-sm text-muted">{points} points · {streak?.daysActive.length ?? 0}/3 practice days this week · {streak?.currentStreakWeeks ?? 0}-week streak</p><div className="mt-3 flex flex-wrap gap-2">{badges.length ? badges.map(b => <Chip key={b.id} variant="neutral">{BADGE_LABELS[b.badge] ?? b.badge}</Chip>) : <p className="text-sm text-muted">Complete courses and practice to earn badges.</p>}</div></details>
+  </div>;
 }

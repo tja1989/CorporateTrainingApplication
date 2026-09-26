@@ -1,5 +1,5 @@
 import { currentUser } from "@/lib/auth/guard";
-import { createTicketFromConversation } from "@/lib/hr/tickets";
+import { createTicketFromConversation, previewTicketFromConversation } from "@/lib/hr/tickets";
 
 /**
  * Escalation (spec FR-8.7/8.7a): creates an HR ticket carrying the transcript.
@@ -12,4 +12,14 @@ export async function POST(req: Request) {
   const created = await createTicketFromConversation(user, body.conversationId, body.subject);
   if (!created) return new Response("Not found", { status: 404 });
   return Response.json({ ok: true, ticketId: created.ticketId });
+}
+
+export async function GET(req: Request) {
+  const user = await currentUser();
+  if (!user) return new Response("Unauthorized", { status: 401 });
+  const conversationId = new URL(req.url).searchParams.get("conversationId");
+  if (!conversationId) return new Response("Bad request", { status: 400 });
+  const preview = await previewTicketFromConversation(user, conversationId);
+  if (!preview) return new Response("Not found", { status: 404 });
+  return Response.json({ name: user.name, subject: preview.subject, body: preview.body });
 }

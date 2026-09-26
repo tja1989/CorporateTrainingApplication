@@ -2,6 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { currentUser } from "@/lib/auth/guard";
 import { id } from "@/lib/ids";
+import { learnerLesson } from "@/lib/lms/lesson-access";
 import { isLessonLocked } from "@/lib/lms/queries";
 import { LiveUnavailableError, liveAvailable, mintLiveToken, resolveLiveModel } from "@/lib/live/gemini";
 import { INTERVIEW_DEFAULTS, buildInterviewConfig, maxMinutesFor, mockQuestions } from "@/lib/live/interview";
@@ -23,6 +24,9 @@ export async function POST(req: Request) {
   if (!parsed.success) return new Response("Bad request", { status: 400 });
   const { lessonId, interviewId: resumeId, resumeHandle } = parsed.data;
 
+  const access = await learnerLesson(user.id, lessonId);
+  if (!access) return new Response("Not found", { status: 404 });
+  if (access.self.locked) return Response.json({ error: "Complete the earlier course and lesson prerequisites first." }, { status: 403 });
   const loaded = await loadLessonContent(lessonId);
   if (!loaded || loaded.course.status !== "PUBLISHED") return new Response("Not found", { status: 404 });
   if (!loaded.content) return Response.json({ error: "This lesson has no oral-check content yet." }, { status: 409 });

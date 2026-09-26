@@ -1,21 +1,25 @@
 "use client";
 
+import type { CourseOutlineView } from "@/lib/lms/outline";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createMicCapture, createPlayer, micSupported, type MicCapture, type Player } from "./audio";
 import { connectLive, type LiveConnection, type LiveEvent, type ToolCall } from "./session";
+import { microphoneRequest } from "./microphone-request";
 import { createMockTransport } from "./mock-transport";
 import { KICKOFF_TEXT, NON_BLOCKING_TOOLS, citationKey, type Citation, type Evaluation as LiveEvaluation, type LiveKind, type LiveUsage, type SessionInfo, type Turn } from "../shared";
 
 /**
  * One hook drives both voice screens (spec FR-14): consent → mic → token →
  * live session → persisted transcript → end. Start order matters: the mic
- * prompt comes before the one-use token is minted, and everything runs from
+ * prompt comes before the one-use token is minted for configured voice. Offline
+ * mode skips capture, and an unanswered prompt can be skipped for typing. Everything runs from
  * the click handler so browsers allow audio playback.
  */
 
-export type VoiceStatus = "idle" | "mic" | "connecting" | "live" | "ending" | "ended" | "error";
+export type VoiceStatus = "idle" | "mic" | "connecting" | "reconnecting" | "live" | "ending" | "ended" | "error";
 
 export type VoiceResult = {
+  outline?: CourseOutlineView;
   scorePct: number | null;
   outcome: string | null;
   evaluation: LiveEvaluation | null;
@@ -80,10 +84,11 @@ function normalizeResult(res: Record<string, unknown>): VoiceResult {
     evaluation: (res.evaluation as LiveEvaluation | undefined) ?? null,
     evaluationSource: str(res.evaluationSource) ?? (res.evaluation ? "mock" : null),
     state: str(res.state),
+    outline: res.outline as CourseOutlineView | undefined,
   };
 }
 
-export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUrl: string; sessionBody?: Record<string, unknown>; maxMinutes?: number }) {
+export function useLiveVoice(opts: { configured: boolean; kind: LiveKind; sessionUrl: string; eventUrl: string; sessionBody?: Record<string, unknown>; maxMinutes?: number }) {
   const [state, setState] = useState<VoiceState>(INITIAL);
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -108,6 +113,8 @@ export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUr
   const hardStopSentRef = useRef(false);
   const endPostedRef = useRef(false);
   const levelTsRef = useRef(0);
+  const startVersionRef = useRef(0);
+  const pendingMicRef = useRef<{ skip(): void } | null>(null);
 
   const idKey = opts.kind === "hr" ? "conversationId" : "interviewId";
 
@@ -218,13 +225,16 @@ export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUr
       });
       if (opts.kind === "interview") update((s) => ({ result: { ...normalizeResult(res), ...(s.result?.evaluation ? {} : {}) } }));
     } catch {
-      /* best effort */
+      update({ warning: "The session ended, but saving could not be confirmed. Return to the lesson or text chat to check the saved record." });
     }
   }, [finalize, flushTurns, postEvent, opts.kind, update]);
 
   const stop = useCallback(async () => {
     const st = stateRef.current.status;
     if (st === "idle" || st === "ended" || st === "ending" || st === "error") return;
+    startVersionRef.current += 1;
+    pendingMicRef.current?.skip();
+    pendingMicRef.current = null;
     update({ status: "ending", speaking: false, level: 0 });
     teardown();
     await postEnd();
@@ -272,19 +282,22 @@ export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUr
   const handleEventRef = useRef<(e: LiveEvent) => void>(() => {});
   const connect = useCallback(
     async (token: string, model: string, resumeHandle?: string) => {
+      const version = startVersionRef.current;
       try {
         const conn = await connectLive({
           token,
           model,
           resumeHandle,
           nonBlockingTools: opts.kind === "hr" ? NON_BLOCKING_TOOLS : [],
-          onEvent: (e) => handleEventRef.current(e),
+          onEvent: (e) => { if (version === startVersionRef.current) handleEventRef.current(e); },
           onToolCall,
         });
+        if (version !== startVersionRef.current) { conn.close(); return; }
         connRef.current = conn;
         update({ status: "live", warning: resumeHandle ? null : stateRef.current.warning });
         if (!resumeHandle) conn.sendText(KICKOFF_TEXT);
       } catch (err) {
+        if (version !== startVersionRef.current) return;
         teardown();
         update({ status: "error", error: err instanceof Error ? err.message : "Could not connect to Gemini Live" });
       }
@@ -294,18 +307,21 @@ export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUr
 
   const reconnect = useCallback(async () => {
     if (reconnectingRef.current || !resumeHandleRef.current || reconnectsRef.current >= MAX_RECONNECTS) return;
+    const version = startVersionRef.current;
     reconnectingRef.current = true;
     reconnectsRef.current += 1;
-    update({ status: "connecting", warning: "Reconnecting…" });
+    update({ status: "reconnecting", warning: "Connection interrupted. Reconnecting to your session…" });
     try {
       connRef.current?.close();
       connRef.current = null;
       const info = await createSession({ handle: resumeHandleRef.current });
+      if (version !== startVersionRef.current) return;
       if (!info.token) throw new Error("No token on resume");
       sessionRef.current = { ...sessionRef.current, ...info };
       update({ expiresAt: info.expiresAt ?? null });
       await connect(info.token, info.model, resumeHandleRef.current);
     } catch (err) {
+      if (version !== startVersionRef.current) return;
       teardown();
       update({ status: "error", error: err instanceof Error ? err.message : "Reconnect failed" });
       void postEnd();
@@ -384,9 +400,10 @@ export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUr
     }
   };
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (preferTyping = false) => {
     const st = stateRef.current.status;
     if (st !== "idle" && st !== "ended" && st !== "error") return;
+    const version = ++startVersionRef.current;
     // reset
     partialRef.current = { user: null, assistant: null };
     pendingTurnsRef.current = [];
@@ -398,7 +415,7 @@ export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUr
     endPostedRef.current = false;
     idRef.current = null;
     sessionRef.current = null;
-    setState({ ...INITIAL, status: "mic" });
+    setState({ ...INITIAL, status: opts.configured && !preferTyping ? "mic" : "connecting" });
 
     // Playback context is created inside the click handler so iOS allows sound later.
     playerRef.current?.close();
@@ -407,25 +424,29 @@ export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUr
     void player.unlock();
     player.onIdle = () => update({ speaking: false });
 
-    let typedOnly = false;
+    let typedOnly = !opts.configured || preferTyping;
     let warning: string | null = null;
-    if (micSupported()) {
-      try {
-        micRef.current = await createMicCapture({
-          onChunk: (b64) => connRef.current?.sendAudio(b64),
-          onLevel: (rms) => {
-            const now = Date.now();
-            if (now - levelTsRef.current > 80) {
-              levelTsRef.current = now;
-              update({ level: Math.min(1, rms * 6) });
-            }
-          },
-        });
-      } catch {
+    if (!typedOnly && micSupported()) {
+      const pending = microphoneRequest(() => createMicCapture({
+        onChunk: (b64) => connRef.current?.sendAudio(b64),
+        onLevel: (rms) => {
+          const now = Date.now();
+          if (now - levelTsRef.current > 80) {
+            levelTsRef.current = now;
+            update({ level: Math.min(1, rms * 6) });
+          }
+        },
+      }));
+      pendingMicRef.current = pending;
+      const mic = await pending.result;
+      if (pendingMicRef.current === pending) pendingMicRef.current = null;
+      if (version !== startVersionRef.current) { mic?.stop(); return; }
+      micRef.current = mic;
+      if (!mic) {
         typedOnly = true;
-        warning = "Microphone unavailable — you can type your answers instead.";
+        warning = "Microphone unavailable or skipped — you can type your answers instead.";
       }
-    } else {
+    } else if (!typedOnly) {
       typedOnly = true;
       warning = "This browser can't capture audio here (needs HTTPS and a microphone) — typing works.";
     }
@@ -435,8 +456,14 @@ export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUr
     try {
       info = await createSession();
     } catch (err) {
+      if (version !== startVersionRef.current) return;
       teardown();
       update({ status: "error", error: err instanceof Error ? err.message : "Could not start the session" });
+      return;
+    }
+    if (version !== startVersionRef.current) {
+      const endedId = info.conversationId ?? info.interviewId;
+      if (endedId) void fetch(opts.eventUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: "end", [idKey]: endedId }) }).catch(() => {});
       return;
     }
     sessionRef.current = info;
@@ -459,7 +486,12 @@ export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUr
       return;
     }
     await connect(info.token, info.model);
-  }, [createSession, connect, teardown, update, postEvent, opts.kind]);
+  }, [createSession, connect, teardown, update, postEvent, opts.kind, opts.configured, opts.eventUrl, idKey]);
+
+  const continueTyping = useCallback(() => {
+    pendingMicRef.current?.skip();
+    update({ typedOnly: true });
+  }, [update]);
 
   const sendText = useCallback(
     (text: string) => {
@@ -494,6 +526,13 @@ export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUr
     [postEvent, update, flushTurns],
   );
 
+  const previewEscalation = useCallback(async () => {
+    await flushTurns();
+    const response = await fetch(`/api/hr/escalate?conversationId=${encodeURIComponent(idRef.current ?? "")}`);
+    if (!response.ok) throw new Error("Preview unavailable");
+    return response.json();
+  }, [flushTurns]);
+
   const dismissEscalation = useCallback(() => update({ pendingEscalation: false }), [update]);
 
   const testSpeaker = useCallback(() => {
@@ -522,7 +561,7 @@ export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUr
   useEffect(() => {
     const onHide = () => {
       const st = stateRef.current.status;
-      if ((st === "live" || st === "connecting") && idRef.current && !endPostedRef.current) {
+      if ((st === "live" || st === "connecting" || st === "reconnecting") && idRef.current && !endPostedRef.current) {
         endPostedRef.current = true;
         try {
           navigator.sendBeacon(
@@ -538,9 +577,11 @@ export function useLiveVoice(opts: { kind: LiveKind; sessionUrl: string; eventUr
     return () => {
       window.removeEventListener("pagehide", onHide);
       onHide();
+      startVersionRef.current += 1;
+      pendingMicRef.current?.skip();
       teardown();
     };
   }, [opts.eventUrl, idKey, teardown]);
 
-  return { ...state, start, stop, sendText, toggleMute, escalate, dismissEscalation, testSpeaker };
+  return { ...state, start, stop, continueTyping, sendText, toggleMute, escalate, previewEscalation, dismissEscalation, testSpeaker };
 }

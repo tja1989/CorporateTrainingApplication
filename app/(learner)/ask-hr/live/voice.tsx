@@ -9,7 +9,7 @@ import { LiveCaptions } from "@/components/live-captions";
 import { LiveControls } from "@/components/live-controls";
 import { VoiceConsent } from "@/components/voice-consent";
 import { CitationChips } from "@/components/citations";
-import { ConfirmDialog } from "@/components/dialog";
+import { EscalationPreview } from "@/components/escalation-preview";
 import { Button, ButtonLink, Card, Chip, PillButton, PillLink } from "@/components/ui";
 
 const SUGGESTED = [
@@ -20,7 +20,7 @@ const SUGGESTED = [
 ];
 
 export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { configured: boolean; sharedDevice: boolean; demoMode?: boolean; firstName?: string }) {
-  const v = useLiveVoice({ kind: "hr", sessionUrl: "/api/live/hr/session", eventUrl: "/api/live/hr/event" });
+  const v = useLiveVoice({ configured, kind: "hr", sessionUrl: "/api/live/hr/session", eventUrl: "/api/live/hr/event" });
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [locked, setLocked] = useState(sharedDevice);
   const idle = v.status === "idle";
@@ -39,11 +39,11 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
 
   return (
     <section aria-label="HR assistant — voice" className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-2 text-sm font-medium">
           Your assistant <Chip variant="ai">AI</Chip>
         </span>
-        <span className="flex gap-2">
+        <span className="flex flex-wrap gap-2">
           <PillLink href="/ask-hr">Text chat</PillLink>
           {v.status === "live" ? <PillButton onClick={() => setConfirmOpen(true)}>Talk to a person</PillButton> : null}
         </span>
@@ -67,7 +67,7 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
         </details>
       ) : null}
 
-      {idle ? <VoiceConsent kind="hr" configured={configured} starting={false} onStart={() => void v.start()} onTestSpeaker={v.testSpeaker} /> : null}
+      {idle ? <VoiceConsent kind="hr" configured={configured} starting={false} onStart={() => void v.start()} onStartTyped={() => void v.start(true)} onTestSpeaker={v.testSpeaker} /> : null}
 
       {!idle ? (
         <>
@@ -118,6 +118,7 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
               elapsedSec={v.elapsedSec}
               expiresAt={v.expiresAt}
               onToggleMute={v.toggleMute}
+              onTypeInstead={v.continueTyping}
               onSendText={v.sendText}
               onEnd={() => void v.stop()}
               endLabel="End conversation"
@@ -126,20 +127,7 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
         </>
       ) : null}
 
-      <ConfirmDialog
-        open={confirmOpen || v.pendingEscalation}
-        title="Share this conversation with HR?"
-        body="Your name and this conversation will be shared with the HR team so a person can help. Nothing is shared until you confirm."
-        confirmLabel="Share and create ticket"
-        onConfirm={() => {
-          setConfirmOpen(false);
-          void v.escalate();
-        }}
-        onCancel={() => {
-          setConfirmOpen(false);
-          v.dismissEscalation();
-        }}
-      />
+      <EscalationPreview open={confirmOpen || v.pendingEscalation} load={v.previewEscalation} confirm={async () => { await v.escalate(); }} close={() => { setConfirmOpen(false); v.dismissEscalation(); }} />
     </section>
   );
 }

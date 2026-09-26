@@ -7,11 +7,11 @@ import { id } from "@/lib/ids";
  * transcript, under the employee's real identity. Callers show a consent step
  * first; the model never creates a ticket on its own (voice mode included).
  */
-export async function createTicketFromConversation(
+export async function previewTicketFromConversation(
   user: { id: string },
   conversationId: string,
   subject?: string,
-): Promise<{ ticketId: string } | null> {
+): Promise<{ conversationId: string; subject: string; body: string } | null> {
   const [conv] = await db.select().from(t.hrConversations).where(eq(t.hrConversations.id, conversationId)).limit(1);
   if (!conv || conv.userId !== user.id) return null;
 
@@ -23,15 +23,16 @@ export async function createTicketFromConversation(
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
   const finalSubject = (subject?.trim() || lastUser?.content || "HR question").slice(0, 120);
 
-  const ticketId = id();
-  await db.insert(t.hrTickets).values({ id: ticketId, conversationId: conv.id, userId: user.id, subject: finalSubject, state: "OPEN" });
   const transcript = messages.map((m) => `${m.role === "user" ? "Employee" : "Assistant"}: ${m.content}`).join("\n\n");
-  await db.insert(t.hrTicketMessages).values({
-    id: id(),
-    ticketId,
-    authorId: user.id,
-    body: `Escalated from the HR assistant${conv.mode === "voice" ? " (voice conversation)" : ""}. Transcript:\n\n${transcript}`.slice(0, 8000),
-  });
+  return { conversationId: conv.id, subject: finalSubject, body: `Escalated from the HR assistant${conv.mode === "voice" ? " (voice conversation)" : ""}. Transcript:\n\n${transcript}`.slice(0, 8000) };
+}
+
+export async function createTicketFromConversation(user: { id: string }, conversationId: string, subject?: string): Promise<{ ticketId: string } | null> {
+  const preview = await previewTicketFromConversation(user, conversationId, subject);
+  if (!preview) return null;
+  const ticketId = id();
+  await db.insert(t.hrTickets).values({ id: ticketId, conversationId: preview.conversationId, userId: user.id, subject: preview.subject, state: "OPEN" });
+  await db.insert(t.hrTicketMessages).values({ id: id(), ticketId, authorId: user.id, body: preview.body });
   await db.insert(t.consents).values({ id: id(), userId: user.id, kind: "escalation", version: ticketId });
   return { ticketId };
 }

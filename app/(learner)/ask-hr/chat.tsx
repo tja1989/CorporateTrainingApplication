@@ -3,7 +3,8 @@
 import { Icon, IconDisc } from "@/components/icons";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiSurface, Button, Card, Chip, Input, PillButton, PillLink, Skeleton, cx } from "@/components/ui";
-import { ConfirmDialog } from "@/components/dialog";
+import Link from "next/link";
+import { EscalationPreview } from "@/components/escalation-preview";
 import { CitationChips } from "@/components/citations";
 
 type Citation = { docId: string; title: string; sectionPath: string; version: number; effectiveDate: string };
@@ -27,6 +28,8 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
   const [streaming, setStreaming] = useState<string | null>(null);
   const [escalateOffer, setEscalateOffer] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [feedbackSent, setFeedbackSent] = useState<string | null>(null);
   const [ticketSent, setTicketSent] = useState<string | null>(null);
   const conversationRef = useRef<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -36,12 +39,12 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
   useEffect(() => {
     if (locked) return;
     fetch("/api/hr")
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((d) => {
         conversationRef.current = d.conversationId;
         setMessages(d.messages ?? []);
       })
-      .catch(() => setMessages([]));
+      .catch(() => { setMessages([]); setError("Conversation history could not load. Refresh to try again."); });
   }, [locked]);
 
   // Follow the stream only while the reader is already near the bottom of the page.
@@ -63,6 +66,7 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
       setMessages((m) => [...(m ?? []), { role: "user", content: question.trim() }]);
       setInput("");
       setStreaming("");
+      setError(null);
       setEscalateOffer(false);
       const controller = new AbortController();
       abortRef.current = controller;
@@ -100,7 +104,8 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
             }
           }
         }
-      } catch {
+      } catch (error) {
+        if (!(error instanceof Error && error.name === "AbortError")) { setError("The assistant could not respond. Your question is kept below; try sending again."); setInput(question); }
         setStreaming(null);
       }
     },
@@ -108,8 +113,7 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
   );
 
   const escalate = useCallback(async () => {
-    setConfirmOpen(false);
-    if (!conversationRef.current) return;
+    if (!conversationRef.current) throw new Error("No conversation");
     const res = await fetch("/api/hr/escalate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -119,14 +123,19 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
       const d = await res.json();
       setTicketSent(d.ticketId);
       setEscalateOffer(false);
-    }
+    } else throw new Error("Ticket failed");
+  }, []);
+  const previewEscalation = useCallback(async () => {
+    const res = await fetch(`/api/hr/escalate?conversationId=${encodeURIComponent(conversationRef.current ?? "")}`);
+    if (!res.ok) throw new Error("Preview failed");
+    return res.json();
   }, []);
 
   if (locked) {
     return (
       <Card className="flex flex-col items-center justify-center gap-3 p-6 text-center">
         <IconDisc name="sparkle" tone="ai" size={56} className="animate-pop" />
-        <h1 className="display text-lg">Your HR conversations are private</h1>
+        <h2 className="display text-lg">Your HR conversations are private</h2>
         <p className="max-w-sm text-sm text-muted">You signed in on a shared device, so history stays hidden until you confirm it&#39;s you.</p>
         <Button onClick={() => setLocked(false)}>Show my conversation</Button>
       </Card>
@@ -135,13 +144,13 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
 
   return (
     <section aria-label="HR Assistant" className="flex flex-col">
-      <div className="mb-3 flex items-center justify-between gap-2">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-2 text-sm font-medium">
           HR Assistant <Chip variant="ai">AI</Chip>
         </span>
-        <span className="flex gap-2">
+        <span className="flex flex-wrap gap-2">
           <PillLink href="/ask-hr/live"><Icon name="mic" size={14} /> Talk instead</PillLink>
-          <PillButton onClick={() => setConfirmOpen(true)} disabled={!conversationRef.current}>
+          <PillButton onClick={() => setConfirmOpen(true)} disabled={!conversationRef.current || streaming !== null}>
             Talk to a person
           </PillButton>
         </span>
@@ -186,7 +195,7 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ conversationId: conversationRef.current, feedback: fb }),
-                      }).catch(() => {})
+                      }).then(r => { if (!r.ok) throw new Error(); setFeedbackSent("Feedback recorded. Thank you."); }).catch(() => setFeedbackSent("Feedback could not be saved. Please try again."))
                     }
                     className="hit-area rounded-control px-2 py-1 text-xs text-muted hover:bg-surface-2"
                   >
@@ -201,11 +210,13 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
           <div dir="auto">
             <AiSurface>
               {streaming.length === 0 ? <Skeleton className="h-4 w-[160px]" /> : <span className="whitespace-pre-wrap">{renderLite(streaming)}</span>}
-              <span className="stream-cursor ms-1" aria-hidden />
+              <span className="ms-2 text-sm text-muted" role="status">Responding…</span>
             </AiSurface>
           </div>
         ) : null}
-        {ticketSent ? <Chip variant="success">Ticket sent to HR — they&#39;ll reply here and you&#39;ll get a notification.</Chip> : null}
+        {ticketSent ? <p role="status" className="text-sm"><Chip variant="success">Ticket sent to HR</Chip> <Link className="text-link underline" href={`/ask-hr/tickets/${ticketSent}`}>View your ticket</Link></p> : null}
+        {error ? <p role="alert" className="text-sm text-destructive-text">{error}</p> : null}
+        {feedbackSent ? <p role="status" className="text-sm text-muted">{feedbackSent}</p> : null}
         {escalateOffer && !ticketSent ? (
           <div>
             <PillButton onClick={() => setConfirmOpen(true)}>
@@ -246,14 +257,7 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
         </Button>
       </form>
 
-      <ConfirmDialog
-        open={confirmOpen}
-        title="Share this conversation with HR?"
-        body="Your name and this conversation will be shared with the HR team so they can help you directly. Nothing is shared until you confirm."
-        confirmLabel="Share and create ticket"
-        onConfirm={escalate}
-        onCancel={() => setConfirmOpen(false)}
-      />
+      <EscalationPreview open={confirmOpen} load={previewEscalation} confirm={escalate} close={() => setConfirmOpen(false)} />
     </section>
   );
 }
