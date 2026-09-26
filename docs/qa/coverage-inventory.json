@@ -11,7 +11,19 @@
           ""
         ]
       ],
-      "status": "NOT_TESTED"
+      "status": "PASSED",
+      "cases": [
+        "AUTH:activation",
+        "AUTH:invalid",
+        "AUTH:privacy",
+        "AUTH:mfa",
+        "AUTH:logout"
+      ],
+      "evidence": [
+        ".artifacts/task-2-https-matrix.log",
+        ".artifacts/task-2-auth-recovery-final.log"
+      ],
+      "runtimeCommit": "cea8c31 production source (initial matrix before dialog-only focus change); final exact-commit suite pending"
     },
     {
       "route": "/login/mfa",
@@ -23,14 +35,38 @@
           ""
         ]
       ],
-      "status": "NOT_TESTED"
+      "status": "PASSED",
+      "cases": [
+        "AUTH:activation",
+        "AUTH:invalid",
+        "AUTH:privacy",
+        "AUTH:mfa",
+        "AUTH:logout"
+      ],
+      "evidence": [
+        ".artifacts/task-2-https-matrix.log",
+        ".artifacts/task-2-auth-recovery-final.log"
+      ],
+      "runtimeCommit": "cea8c31 production source (initial matrix before dialog-only focus change); final exact-commit suite pending"
     },
     {
       "route": "/login/mfa-setup",
       "role": "public/auth",
       "source": "app/(auth)/login/mfa-setup/page.tsx",
       "actions": [],
-      "status": "NOT_TESTED"
+      "status": "PASSED",
+      "cases": [
+        "AUTH:activation",
+        "AUTH:invalid",
+        "AUTH:privacy",
+        "AUTH:mfa",
+        "AUTH:logout"
+      ],
+      "evidence": [
+        ".artifacts/task-2-https-matrix.log",
+        ".artifacts/task-2-auth-recovery-final.log"
+      ],
+      "runtimeCommit": "cea8c31 production source (initial matrix before dialog-only focus change); final exact-commit suite pending"
     },
     {
       "route": "/login",
@@ -42,7 +78,19 @@
           ""
         ]
       ],
-      "status": "NOT_TESTED"
+      "status": "PASSED",
+      "cases": [
+        "AUTH:activation",
+        "AUTH:invalid",
+        "AUTH:privacy",
+        "AUTH:mfa",
+        "AUTH:logout"
+      ],
+      "evidence": [
+        ".artifacts/task-2-https-matrix.log",
+        ".artifacts/task-2-auth-recovery-final.log"
+      ],
+      "runtimeCommit": "cea8c31 production source (initial matrix before dialog-only focus change); final exact-commit suite pending"
     },
     {
       "route": "/ask-hr/live",
@@ -408,34 +456,81 @@
           ""
         ]
       ],
-      "status": "NOT_TESTED"
+      "status": "PASSED",
+      "cases": [
+        "AUTH:activation",
+        "AUTH:invalid",
+        "AUTH:privacy",
+        "AUTH:mfa",
+        "AUTH:logout"
+      ],
+      "evidence": [
+        ".artifacts/task-2-https-matrix.log",
+        ".artifacts/task-2-auth-recovery-final.log"
+      ],
+      "runtimeCommit": "cea8c31 production source (initial matrix before dialog-only focus change); final exact-commit suite pending"
     }
   ],
   "serverActions": [
     {
       "source": "app/(auth)/actions.ts",
       "action": "loginAction",
-      "status": "NOT_TESTED"
+      "status": "PASSED",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
     },
     {
       "source": "app/(auth)/actions.ts",
       "action": "activateAction",
-      "status": "NOT_TESTED"
+      "status": "PASSED",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
     },
     {
       "source": "app/(auth)/actions.ts",
       "action": "mfaVerifyAction",
-      "status": "NOT_TESTED"
+      "status": "PASSED",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
     },
     {
       "source": "app/(auth)/actions.ts",
       "action": "mfaSetupBegin",
-      "status": "NOT_TESTED"
+      "status": "PASSED",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
     },
     {
       "source": "app/(auth)/actions.ts",
       "action": "mfaSetupConfirm",
-      "status": "NOT_TESTED"
+      "status": "PASSED",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
     },
     {
       "source": "app/(learner)/ask-hr/tickets/[ticketId]/actions.ts",
@@ -590,32 +685,67 @@
     {
       "source": "lib/auth/login.ts",
       "action": "login",
-      "status": "NOT_TESTED",
-      "note": "Shared auth action; some also reached through app wrappers."
+      "status": "PASSED",
+      "note": "Shared auth action; some also reached through app wrappers.",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
     },
     {
       "source": "lib/auth/login.ts",
       "action": "activate",
-      "status": "NOT_TESTED",
-      "note": "Shared auth action; some also reached through app wrappers."
+      "status": "PASSED",
+      "note": "Shared auth action; some also reached through app wrappers.",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
     },
     {
       "source": "lib/auth/login.ts",
       "action": "verifyMfa",
-      "status": "NOT_TESTED",
-      "note": "Shared auth action; some also reached through app wrappers."
+      "status": "PASSED",
+      "note": "Shared auth action; some also reached through app wrappers.",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
     },
     {
       "source": "lib/auth/login.ts",
       "action": "acknowledgePrivacyNotice",
-      "status": "NOT_TESTED",
-      "note": "Shared auth action; some also reached through app wrappers."
+      "status": "PASSED",
+      "note": "Shared auth action; some also reached through app wrappers.",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
     },
     {
       "source": "lib/auth/login.ts",
       "action": "logout",
-      "status": "NOT_TESTED",
-      "note": "Shared auth action; some also reached through app wrappers."
+      "status": "PASSED",
+      "note": "Shared auth action; some also reached through app wrappers.",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
     },
     {
       "source": "lib/auth/login.ts",
@@ -626,8 +756,15 @@
     {
       "source": "lib/auth/login.ts",
       "action": "switchWorkspace",
-      "status": "NOT_TESTED",
-      "note": "Shared auth action; some also reached through app wrappers."
+      "status": "PASSED",
+      "note": "Shared auth action; some also reached through app wrappers.",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
     }
   ],
   "apiRoutes": [
