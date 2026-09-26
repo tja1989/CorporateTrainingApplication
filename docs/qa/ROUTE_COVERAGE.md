@@ -1,13 +1,13 @@
 # Route coverage
 
-Baseline enumeration. NOT_TESTED never means pass. Detailed workflow evidence will be added during qualification.
+Current inventory with phase evidence in [coverage-inventory.json](coverage-inventory.json) and [workflow-cases.json](workflow-cases.json). NOT_TESTED and UNVERIFIED never mean pass. A route pass covers recorded cases only; final exact-commit qualification is still pending.
 
 | Route | Role | Status |
 |---|---|---|
-| `/activate` | public/auth | NOT_TESTED |
-| `/login/mfa` | public/auth | NOT_TESTED |
-| `/login/mfa-setup` | public/auth | NOT_TESTED |
-| `/login` | public/auth | NOT_TESTED |
+| `/activate` | public/auth | PASSED |
+| `/login/mfa` | public/auth | PASSED |
+| `/login/mfa-setup` | public/auth | PASSED |
+| `/login` | public/auth | PASSED |
 | `/ask-hr/live` | learner | NOT_TESTED |
 | `/ask-hr` | learner | NOT_TESTED |
 | `/ask-hr/tickets/[ticketId]` | learner | NOT_TESTED |
@@ -40,4 +40,6 @@ Baseline enumeration. NOT_TESTED never means pass. Detailed workflow evidence wi
 | `/team` | manager | NOT_TESTED |
 | `/team/reports` | manager | NOT_TESTED |
 | `/` | public/auth | NOT_TESTED |
-| `/privacy-notice` | public/auth | NOT_TESTED |
+| `/privacy-notice` | public/auth | PASSED |
+
+Inventory: 37 page routes, 42 app/shared server actions, 22 API routes. See JSON for methods and operation evidence.

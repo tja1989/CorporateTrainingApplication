@@ -17,13 +17,22 @@ async function main() {
   await db.connect();
   const course = (await db.query("SELECT id FROM courses WHERE title = 'Food Safety Essentials' LIMIT 1")).rows[0].id;
   const lesson = (await db.query("SELECT l.id FROM lessons l JOIN modules m ON m.id=l.module_id WHERE m.course_id=$1 AND l.type='VIDEO' LIMIT 1", [course])).rows[0].id;
+  const expanded = process.env.QA_SCOPE === "expanded";
+  const extra = expanded ? {
+    path: (await db.query("SELECT id FROM paths ORDER BY title LIMIT 1")).rows[0].id,
+    quiz: (await db.query("SELECT q.id FROM quizzes q JOIN lessons l ON l.id=q.lesson_id JOIN modules m ON m.id=l.module_id WHERE m.course_id=$1 LIMIT 1", [course])).rows[0].id,
+    policy: (await db.query("SELECT id FROM policy_docs ORDER BY title LIMIT 1")).rows[0].id,
+    ticket: (await db.query("SELECT h.id FROM hr_tickets h JOIN users u ON u.id=h.user_id WHERE u.employee_id='AE10023' LIMIT 1")).rows[0].id,
+    attempt: (await db.query("SELECT id FROM attempts ORDER BY started_at LIMIT 1")).rows[0].id,
+    member: (await db.query("SELECT id FROM users WHERE employee_id='AE10023'")).rows[0].id,
+  } : null;
   const browser = await chromium.launch();
   const results: object[] = [];
   for (const viewport of [{width:1440,height:900},{width:390,height:844}]) {
     for (const persona of [
-      {id:"AE10023",role:"learner",routes:["/home","/learn",`/course/${course}`,`/lesson/${lesson}`,"/ask-hr","/profile"]},
-      {id:"AE20001",role:"manager",routes:["/team","/team/reports"]},
-      {id:"AE90001",role:"admin",routes:["/admin",`/admin/courses/${course}`,"/admin/people","/admin/reports"]},
+      {id:"AE10023",role:"learner",routes:["/home","/learn",`/course/${course}`,`/lesson/${lesson}`,"/ask-hr","/profile",...(extra ? ["/ask-hr/live",`/ask-hr/tickets/${extra.ticket}`,"/drill","/inbox",`/lesson/${lesson}/interview`,`/path/${extra.path}`,`/policy/${extra.policy}`,`/quiz/${extra.quiz}`,"/privacy-notice"] : [])]},
+      {id:"AE20001",role:"manager",routes:["/team","/team/reports",...(extra ? [`/team/${extra.member}`,"/team/inbox"] : [])]},
+      {id:"AE90001",role:"admin",routes:["/admin",`/admin/courses/${course}`,"/admin/people","/admin/reports",...(extra ? ["/admin/courses","/admin/corpus","/admin/reviews","/admin/tickets",`/admin/tickets/${extra.ticket}`,"/admin/integrity",`/admin/integrity/${extra.attempt}`,"/admin/inbox"] : [])]},
     ]) {
       const ctx=await browser.newContext({viewport,reducedMotion:"reduce"});
       const page=await ctx.newPage();
@@ -54,13 +63,14 @@ async function main() {
       for(const route of persona.routes) {
         await page.goto(`${base}${route}`);
         if(route === '/ask-hr') await page.getByLabel('Ask the HR assistant').waitFor();
-        else await page.locator('h1:visible,h2:visible').first().waitFor();
+        else await page.locator('h1:visible,h2:visible,h3:visible').first().waitFor();
         await page.evaluate(()=>document.fonts.ready);
-        const name=`${persona.role}-${route.split('/').slice(1,3).map(p=>/^[a-f0-9-]{30,}$/.test(p)?'detail':p).join('-')}-${viewport.width}`;
+        const name=`${persona.role}-${route.split('/').slice(1).map(p=>/^[a-f0-9-]{30,}$/.test(p)?'detail':p).join('-')}-${viewport.width}`;
         await page.screenshot({path:`${out}/${name}.png`,fullPage:true,animations:"disabled"});
         const actualPath=new URL(page.url()).pathname;
         console.log(`Captured ${name} at ${actualPath}`);
-        results.push({role:persona.role,route,viewport,actualPath,heading:await page.locator('h1:visible,h2:visible').allTextContents(),screenshot:`${name}.png`,overflow:await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth)});
+        results.push({role:persona.role,route,viewport,actualPath,heading:await page.locator('h1:visible,h2:visible,h3:visible').allTextContents(),screenshot:`${name}.png`,overflow:await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth)});
+        writeFileSync(`${out}/manifest.json`,JSON.stringify(results,null,2));
       }
       writeFileSync(`${out}/manifest.json`,JSON.stringify(results,null,2));
       await ctx.close();
