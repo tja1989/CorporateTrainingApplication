@@ -5,6 +5,8 @@ import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { cpus, platform, release } from "node:os";
 import { totpCode } from "../lib/auth/totp";
+import { createPerson, QA_PASSWORD } from "../e2e/support";
+import { randomUUID } from "node:crypto";
 
 loadEnv();
 const base = process.env.QA_BASE ?? "https://localhost:3443";
@@ -27,10 +29,10 @@ type Run = { route: string; family: string; repetition: number; lcpMs: number | 
 const local = (value: string) => ["localhost", "127.0.0.1"].includes(new URL(value).hostname);
 if (!local(base) || !local(process.env.DATABASE_URL ?? "https://invalid") || new URL(process.env.DATABASE_URL!).pathname !== "/welearn_dev") throw new Error("Performance qualification requires the local welearn_dev dataset");
 
-async function login(page: Page, db: Client, employeeId: string) {
+async function login(page: Page, db: Client, employeeId: string, password = "demo1234") {
   await page.goto(`${base}/login`);
   await page.getByLabel("Employee ID", { exact: true }).fill(employeeId);
-  await page.getByLabel("Password", { exact: true }).fill("demo1234");
+  await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL(url => url.pathname !== "/login");
   if (new URL(page.url()).pathname === "/login/mfa") {
@@ -114,19 +116,26 @@ async function main() {
   const course = (await db.query("SELECT id FROM courses WHERE title='Food Safety Essentials' AND status='PUBLISHED' LIMIT 1")).rows[0]?.id;
   const lesson = (await db.query("SELECT l.id FROM lessons l JOIN modules m ON m.id=l.module_id WHERE m.course_id=$1 AND l.type='VIDEO' ORDER BY m.sort,l.sort LIMIT 1", [course])).rows[0]?.id;
   if (!course || !lesson) throw new Error("Seeded performance content is missing");
+  // Assignment-only prerequisites avoid a seeded learner's ordered-path locks.
+  // Keep the real development corpus and populated manager/admin dashboards;
+  // never seed learning progress or relax access rules for measurement.
+  const learner = await createPerson("LEARNER", { name: "QA performance learner" });
+  await db.query("INSERT INTO enrollments(id,user_id,course_id,source) VALUES($1,$2,$3,'manual')", [randomUUID(), learner.id, course]);
+  const learnerCounts = (await db.query("SELECT (SELECT count(*)::int FROM enrollments WHERE user_id=$1) enrollments,(SELECT count(DISTINCT course_id)::int FROM enrollments WHERE user_id=$1) assigned_courses,(SELECT count(*)::int FROM enrollments WHERE user_id=$1 AND source='path') path_enrollments,(SELECT count(*)::int FROM lesson_progress WHERE user_id=$1) progress_records", [learner.id])).rows[0];
+  const fixture = { learnerCounts, learnerId: learner.id, employeeId: learner.employeeId, courseId: course, lessonId: lesson, strategy: "Unique learner with one manual course enrollment, no path assignment and no seeded progress; existing development content and role dashboards." };
   const dataset = (await db.query("SELECT (SELECT count(*)::int FROM users) users,(SELECT count(*)::int FROM courses) courses,(SELECT count(*)::int FROM courses WHERE status='PUBLISHED') published_courses,(SELECT count(*)::int FROM enrollments) enrollments,(SELECT count(*)::int FROM attempts) attempts,(SELECT count(*)::int FROM hr_tickets) tickets")).rows[0];
   const browser = await chromium.launch();
   const runs: Run[] = [];
-  const metadata = { runtimeBuildId: readFileSync(".next/BUILD_ID", "utf8").trim(), measuredAt: new Date().toISOString(), buildCommit: process.env.QA_BUILD_COMMIT, buildDirty: process.env.QA_BUILD_DIRTY === "1", checkoutCommit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(), checkoutDirty: !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(), base, dataset, database: new URL(process.env.DATABASE_URL!).pathname.slice(1), browser: browser.version(), host: { platform: platform(), release: release(), cpu: cpus()[0]?.model }, config, requestedFamilies, limitations: "Production-build local lab measurements with simulated mobile CPU/network and cold browser cache. Single representative interactions, instrumented with traces; not field Core Web Vitals or physical-device results. Public video embeds remain real network requests. A subset run does not qualify omitted families." };
+  const metadata = { runtimeBuildId: readFileSync(".next/BUILD_ID", "utf8").trim(), measuredAt: new Date().toISOString(), buildCommit: process.env.QA_BUILD_COMMIT, buildDirty: process.env.QA_BUILD_DIRTY === "1", checkoutCommit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(), checkoutDirty: !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(), base, fixture, dataset, database: new URL(process.env.DATABASE_URL!).pathname.slice(1), browser: browser.version(), host: { platform: platform(), release: release(), cpu: cpus()[0]?.model }, config, requestedFamilies, limitations: "Production-build local lab measurements with simulated mobile CPU/network and cold browser cache. Single representative interactions, instrumented with traces; not field Core Web Vitals or physical-device results. Public video embeds remain real network requests. A subset run does not qualify omitted families." };
   try {
     for (const persona of [
-      { employeeId: "AE10023", routes: [{ family: "home", route: "/home" }, { family: "catalog", route: "/learn?view=browse" }, { family: "course", route: `/course/${course}` }, { family: "lesson", route: `/lesson/${lesson}` }] },
+      { employeeId: learner.employeeId, password: QA_PASSWORD, routes: [{ family: "home", route: "/home" }, { family: "catalog", route: "/learn?view=browse" }, { family: "course", route: `/course/${course}` }, { family: "lesson", route: `/lesson/${lesson}` }] },
       { employeeId: "AE20001", routes: [{ family: "manager", route: "/team" }] },
       { employeeId: "AE90001", routes: [{ family: "admin", route: "/admin" }] },
     ]) {
       if (!persona.routes.some(item => requestedFamilies.includes(item.family))) continue;
       const authContext = await browser.newContext({ ignoreHTTPSErrors: true });
-      await login(await authContext.newPage(), db, persona.employeeId);
+      await login(await authContext.newPage(), db, persona.employeeId, persona.password);
       const storageState = await authContext.storageState();
       await authContext.close();
       for (const { family, route } of persona.routes.filter(item => requestedFamilies.includes(item.family))) for (let repetition = 1; repetition <= config.repetitions; repetition++) {
