@@ -37,3 +37,11 @@ Expanded before capture: `QA_SCOPE=expanded` adds path, quiz, oral, practice, po
 `scripts/qa-performance.ts` signs in through the UI using the local synthetic demo accounts, then measures Home, catalog, course, video lesson, manager and admin pages three times each. The admin must already have completed test MFA setup; its existing seed is read locally without logging. Each sample uses a fresh390×844 touch context, cold browser cache,4×CPU slowdown and150ms network latency with1.6Mbps download/750Kbps upload. A5-second observation window samples LCP and layout shifts; CLS uses the largest1-second-gap/5-second session. The visible representative action is verified, then Event Timing is collected. If a supported action generates no entry at the16ms observer threshold, report an upper bound of16ms, not a fabricated zero.
 
 After committing, building and starting that exact production source, run `QA_BUILD_COMMIT=<recorded 40-character build commit> QA_BUILD_DIRTY=0 npx tsx scripts/qa-performance.ts`. Use `QA_BUILD_DIRTY=1` for interim working-tree diagnostics; those cannot qualify the final exact-commit gate. Output includes all samples, medians, budgets, runtime configuration, screenshots and traces under `.artifacts/performance/`. `QA_OUT` selects another output directory. `QA_FAMILIES=home,lesson` can target a repaired area, but final qualification requires all six families. Budgets are median LCP≤2500ms, CLS≤0.1 and representative interaction upper bound≤200ms. Missing measurements fail qualification. These instrumented local lab samples are not field Core Web Vitals or physical-device evidence.
+
+Regenerate the source entry-point inventory before final coverage reconciliation:
+
+```sh
+npx tsx scripts/qa-inventory.ts .artifacts/source-inventory.json
+```
+
+This enumerates page routes, HTTP handlers and server actions (including inline actions in shared components) with source lines and Git metadata. It does **not** mark any item tested or replace the visible-control/workflow-branch audit. Reconcile it with `coverage-inventory.json` and `workflow-cases.json`; inspect runtime guards rather than treating directory-based role labels as authorization proof.
