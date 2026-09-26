@@ -39,7 +39,7 @@ async function main() {
           await page.locator('button[type="submit"]').click();
           await page.waitForURL(u=>u.pathname!==path);
         } else if(path==="/login/mfa-setup") {
-          const secret=(await page.getByLabel("TOTP secret").textContent())?.trim();
+          const secret=(await page.getByLabel(/TOTP secret|Authenticator setup key/).textContent())?.trim();
           if(!secret) throw new Error("Missing TOTP setup secret");
           await page.locator('input[name="code"]').fill(totpCode(secret));
           await page.locator('button[type="submit"]').click();

@@ -12,7 +12,7 @@ export const QA_TOTP = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP";
 
 export function assertLocalQa() {
   const url = new URL(process.env.DATABASE_URL ?? "postgres://invalid/invalid");
-  const base = new URL(process.env.QA_BASE ?? "http://localhost:3100");
+  const base = new URL(process.env.QA_BASE ?? "https://localhost:3443");
   if (!["localhost", "127.0.0.1"].includes(url.hostname) || !url.pathname.startsWith("/welearn_")) {
     throw new Error("Fixtures require a dedicated local database named welearn_*.");
   }

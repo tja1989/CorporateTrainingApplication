@@ -40,3 +40,19 @@ Overall: **10%**. Baseline complete; shared design implementation in progress.
 - Browser engines installed locally: Chromium153,Firefox155,WebKit26.6. Project runner uses real local backend, no retries, per-test dedicated QA accounts.
 - Confirmed baseline defects: form labels not associated with controls; HR chat missing visible page heading; mobile workspace navigation hidden in a horizontal strip; mandatory admin MFA setup can be bypassed by direct URL (source finding, browser regression added).
 - Ruling: scope qualification to the isolated local environment while preserving real-provider and iOS gates as unverified until credentials/hardware are available — avoids production data changes; costs a separate staging/hardware run before release.
+
+- User clarification: no approved staging access yet; record real AI/voice staging and real iPhone microphone/media gates as **UNVERIFIED**. Complete all local work and available browser qualification; do not present these unavailable integrations as passed.
+
+- Task2 first browser pass:12/14 passed, two manager link-navigation failures (desktop/mobile). Agent isolated speculative workspace prefetch racing navigation after login; fix under validation, no test timing workaround.
+- Additional auth lifecycle tests: activation password mismatch recovery, persisted setup and one-time code consumption passed on both viewports; MFA invalid-code correction, setup/consent, and configured-secret replacement guard passed on both.
+- Confirmed existing report scope defect: `userIds: []` currently expands to allusers in report engine. Task4 brief explicitly requires empty-team isolation tests/repair before release.
+
+- Task2 navigation investigation: prefetch toggle did not resolve the intermittent first-click failure (15/18 second run;3failures). Direct loads consistently work. Native workspace anchor experiment passed8/8; final unchanged browser validation pending.
+- Ruling: use ordinary document links in manager/admin workspace navigation — observed client-router transitions intermittently lose the first selection while native navigation is reliable; cost is a full page request on workspace changes. Preserve learner SPA navigation and all hrefs/history/access rules.
+- Task2 cross-engine run exposed an environment issue: WebKit discards the production Secure cookie on HTTP localhost, confirmed by cookie-attribute comparison (no token logging). Added a loopback HTTPS QA proxy and local certificate handling; production cookie security remains intact. HTTPS matrix follows without weakening workflow assertions.
+
+- HTTPS Task2 matrix:64/66 pass; all authentication flows now pass in Chromium, Firefox and WebKit. Two mobile WebKit cases expose missing focus restoration on drawer Escape; implementation fix pending. Failure evidence: `.artifacts/task-2-https-before-focus`, `.artifacts/task-2-https-matrix.log`.
+- Personal browser control at390×844 verified mobile manager drawer open, Escape and focus return in Chromium, then My team destination. This establishes manual evidence for that engine only.
+
+- Task2 implementation committed as `cea8c31`. Focus restoration fix passes unchanged navigation matrix27/27 across all9 viewport/engine projects; earlier39/39 auth cases pass. Whole unit126/126, typecheck and production build pass. Fresh independent review pending; phase acceptance remains at10% until clean review.
+- Additional login recovery suite12/12 passed in Chromium/Firefox/WebKit desktop/mobile: expired signed session redirects, normal sign-in recovers, logout+Back stays protected; invalid/expired activation codes retain input and leave account invited. Initial harness alert selector was narrowed to the form to exclude Next route-announcer; no application change or weaker assertion. Evidence:`.artifacts/task-2-auth-recovery-final.log`.

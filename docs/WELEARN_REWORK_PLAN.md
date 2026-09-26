@@ -111,3 +111,7 @@ Continuous cross-role chains with same records: (1) admin publish → manager as
 ## Execution notes
 
 No existing functionality may be silently removed to satisfy tests or ease implementation. Shared agent model gpt-6-astra/xhigh as requested. Controller owns integration/QA/environment and dispatches one implementer at a time; fresh scoped review after each implementation task. Keep authoritative evidence/progress under docs/qa and ignored logs/artifacts separately. Completion percentages reflect accepted phase work, not elapsed time or files edited.
+
+## Accepted qualification limitation (user clarification, 2026-09-26)
+
+The user confirmed there is no staging access yet and instructed us to record real AI/voice staging and actual iPhone microphone/media checks as **UNVERIFIED**. These unavailable external checks must remain explicit in the handoff. Complete the local implementation and available browser qualification without waiting for staging; distinguish delivery progress from live-provider/iOS release qualification. This clarification does not waive any locally testable workflow, security, accessibility, persistence, or responsive gate.

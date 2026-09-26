@@ -13,7 +13,7 @@ export default async function globalSetup() {
   writeFileSync("test-results/environment.json", JSON.stringify({
     commit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
     dirty: !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(),
-    baseURL: process.env.QA_BASE ?? "http://localhost:3100",
+    baseURL: process.env.QA_BASE ?? "https://localhost:3443",
     time: new Date().toISOString(),
     platform: process.platform,
     node: process.version,

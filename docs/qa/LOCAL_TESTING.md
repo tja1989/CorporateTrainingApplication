@@ -11,6 +11,7 @@ All commands run in the managed checkout, never against the deployed application
 - `npm ci` then `npx playwright install chromium firefox webkit`.
 - On a fresh isolated database only, `npx tsx scripts/deploy-init.ts` initializes schema/demo content. Never point this at a production DB: demo seed is destructive.
 - `npm run build` then `npm run start -- -p3100`. Tests use that production server; they do not silently start a dev server or reset data.
+- In another terminal, `npm run qa:https` creates an ignored, local self-signed certificate with OpenSSL and serves `https://localhost:3443`. The proxy binds only to loopback and forwards to port3100. Browser tests default to this URL and accept that local certificate. Keep the production `Secure` session cookie: WebKit rejects it on plain HTTP even on localhost. Do not use a global TLS verification override.
 
 ## Commands
 

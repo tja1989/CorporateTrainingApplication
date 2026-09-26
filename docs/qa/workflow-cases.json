@@ -2,47 +2,83 @@
   {
     "id": "AUTH:invalid",
     "expected": "Invalid credentials preserve ID; correction signs in.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "status": "PASSED",
+    "actual": "Invalid credentials retain employee ID; corrected password reaches Home in all three engines at desktop/mobile.",
+    "evidence": [
+      ".artifacts/task-2-https-matrix.log",
+      ".artifacts/task-2-https-before-focus/"
+    ],
+    "commit": "Task2 working tree, production build; final exact-commit suite pending",
+    "browserViewport": [
+      "Chromium153 1440x900/390x844",
+      "Firefox155 1440x900/390x844",
+      "WebKit26.6 1440x900/390x844"
+    ]
   },
   {
     "id": "AUTH:activation",
     "expected": "Valid one-time activation; invalid/expired/mismatch recovery; code cannot be reused.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "status": "PASSED",
+    "actual": "Mismatch, invalid and expired code recovery, successful activation, persisted ACTIVE state and one-time consumption passed all three engines desktop/mobile.",
+    "evidence": [
+      ".artifacts/task-2-https-matrix.log",
+      ".artifacts/task-2-https-before-focus/",
+      ".artifacts/task-2-auth-recovery-final.log"
+    ],
+    "commit": "Task2 working tree, production build; final exact-commit suite pending",
+    "browserViewport": [
+      "Chromium153 1440x900/390x844",
+      "Firefox155 1440x900/390x844",
+      "WebKit26.6 1440x900/390x844"
+    ]
   },
   {
     "id": "AUTH:privacy",
     "expected": "New user acknowledges notice once; consent persists.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "status": "PASSED",
+    "actual": "New-user notice acknowledgment persists to DB and reload; learners cannot access manager/admin routes; all engines desktop/mobile.",
+    "evidence": [
+      ".artifacts/task-2-https-matrix.log",
+      ".artifacts/task-2-https-before-focus/"
+    ],
+    "commit": "Task2 working tree, production build; final exact-commit suite pending",
+    "browserViewport": [
+      "Chromium153 1440x900/390x844",
+      "Firefox155 1440x900/390x844",
+      "WebKit26.6 1440x900/390x844"
+    ]
   },
   {
     "id": "AUTH:destinations",
     "expected": "All three roles reach their correct workspace.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "status": "PASSED",
+    "actual": "Learner, manager and administrator reach their correct workspace across all engines desktop/mobile.",
+    "evidence": [
+      ".artifacts/task-2-https-matrix.log",
+      ".artifacts/task-2-https-before-focus/"
+    ],
+    "commit": "Task2 working tree, production build; final exact-commit suite pending",
+    "browserViewport": [
+      "Chromium153 1440x900/390x844",
+      "Firefox155 1440x900/390x844",
+      "WebKit26.6 1440x900/390x844"
+    ]
   },
   {
     "id": "AUTH:mfa",
     "expected": "Admin setup and verification mandatory; invalid code recoverable; direct links cannot bypass.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "status": "PASSED",
+    "actual": "Setup/direct-route guard, invalid-code correction, persisted initial secret, login verification and configured-secret replacement guard passed across all engines desktop/mobile.",
+    "evidence": [
+      ".artifacts/task-2-https-matrix.log",
+      ".artifacts/task-2-https-before-focus/"
+    ],
+    "commit": "Task2 working tree, production build; final exact-commit suite pending",
+    "browserViewport": [
+      "Chromium153 1440x900/390x844",
+      "Firefox155 1440x900/390x844",
+      "WebKit26.6 1440x900/390x844"
+    ]
   },
   {
     "id": "AUTH:reset",
@@ -56,29 +92,51 @@
   {
     "id": "AUTH:logout",
     "expected": "Logout and expired session hide protected content; back/direct URL cannot restore access.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "status": "PASSED",
+    "actual": "UI logout, protected direct URL, browser Back, signed-session expiry and reauthentication passed across engines at both widths.",
+    "evidence": [
+      ".artifacts/task-2-https-matrix.log",
+      ".artifacts/task-2-https-before-focus/",
+      ".artifacts/task-2-auth-recovery-final.log"
+    ],
+    "commit": "Task2 working tree, production build; final exact-commit suite pending",
+    "browserViewport": [
+      "Chromium153 1440x900/390x844",
+      "Firefox155 1440x900/390x844",
+      "WebKit26.6 1440x900/390x844"
+    ]
   },
   {
     "id": "NAV:learner",
     "expected": "Home, Learning, Practice, HR Help, profile and inbox usable via intended nav.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "status": "PARTIAL",
+    "actual": "Home/Learning/Practice active navigation, account disclosure, dark theme persistence and logout pass across engines/widths. HR/profile/inbox full journeys remain.",
+    "evidence": [
+      ".artifacts/task-2-https-matrix.log",
+      ".artifacts/task-2-https-before-focus/"
+    ],
+    "commit": "Task2 working tree, production build; final exact-commit suite pending",
+    "browserViewport": [
+      "Chromium153 1440x900/390x844",
+      "Firefox155 1440x900/390x844",
+      "WebKit26.6 1440x900/390x844"
+    ]
   },
   {
     "id": "NAV:workspace",
     "expected": "Manager/admin labeled sidebar or drawer; active state; role switching and return.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "status": "PASSED",
+    "actual": "Workspace link navigation, active state, mobile drawer Escape/focus restoration and learner/workspace return passed all9 browser/viewport projects after explicit return-focus fix.",
+    "evidence": [
+      ".artifacts/task-2-focus-nav.log",
+      ".artifacts/task-2-focus-qualified/"
+    ],
+    "commit": "Task2 working tree, production build; final exact-commit suite pending",
+    "browserViewport": [
+      "Chromium153 1440x900/390x844",
+      "Firefox155 1440x900/390x844",
+      "WebKit26.6 1440x900/390x844"
+    ]
   },
   {
     "id": "NAV:history",
@@ -92,9 +150,11 @@
   {
     "id": "NAV:keyboard",
     "expected": "Skip link, menus, drawers/dialogs keyboard access, Escape/focus restoration.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
+    "status": "PARTIAL",
+    "actual": "Account disclosure Escape and mobile workspace drawer focus return passed across engines. Skip link, remaining dialogs and full keyboard journeys remain.",
+    "evidence": [
+      ".artifacts/task-2-focus-nav.log"
+    ],
     "commit": null,
     "browserViewport": []
   },
@@ -200,8 +260,8 @@
   {
     "id": "TUTOR:grounded",
     "expected": "Real grounded question streams answer with valid citation and lesson scope.",
-    "status": "NOT_TESTED",
-    "actual": null,
+    "status": "UNVERIFIED",
+    "actual": "User confirmed no approved staging access. Real provider or physical iPhone qualification remains unverified; local deterministic behavior still requires testing.",
     "evidence": [],
     "commit": null,
     "browserViewport": []
@@ -317,8 +377,8 @@
   {
     "id": "VOICE:assessment",
     "expected": "Real oral pass/fail/retake/human overturn persist across roles.",
-    "status": "NOT_TESTED",
-    "actual": null,
+    "status": "UNVERIFIED",
+    "actual": "User confirmed no approved staging access. Real provider or physical iPhone qualification remains unverified; local deterministic behavior still requires testing.",
     "evidence": [],
     "commit": null,
     "browserViewport": []
@@ -344,8 +404,8 @@
   {
     "id": "VOICE:ios",
     "expected": "Real Safari/iOS microphone and playback verified on hardware.",
-    "status": "NOT_TESTED",
-    "actual": null,
+    "status": "UNVERIFIED",
+    "actual": "User confirmed no approved staging access. Real provider or physical iPhone qualification remains unverified; local deterministic behavior still requires testing.",
     "evidence": [],
     "commit": null,
     "browserViewport": []

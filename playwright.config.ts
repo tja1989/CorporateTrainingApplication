@@ -2,7 +2,7 @@ import { defineConfig } from "@playwright/test";
 import { loadEnv } from "./lib/env";
 
 loadEnv();
-const baseURL = process.env.QA_BASE ?? "http://localhost:3100";
+const baseURL = process.env.QA_BASE ?? "https://localhost:3443";
 if (!["localhost", "127.0.0.1"].includes(new URL(baseURL).hostname)) {
   throw new Error("Browser qualification must use the isolated local application.");
 }
@@ -21,6 +21,9 @@ export default defineConfig({
   reporter: [["list"], ["html", { open: "never" }], ["json", { outputFile: "test-results/results.json" }]],
   use: {
     baseURL,
+    // Only the local QA certificate is self-signed; the hostname guard above
+    // prevents this setting from weakening checks against a deployed service.
+    ignoreHTTPSErrors: true,
     trace: "on",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
