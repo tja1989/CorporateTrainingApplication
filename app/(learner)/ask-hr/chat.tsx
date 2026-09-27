@@ -34,17 +34,22 @@ export function HrChat({ userId, loginId, loadHistory = true, activeConversation
   const conversationRef = useRef<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const stickRef = useRef(true);
+  const initialHistoryRef = useRef<Msg[] | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (!loadHistory && !activeConversationId) { setMessages([]); return; }
+    const revealHistory = (history: Msg[]) => {
+      initialHistoryRef.current = history;
+      setMessages(history);
+    };
+    if (!loadHistory && !activeConversationId) { revealHistory([]); return; }
     fetch(activeConversationId && !loadHistory ? `/api/hr?conversationId=${encodeURIComponent(activeConversationId)}` : "/api/hr")
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((d) => {
         conversationRef.current = d.conversationId;
-        setMessages(d.messages ?? []);
+        revealHistory(d.messages ?? []);
       })
-      .catch(() => { setMessages([]); setError("Conversation history could not load. Refresh to try again."); });
+      .catch(() => { revealHistory([]); setError("Conversation history could not load. Refresh to try again."); });
   }, [loadHistory, activeConversationId]);
 
   useEffect(() => {
@@ -81,6 +86,9 @@ export function HrChat({ userId, loginId, loadHistory = true, activeConversation
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
   useEffect(() => {
+    // Loading and revealing stored history must not move controls under the
+    // reader. Later questions and streamed answers retain normal follow behavior.
+    if (messages === null || messages === initialHistoryRef.current) return;
     if (stickRef.current) endRef.current?.scrollIntoView({ block: "end", behavior: reducedMotion() ? "auto" : "smooth" });
   }, [messages, streaming]);
 

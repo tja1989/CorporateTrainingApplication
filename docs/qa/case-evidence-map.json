@@ -667,9 +667,10 @@
     },
     {
       "id": "HR:readiness",
-      "expected": "Initial conversation input waits for hydration and history; failed history remains usable and failed questions remain editable for retry.",
+      "expected": "Initial conversation input waits for hydration and history; pending and first-revealed history preserve the reader viewport and pressed controls; later questions retain follow behavior. Failed history remains usable and failed questions remain editable for retry.",
       "browserTests": [
-        "HR composer waits for hydration and history"
+        "HR composer waits for hydration and history",
+        "HR initial history preserves a held control"
       ]
     },
     {
