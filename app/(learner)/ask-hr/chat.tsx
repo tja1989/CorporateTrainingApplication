@@ -49,16 +49,25 @@ export function HrChat({ userId, loginId, loadHistory = true, activeConversation
 
   useEffect(() => {
     if (!sessionExpiresAt) return;
-    let live = true;
+    let live = true, revision = 0, expired = false;
+    const deadlinePassed = () => expired || Date.now() >= sessionExpiresAt;
+    const expire = () => { expired = true; revision++; setSessionLocked(true); abortRef.current?.abort(); };
     const check = async () => {
+      const current = ++revision;
       const cid = conversationRef.current;
-      if (Date.now() >= sessionExpiresAt) { setSessionLocked(true); abortRef.current?.abort(); return; }
+      if (deadlinePassed()) { expire(); return; }
       if (!cid) return;
       setSessionLocked(true);
-      try { const response = await fetch(`/api/hr/reauth?conversationId=${encodeURIComponent(cid)}`, { cache: "no-store" }); const status = response.ok ? await response.json() : null; if (live) setSessionLocked(!response.ok || status?.userId !== userId || status?.loginId !== loginId); }
-      catch { if (live) setSessionLocked(true); }
+      try {
+        const response = await fetch(`/api/hr/reauth?conversationId=${encodeURIComponent(cid)}`, { cache: "no-store" });
+        const status = response.ok ? await response.json() : null;
+        if (live && revision === current) {
+          if (deadlinePassed()) expire();
+          else setSessionLocked(!response.ok || status?.userId !== userId || status?.loginId !== loginId);
+        }
+      } catch { if (live && revision === current) setSessionLocked(true); }
     };
-    const timer = setTimeout(() => { setSessionLocked(true); abortRef.current?.abort(); }, Math.max(0, sessionExpiresAt - Date.now()));
+    const timer = setTimeout(expire, Math.max(0, sessionExpiresAt - Date.now()));
     window.addEventListener("focus", check); window.addEventListener("pageshow", check);
     return () => { live = false; clearTimeout(timer); window.removeEventListener("focus", check); window.removeEventListener("pageshow", check); };
   }, [sessionExpiresAt, userId, loginId]);

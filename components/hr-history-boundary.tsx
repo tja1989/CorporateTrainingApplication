@@ -35,21 +35,26 @@ export function HrHistoryBoundary({ expiresAt, conversationId, userId, loginId, 
   const [locked, setLocked] = useState(expiresAt !== null && expiresAt <= Date.now());
   const [checking, setChecking] = useState(false);
   useEffect(() => {
-    let live = true, revision = 0;
+    let live = true, revision = 0, expired = false;
+    const deadlinePassed = () => expired || (expiresAt !== null && Date.now() >= expiresAt);
+    const expire = () => { expired = true; revision++; setLocked(true); setChecking(false); };
     const hide = () => { revision++; setChecking(true); };
     const check = async () => {
       const current = ++revision;
-      if (expiresAt !== null && Date.now() >= expiresAt) { setLocked(true); return; }
+      if (deadlinePassed()) { expire(); return; }
       setChecking(true);
       try {
         const query = conversationId ? `conversationId=${encodeURIComponent(conversationId)}` : sessionOnly ? "scope=session" : "";
         const response = await fetch(`/api/hr/reauth${query ? `?${query}` : ""}`, { cache: "no-store" });
         const status = response.ok ? await response.json() : null;
-        if (live && revision === current) setLocked(!response.ok || status?.userId !== userId || status?.loginId !== loginId);
+        if (live && revision === current) {
+          if (deadlinePassed()) expire();
+          else setLocked(!response.ok || status?.userId !== userId || status?.loginId !== loginId);
+        }
       } catch { if (live && revision === current) setLocked(true); }
       finally { if (live && revision === current) setChecking(false); }
     };
-    const timer = expiresAt === null ? undefined : setTimeout(() => setLocked(true), Math.max(0, expiresAt - Date.now()));
+    const timer = expiresAt === null ? undefined : setTimeout(expire, Math.max(0, expiresAt - Date.now()));
     window.addEventListener("focus", check); window.addEventListener("pageshow", check); window.addEventListener("pagehide", hide);
     const visibility = () => { if (document.visibilityState === "visible") void check(); else hide(); };
     document.addEventListener("visibilitychange", visibility);

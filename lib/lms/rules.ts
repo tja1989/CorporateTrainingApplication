@@ -64,6 +64,19 @@ async function targetCourseIds(rule: Rule, connection: LearningDatabase = db): P
   return rows.sort((a, b) => a.sort - b.sort).map((r) => r.courseId);
 }
 
+/** Resolve current path restrictions independently of immutable enrollment provenance.
+ * An overlapping course rule or a disabled original rule must not hide a surviving
+ * matching path assignment. Callers still require an active rule enrollment. */
+export async function matchingRulePathIds(userId: string, courseId: string, connection: LearningDatabase = db): Promise<string[]> {
+  const [user] = await connection.select().from(t.users).where(eq(t.users.id, userId)).limit(1);
+  if (!user || user.erasedAt) return [];
+  const rules = await connection.select({ rule: t.enrollmentRules }).from(t.enrollmentRules)
+    .innerJoin(t.pathCourses, and(eq(t.pathCourses.pathId, t.enrollmentRules.targetId), eq(t.pathCourses.courseId, courseId)))
+    .where(and(eq(t.enrollmentRules.active, true), eq(t.enrollmentRules.targetType, "path")));
+  const ancestry = await storeAncestry(user.storeId, connection);
+  return [...new Set(rules.filter(({ rule }) => userMatchesRule(user, rule.criteria, ancestry)).map(({ rule }) => rule.targetId))];
+}
+
 /**
  * Idempotent re-evaluation of one user against all active rules (spec FR-3.2):
  * fires on user create/update and on rule create/update (then called per user).

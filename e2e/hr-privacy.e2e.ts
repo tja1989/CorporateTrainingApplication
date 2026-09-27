@@ -64,7 +64,21 @@ test("@core Shared HR history requires credentials across pages and APIs and exp
   await page.clock.install({ time: new Date() });
   await page.getByLabel("Confirm your password").fill(QA_PASSWORD); await page.getByRole("button", { name: "Verify and open history", exact: true }).click();
   await expect(page.getByText("QA stored confidential conversation", { exact: true })).toBeVisible();
+  // Both checks receive a genuine authorized server response before expiry, but
+  // delivery is held until the rendered boundary has already expired.
+  let releaseStatus!: () => void, captured = 0, delivered = 0;
+  const statusGate = new Promise<void>(resolve => { releaseStatus = resolve; });
+  await page.route("**/api/hr/reauth*", async route => {
+    const response = await route.fetch(); expect(response.status()).toBe(200); captured++;
+    await statusGate; await route.fulfill({ response }); delivered++;
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect.poll(() => captured).toBe(2);
   await expireHistory(context); await page.clock.fastForward(301_000);
+  await expect(page.getByLabel("Confirm your password")).toBeVisible();
+  releaseStatus(); await expect.poll(() => delivered).toBe(2); await page.clock.runFor(100);
+  await page.unroute("**/api/hr/reauth*");
+  await expect(page.locator("summary").filter({ hasText: "Your HR tickets" })).toHaveCount(0);
   await expect(page.getByText("QA stored confidential conversation", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Confirm your password")).toBeVisible();
   expect((await page.request.get("/api/hr")).status()).toBe(403);
