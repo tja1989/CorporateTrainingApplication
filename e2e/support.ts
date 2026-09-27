@@ -57,6 +57,18 @@ export async function signIn(page: Page, person: Person) {
   }
 }
 
+/** Retry metadata must come from a completed server document, not stale props. */
+export async function reviewAssessmentAttempts(page: Page) {
+  const url = page.url();
+  const [response] = await Promise.all([
+    page.waitForResponse(r => r.request().isNavigationRequest() && r.url() === url, { timeout: 30_000 }),
+    page.waitForEvent("load", { timeout: 30_000 }),
+    page.getByRole("button", { name: "Review attempts and retry", exact: true }).click(),
+  ]);
+  expect(response.status()).toBe(200);
+  await expect(page).toHaveURL(url);
+}
+
 export async function capture(page: Page, testInfo: TestInfo, label: string, options: { viewportOnly?: boolean } = {}) {
   const dimensions = await page.evaluate(() => ({ width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight, viewport: { width: innerWidth, height: innerHeight }, dpr: devicePixelRatio }));
   const oversized = dimensions.height > 16384 || dimensions.width * dimensions.height * dimensions.dpr ** 2 > 16_000_000;

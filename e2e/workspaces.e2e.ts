@@ -135,7 +135,9 @@ test("@core Empty-manager reports, CSV and Ask Reports never include outside use
 });
 
 test("@core @template Admin navigation, import, groups and rules are distinct persisted workflows", async ({ page }, info) => {
-  test.setTimeout(120_000);
+  // Three independently capped 60s bulk actions plus 60s for the retained
+  // import/editor/persistence chain. Individual limits and assertions stay fixed.
+  test.setTimeout(240_000);
   const admin = await createPerson("ADMIN"); const manager = await createPerson("MANAGER"); const token = randomUUID().slice(0,8);
   await signIn(page, admin);
   await page.getByRole("link", { name: /Open HR tickets/ }).click();
@@ -156,11 +158,50 @@ test("@core @template Admin navigation, import, groups and rules are distinct pe
   await page.getByRole("button", { name: "Import employees", exact: true }).click();
   await expect(page.locator("main").getByRole("alert")).toContainText("already exists; skipped");
   expect(await withDb(async db => (await db.query("SELECT count(*)::int n FROM users WHERE employee_id=$1", [employeeId])).rows[0].n)).toBe(1);
-  await page.getByRole("link", { name: "People", exact: true }).last().click();
-  await page.getByLabel("Search people").fill(employeeId); await page.getByRole("button", { name: "Search", exact: true }).click();
-  await page.locator("main details summary").click();
+  const peopleStarted = Date.now();
+  const [peopleResponse] = await Promise.all([
+    page.waitForResponse(r => r.request().isNavigationRequest() && new URL(r.url()).searchParams.get("view") === "people"),
+    page.waitForEvent("load", { timeout: 30_000 }),
+    page.getByRole("link", { name: "People", exact: true }).last().click(),
+  ]);
+  expect(peopleResponse.status()).toBe(200);
+  const choiceCounts = await withDb(async db => (await db.query("SELECT (SELECT count(*)::int FROM users) users,(SELECT count(*)::int FROM users WHERE role!='LEARNER') managers,(SELECT count(*)::int FROM groups) groups,(SELECT count(*)::int FROM org_units WHERE type='store') stores")).rows[0]);
+  await expect(page.getByLabel("Search people",{exact:true})).toBeVisible();
+  await expect(page.locator("main details summary")).toHaveCount(Math.min(25,choiceCounts.users));
+  await info.attach("people-document", { body: JSON.stringify({ dataset: choiceCounts, bytes: (await peopleResponse.body()).length, loadMs: Date.now()-peopleStarted, closedSelects: await page.locator("main details select").count(), closedOptions: await page.locator("main details option").count() }), contentType: "application/json" });
+  await expect(page.locator("main details select")).toHaveCount(0);
+  const expectedChoices=await withDb(async db => (await db.query("SELECT ARRAY(SELECT id::text FROM users WHERE role!='LEARNER') managers,ARRAY(SELECT id::text FROM groups) groups,ARRAY(SELECT id::text FROM org_units WHERE type='store') stores")).rows[0]);
+  await page.getByLabel("Search people").fill(employeeId);
+  await Promise.all([page.waitForEvent("load", { timeout: 30_000 }), page.getByRole("button", { name: "Search", exact: true }).click()]);
+  const personSummary = page.locator("main details summary");
+  await personSummary.focus(); await page.keyboard.press("Enter");
+  await expect(page.getByLabel("Manager", { exact: true })).toHaveValue(manager.id);
+  // Another isolated worker may add a choice after this snapshot; every choice
+  // available before navigation must remain available to this editor.
+  for(const [label,ids] of [["Manager",expectedChoices.managers],["Group",expectedChoices.groups],["Store",expectedChoices.stores]] as const){
+    const values=await page.getByLabel(label,{exact:true}).locator("option").evaluateAll(options=>options.map(option=>(option as HTMLOptionElement).value));
+    expect(values).toEqual(expect.arrayContaining(["",...ids]));
+  }
   await page.getByLabel("Time multiplier (assessment accommodation)").selectOption("1.5");
-  await saveAndReload(page, page.getByRole("button", { name: "Save", exact: true }));
+  await personSummary.focus(); await page.keyboard.press("Enter");
+  await expect(page.locator("main details select")).toHaveCount(0);
+  await page.keyboard.press("Enter");
+  await expect(page.getByLabel("Time multiplier (assessment accommodation)")).toHaveValue("1.5");
+  let releaseSave: () => void = () => {}; const heldSave = new Promise<void>(resolve => { releaseSave = resolve; }); let saveRequests = 0;
+  const personUrl = page.url();
+  await page.route(personUrl, async route => {
+    if(route.request().method()!=="POST"){await route.continue();return;}
+    saveRequests++;const response=await route.fetch();await heldSave;await route.fulfill({response});
+  });
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  const savedLoad=page.waitForEvent("load", {timeout:30_000});
+  try {
+    await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+    await personSummary.click();await personSummary.click();
+    await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+    await expect(page.getByLabel("Time multiplier (assessment accommodation)")).toHaveValue("1.5");
+  } finally {releaseSave();}
+  await savedLoad;await page.unroute(personUrl);expect(saveRequests).toBe(1);
   await expect.poll(async () => withDb(async db => (await db.query("SELECT time_multiplier FROM users WHERE employee_id=$1", [employeeId])).rows[0].time_multiplier)).toBe(1.5);
   await page.getByRole("link", { name: "Enrollment rules", exact: true }).click();
   await page.getByLabel("Rule name").fill(`QA rule ${token}`);
@@ -184,6 +225,9 @@ test("@core @template Admin navigation, import, groups and rules are distinct pe
   await page.locator("main details summary").click();
   await page.getByRole("button", { name: "Issue reset/activation code", exact: true }).click();
   await expect(page.getByRole("region", { name: "Issued reset code", exact: true })).toBeVisible();
+  const issuedCode=await page.getByRole("region", { name: "Issued reset code", exact: true }).innerText();
+  await page.locator("main details summary").click();await page.locator("main details summary").click();
+  await expect(page.getByRole("region", { name: "Issued reset code", exact: true })).toHaveText(issuedCode, { useInnerText: true });
   await page.getByRole("button", { name: "Hide code", exact: true }).click();
   await expect(page.getByRole("region", { name: "Issued reset code", exact: true })).toHaveCount(0);
   await expectNoPageOverflow(page); await capture(page, info, "admin-enrollment-rules");
@@ -494,6 +538,20 @@ test("@core Workspace mutation forms cannot submit before client handlers are re
     await expect(initial.getByRole("button", { name: "Issue password reset code", exact: true })).toBeDisabled();
     await expect(initial.getByRole("status").filter({ hasText: "Preparing account help" })).toBeVisible();
   } finally { await unhydrated.close(); }
+  const delayed = await browser.newContext({ storageState: await page.context().storageState(), ignoreHTTPSErrors: true });
+  let releaseScripts: () => void = () => {}; const scriptsReady = new Promise<void>(resolve => { releaseScripts = resolve; });
+  try {
+    await delayed.route(/\/_next\/static\/.*\.js(?:\?.*)?$/, async route => { await scriptsReady; await route.continue(); });
+    const early = await delayed.newPage(); const pageErrors: string[] = []; early.on("pageerror", error => pageErrors.push(error.message));
+    await early.goto(new URL(`/admin/people?q=${learner.employeeId}`, page.url()).href, { waitUntil: "commit" });
+    await early.locator("main details summary").click();
+    await expect(early.locator("main details")).toHaveAttribute("open", "");
+    await expect(early.locator("main details select")).toHaveCount(0);
+    releaseScripts();
+    await expect(early.getByLabel("Time multiplier (assessment accommodation)")).toBeEnabled();
+    await expect(early.getByLabel("Role", { exact: true })).toHaveValue("LEARNER");
+    expect(pageErrors).toEqual([]);
+  } finally { releaseScripts(); await delayed.close(); }
   await page.goto("/admin/courses");
   await expect(page.getByRole("button", { name: "Create draft", exact: true })).toBeEnabled();
   await page.goto(`/team/${learner.id}`);

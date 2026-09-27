@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createPerson, signIn, withDb } from "./support";
+import { createPerson, signIn, withDb, reviewAssessmentAttempts } from "./support";
 import { smallQuiz, textCourse } from "./qualification-fixtures";
 
 test("@core A fresh same-page no-backtrack sitting resets navigation and answers", async ({ page }) => {
@@ -11,7 +11,8 @@ test("@core A fresh same-page no-backtrack sitting resets navigation and answers
   await page.getByRole("textbox", { name: "Type the safety word" }).fill("unsafe");
   await page.getByRole("button", { name: "Submit assessment", exact: true }).click();
   await expect(page.getByText("Final result: not passed", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Review attempts and retry", exact: true }).click();
+  await reviewAssessmentAttempts(page);
+  await expect(page.getByText("2 attempt(s) left", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Start assessment", exact: true }).click();
   await expect(page.getByRole("button", { name: "Question 1, unanswered", exact: true })).toHaveAttribute("aria-current", "step");
   await expect(page.getByRole("radio", { name: "Wash hands", exact: true })).not.toBeChecked();

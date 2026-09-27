@@ -1,12 +1,12 @@
 import { WorkspaceTabs, WorkspaceLink } from "@/components/workspace-ui";
 import { WorkspaceForm } from "@/components/workspace-form";
-import { ResetCode } from "@/components/reset-code";
+import { PeopleEditorList } from "./people-editor";
 import { Icon } from "@/components/icons";
 import { asc } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
-import { Button, ButtonLink, Card, Chip, Field, Input, PageHeader, Select, SectionTitle, Textarea } from "@/components/ui";
-import { importCsvAction, createRuleAction, toggleRuleAction, updateUserAction, issueCodeAction, createGroupAction } from "./actions";
+import { Button, Card, Chip, Field, Input, PageHeader, Select, SectionTitle, Textarea } from "@/components/ui";
+import { importCsvAction, createRuleAction, toggleRuleAction, createGroupAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +33,6 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
   const paths = await db.select().from(t.paths);
   const managers = users.filter((u) => u.role !== "LEARNER");
   const groupName = new Map(groups.map((g) => [g.id, g.name]));
-  const storeName = new Map(stores.map((s) => [s.id, s.name]));
   const targetName = (r: typeof rules[number]) =>
     r.targetType === "course" ? courses.find((c) => c.id === r.targetId)?.title : paths.find((p) => p.id === r.targetId)?.title;
 
@@ -50,67 +49,17 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
           <form className="mb-4 flex flex-wrap items-end gap-3" action="/admin/people" method="get">
             <div className="min-w-0 flex-1"><Field label="Search people"><Input name="q" defaultValue={q ?? ""} placeholder="Name or employee ID" /></Field></div><Button type="submit" className="mb-4">Search</Button>{q ? <WorkspaceLink href="/admin/people" className="mb-4">Reset</WorkspaceLink> : null}
           </form>
-          <div className="flex flex-col gap-2">
-            {visible.map((u) => (
-              <details key={u.id} className="rounded-card border border-border bg-surface">
-                <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3 p-4 text-sm">
-                  <span className="min-w-0 break-words">
-                    <span className="font-medium">{u.name}</span>
-                    <span className="mt-1 block text-sm text-muted">{u.employeeId} · {u.jobTitle ?? "—"} · {u.storeId ? storeName.get(u.storeId) : "—"}</span>
-                  </span>
-                  <span className="flex gap-2">
-                    <Chip variant={u.role === "ADMIN" ? "primary" : u.role === "MANAGER" ? "warning" : "neutral"}>{u.role.toLowerCase()}</Chip>
-                    {u.passwordState === "INVITED" ? <Chip variant="warning">invited</Chip> : null}
-                  </span>
-                </summary>
-                <div className="border-t border-border p-3">
-                  <WorkspaceForm action={updateUserAction.bind(null, u.id)} className="grid gap-3"><div className="grid gap-3 sm:grid-cols-2">
-                    <Field label="Role">
-                      <Select name="role" defaultValue={u.role}>
-                        <option>LEARNER</option><option>MANAGER</option><option>ADMIN</option>
-                      </Select>
-                    </Field>
-                    <Field label="Manager">
-                      <Select name="managerId" defaultValue={u.managerId ?? ""}>
-                        <option value="">— none —</option>
-                        {managers.map((m) => (
-                          <option key={m.id} value={m.id}>{m.name}</option>
-                        ))}
-                      </Select>
-                    </Field>
-                    <Field label="Store">
-                      <Select name="storeId" defaultValue={u.storeId ?? ""}>
-                        <option value="">— none —</option>
-                        {stores.map((s) => (
-                          <option key={s.id} value={s.id}>{s.name}</option>
-                        ))}
-                      </Select>
-                    </Field>
-                    <Field label="Group">
-                      <Select name="groupId" defaultValue={u.groupIds[0] ?? ""}>
-                        <option value="">— none —</option>
-                        {groups.map((g) => (
-                          <option key={g.id} value={g.id}>{g.name}</option>
-                        ))}
-                      </Select>
-                    </Field>
-                    <Field label="Time multiplier (assessment accommodation)">
-                      <Select name="timeMultiplier" defaultValue={String(u.timeMultiplier)}>
-                        <option value="1">1× (standard)</option>
-                        <option value="1.5">1.5×</option>
-                        <option value="2">2×</option>
-                      </Select>
-                    </Field>
-                    <div className="flex items-end gap-2 pb-4">
-                      <Button type="submit" variant="secondary">Save</Button>
-                    </div>
-                  </div></WorkspaceForm>
-                  <div className="border-t border-border pt-4"><ResetCode action={issueCodeAction.bind(null, u.id)} label="Issue reset/activation code" /><p className="mt-2 text-sm text-muted">Verify identity first. Resetting invalidates the current password and records who issued the code.</p></div>
-                </div>
-              </details>
-            ))}
-            {visible.length === 0 ? <p className="text-sm text-muted">No one matches this search.</p> : null}
-          </div>
+          <PeopleEditorList
+            people={visible.map(user => ({
+              id: user.id, employeeId: user.employeeId, name: user.name,
+              role: user.role, passwordState: user.passwordState, jobTitle: user.jobTitle,
+              managerId: user.managerId, storeId: user.storeId,
+              groupId: user.groupIds[0] ?? null, timeMultiplier: user.timeMultiplier,
+            }))}
+            managers={managers.map(({ id, name }) => ({ id, name }))}
+            stores={stores.map(({ id, name }) => ({ id, name }))}
+            groups={groups.map(({ id, name }) => ({ id, name }))}
+          />
           <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted">
             <span>
               {filtered.length === 0 ? "0" : `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, filtered.length)}`} of {filtered.length}

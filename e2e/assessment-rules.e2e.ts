@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { smallQuiz } from "./qualification-fixtures";
-import { createPerson, signIn, withDb, capture } from "./support";
+import { createPerson, signIn, withDb, capture, reviewAssessmentAttempts } from "./support";
 
 test("@core Assessment navigation and refresh retain server answers and accommodated deadline", async ({ page }, info) => {
   const learner = await createPerson("LEARNER"), f = await smallQuiz({ oneAtATime: true, timeLimitSec: 600 });
@@ -75,7 +75,8 @@ test("@core Assessment windows, cooldown, attempt limits and exam answer sealing
   expect(await (await response).json()).toMatchObject({ reveal: false, review: [] });
   await expect(page.getByText("Correct answers are revealed after the assessment window closes.")).toBeVisible();
   await expect(page.getByText("Clean hands protect customers.", { exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "Review attempts and retry", exact: true }).click();
+  await reviewAssessmentAttempts(page);
+  await expect(page.getByText("1 attempt(s) left", { exact: true })).toBeVisible();
   await expect(page.getByText(/Next attempt available at/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Start assessment", exact: true })).toHaveCount(0);
   // Advancing the fixture's prior submission and release condition prepares the next allowed attempt.
@@ -88,7 +89,8 @@ test("@core Assessment windows, cooldown, attempt limits and exam answer sealing
   await page.getByRole("textbox", { name: "Type the safety word" }).fill("safe");
   await page.getByRole("button", { name: "Submit assessment", exact: true }).click();
   await expect(page.getByText("Clean hands protect customers.", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Review attempts and retry", exact: true }).click();
+  await reviewAssessmentAttempts(page);
+  await expect(page.getByText("0 attempt(s) left", { exact: true })).toBeVisible();
   await expect(page.getByText("You have used all attempts for this assessment.", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Start assessment", exact: true })).toHaveCount(0);
 });

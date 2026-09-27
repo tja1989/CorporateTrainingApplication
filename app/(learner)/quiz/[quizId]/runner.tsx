@@ -2,7 +2,6 @@
 
 import { Icon } from "@/components/icons";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { AiSurface, AnimatedNumber, Button, ButtonLink, Card, Chip, cx } from "@/components/ui";
 import { AttemptSaveError, isAnswered, resultStatus, saveAttemptAnswers, submitSavedAttempt } from "@/lib/quiz/client-state";
 import { QuestionInput, type Served } from "@/components/question-input";
@@ -34,7 +33,6 @@ export function QuizRunner({
   resume: boolean;
   lessonHref?: string;
 }) {
-  const router = useRouter();
   const [phase, setPhase] = useState<"preflight" | "consent" | "running" | "result">("preflight");
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [served, setServed] = useState<Served[]>([]);
@@ -339,7 +337,7 @@ export function QuizRunner({
               </Card>
             ))
           : null}
-        <div className="flex flex-wrap gap-2">{lessonHref ? <ButtonLink href={lessonHref}>Return to lesson</ButtonLink> : null}<Button variant="secondary" onClick={() => { setPhase("preflight"); setResult(null); router.refresh(); }}>Review attempts and retry</Button></div>
+        <div className="flex flex-wrap gap-2">{lessonHref ? <ButtonLink href={lessonHref}>Return to lesson</ButtonLink> : null}<Button variant="secondary" onClick={() => window.location.reload()}>Review attempts and retry</Button></div>
       </div>
     );
   }

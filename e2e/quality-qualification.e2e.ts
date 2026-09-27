@@ -55,6 +55,8 @@ for(const theme of ["light","dark"] as const){
     await withDb(db=>db.query("UPDATE lessons SET type='PDF',payload=$2 WHERE id=$1",[pdf.lesson,JSON.stringify({fileUrl:"/demo/fire-safety-guide.pdf"})]));
     await page.route("https://www.youtube.com/iframe_api",route=>route.fulfill({contentType:"application/javascript",body:`window.YT={Player:function(host,opts){this.seekTo=()=>{};this.getCurrentTime=()=>0;this.getPlayerState=()=>2;this.playVideo=()=>{};this.destroy=()=>{};setTimeout(()=>opts.events.onReady(),0)}};window.onYouTubeIframeAPIReady();`}));
     await signIn(page,learner);await page.goto(`/quiz/${quiz}`);await page.getByRole("button",{name:"Start assessment",exact:true}).click();
+    await expect(page.getByRole("navigation",{name:"Question navigation",exact:true}).getByRole("button")).toHaveCount(7);
+    await expect(page.getByRole("button",{name:"Submit assessment",exact:true})).toBeEnabled();
     await inspect(page,info,`${theme}-active-seven-questions`);
     await page.getByRole("button",{name:"Submit assessment",exact:true}).click();
     const dialog=page.getByRole("dialog",{name:"Submit with unanswered questions?",exact:true});await expect(dialog).toBeVisible();
@@ -66,6 +68,7 @@ for(const theme of ["light","dark"] as const){
     await page.goto(`/lesson/${video.lessons[0]}`);
     for(const tab of ["Overview","Transcript","Tutor"]){
       await page.getByRole("tab",{name:tab,exact:true}).click();
+      if(tab==="Transcript")await expect(page.getByRole("tabpanel",{name:"Transcript",exact:true}).getByRole("button",{name:/0:10.*Wash hands before serving food/})).toBeVisible();
       if(tab==="Tutor"&&(page.viewportSize()?.width??0)<=390){
         await expect(page.getByRole("button",{name:"Can you summarize this part in two sentences?",exact:true})).toBeVisible();
         const hit=await page.getByRole("button",{name:"Toggle retrieval scope",exact:true}).evaluate(el=>{const r=el.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return !!hit&&(el===hit||el.contains(hit));});
@@ -159,7 +162,16 @@ for(const theme of ["light","dark"] as const){
     });
     await signIn(page,admin);
     const routes=["/admin","/admin/courses",`/admin/courses/${f.course}`,`/admin/courses/${f.course}?view=settings`,"/admin/people","/admin/people?view=import","/admin/people?view=groups","/admin/people?view=rules","/admin/reviews?view=grades","/admin/reviews?view=drafts","/admin/reviews?view=oral",`/admin/corpus?doc=${policy}`,"/admin/corpus?view=publish","/admin/corpus?view=quality","/admin/tickets",`/admin/tickets/${ticket}`,"/admin/integrity",`/admin/integrity/${attempt}`,"/admin/reports","/admin/inbox"];
-    for(let i=0;i<routes.length;i++){await page.goto(routes[i]);await inspect(page,info,`${theme}-admin-${i}`);}
+    for(let i=0;i<routes.length;i++){
+      await page.goto(routes[i]);
+      if(routes[i]==="/admin/people")await expect(page.locator("main details summary").first()).toBeVisible();
+      await inspect(page,info,`${theme}-admin-${i}`);
+      if(routes[i]==="/admin/people"){
+        const summary=page.locator("main details summary").first();await summary.focus();await page.keyboard.press("Enter");
+        await expect(page.getByLabel("Time multiplier (assessment accommodation)")).toBeVisible();
+        await inspect(page,info,`${theme}-admin-person-editor`);
+      }
+    }
     await page.context().clearCookies();await context.addCookies([{name:"ll_theme",value:theme,url:baseURL!}]);await signIn(page,manager);
     for(const [i,url] of ["/team",`/team/${learner.id}`,"/team/reports","/team/inbox"].entries()){await page.goto(url);await inspect(page,info,`${theme}-manager-${i}`);}
     await page.goto(`/team/${learner.id}`);await page.getByRole("button",{name:"Issue password reset code",exact:true}).click();await inspect(page,info,`${theme}-manager-reset-code`);
