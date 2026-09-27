@@ -52,9 +52,19 @@ export async function importCsvAction(form: FormData): Promise<ActionResult> {
     const problem = row.storeName && !store ? "Store not found." : row.groupName && !group ? "Group not found." : row.managerEmployeeId && (!manager || manager.role === "LEARNER") ? "Manager employee ID must identify an existing manager or administrator." : "";
     if (problem) { errors.push(`Row ${row.row}: ${problem}`); continue; }
     const code = activationCode(); const userId = id();
-    const [inserted] = await db.insert(t.users).values({ id: userId, employeeId: row.employeeId, name: row.name, role: row.role, storeId: store?.id ?? null, managerId: manager?.id ?? null, groupIds: group ? [group.id] : [], jobTitle: row.jobTitle || null, hireDate: row.hireDate ? new Date(row.hireDate) : null, passwordState: "INVITED", inviteCodeHash: await bcrypt.hash(code, 10), inviteExpiresAt: new Date(Date.now() + 14 * 24 * 3600_000) }).returning();
-    byEmployeeId.set(row.employeeId, inserted);
-    await reevaluateUser(userId); codes.push(`${row.employeeId}: ${code}`);
+    const inviteCodeHash = await bcrypt.hash(code, 10);
+    try {
+      const inserted = await db.transaction(async tx => {
+        const [person] = await tx.insert(t.users).values({ id: userId, employeeId: row.employeeId, name: row.name, role: row.role, storeId: store?.id ?? null, managerId: manager?.id ?? null, groupIds: group ? [group.id] : [], jobTitle: row.jobTitle || null, hireDate: row.hireDate ? new Date(row.hireDate) : null, passwordState: "INVITED", inviteCodeHash, inviteExpiresAt: new Date(Date.now() + 14 * 24 * 3600_000) }).returning();
+        await reevaluateUser(userId, tx);
+        return person;
+      });
+      byEmployeeId.set(row.employeeId, inserted);
+      codes.push(`${row.employeeId}: ${code}`);
+    } catch {
+      // A failed row rolls back its account and assignments; earlier codes remain usable.
+      errors.push(`Row ${row.row}: ${row.employeeId} could not be imported. Check whether the employee already exists, then retry this row.`);
+    }
   }
   revalidatePath("/admin/people");
   return { success: `${codes.length} employee${codes.length === 1 ? "" : "s"} imported. ${errors.length} row${errors.length === 1 ? "" : "s"} need attention.`, error: errors.length ? errors.join("\n") : undefined, codes };

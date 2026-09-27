@@ -1,3 +1,4 @@
+import { writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { Client } from "pg";
 import bcrypt from "bcryptjs";
@@ -56,7 +57,15 @@ export async function signIn(page: Page, person: Person) {
   }
 }
 
-export async function capture(page: Page, testInfo: TestInfo, label: string) {
+export async function capture(page: Page, testInfo: TestInfo, label: string, options: { viewportOnly?: boolean } = {}) {
+  const dimensions = await page.evaluate(() => ({ width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight, viewport: { width: innerWidth, height: innerHeight }, dpr: devicePixelRatio }));
+  const oversized = dimensions.height > 16384 || dimensions.width * dimensions.height * dimensions.dpr ** 2 > 16_000_000;
+  const previousScroll = await page.evaluate(() => ({ x: scrollX, y: scrollY }));
+  if (testInfo.project.name !== "chromium-native-zoom" && !oversized && !options.viewportOnly) {
+    // A full-page image of a scrolled page paints sticky headers at the old offset.
+    await page.evaluate(() => { window.scrollTo(0, 0); });
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
+  }
   let screenshot: Buffer;
   if (testInfo.project.name === "chromium-native-zoom") {
     // Playwright's clip calculation shifts scrolled content at native zoom.
@@ -66,8 +75,12 @@ export async function capture(page: Page, testInfo: TestInfo, label: string) {
       const captured = await session.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
       screenshot = Buffer.from(captured.data, "base64");
     } finally { await session.detach(); }
-  } else screenshot = await page.screenshot({ fullPage: true, animations: "disabled" });
-  await testInfo.attach(label, { body: screenshot, contentType: "image/png" });
+  } else screenshot = await page.screenshot({ fullPage: !oversized && !options.viewportOnly, animations: "disabled" });
+  const captureMethod = testInfo.project.name === "chromium-native-zoom" ? "CDP viewport" : oversized || options.viewportOnly ? "Playwright viewport" : "Playwright full page";
+  await testInfo.attach(`${label}-capture`, { body: JSON.stringify({ dimensions, previousScroll, captureScroll: await page.evaluate(() => ({ x: scrollX, y: scrollY })), captureMethod, reason: oversized ? "Document exceeds the 16M pixel / 16384px capture budget; assertions and DOM trace remain complete." : options.viewportOnly ? "Focused viewport evidence" : null }), contentType: "application/json" });
+  const path = testInfo.outputPath(`${label}.png`);
+  await writeFile(path, screenshot);
+  await testInfo.attach(label, { path, contentType: "image/png" });
 }
 
 export async function expectNoPageOverflow(page: Page) {

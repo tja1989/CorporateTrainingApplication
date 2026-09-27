@@ -12,26 +12,31 @@ test("@core Certificate and learner API data require completed MFA and privacy a
   await page.getByLabel("Password", { exact: true }).fill(QA_PASSWORD);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(/\/login\/mfa$/);
-  for (const url of [`/api/certificates/${certificate}`, "/api/hr", "/api/drill", "/api/tutor/suggest?videoId=missing"]) {
+  for (const url of [`/api/certificates/${certificate}`, "/api/hr", "/api/hr/reauth", "/api/drill", "/api/tutor/suggest?videoId=missing"]) {
     const response = await page.request.get(url, { maxRedirects: 0 });
     expect([401,403,307]).toContain(response.status());
     const payload = await response.text();
     expect(payload).not.toContain("%PDF"); expect(payload).not.toContain(learner.id);
     expect(payload).not.toMatch(/"(?:messages|sessionId|suggestions|questions)"/);
   }
+  const pendingMfaReauth = await page.request.post("/api/hr/reauth", { data: { password: QA_PASSWORD } });
+  expect([401,403]).toContain(pendingMfaReauth.status()); expect(await pendingMfaReauth.text()).not.toContain("expiresAt");
   await page.context().clearCookies(); await signIn(page, unconsented);
   await expect(page).toHaveURL(/\/privacy-notice$/);
-  for (const url of ["/api/hr", "/api/drill", "/api/tutor/suggest?videoId=missing"]) {
+  for (const url of ["/api/hr", "/api/hr/reauth", "/api/drill", "/api/tutor/suggest?videoId=missing"]) {
     const response = await page.request.get(url, { maxRedirects: 0 });
     expect([401,403,307]).toContain(response.status());
     const payload = await response.text();
     expect(payload).not.toContain("%PDF"); expect(payload).not.toContain(learner.id);
     expect(payload).not.toMatch(/"(?:messages|sessionId|suggestions|questions)"/);
   }
+  const pendingPrivacyReauth = await page.request.post("/api/hr/reauth", { data: { password: QA_PASSWORD } });
+  expect([401,403]).toContain(pendingPrivacyReauth.status()); expect(await pendingPrivacyReauth.text()).not.toContain("expiresAt");
   await page.context().clearCookies(); await signIn(page, learner);
   const owned = await page.request.get(`/api/certificates/${certificate}`);
   expect(owned.status()).toBe(200); expect((await owned.body()).subarray(0,4).toString()).toBe("%PDF");
   expect((await page.request.get("/api/hr")).status()).toBe(200);
+  expect((await page.request.get("/api/hr/reauth")).status()).toBe(200);
   expect((await page.request.get("/api/drill")).status()).toBe(200);
   await page.context().clearCookies(); await signIn(page, admin);
   expect((await page.request.get(`/api/certificates/${certificate}`)).status()).toBe(200);

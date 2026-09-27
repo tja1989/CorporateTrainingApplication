@@ -41,3 +41,20 @@ after it ends. These illustrative timestamps cannot qualify transcript/tutor see
 accuracy against this placeholder video. Qualification must use a video and its
 matching transcript; keep that content gate separate from the verified player
 resume/completion behavior. No transcript content was deleted or retimed here.
+
+## Assessment forward navigation
+
+Apply `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/20260927_attempt_navigation.sql`
+before starting the updated application. The additive, repeatable migration stores
+an attempt's server-authoritative forward position. It does not change answers,
+results, reviews, completion history or certificates. Historical attempts have no
+recoverable navigation boundary; their initial value is explicitly zero, including
+previously skipped questions. New forward moves are persisted with answers.
+
+Compare attempt row counts and a hash of all pre-existing columns before and after
+applying the migration twice. Verify that every legacy navigation_index is zero.
+Rollback: stop the newer application, restore the previous application and retain
+the compatible extra column. To remove the column, export id,navigation_index first
+and run `ALTER TABLE attempts DROP COLUMN IF EXISTS navigation_index;` only after
+all newer processes stop. Dropping it loses forward-position enforcement across
+refresh, so leaving it in place is preferred. Never delete attempt history.

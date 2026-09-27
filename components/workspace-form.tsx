@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { Button, cx } from "./ui";
 
@@ -9,15 +9,19 @@ export function WorkspaceForm({ action, children, className, success = "Changes 
   action: (form: FormData) => Promise<ActionResult | void>;
   children: ReactNode; className?: string; success?: string; reload?: boolean;
 }) {
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
+  const submitting = useRef(false);
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
   const [result, setResult] = useState<ActionResult | null>(null);
   return <form method="post" className={className} aria-busy={!ready || pending} onSubmit={event => {
     event.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
+    setPending(true);
     const data = new FormData(event.currentTarget);
     setResult(null);
-    startTransition(async () => {
+    void (async () => {
       try {
         const response = await action(data);
         if (response?.error) { setResult(response); return; }
@@ -26,8 +30,11 @@ export function WorkspaceForm({ action, children, className, success = "Changes 
         window.location.reload();
       } catch {
         setResult({ error: "Your changes could not be saved. Your entries are still here; try again." });
+      } finally {
+        submitting.current = false;
+        setPending(false);
       }
-    });
+    })();
   }}>
     <fieldset disabled={!ready || pending} className="min-w-0">{children}</fieldset>
     {!ready ? <p role="status" className="mt-3 text-sm text-muted">Preparing form…</p> : null}

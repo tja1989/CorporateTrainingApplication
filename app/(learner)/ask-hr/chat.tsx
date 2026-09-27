@@ -21,9 +21,9 @@ function reducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
+export function HrChat({ userId, loginId, loadHistory = true, activeConversationId, sessionExpiresAt }: { userId: string; loginId: string; loadHistory?: boolean; activeConversationId?: string; sessionExpiresAt?: number | null }) {
+  const [sessionLocked, setSessionLocked] = useState(false);
   const [messages, setMessages] = useState<Msg[] | null>(null);
-  const [locked, setLocked] = useState(sharedDevice);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState<string | null>(null);
   const [escalateOffer, setEscalateOffer] = useState(false);
@@ -37,15 +37,31 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (locked) return;
-    fetch("/api/hr")
+    if (!loadHistory && !activeConversationId) { setMessages([]); return; }
+    fetch(activeConversationId && !loadHistory ? `/api/hr?conversationId=${encodeURIComponent(activeConversationId)}` : "/api/hr")
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((d) => {
         conversationRef.current = d.conversationId;
         setMessages(d.messages ?? []);
       })
       .catch(() => { setMessages([]); setError("Conversation history could not load. Refresh to try again."); });
-  }, [locked]);
+  }, [loadHistory, activeConversationId]);
+
+  useEffect(() => {
+    if (!sessionExpiresAt) return;
+    let live = true;
+    const check = async () => {
+      const cid = conversationRef.current;
+      if (Date.now() >= sessionExpiresAt) { setSessionLocked(true); abortRef.current?.abort(); return; }
+      if (!cid) return;
+      setSessionLocked(true);
+      try { const response = await fetch(`/api/hr/reauth?conversationId=${encodeURIComponent(cid)}`, { cache: "no-store" }); const status = response.ok ? await response.json() : null; if (live) setSessionLocked(!response.ok || status?.userId !== userId || status?.loginId !== loginId); }
+      catch { if (live) setSessionLocked(true); }
+    };
+    const timer = setTimeout(() => { setSessionLocked(true); abortRef.current?.abort(); }, Math.max(0, sessionExpiresAt - Date.now()));
+    window.addEventListener("focus", check); window.addEventListener("pageshow", check);
+    return () => { live = false; clearTimeout(timer); window.removeEventListener("focus", check); window.removeEventListener("pageshow", check); };
+  }, [sessionExpiresAt, userId, loginId]);
 
   // Follow the stream only while the reader is already near the bottom of the page.
   useEffect(() => {
@@ -135,16 +151,7 @@ export function HrChat({ sharedDevice }: { sharedDevice: boolean }) {
     return res.json();
   }, []);
 
-  if (locked) {
-    return (
-      <Card className="flex flex-col items-center justify-center gap-3 p-6 text-center">
-        <IconDisc name="sparkle" tone="ai" size={56} className="animate-pop" />
-        <h2 className="display text-lg">Your HR conversations are private</h2>
-        <p className="max-w-sm text-sm text-muted">You signed in on a shared device, so history stays hidden until you confirm it&#39;s you.</p>
-        <Button onClick={() => setLocked(false)}>Show my conversation</Button>
-      </Card>
-    );
-  }
+  if (sessionLocked) return <Card className="p-5"><p role="alert">This conversation is locked on the shared device.</p><a className="touch-target mt-3 inline-flex items-center text-link underline" href="/ask-hr">Verify to open stored history</a></Card>;
 
   return (
     <section aria-label="HR Assistant" className="flex flex-col">

@@ -1,3 +1,5 @@
+import { canUseHrConversation, hrHistoryExpiresAt } from "@/lib/hr/history-access";
+import { HrHistoryBoundary, HrHistoryUnlock } from "@/components/hr-history-boundary";
 import { notFound } from "next/navigation";
 import { asc, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
@@ -12,6 +14,9 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
   const user = await requireUser();
   const { ticketId } = await params;
   const { sent } = await searchParams;
+  const [access] = await db.select({ userId: t.hrTickets.userId, conversationId: t.hrTickets.conversationId }).from(t.hrTickets).where(eq(t.hrTickets.id, ticketId)).limit(1);
+  if (!access || access.userId !== user.id) notFound();
+  if (user.passwordState !== "ACTIVE" || !canUseHrConversation(user.session, access.conversationId)) return <div><PageTitle>HR ticket</PageTitle><HrHistoryUnlock /></div>;
   const [ticket] = await db.select().from(t.hrTickets).where(eq(t.hrTickets.id, ticketId)).limit(1);
   if (!ticket || ticket.userId !== user.id) notFound();
   const messages = await db
@@ -24,7 +29,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
   const nameOf = new Map(authors.map((a) => [a.id, a.role === "ADMIN" ? "HR team" : a.name]));
 
   return (
-    <div className="animate-slide-up mx-auto max-w-2xl">
+    <HrHistoryBoundary userId={user.id} loginId={user.session.loginId!} conversationId={ticket.conversationId} expiresAt={user.session.activeHrConversationId === ticket.conversationId ? (user.session.exp ?? 0) * 1000 : hrHistoryExpiresAt(user.session)}><div className="animate-slide-up mx-auto max-w-2xl">
       <div className="mb-3"><ButtonLink variant="ghost" href="/ask-hr">Back to HR Help</ButtonLink></div>
       <PageTitle sub={`Ticket · ${ticket.state.toLowerCase().replace("_", " ")}`}>{ticket.subject}</PageTitle>
       {sent === "1" ? <p role="status" className="mb-4 text-sm text-success-fg">Your reply was sent to HR.</p> : null}
@@ -41,6 +46,6 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
       ) : (
         <Chip variant="success">Resolved — thanks for reaching out.</Chip>
       )}
-    </div>
+    </div></HrHistoryBoundary>
   );
 }

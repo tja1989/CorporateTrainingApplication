@@ -1,29 +1,14 @@
 "use server";
 
 import bcrypt from "bcryptjs";
-import { and, eq, gte, sql } from "drizzle-orm";
+import { throttled, recordAttempt } from "./rate-limit";
+import { eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { id, activationCode } from "@/lib/ids";
 import { createSession, readSession, destroySession } from "./session";
 import { verifyTotp } from "./totp";
 import { requireRole } from "./guard";
 import { redirect } from "next/navigation";
-
-const MAX_ATTEMPTS = 10;
-const WINDOW_MIN = 15;
-
-async function throttled(key: string): Promise<boolean> {
-  const windowStart = new Date(Date.now() - WINDOW_MIN * 60_000);
-  const [row] = await db
-    .select({ n: sql<number>`count(*)::int` })
-    .from(t.loginAttempts)
-    .where(and(eq(t.loginAttempts.key, key), eq(t.loginAttempts.success, false), gte(t.loginAttempts.at, windowStart)));
-  return (row?.n ?? 0) >= MAX_ATTEMPTS;
-}
-
-async function recordAttempt(key: string, success: boolean) {
-  await db.insert(t.loginAttempts).values({ id: id(), key, success });
-}
 
 export type LoginResult = { ok: true; next: string } | { ok: false; error: string };
 

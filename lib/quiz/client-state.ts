@@ -7,15 +7,15 @@ export function isAnswered(q: { type: string; left?: string[] | null; orderItems
   return answer.order.length === q.orderItems?.length && new Set(answer.order).size === answer.order.length;
 }
 export function resultStatus(result: { gradingState: string; state: string; passed: boolean | null }) {
-  return result.gradingState !== "FINAL" || result.state !== "GRADED" || result.passed === null ? "pending" : result.passed ? "pass" : "fail";
+  return result.gradingState !== "FINAL" || !["GRADED", "CLEARED"].includes(result.state) || result.passed === null ? "pending" : result.passed ? "pass" : "fail";
 }
 export class AttemptSaveError extends Error {
   constructor(message: string, public submitted: boolean) {
     super(message);
   }
 }
-export async function saveAttemptAnswers(attemptId: string, answers: Record<string, Answer>, events: Array<{ kind: string; detail?: Record<string, unknown> }>, fetcher: typeof fetch = fetch) {
-  const res = await fetcher(`/api/attempt/${attemptId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers, events }) });
+export async function saveAttemptAnswers(attemptId: string, answers: Record<string, Answer>, events: Array<{ kind: string; detail?: Record<string, unknown> }>, fetcher: typeof fetch = fetch, navigationIndex?: number) {
+  const res = await fetcher(`/api/attempt/${attemptId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers, events, navigationIndex }) });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new AttemptSaveError(data.error ?? "Answers could not be saved. Keep this page open and retry.", res.status === 409 && data.submitted === true);

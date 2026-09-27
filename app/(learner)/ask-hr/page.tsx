@@ -1,3 +1,5 @@
+import { canReadHrHistory, hrHistoryExpiresAt } from "@/lib/hr/history-access";
+import { HrHistoryBoundary, HrHistoryUnlock } from "@/components/hr-history-boundary";
 import { Icon, IconDisc } from "@/components/icons";
 import { desc, eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
@@ -9,18 +11,20 @@ export const dynamic = "force-dynamic";
 
 export default async function AskHrPage() {
   const user = await requireUser();
-  const tickets = await db
+  const historyAvailable = user.passwordState === "ACTIVE" && canReadHrHistory(user.session);
+  const tickets = historyAvailable ? await db
     .select()
     .from(t.hrTickets)
     .where(eq(t.hrTickets.userId, user.id))
     .orderBy(desc(t.hrTickets.createdAt))
-    .limit(50);
+    .limit(50) : [];
 
   // The conversation flows in the page (no inner scroll region — spec §10.7
   // v1.2); the composer sticks to the bottom of the viewport.
   return (
-    <div className="animate-slide-up mx-auto max-w-2xl">
+    <HrHistoryBoundary userId={user.id} loginId={user.session.loginId!} sessionOnly={!historyAvailable} expiresAt={historyAvailable ? hrHistoryExpiresAt(user.session) : (user.session.exp ?? 0) * 1000}><div className="animate-slide-up mx-auto max-w-2xl">
       <PageTitle sub="Ask about company policies, with sources you can read.">HR Help</PageTitle>
+      {!historyAvailable ? <HrHistoryUnlock newConversationBelow /> : null}
       {tickets.length > 0 ? (
         <details className="mb-5 rounded-card border border-border bg-surface p-4"><summary className="touch-target flex items-center font-medium">Your HR tickets ({tickets.length})</summary><div className="mt-3 flex flex-col gap-2" aria-label="Your HR tickets">
           {tickets.map((ticket) => (
@@ -47,7 +51,7 @@ export default async function AskHrPage() {
           <Chip variant="ai">AI</Chip>
         </Card>
       </a>
-      <HrChat sharedDevice={user.session.shared} />
-    </div>
+      <HrChat userId={user.id} loginId={user.session.loginId!} loadHistory={historyAvailable} activeConversationId={user.session.activeHrConversationId} sessionExpiresAt={user.session.shared ? (user.session.exp ?? 0) * 1000 : null} />
+    </div></HrHistoryBoundary>
   );
 }

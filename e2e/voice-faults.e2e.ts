@@ -2,7 +2,15 @@ import { test, expect, type Page, type WebSocketRoute } from "@playwright/test";
 import { createPerson, signIn, withDb } from "./support";
 
 const pageErrors = new WeakMap<Page, string[]>();
-test.afterEach(async ({ page }) => { expect(pageErrors.get(page) ?? [], "Configured transport fixture must hydrate without page errors").toEqual([]); });
+test.afterEach(async ({ page }, info) => {
+  await info.attach("audio-diagnostics", { body: JSON.stringify(await page.evaluate(() => ({
+    audio: (window as unknown as { qaAudio: unknown }).qaAudio ?? null,
+    calls: (window as unknown as { qaMicCalls: number }).qaMicCalls,
+    accesses: (window as unknown as { qaMicAccesses: number }).qaMicAccesses,
+    fn: navigator.mediaDevices.getUserMedia.toString(),
+  }))), contentType: "application/json" });
+  expect(pageErrors.get(page) ?? [], "Configured transport fixture must hydrate without page errors").toEqual([]);
+});
 
 /** Only the SSR configuration flag and provider/platform transport are injected.
  * Consent, session creation, client hook, event APIs and transcript storage remain real.
@@ -10,6 +18,7 @@ test.afterEach(async ({ page }) => { expect(pageErrors.get(page) ?? [], "Configu
 async function configured(page: Page) {
   const errors: string[] = []; pageErrors.set(page, errors); page.on("pageerror", error => errors.push(error.message));
   await page.route("**/ask-hr/live", async route=>{
+    if (route.request().resourceType() !== "document" || !route.request().isNavigationRequest()) { await route.continue(); return; }
     const response=await route.fetch();
     const original=await response.text();
     // Update both HTML and Flight props so the configuration fixture does not
@@ -24,10 +33,18 @@ async function configured(page: Page) {
   });
 }
 async function pendingMicrophone(page: Page) {
-  await page.addInitScript(()=>{
-    const w=window as unknown as {qaMicCalls:number;qaStops:number;qaReleaseMic:()=>void};
-    w.qaMicCalls=0;w.qaStops=0;
-    Object.defineProperty(navigator.mediaDevices,"getUserMedia",{configurable:true,value:()=>{
+  await page.evaluate(()=>{
+    const w=window as unknown as {qaMicCalls:number;qaStops:number;qaReleaseMic:()=>void;qaMicAccesses:number};
+    w.qaMicCalls=0;w.qaStops=0;w.qaMicAccesses=0;
+    const log:unknown[]=[];(window as unknown as {qaAudio:unknown[]}).qaAudio=log;
+    const resume=AudioContext.prototype.resume,close=AudioContext.prototype.close;
+    AudioContext.prototype.resume=function(){const stack=new Error().stack;log.push({event:"resume",state:this.state,stack});return resume.call(this).catch(error=>{log.push({event:"resume-error",state:this.state,message:error.message,stack});throw error;});};
+    AudioContext.prototype.close=function(){log.push({event:"close",state:this.state,stack:new Error().stack});return close.call(this);};
+    // WebKit may refresh navigator.mediaDevices between evaluation and the gesture.
+    // Pin the explicit platform fixture so the action cannot fall through to a real prompt.
+    const mediaDevices=navigator.mediaDevices;
+    Object.defineProperty(navigator,"mediaDevices",{configurable:true,value:mediaDevices});
+    Object.defineProperty(mediaDevices,"getUserMedia",{configurable:true,get:()=>{w.qaMicAccesses++;return ()=>{
       w.qaMicCalls++;
       return new Promise<MediaStream>(resolve=>{w.qaReleaseMic=()=>{
         const ctx=new AudioContext(),dest=ctx.createMediaStreamDestination();
@@ -35,16 +52,16 @@ async function pendingMicrophone(page: Page) {
         track.stop=()=>{w.qaStops++;stop();void ctx.close();};
         resolve(dest.stream);
       };});
-    }});
+    };}});
   });
 }
 
 test("@core Configured voice microphone denial recovers through typed fallback and persists the conversation", async ({page})=>{
-  const learner=await createPerson("LEARNER");await configured(page);
+  const learner=await createPerson("LEARNER");
   await page.addInitScript(()=>{
     Object.defineProperty(navigator.mediaDevices,"getUserMedia",{configurable:true,value:()=>Promise.reject(new DOMException("QA microphone denied","NotAllowedError"))});
   });
-  await signIn(page,learner);await page.goto("/ask-hr/live");
+  await signIn(page,learner);await page.waitForLoadState("networkidle");await configured(page);await page.goto("/ask-hr/live");
   await expect(page.getByRole("button",{name:"Start with typing",exact:true})).toBeVisible();
   await page.getByRole("button",{name:"Start talking",exact:true}).click();
   await expect(page.getByText(/Microphone unavailable or skipped/)).toBeVisible();
@@ -60,9 +77,11 @@ test("@core Configured voice microphone denial recovers through typed fallback a
 });
 
 test("@core Ending a pending microphone request prevents session creation and stops a late stream", async ({page})=>{
-  const learner=await createPerson("LEARNER");await configured(page);await pendingMicrophone(page);
+  const learner=await createPerson("LEARNER");
   let sessions=0;page.on("request",r=>{if(r.url().endsWith("/api/live/hr/session"))sessions++;});
-  await signIn(page,learner);await page.goto("/ask-hr/live");
+  await signIn(page,learner);await page.waitForLoadState("networkidle");await configured(page);await page.goto("/ask-hr/live");
+  await pendingMicrophone(page);
+  expect(await page.evaluate(()=>navigator.mediaDevices.getUserMedia.toString())).toContain("qaMicCalls");
   await page.getByRole("button",{name:"Start talking",exact:true}).click();
   await expect.poll(()=>page.evaluate(()=>(window as unknown as {qaMicCalls:number}).qaMicCalls)).toBe(1);
   await page.getByRole("button",{name:"End conversation",exact:true}).click();
@@ -73,7 +92,7 @@ test("@core Ending a pending microphone request prevents session creation and st
 });
 
 test("@core Configured voice reconnects with the same session, preserves typed turns and ends its provider connection", async ({page})=>{
-  const learner=await createPerson("LEARNER");await configured(page);
+  const learner=await createPerson("LEARNER");
   let connections=0,closed=0;let first:WebSocketRoute|undefined;const resumeBodies:unknown[]=[];
   await page.route("**/api/live/hr/session",async route=>{
     const body=route.request().postDataJSON();resumeBodies.push(body);
@@ -91,7 +110,7 @@ test("@core Configured voice reconnects with the same session, preserves typed t
       }
     });
   });
-  await signIn(page,learner);await page.goto("/ask-hr/live");
+  await signIn(page,learner);await page.waitForLoadState("networkidle");await configured(page);await page.goto("/ask-hr/live");
   await page.getByRole("button",{name:"Start with typing",exact:true}).click();
   await expect(page.getByRole("textbox",{name:"Type a message",exact:true})).toBeEnabled();
   await expect(page.getByText("QA transport response.",{exact:true})).toBeVisible();

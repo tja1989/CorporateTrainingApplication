@@ -13,7 +13,8 @@ export default defineConfig({
   testMatch: "**/*.e2e.ts",
   globalSetup: "./e2e/global-setup.ts",
   fullyParallel: false,
-  workers: 1,
+  // Fixtures and artifact paths are unique; service/performance runs stay separate.
+  workers: 2,
   retries: 0,
   forbidOnly: !!process.env.CI,
   timeout: 60_000,

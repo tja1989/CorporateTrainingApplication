@@ -428,7 +428,9 @@ export function useLiveVoice(opts: { configured: boolean; kind: LiveKind; sessio
     playerRef.current?.close();
     const player = createPlayer();
     playerRef.current = player;
-    void player.unlock();
+    void player.unlock().catch(() => {
+      if (version === startVersionRef.current) update({ warning: "Audio playback could not start. You can continue reading and typing." });
+    });
     player.onIdle = () => update({ speaking: false });
 
     let typedOnly = !opts.configured || preferTyping;
@@ -436,6 +438,9 @@ export function useLiveVoice(opts: { configured: boolean; kind: LiveKind; sessio
     if (!typedOnly && micSupported()) {
       const pending = microphoneRequest(() => createMicCapture({
         onChunk: (b64) => connRef.current?.sendAudio(b64),
+        onError: () => {
+          if (version === startVersionRef.current) update({ typedOnly: true, warning: "Microphone audio could not start. You can continue typing." });
+        },
         onLevel: (rms) => {
           const now = Date.now();
           if (now - levelTsRef.current > 80) {
@@ -544,9 +549,9 @@ export function useLiveVoice(opts: { configured: boolean; kind: LiveKind; sessio
 
   const testSpeaker = useCallback(() => {
     if (!playerRef.current) playerRef.current = createPlayer();
-    void playerRef.current.unlock();
+    void playerRef.current.unlock().catch(() => update({ warning: "Audio playback could not start. Check your sound settings and try again." }));
     playerRef.current.testTone();
-  }, []);
+  }, [update]);
 
   // ---- timers: elapsed + interview hard stop ---------------------------------
   useEffect(() => {

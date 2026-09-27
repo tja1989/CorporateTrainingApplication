@@ -13,6 +13,12 @@ describe("assessment answer and finality states", () => {
     expect(resultStatus({ gradingState: "FINAL", state: "SUBMITTED", passed: null })).toBe("pending");
     expect(resultStatus({ gradingState: "FINAL", state: "GRADED", passed: false })).toBe("fail");
   });
+  it("preserves final pass and fail after a human clears integrity flags", () => {
+    expect(resultStatus({ gradingState: "FINAL", state: "CLEARED", passed: true })).toBe("pass");
+    expect(resultStatus({ gradingState: "FINAL", state: "CLEARED", passed: false })).toBe("fail");
+    expect(resultStatus({ gradingState: "PROVISIONAL", state: "CLEARED", passed: true })).toBe("pending");
+    expect(resultStatus({ gradingState: "FINAL", state: "VOIDED", passed: true })).toBe("pending");
+  });
   it("does not mark a rejected save as saved", async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: "Try again" }), { status: 503 }));
     await expect(saveAttemptAnswers("a", {}, [], fetcher)).rejects.toThrow("Try again");

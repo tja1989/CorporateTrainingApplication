@@ -258,6 +258,12 @@ input, select, textarea { min-width: 0; }
 .prose-ll code { background: var(--surface-2); padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.9em; }
 .composer-sticky { position: sticky; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
 @media (min-width: 768px) { .composer-sticky { bottom: 0; } }
+/* Reverse keyboard traversal must clear the learner header on the HR unlock form. */
+.hr-history-unlock :is(input, button, a) { scroll-margin-block-start: 144px; }
+/* Keep keyboard-focused citations above the two-row Tutor composer, including
+   its mobile bottom inset in the compact lesson shell. */
+.tutor-messages :is(button, a) { scroll-margin-block-end: calc(208px + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 768px) { .tutor-messages :is(button, a) { scroll-margin-block-end: 144px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
 .course-cover { aspect-ratio: 16 / 9; width: 100%; overflow: hidden; background: var(--accent-tint); }
 .course-cover-fallback { position: relative; height: 100%; min-height: 140px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; color: var(--primary); }

@@ -1,25 +1,30 @@
 import { WorkspaceForm } from "./workspace-form";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/guard";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { renderNotification } from "@/lib/notify";
-import { Card, PageTitle, EmptyState, Chip, Button } from "@/components/ui";
+import { Card, PageTitle, EmptyState, Chip, Button, ButtonAnchor } from "@/components/ui";
 
-export async function InboxList({ userId }: { userId: string }) {
+export async function InboxList({ userId, page = "1" }: { userId: string; page?: string }) {
+  const [counts] = await db.select({ total: sql<number>`count(*)::int`, unread: sql<number>`count(*) FILTER (WHERE ${t.notifications.readAt} IS NULL)::int` })
+    .from(t.notifications).where(eq(t.notifications.userId, userId));
+  const pages = Math.max(1, Math.ceil(counts.total / 50));
+  const requested = /^\d+$/.test(page) ? Number(page) : 1;
+  const current = Math.min(pages, Math.max(1, Number.isSafeInteger(requested) ? requested : 1));
   const rows = await db
     .select()
     .from(t.notifications)
     .where(eq(t.notifications.userId, userId))
-    .orderBy(desc(t.notifications.sentAt))
-    .limit(50);
+    .orderBy(desc(t.notifications.sentAt), desc(t.notifications.id))
+    .limit(50).offset((current - 1) * 50);
   async function markAllRead() {
     "use server";
     const user = await requireUser();
     await db.update(t.notifications).set({ readAt: new Date() }).where(and(eq(t.notifications.userId, user.id), isNull(t.notifications.readAt)));
     revalidatePath("/", "layout");
   }
-  const unread = rows.filter(n => !n.readAt).length;
+  const unread = counts.unread;
 
   return (
     <div className="animate-slide-up">
@@ -43,6 +48,11 @@ export async function InboxList({ userId }: { userId: string }) {
           })}
         </div>
       )}
+      {pages > 1 ? <nav aria-label="Notification pages" className="mt-5 flex flex-wrap items-center gap-3">
+        {current > 1 ? <ButtonAnchor variant="secondary" href={`?page=${current - 1}`}>Newer notifications</ButtonAnchor> : null}
+        <span className="text-sm text-muted">Page {current} of {pages}</span>
+        {current < pages ? <ButtonAnchor variant="secondary" href={`?page=${current + 1}`}>Older notifications</ButtonAnchor> : null}
+      </nav> : null}
     </div>
   );
 }

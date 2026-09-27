@@ -354,7 +354,7 @@ function TutorPanel({
 
       {/* Keep the sticky composer below the scope header, including at native zoom. */}
       <div className="min-w-0">
-        <div className="flex flex-col gap-3" dir="auto">
+        <div className="tutor-messages flex flex-col gap-3" dir="auto">
           {messages.length === 0 && streaming === null ? (
             <p className="text-sm text-muted">Ask anything about this video — answers come only from the lesson content, with timestamps you can tap.</p>
           ) : null}

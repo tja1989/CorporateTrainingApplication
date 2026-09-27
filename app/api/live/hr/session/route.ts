@@ -1,3 +1,5 @@
+import { canUseHrConversation, hrReauthenticationRequired } from "@/lib/hr/history-access";
+import { updateHrSession } from "@/lib/auth/session";
 import { eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { apiUser as currentUser } from "@/lib/auth/guard";
@@ -15,18 +17,21 @@ export const maxDuration = 60;
  */
 export async function POST(req: Request) {
   const user = await currentUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
+  if (!user || user.passwordState !== "ACTIVE") return new Response("Unauthorized", { status: 401 });
   const parsed = HrSessionBody.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return new Response("Bad request", { status: 400 });
 
   let conversationId = parsed.data.conversationId ?? null;
+  if (parsed.data.resumeHandle && !conversationId) return new Response("A conversation is required to resume.", { status: 400 });
   if (conversationId) {
+    if (!canUseHrConversation(user.session, conversationId)) return hrReauthenticationRequired();
     const [conv] = await db.select().from(t.hrConversations).where(eq(t.hrConversations.id, conversationId)).limit(1);
     if (!conv || conv.userId !== user.id) conversationId = null;
   }
   if (!conversationId) {
     conversationId = id();
     await db.insert(t.hrConversations).values({ id: conversationId, userId: user.id, language: user.preferredLanguage, mode: "voice" });
+    if (user.session.shared) await updateHrSession(user.session, { activeHrConversationId: conversationId });
   }
   if (!parsed.data.resumeHandle) {
     await db.insert(t.consents).values({ id: id(), userId: user.id, kind: "voice", version: `hr:${conversationId}` });

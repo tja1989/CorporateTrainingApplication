@@ -210,10 +210,12 @@
     },
     {
       "id": "QUIZ:navigation",
-      "expected": "Question navigation and refresh preserve answers and server timer.",
+      "expected": "Question navigation and refresh preserve answers, the server timer and the persisted no-backtrack forward boundary, including skipped questions; a fresh sitting resets navigation.",
       "browserTests": [
         "Assessment navigation and refresh",
-        "Delayed autosave cannot overwrite"
+        "Delayed autosave cannot overwrite",
+        "fresh same-page no-backtrack",
+        "No-backtrack saves skipped boundaries"
       ]
     },
     {
@@ -254,7 +256,9 @@
       "browserTests": [
         "exam answer sealing",
         "Assessment navigation and refresh",
-        "Renewal gives a fresh assessment"
+        "Renewal gives a fresh assessment",
+        "fresh same-page no-backtrack",
+        "No-backtrack saves skipped boundaries"
       ]
     },
     {
@@ -359,7 +363,10 @@
       "expected": "Learner escalation \u2192 admin reply/resolution \u2192 learner sees shared thread/status.",
       "browserTests": [
         "Sensitive and unsupported HR questions",
-        "Human grade decisions, ticket replies"
+        "Human grade decisions, ticket replies",
+        "Shared HR history requires credentials",
+        "new shared-device text and voice conversation",
+        "HR tabs hide prior content"
       ]
     },
     {
@@ -421,7 +428,8 @@
       "id": "PEOPLE:import",
       "expected": "CSV valid/invalid/duplicate has row-level recovery; valid rows persist without duplicates.",
       "browserTests": [
-        "import, groups and rules"
+        "import, groups and rules",
+        "Overlapping enrollment rules and a failed CSV row"
       ]
     },
     {
@@ -435,8 +443,10 @@
       "id": "PEOPLE:rules",
       "expected": "Create/disable/enable rule affects correct users without duplicate enrollments.",
       "browserTests": [
-        "import, groups and rules"
-      ]
+        "import, groups and rules",
+        "Overlapping enrollment rules and a failed CSV row"
+      ],
+      "service": true
     },
     {
       "id": "AUTHOR:draft",
@@ -512,10 +522,13 @@
     },
     {
       "id": "INTEGRITY:decision",
-      "expected": "Admin clear/void/reason/retry persist; void completion/cert consequences correct.",
+      "expected": "Admin clear/void decisions and reasons persist. Clearing retains final pass/fail. Voiding a certified pass retains issued completion/certificate history under the existing validity policy and grants a fresh sitting.",
       "browserTests": [
         "Monitored events are informational",
-        "Human grade decisions, ticket replies"
+        "Human grade decisions, ticket replies",
+        "Human-cleared pass remains final",
+        "Human-cleared fail remains final",
+        "Voiding a certified pass preserves issued history"
       ]
     },
     {
@@ -584,7 +597,8 @@
         "All workspace destinations fit",
         "Learning path shows prerequisites",
         "Manager path assignment fans out",
-        "A submitted answer stays provisional"
+        "A submitted answer stays provisional",
+        "Every role can reach older unread notifications"
       ]
     },
     {
@@ -632,6 +646,19 @@
       "expected": "Home/catalog/course/lesson/manager/admin median3 production mobile runs meet LCP/CLS/interaction budgets.",
       "browserTests": [],
       "performance": "qa-performance: all six families, median of three production mobile runs"
+    },
+    {
+      "id": "HR:privacy",
+      "expected": "Shared-device stored HR history requires recent password verification; current-login conversations remain usable. Pages, tickets, live transcripts and APIs fail closed on expiry, account switch or a new login, preserving immutable history.",
+      "browserTests": [
+        "Shared HR history requires credentials",
+        "new shared-device text and voice conversation",
+        "HR tabs hide prior content",
+        "Certificate and learner API data require",
+        "Active assessment, dialogs, media, voice and HR recovery"
+      ]
     }
-  ]
+  ],
+  "additionalRequiredCases": 1,
+  "requiredCases": 77
 }

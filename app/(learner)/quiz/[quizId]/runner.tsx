@@ -80,8 +80,22 @@ export function QuizRunner({
       setAttemptId(data.attemptId);
       setServed(data.served);
       setSettings(data.settings);
-      setAnswers(data.answers ?? {});
-      setDeadline(data.deadlineAt ? new Date(data.deadlineAt) : null);
+      const nextAnswers = data.answers ?? {};
+      const nextDeadline = data.deadlineAt ? new Date(data.deadlineAt) : null;
+      answersRef.current = nextAnswers;
+      setAnswers(nextAnswers);
+      setDeadline(nextDeadline);
+      // Returning to preflight keeps this component mounted. A new sitting must
+      // not inherit the prior question index, result or transient save state.
+      setIndex(data.settings.oneAtATime && data.settings.noBacktrack ? (data.navigationIndex ?? 0) : 0);
+      setRemaining(nextDeadline ? Math.floor((nextDeadline.getTime() - Date.now()) / 1000) : null);
+      setSaved(true);
+      setOffline(false);
+      setResult(null);
+      setAppealSent(false);
+      setConfirmSubmit(false);
+      pendingEvents.current = [];
+      blurStart.current = null;
       setPhase("running");
       if (data.settings.integrityMode) {
         const el = document.documentElement as HTMLElement & { requestFullscreen?: () => Promise<void> };
@@ -221,6 +235,31 @@ export function QuizRunner({
     setSaved(false);
   };
 
+  const navigateQuestion = async (nextIndex: number) => {
+    if (busy || !settings || !attemptId || nextIndex === index) return;
+    if (!settings.oneAtATime || !settings.noBacktrack) { setIndex(nextIndex); return; }
+    setBusy(true);
+    setError(null);
+    try {
+      await serialize(async () => {
+        const snapshot = answersRef.current;
+        const events = [...pendingEvents.current];
+        await saveAttemptAnswers(attemptId, snapshot, events, fetch, nextIndex);
+        pendingEvents.current.splice(0, events.length);
+        setSaved(answersRef.current === snapshot);
+        setOffline(false);
+        setIndex(nextIndex);
+      });
+    } catch (error) {
+      if (error instanceof AttemptSaveError && error.submitted) await submit();
+      else {
+        setSaved(false);
+        setOffline(true);
+        setError("Your next question could not be saved. Your answer is still here; reconnect and select Next or the question again to retry.");
+      }
+    } finally { setBusy(false); }
+  };
+
   /* ---------------- preflight & consent ---------------- */
   if (phase === "preflight" || phase === "consent") {
     const exhausted = attemptsLeft !== null && attemptsLeft <= 0 && !resume;
@@ -324,7 +363,7 @@ export function QuizRunner({
       </div>
 
       {error ? <p role="alert" className="mb-4 rounded-control bg-warning-tint p-3 text-sm text-warning-fg">{error}</p> : null}
-      <nav aria-label="Question navigation" className="mb-4 flex flex-wrap gap-2">{served.map((q, i) => <button key={q.questionId} type="button" disabled={busy || (settings.noBacktrack && i < index)} aria-current={settings.oneAtATime && index === i ? "step" : undefined} aria-label={`Question ${i + 1}, ${isAnswered(q, answers[q.questionId]) ? "answered" : "unanswered"}`} className={cx("touch-target rounded-control border px-3 text-sm", index === i ? "border-primary bg-accent-tint text-primary" : "border-border", "disabled:opacity-50")} onClick={() => { if (settings.oneAtATime) setIndex(i); else document.getElementById(`question-${q.questionId}`)?.scrollIntoView({ block: "center" }); }}>{i + 1}</button>)}</nav>
+      <nav aria-label="Question navigation" className="mb-4 flex flex-wrap gap-2">{served.map((q, i) => <button key={q.questionId} type="button" disabled={busy || (settings.noBacktrack && i < index)} aria-current={settings.oneAtATime && index === i ? "step" : undefined} aria-label={`Question ${i + 1}, ${isAnswered(q, answers[q.questionId]) ? "answered" : "unanswered"}`} className={cx("touch-target rounded-control border px-3 text-sm", index === i ? "border-primary bg-accent-tint text-primary" : "border-border", "disabled:opacity-50")} onClick={() => { if (settings.oneAtATime) void navigateQuestion(i); else document.getElementById(`question-${q.questionId}`)?.scrollIntoView({ block: "center" }); }}>{i + 1}</button>)}</nav>
       <fieldset disabled={busy} aria-label="Assessment answers" aria-busy={busy} className="min-w-0">
         {visible.map((q) => (
           <QuestionInput key={q.questionId} q={q} answer={answers[q.questionId]} onChange={(a) => setAnswer(q.questionId, a)} />
@@ -336,7 +375,7 @@ export function QuizRunner({
           <Button disabled={busy} variant="secondary" onClick={() => setIndex((i) => i - 1)}>Back</Button>
         ) : null}
         {settings.oneAtATime && index < served.length - 1 ? (
-          <Button disabled={busy} onClick={() => setIndex((i) => i + 1)}>Next</Button>
+          <Button disabled={busy} onClick={() => void navigateQuestion(index + 1)}>Next</Button>
         ) : (
           <Button disabled={busy} onClick={() => answeredCount < served.length ? setConfirmSubmit(true) : void submit()}>{busy ? "Submitting…" : "Submit assessment"}</Button>
         )}

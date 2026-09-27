@@ -61,17 +61,17 @@ export default async function CoursesAdminPage({
           ) : null}
         </div>
       </form>
-      <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <section aria-label="Course list">
+      <div className="grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <section aria-label="Course list" className="min-w-0">
           <p className="mb-3 text-sm text-muted">{courses.length} courses</p>
           <div className="divide-y divide-border rounded-card border border-border bg-surface">
             {courses.map((c) => (
               <a
                 key={c.id}
                 href={`/admin/courses/${c.id}`}
-                className="flex min-w-0 items-center gap-4 p-4 hover:bg-surface-2"
+                className="flex min-w-0 flex-wrap items-center gap-4 p-4 hover:bg-surface-2"
               >
-                <div className="hidden w-[120px] shrink-0 overflow-hidden rounded-input sm:block">
+                <div className="hidden w-[120px] max-w-full shrink-0 overflow-hidden rounded-input sm:block">
                   <CourseCover
                     title={c.title}
                     tags={c.tags}
@@ -88,6 +88,7 @@ export default async function CoursesAdminPage({
                   </p>
                   <div className="mt-2">
                     <Chip
+                      className="max-w-full [overflow-wrap:anywhere]"
                       variant={
                         c.status === "PUBLISHED"
                           ? "success"

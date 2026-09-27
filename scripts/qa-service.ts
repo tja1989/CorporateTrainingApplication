@@ -29,6 +29,7 @@ async function main(){
   const {handlers}=await import("../lib/jobs/handlers");
   const {pool}=await import("../lib/db/client");
   const {runCompletionConcurrency}=await import("./qa-completion-concurrency");
+  const {runRuleConcurrency}=await import("./qa-rule-concurrency");
   const org=randomUUID();await withDb(db=>db.query("INSERT INTO org_units(id,type,name,timezone) VALUES($1,'store','QA service store','Asia/Dubai')",[org]));
   const manager=await createPerson("MANAGER"),admin=await createPerson("ADMIN"),learner=await createPerson("LEARNER",{managerId:manager.id});
   const now=new Date();const due=new Date(now.getTime()+7*86400000);
@@ -42,6 +43,7 @@ async function main(){
   const evidence:{step:string;data:unknown}[]=[];const record=(step:string,data:unknown)=>{evidence.push({step,data});writeFileSync(`${out}/results.json`,JSON.stringify({...provenance,time:new Date().toISOString(),evidence},null,2));console.log(step);};
   try{
     await expect.poll(async()=>{try{return(await fetch(`${process.env.QA_BASE}/login`)).status;}catch{return 0;}},{timeout:30000}).toBe(200);
+    if(process.env.QA_RULES_ONLY==="1"){await runRuleConcurrency(record);record("PASSED",{cases:["rule concurrency"]});return;}
     if(process.env.QA_CONCURRENCY_ONLY==="1"){await runCompletionConcurrency(browser,process.env.QA_BASE!,out,record,stopRuntime);record("PASSED",{cases:["completion concurrency"]});return;}
     record("initial prerequisites",{learner,manager,admin,course:f,now,due});
     const first=await runDailySweep(now);await runDailySweep(now);await runWeeklyDigest(now);await runWeeklyDigest(now);
@@ -79,6 +81,7 @@ async function main(){
     await withDb(db=>db.query("UPDATE policy_docs SET body='# Worker policy\n\n## Safe procedure\nUse the safe worker checklist.' WHERE id=$1",[doc]));await retryJob(job);expect(await claimAndRun(handlers)).toBe(true);expect(await claimAndRun(handlers)).toBe(false);
     expect(await withDb(async db=>(await db.query("SELECT state FROM jobs WHERE id=$1",[job])).rows[0].state)).toBe("done");
     await page.goto(`/policy/${doc}`);await expect(page.getByText("Use the safe worker checklist.",{exact:true})).toBeVisible();await page.screenshot({path:`${out}/worker-policy.png`,fullPage:true});record("real queue handler failure and retry",{job,doc,state:"done"});
+    await runRuleConcurrency(record);
     await runCompletionConcurrency(browser,process.env.QA_BASE!,out,record,stopRuntime);
     record("PASSED",{cases:["completion concurrency","due transitions","reminder dedupe","weekly manager digest","earned PDF","recert once","expiry","renewal UI","immutable history","both-role reports","worker failure/retry"]});
   }catch(error){record("FAILED",String(error));throw error;}finally{await context.tracing.stop({path:`${out}/trace.zip`});await browser.close();server.kill("SIGTERM");await Promise.race([once(server,"exit"),new Promise(resolve=>setTimeout(resolve,2000))]);if(server.exitCode===null)server.kill("SIGKILL");await pool.end();log.end();}

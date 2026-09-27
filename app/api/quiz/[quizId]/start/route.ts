@@ -52,6 +52,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ quizId
     attemptId: attempt.id,
     served,
     answers: attempt.answers,
+    navigationIndex: attempt.navigationIndex,
     deadlineAt: attempt.deadlineAt?.toISOString() ?? null,
     settings: {
       oneAtATime: quiz.settings.oneAtATime,

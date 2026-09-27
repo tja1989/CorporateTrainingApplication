@@ -2,10 +2,11 @@ import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { createPerson, signIn, capture, expectNoPageOverflow } from "./support";
 
-test("NAV: keyboard skip link moves focus to content in learner and both workspaces @core", async ({ page }) => {
+test("NAV: keyboard skip link moves focus to content in learner and both workspaces @core", async ({ page, browserName }) => {
   for (const role of ["LEARNER", "MANAGER", "ADMIN"] as const) {
     await page.context().clearCookies(); await signIn(page, await createPerson(role));
-    await page.reload(); await page.keyboard.press("Tab");
+    // macOS WebKit uses Option+Tab to include links in keyboard traversal.
+    await page.reload(); await page.keyboard.press(browserName === "webkit" ? "Alt+Tab" : "Tab");
     await expect(page.getByRole("link", { name: "Skip to content", exact: true })).toBeFocused();
     await page.keyboard.press("Enter"); await expect(page.locator("#main-content")).toBeFocused();
   }

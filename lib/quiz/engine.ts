@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { id } from "@/lib/ids";
@@ -161,16 +162,40 @@ export function pastDeadline(attempt: Attempt, graceSec: number, now = new Date(
   return !!attempt.deadlineAt && now.getTime() > attempt.deadlineAt.getTime() + graceSec * 1000;
 }
 
-export async function saveAnswers(attempt: Attempt, quiz: Quiz, answers: Record<string, Answer>): Promise<void> {
-  if (attempt.state !== "IN_PROGRESS") throw new Error("Attempt is not open");
-  if (pastDeadline(attempt, quiz.settings.graceSec)) {
+export class AttemptWriteError extends Error {
+  constructor(message: string, public submitted = false) { super(message); }
+}
+
+export async function saveAnswers(attempt: Attempt, quiz: Quiz, answers: Record<string, Answer>, navigationIndex?: number): Promise<void> {
+  const expired = await db.transaction(async tx => {
+    const [current] = await tx.select().from(t.attempts).where(eq(t.attempts.id, attempt.id)).for("update");
+    if (!current || current.userId !== attempt.userId || current.quizId !== quiz.id) throw new AttemptWriteError("Attempt not found");
+    if (current.state !== "IN_PROGRESS") throw new AttemptWriteError("Attempt is not open", true);
+    if (pastDeadline(current, quiz.settings.graceSec)) return true;
+    let nextIndex = current.navigationIndex;
+    if (quiz.settings.oneAtATime && quiz.settings.noBacktrack) {
+      if (navigationIndex !== undefined) {
+        if (!Number.isInteger(navigationIndex) || navigationIndex < current.navigationIndex || navigationIndex >= current.servedItems.length) {
+          throw new AttemptWriteError("This question is no longer available. Resume the assessment to continue from your saved position.");
+        }
+        nextIndex = navigationIndex;
+      }
+      for (const [questionId, answer] of Object.entries(answers)) {
+        const position = current.servedItems.findIndex(item => item.questionId === questionId);
+        if (position < 0 || (position !== current.navigationIndex && !isDeepStrictEqual(current.answers[questionId], answer))) {
+          throw new AttemptWriteError("Only the current question can be changed. Previously saved answers are safe.");
+        }
+      }
+    }
+    await tx.update(t.attempts).set({ answers: { ...current.answers, ...answers }, navigationIndex: nextIndex })
+      .where(eq(t.attempts.id, current.id));
+    return false;
+  });
+  // Grading may call services and completion transactions; release the save lock first.
+  if (expired) {
     await submitAttempt(attempt.id, { auto: true });
-    throw new Error("Time is up — your saved answers were submitted.");
+    throw new AttemptWriteError("Time is up — your saved answers were submitted.", true);
   }
-  await db
-    .update(t.attempts)
-    .set({ answers: { ...attempt.answers, ...answers } })
-    .where(eq(t.attempts.id, attempt.id));
 }
 
 /** Map displayed-index answers back to actual indices using the served choiceOrder. */

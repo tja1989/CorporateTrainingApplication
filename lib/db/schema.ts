@@ -356,6 +356,7 @@ export const attempts = pgTable(
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     servedItems: jsonb("served_items").$type<ServedItem[]>().notNull(),
     answers: jsonb("answers").$type<Record<string, unknown>>().notNull().default({}),
+    navigationIndex: integer("navigation_index").notNull().default(0),
     score: real("score"),
     maxScore: real("max_score"),
     passed: boolean("passed"),

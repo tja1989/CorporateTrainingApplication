@@ -1,3 +1,4 @@
+import { canUseHrConversation, hrReauthenticationRequired } from "@/lib/hr/history-access";
 import { after } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
@@ -23,10 +24,11 @@ const UNGROUNDED_WINDOW_MS = 90_000;
  */
 export async function POST(req: Request) {
   const user = await currentUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
+  if (!user || user.passwordState !== "ACTIVE") return new Response("Unauthorized", { status: 401 });
   const parsed = HrEventBody.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return new Response("Bad request", { status: 400 });
   const body = parsed.data;
+  if (!canUseHrConversation(user.session, body.conversationId)) return hrReauthenticationRequired();
   const [conv] = await db.select().from(t.hrConversations).where(eq(t.hrConversations.id, body.conversationId)).limit(1);
   if (!conv || conv.userId !== user.id) return new Response("Not found", { status: 404 });
 

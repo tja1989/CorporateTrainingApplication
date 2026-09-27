@@ -12,6 +12,8 @@ async function overflow(page:Page,info:TestInfo,label:string){
 }
 
 async function inspect(page:Page,info:TestInfo,label:string){
+  // Client navigation can commit the URL before streamed metadata settles.
+  await expect(page).toHaveTitle(/welearn/);
   await expect.soft(page.locator("h1").first()).toBeVisible();
   await overflow(page,info,label);
   const axe=await new AxeBuilder({page}).withTags(["wcag2a","wcag2aa","wcag21aa","wcag22aa"]).analyze();
@@ -85,6 +87,14 @@ for(const theme of ["light","dark"] as const){
     const scopeHit=await scope.evaluate(el=>{const r=el.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {rect:r.toJSON(),hit:hit?.textContent,unobscured:!!hit&&(el===hit||el.contains(hit))};});
     await info.attach(`${theme}-active-tutor-scope-focus`,{body:JSON.stringify(scopeHit),contentType:"application/json"});
     expect.soft(scopeHit.unobscured,"Active Tutor scope keyboard focus must stay above its sticky composer").toBe(true);
+    await page.keyboard.press("Tab");
+    const citation=tutor.getByRole("button",{name:/0:10/}).first();
+    await expect(citation).toBeFocused();
+    const citationHit=await citation.evaluate(el=>{const r=el.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {rect:r.toJSON(),viewport:{width:innerWidth,height:innerHeight},hit:hit?.textContent,unobscured:!!hit&&(el===hit||el.contains(hit))};});
+    await info.attach(`${theme}-active-tutor-citation-focus`,{body:JSON.stringify(citationHit),contentType:"application/json"});
+    expect.soft(citationHit.unobscured,"Tutor citation keyboard focus must stay above its sticky composer").toBe(true);
+    await capture(page,info,`${theme}-active-tutor-citation-focus`,{viewportOnly:true});
+    await page.keyboard.press("Shift+Tab");await expect(scope).toBeFocused();
     await inspect(page,info,`${theme}-tutor-answer`);
     let release:()=>void=()=>{};const held=new Promise<void>(resolve=>{release=resolve;});
     await page.route("**/api/hr",async route=>{if(route.request().method()==="GET"){await held;await route.fulfill({status:503,body:"Unavailable"});}else await route.continue();});
@@ -96,6 +106,29 @@ for(const theme of ["light","dark"] as const){
     await page.goto("/ask-hr/live");await page.getByRole("button",{name:"Start talking",exact:true}).click();
     await expect(page.getByRole("textbox",{name:"Type a message",exact:true})).toBeEnabled();await inspect(page,info,`${theme}-voice-active`);
     await page.getByRole("button",{name:"End conversation",exact:true}).click();await expect(page.getByRole("link",{name:"Continue in text",exact:true})).toBeVisible();await inspect(page,info,`${theme}-voice-ended`);
+    // The shared-device password boundary is a distinct visible state, not the ordinary HR page.
+    await page.goto("/login");await page.getByLabel("Employee ID",{exact:true}).fill(learner.employeeId);
+    await page.getByLabel("Password",{exact:true}).fill(QA_PASSWORD);await page.getByLabel("This is a shared device").check();
+    await page.getByRole("button",{name:"Sign in",exact:true}).click();await expect(page).toHaveURL(/\/home$/);
+    await page.goto("/ask-hr");await expect(page.getByRole("heading",{name:"Your HR history is private",exact:true})).toBeVisible();
+    await inspect(page,info,`${theme}-hr-password-boundary`);
+    const password=page.getByLabel("Confirm your password"),verify=page.getByRole("button",{name:"Verify and open history",exact:true});
+    await password.focus();await page.keyboard.press("Tab");await expect(verify).toBeFocused();
+    await page.keyboard.press("Shift+Tab");await expect(password).toBeFocused();
+    const passwordFocus=await password.evaluate(el=>{const r=el.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2),style=getComputedStyle(el);return{rect:r.toJSON(),viewport:{width:innerWidth,height:innerHeight},unobscured:!!hit&&(el===hit||el.contains(hit)),outline:style.outlineStyle,shadow:style.boxShadow};});
+    await info.attach(`${theme}-hr-password-keyboard-focus`,{body:JSON.stringify(passwordFocus),contentType:"application/json"});
+    expect.soft(passwordFocus.unobscured,"HR password keyboard focus stays visible").toBe(true);
+    expect.soft(passwordFocus.outline!=="none"||passwordFocus.shadow!=="none","HR password focus is styled").toBe(true);
+    await capture(page,info,`${theme}-hr-password-keyboard-focus`,{viewportOnly:true});
+    await password.fill("wrong-qa-password");await page.keyboard.press("Tab");await page.keyboard.press("Enter");
+    await expect(page.getByRole("alert").filter({hasText:"Password is incorrect"})).toBeVisible();await inspect(page,info,`${theme}-hr-password-error`);
+    await password.fill(QA_PASSWORD);await verify.click();await expect(password).toHaveCount(0);
+    const other=await context.newPage();await signIn(other,learner);await other.close();await page.bringToFront();
+    const sessionCheck=page.waitForResponse(response=>new URL(response.url()).pathname==="/api/hr/reauth");
+    await page.evaluate(()=>window.dispatchEvent(new Event("focus")));await(await sessionCheck).finished();
+    await expect(page.getByText("Checking this session…",{exact:true})).toHaveCount(0);await expect(password).toBeVisible();
+    await inspect(page,info,`${theme}-hr-session-changed-boundary`);
+
   });
   test(`@template Learner templates, long multilingual content and system recovery meet quality gates in ${theme}`,async({page,context,baseURL},info)=>{
     test.setTimeout(240_000);await context.addCookies([{name:"ll_theme",value:theme,url:baseURL!}]);await page.emulateMedia({reducedMotion:"reduce"});
