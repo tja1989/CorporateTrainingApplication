@@ -83,7 +83,16 @@ async function main() {
           // Force the observed boundary exactly: real short measurement, then
           // reveal the original large DOM immediately before the real screenshot.
           const screenshot = page.screenshot.bind(page);
-          page.screenshot = async options => { await reveal(); sample.revealed = await geometry(); return screenshot(options); };
+          page.screenshot = async options => {
+            await reveal();
+            // React schedules the actual streamed DOM replacement after $RC.
+            // Require that boundary before exercising the stale short measurement.
+            await expect(article).toBeVisible();
+            const dimensions = await geometry();
+            sample.revealed = dimensions;
+            expect(dimensions.rootHeight).toBeGreaterThan(32767);
+            return screenshot(options);
+          };
           try {
             let failure: unknown;
             try { await capture(page, info, "capture"); } catch (error) { failure = error; }
