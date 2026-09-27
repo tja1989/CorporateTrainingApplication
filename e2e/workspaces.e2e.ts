@@ -4,6 +4,18 @@ import { createPerson, signIn, withDb, expectNoPageOverflow, capture as captureB
 
 async function capture(page: Page, info: TestInfo, label: string) { await page.evaluate(() => window.scrollTo(0, 0)); await captureBase(page, info, label); }
 async function saveAndReload(page: Page, button: Locator) { await Promise.all([page.waitForEvent("load"), button.click()]); }
+// Rule creation/toggling reevaluates the full preserved QA population.
+async function saveBulkRuleAndReload(page: Page, button: Locator, info: TestInfo, label: string) {
+  const dataset = await withDb(async db => (await db.query("SELECT (SELECT count(*)::int FROM users) users,(SELECT count(*)::int FROM enrollment_rules) rules")).rows[0]);
+  const started = Date.now();
+  const [, response] = await Promise.all([
+    page.waitForEvent("load", { timeout: 60_000 }),
+    page.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === "/admin/people", { timeout: 60_000 }),
+    button.click(),
+  ]);
+  expect(response.status()).toBe(200);
+  await info.attach(`bulk-rule-${label}`, { body: JSON.stringify({ dataset, started: new Date(started).toISOString(), finished: new Date().toISOString(), durationMs: Date.now() - started, responseStatus: response.status() }), contentType: "application/json" });
+}
 const reports = ["completion", "compliance", "transcript", "cert_expiry", "engagement", "quiz_results"];
 async function freshSignIn(page: Page, person: Awaited<ReturnType<typeof createPerson>>) { await page.context().clearCookies(); await signIn(page, person); }
 
@@ -153,12 +165,12 @@ test("@core @template Admin navigation, import, groups and rules are distinct pe
   await page.getByRole("link", { name: "Enrollment rules", exact: true }).click();
   await page.getByLabel("Rule name").fill(`QA rule ${token}`);
   await page.getByLabel("Group (criteria)").selectOption({ label: `QA group ${token}` });
-  await page.getByRole("button", { name: "Create & apply" }).click();
+  await saveBulkRuleAndReload(page, page.getByRole("button", { name: "Create & apply" }), info, "create");
   const rule = page.locator("li").filter({ hasText: `QA rule ${token}` }); await expect(rule).toBeVisible();
   await expect.poll(async () => withDb(async db => (await db.query("SELECT count(*)::int n FROM enrollments e JOIN users u ON u.id=e.user_id WHERE u.employee_id=$1 AND e.source='rule'", [employeeId])).rows[0].n)).toBeGreaterThan(0);
-  await saveAndReload(page, rule.getByRole("button", { name: "disable", exact: true }));
+  await saveBulkRuleAndReload(page, rule.getByRole("button", { name: "disable", exact: true }), info, "disable");
   await expect(rule.getByRole("button", { name: "enable", exact: true })).toBeVisible();
-  await saveAndReload(page, rule.getByRole("button", { name: "enable", exact: true }));
+  await saveBulkRuleAndReload(page, rule.getByRole("button", { name: "enable", exact: true }), info, "enable");
   await expect(rule.getByRole("button", { name: "disable", exact: true })).toBeVisible();
   const activeCount = () => withDb(async db => (await db.query("SELECT count(*)::int n FROM enrollments e JOIN users u ON u.id=e.user_id WHERE u.employee_id=$1 AND e.source='rule' AND e.status IN ('NOT_STARTED','IN_PROGRESS')", [employeeId])).rows[0].n);
   expect(await activeCount()).toBe(1);
