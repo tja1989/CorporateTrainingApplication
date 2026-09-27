@@ -11,7 +11,7 @@ import type { Citation, LiveKind } from "../shared";
 type PostEvent = (body: Record<string, unknown>) => Promise<Record<string, unknown>>;
 
 const HR_GREETING =
-  "Hi — I'm your welearn assistant, running in offline demo mode. Type a question about HR policy (leave, pay, hours), about your assigned courses, or ask what training is due.";
+  "Hi — I'm your xprtn assistant, running in offline demo mode. Type a question about HR policy (leave, pay, hours), about your assigned courses, or ask what training is due.";
 
 const STATUS_RE = /\b(my training|training (is )?due|what('s| is) due|due for me|assigned|overdue|my courses?|which courses?|how far|my progress|what do i (have|need) to (finish|complete))\b/i;
 const COURSE_RE = /\b(lesson|course|module|video|cold chain|greet|greeting|handwash|hand hygiene|till|refund|allergen|alarm|assembly|customer|complaint|fridge|temperature)\b/i;

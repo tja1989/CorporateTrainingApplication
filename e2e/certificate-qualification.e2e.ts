@@ -27,7 +27,7 @@ test("@core Earned certificate preserves long multilingual names and titles, wit
   await info.attach("earned-certificate", { path: pdf, contentType: "application/pdf" });
   const text = execFileSync("pdftotext", ["-enc", "UTF-8", pdf, "-"], { encoding: "utf8" });
   writeFileSync(info.outputPath("certificate-extracted.txt"), text);
-  expect(text).toContain("welearn");
+  expect(text).toContain("xprtn");
   // Complex-script extraction order varies; each non-Latin script must survive as text, not byte-truncated garbage.
   expect(text).toMatch(/\p{Script=Arabic}/u); expect(text).toMatch(/\p{Script=Devanagari}/u); expect(text).toMatch(/\p{Script=Malayalam}/u);
   expect(text).toContain("frontline retail team");

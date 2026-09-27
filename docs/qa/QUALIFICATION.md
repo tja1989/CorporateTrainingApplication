@@ -1,6 +1,8 @@
-# welearn qualification report
+# xprtn qualification report
 
 **Status: in progress. This is not a release approval.**
+
+The user changed the product name from **welearn** to lowercase **xprtn** on 2026-09-27. Earlier evidence remains historical, tied to its original source/build. The renamed candidate requires current-build checks; earlier passes must not be relabeled as xprtn qualification.
 
 The accepted work covers all learner, manager, administrator, authentication and supporting workflows in [the rework plan](../WELEARN_REWORK_PLAN.md). Current accepted delivery progress is tracked in [PROGRESS.md](PROGRESS.md). No production deployment has been performed.
 

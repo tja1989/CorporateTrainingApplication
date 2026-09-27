@@ -1,10 +1,10 @@
-# welearn design contract
+# xprtn design contract
 
 This replaces MVP_SPEC sections10-11 where visual prescriptions conflict. User-approved on2026-09-26. Surface modes: Operate for application/workspaces; Read within text/PDF/policy lessons. The audience learns during retail work on phones/shared devices under ordinary bright ambient light, so the default is a clear light interface; retain a complete dark theme.
 
 ## Visual authority
 
-Coursera discovery and course-detail hierarchy; LinkedIn Learning's focused player and curriculum navigation. Familiar professional learning patterns, LuLu retained only as customer identity. Product name **welearn**.
+Coursera discovery and course-detail hierarchy; LinkedIn Learning's focused player and curriculum navigation. Familiar professional learning patterns, LuLu retained only as customer identity. Product name **xprtn**.
 
 ## Tokens
 

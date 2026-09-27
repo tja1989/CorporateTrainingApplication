@@ -1,4 +1,4 @@
-# welearn rework progress
+# xprtn rework progress
 
 Plan: ../WELEARN_REWORK_PLAN.md
 
@@ -14,6 +14,8 @@ Overall: **70%**. Baseline, shared foundation, learner and manager/admin workflo
 | Review/handoff | 5% | Pending | |
 
 ## Decisions
+
+- 2026-09-27: user renamed the application to lowercase **xprtn**. The branding amendment updates UI labels, titles, assistant prompts, certificates, the bundled training card and current product documentation. Earlier results below refer to their original builds. Full qualification of the renamed candidate remains pending.
 
 - 2026-09-26: user approved full plan and product name welearn, then requested execution with Astra extra-high.
 - Source checkout was empty; cloned supplied repository, native tool created managed worktree, branch codex/welearn-rework from main.

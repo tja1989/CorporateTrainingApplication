@@ -4,7 +4,7 @@ import { MotionProvider } from "@/components/motion-config";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "welearn", template: "%s · welearn" },
+  title: { default: "xprtn", template: "%s · xprtn" },
   description: "Workplace learning, practice, and support",
 };
 

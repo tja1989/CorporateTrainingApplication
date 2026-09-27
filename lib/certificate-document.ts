@@ -25,7 +25,7 @@ function runs(text: string): Run[] {
 }
 
 export async function certificateDocument(data: { learnerName: string; courseTitle: string; dateLine: string; serial: string }): Promise<Buffer> {
-  const doc = new PDFDocument({ size: "A4", layout: "landscape", margin: 40, font: join(process.cwd(), "public/fonts/NotoSans-Regular.ttf"), info: { Title: "welearn Certificate of Completion" } });
+  const doc = new PDFDocument({ size: "A4", layout: "landscape", margin: 40, font: join(process.cwd(), "public/fonts/NotoSans-Regular.ttf"), info: { Title: "xprtn Certificate of Completion" } });
   for (const [name, file] of Object.entries(fonts)) doc.registerFont(name, join(process.cwd(), "public/fonts", file));
   const result = new Promise<Buffer>((resolve, reject) => {
     const chunks: Buffer[] = [];
@@ -65,7 +65,7 @@ export async function certificateDocument(data: { learnerName: string; courseTit
     }
   };
   doc.lineWidth(2).strokeColor("#1559C9").rect(30, 30, doc.page.width - 60, doc.page.height - 60).stroke();
-  block("welearn", 90, 36, 18, "#1559C9");
+  block("xprtn", 90, 36, 18, "#1559C9");
   block("Certificate of Completion", 156, 50, 32);
   block("This certifies that", 195, 24, 13);
   block(data.learnerName, 233, 70, 25);

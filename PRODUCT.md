@@ -1,4 +1,4 @@
-# welearn
+# xprtn
 
 <!-- impeccable:product-schema 1 -->
 
@@ -20,7 +20,7 @@ The existing37 page routes and all domain workflows are retained. Five lesson ty
 
 ## Brand Commitments
 
-Product name is **welearn** (lowercase); LuLu may remain as the organization/client, not product branding. User rejected both the old look and navigation. Confirmed replacement: Coursera-inspired discovery/course detail blended with LinkedIn Learning-style lesson workspace, light white/blue professional learning UI. Dark mode retained.
+Product name is **xprtn** (lowercase); LuLu may remain as the organization/client, not product branding. User rejected both the old look and navigation. Confirmed replacement: Coursera-inspired discovery/course detail blended with LinkedIn Learning-style lesson workspace, light white/blue professional learning UI. Dark mode retained.
 
 ## Evidence on Hand
 

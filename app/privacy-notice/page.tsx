@@ -12,7 +12,7 @@ export default async function PrivacyNoticePage() {
     <main className="auth-page">
       <div className="auth-topbar"><Brand /><ThemeToggle /></div>
       <Card className="mx-auto my-8 w-full max-w-3xl p-6 md:p-8">
-        <h1 className="display mb-4 text-xl md:text-2xl">How welearn uses your data</h1>
+        <h1 className="display mb-4 text-xl md:text-2xl">How xprtn uses your data</h1>
         <div className="prose-ll text-base">
           <p>Before you start, here is what this platform records and why — in plain language.</p>
           <h3>What we collect</h3>

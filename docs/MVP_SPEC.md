@@ -1,4 +1,4 @@
-# welearn — AI-Native Corporate Training Platform
+# xprtn — AI-Native Corporate Training Platform
 
 ## Feature Requirements & Design Specification (MVP v1.4)
 
@@ -10,7 +10,7 @@
 **Previous:** v1.5 (Sep 2026) — the course outline, plus a nav rail that opens on hover (§10.7) and voice fixes: the spoken sessions pin their language, the interviewer's end-of-turn is tuned, and its result notifications leave the tool-response path (FR-14.2/14.5). The course outline: modules render as a collapsible accordion on the course page and as a course-contents navigator on every lesson page, with drawn per-type lesson icons, derived durations and lock states. FR-2.7 added, §11.4/§11.5 rewritten.
 **Previous:** v1.4 (Sep 2026) — voice round 2: INTERVIEW lessons (admin-configured oral checks with pass/fail and optional completion gating), a course-aware assistant with learner context and non-blocking tool calls, and a demo script. FR-14.2/14.3 rewritten, FR-6.10a amended.
 **Previous:** v1.3 — live voice on the Gemini Live API (§7.12, FR-14): an oral check after a lesson and a live mode for the HR assistant, both on one-use constrained ephemeral tokens with tool-only grounding, per-session consent, transcript-only retention and cost logging; the offline demo mode covers both without a key.
-**Current visual update:** welearn uses the white/blue learning design in `DESIGN.md`. Earlier visual prescriptions are superseded; domain requirements and permission boundaries are retained.
+**Current visual update:** xprtn uses the white/blue learning design in `DESIGN.md`. Earlier visual prescriptions are superseded; domain requirements and permission boundaries are retained.
 **Earlier:** v1.1 — revised after a three-lens adversarial review (buildability / HR-stakeholder & legal / design). All LuLu-specific figures are sourced or tagged `[ASSUMPTION]`.
 
 ---
@@ -448,11 +448,11 @@ All model calls go through a single server-side `ai/` module (provider SDK: `@an
 
 ---
 
-## 10. welearn design language
+## 10. xprtn design language
 
-**Current visual authority:** [DESIGN.md](../DESIGN.md) and the user-approved [welearn rework plan](WELEARN_REWORK_PLAN.md) replace the former dashboard palette, rail, bento, and motion prescriptions. Functional requirements in this document remain in force.
+**Current visual authority:** [DESIGN.md](../DESIGN.md) and the user-approved [xprtn rework plan](WELEARN_REWORK_PLAN.md) replace the former dashboard palette, rail, bento, and motion prescriptions. Functional requirements in this document remain in force.
 
-- White/blue professional learning surfaces inspired by Coursera discovery and LinkedIn Learning's focused lesson workspace. Product name: **welearn**. LuLu remains the customer organization.
+- White/blue professional learning surfaces inspired by Coursera discovery and LinkedIn Learning's focused lesson workspace. Product name: **xprtn**. LuLu remains the customer organization.
 - Light tokens: white surface, `#F7F9FC` page, `#172B4D` text, `#526477` secondary text, `#1559C9` actions/links. Complete semantic dark counterparts; supported text pairs are tested at WCAG AA 4.5:1.
 - System UI sans with multilingual fallbacks. Body 16px; supporting text 14px; page titles 24px on phones and 28–32px on desktop. Controls/inputs 8px, cards 12px; pills reserved for tags/status. Restrained borders and shadows, no glow.
 - 44px interactive targets, visible focus, proper labels, reduced-motion support and logical direction spacing. Forms retain entered values after validation failure. Drawers/dialogs provide focus containment, Escape and return focus.

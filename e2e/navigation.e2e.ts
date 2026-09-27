@@ -18,7 +18,7 @@ test("NAV: learner navigation, profile disclosure, theme persistence and logout 
   const mobile = (page.viewportSize()?.width ?? 1440) < 768;
   const nav = page.getByRole("navigation", { name: mobile ? "Mobile main" : "Main", exact: true });
   await expect(nav).toBeVisible();
-  await expect(page.getByRole("link", { name: "welearn", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "xprtn", exact: true })).toBeVisible();
   for (const [name, route] of [[mobile ? "Learning" : "My Learning", "/learn"], ["Practice", "/drill"], ["Home", "/home"]]) {
     await nav.getByRole("link", { name, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`${route}$`));

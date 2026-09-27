@@ -166,7 +166,7 @@ export function buildInterviewConfig(opts: {
   const n = opts.questionCount ?? QUESTION_COUNT;
   const focusLine = opts.focus ? `\n- Focus your questions on: ${opts.focus}.` : "";
   const objectivesLine = opts.objectives?.length ? `\nCourse objectives: ${opts.objectives.join("; ")}.` : "";
-  const system = `You are the oral-check interviewer inside welearn, speaking with ${opts.learnerFirstName}, who just finished the lesson "${opts.lessonTitle}" in the course "${opts.courseTitle}".
+  const system = `You are the oral-check interviewer inside xprtn, speaking with ${opts.learnerFirstName}, who just finished the lesson "${opts.lessonTitle}" in the course "${opts.courseTitle}".
 
 Your job: check understanding with a short, friendly spoken conversation, then record the result with the submit_evaluation tool.
 

@@ -1,6 +1,6 @@
-# welearn UI/UX rework and browser qualification
+# xprtn UI/UX rework and browser qualification
 
-Approved in chat on 2026-09-26. This file preserves the implementation contract, including the user's correction that the product name is lowercase **welearn**. The earlier MVP specification remains authority for domain rules, but this plan supersedes its visual design. Do not reduce scope to what existing tests happen to cover.
+Approved in chat on 2026-09-26 under the name **welearn**. On 2026-09-27, the user changed the product name to lowercase **xprtn**; that amendment is now the branding contract. Historical evidence, database identifiers, branch names and this document's filename retain their original names for compatibility and provenance. The earlier MVP specification remains authority for domain rules, but this plan supersedes its visual design. Do not reduce scope to what existing tests happen to cover.
 
 ## Global Constraints
 
@@ -10,7 +10,7 @@ Repo baseline: main dd8bd11cac4df8ede1ef566431ad72285842a82d; deployed baseline 
 
 ## Visual and interaction contract
 
-- Brand is **welearn**, lower case: header, authentication, document titles, metadata, privacy copy, certificates, assistant prompts and current product documentation. Preserve LuLu as the customer/organization where factual, not the product name; keep existing cookie/data identifiers compatible.
+- Brand is **xprtn**, lower case: header, authentication, document titles, metadata, privacy copy, certificates, assistant prompts and current product documentation. Preserve LuLu as the customer/organization where factual, not the product name; keep existing cookie/data identifiers compatible.
 - Light colors: white surface; #F7F9FC page; #172B4D foreground; #526477 muted text; #1559C9 primary action. Dark uses matching semantic tokens and readable blue/status contrast. Validate all final pairs.
 - System UI sans with multilingual fallbacks; 16px body, 14px supporting text, 28-32px desktop/24px mobile page headings. 8px controls, 12px cards, subtle borders and restrained shadows. Tags/statuses alone use pills. No decorative counters/glowing nav/unnecessary page-entry animations. Reduced motion remains supported.
 - Course covers use existing coverUrl plus consistent subject-illustration fallbacks. Never invent instructors, ratings, learners, or claims. Fully responsive imagery, explicit dimensions, alt handling and load-failure fallback.

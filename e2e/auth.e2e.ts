@@ -23,7 +23,7 @@ test("AUTH: privacy acknowledgment persists and protected workspaces reject lear
   const person = await createPerson("LEARNER", { privacy: 0 });
   await signIn(page, person);
   await expect(page).toHaveURL(/\/privacy-notice$/);
-  await expect(page.locator("h1")).toContainText("welearn");
+  await expect(page.locator("h1")).toContainText("xprtn");
   await page.getByRole("button", { name: /I understand/ }).click();
   await expect(page).toHaveURL(/\/home$/);
   await page.reload();
@@ -116,7 +116,7 @@ test("AUTH: sign-in and activation controls have accessible names and fit small 
     await page.context().addCookies([{ name: "ll_theme", value: theme, url: baseURL! }]);
     for (const route of ["/login", "/activate"]) {
       await page.goto(route);
-      await expect(page).toHaveTitle(/welearn/);
+      await expect(page).toHaveTitle(/xprtn/);
       await expect(page.getByLabel("Employee ID", { exact: true })).toBeVisible();
       await expectNoPageOverflow(page);
       const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* welearn semantic palette. Text pairs are checked against WCAG AA in tests. */
+/* xprtn semantic palette. Text pairs are checked against WCAG AA in tests. */
 :root {
   color-scheme: light;
   --background: #F7F9FC;

@@ -8,7 +8,7 @@ const css = readFileSync(join(ROOT, "app/globals.css"), "utf8");
 function walk(dir: string): string[] { return readdirSync(dir).flatMap(name => { const p = join(dir, name); return statSync(p).isDirectory() ? walk(p) : p.endsWith(".tsx") ? [p] : []; }); }
 const files = [...walk(join(ROOT, "app")), ...walk(join(ROOT, "components"))];
 
-describe("welearn design contract", () => {
+describe("xprtn design contract", () => {
   it("declares the approved light palette and restrained control/card geometry", () => {
     for (const [token, value] of Object.entries({ background: "#F7F9FC", surface: "#FFFFFF", foreground: "#172B4D", "muted-foreground": "#526477", primary: "#1559C9" })) expect(css).toContain(`--${token}: ${value}`);
     expect(css).toContain("--radius-control: 8px");
@@ -36,7 +36,7 @@ describe("welearn design contract", () => {
     expect(css).not.toMatch(/@keyframes ll-(enter|slide-up|pop|float|wave)/);
   });
   it("has no stale product brand in shipped source", () => {
-    expect(files.filter(file => /LuLu Learn/.test(readFileSync(file, "utf8")))).toEqual([]);
+    expect(files.filter(file => /LuLu Learn|welearn/i.test(readFileSync(file, "utf8")))).toEqual([]);
   });
 });
 

@@ -1,4 +1,4 @@
-# welearn — voice demo script (10 minutes)
+# xprtn — voice demo script (10 minutes)
 
 Live site: https://corporatetrainingapplication-production.up.railway.app · password for every demo account: `demo1234`
 

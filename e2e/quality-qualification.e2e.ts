@@ -13,7 +13,7 @@ async function overflow(page:Page,info:TestInfo,label:string){
 
 async function inspect(page:Page,info:TestInfo,label:string){
   // Client navigation can commit the URL before streamed metadata settles.
-  await expect(page).toHaveTitle(/welearn/);
+  await expect(page).toHaveTitle(/xprtn/);
   await expect.soft(page.locator("h1").first()).toBeVisible();
   await overflow(page,info,label);
   const axe=await new AxeBuilder({page}).withTags(["wcag2a","wcag2aa","wcag21aa","wcag22aa"]).analyze();

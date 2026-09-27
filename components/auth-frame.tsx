@@ -18,6 +18,6 @@ export function AuthFrame({ title, description, children }: { title: string; des
         {children}
       </section>
     </div>
-    <p className="mx-auto max-w-4xl text-center text-sm text-muted">welearn · Workplace learning</p>
+    <p className="mx-auto max-w-4xl text-center text-sm text-muted">xprtn · Workplace learning</p>
   </main>;
 }

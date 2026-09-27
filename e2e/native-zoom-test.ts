@@ -24,7 +24,7 @@ export async function launchNativeZoomContext(options: ZoomOptions) {
   mkdirSync(extension, { recursive: true });
   writeFileSync(join(extension, "manifest.json"), JSON.stringify({
     manifest_version: 3,
-    name: "welearn isolated native zoom fixture",
+    name: "xprtn isolated native zoom fixture",
     version: "1.0",
     host_permissions: [`${origin.protocol}//${origin.hostname}/*`],
     background: { service_worker: "worker.js" },
