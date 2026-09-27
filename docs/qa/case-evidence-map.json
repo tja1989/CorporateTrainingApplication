@@ -678,8 +678,39 @@
       "browserTests": [
         "Ask Reports composers wait for hydration"
       ]
+    },
+    {
+      "id": "AUTH:initial-values",
+      "expected": "Early native auth entries survive hydration, field changes and server validation in login, activation and both MFA stages; JavaScript-disabled native login still establishes a session.",
+      "browserTests": [
+        "Early login values survive",
+        "Early activation values survive",
+        "Early MFA setup and verification",
+        "Native login still submits"
+      ]
+    },
+    {
+      "id": "TICKET:readiness",
+      "expected": "Reply input and submit wait for their client handler, preserve text through failure, and persist exactly one successful retry.",
+      "browserTests": [
+        "Ticket reply waits for its handler"
+      ]
+    },
+    {
+      "id": "HR:unlock-readiness",
+      "expected": "Stored-history verification waits for its handler and preserves rejected credentials for correction without exposing protected content.",
+      "browserTests": [
+        "HR history unlock waits for its handler"
+      ]
+    },
+    {
+      "id": "CONTENT:readiness",
+      "expected": "Lesson completion cannot perform an unhandled initial native submission; failed saves remain retryable and only acknowledged completion persists.",
+      "browserTests": [
+        "Lesson completion waits for its handler"
+      ]
     }
   ],
-  "additionalRequiredCases": 4,
-  "requiredCases": 80
+  "additionalRequiredCases": 8,
+  "requiredCases": 84
 }

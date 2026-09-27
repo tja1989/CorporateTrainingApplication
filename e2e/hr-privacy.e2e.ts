@@ -173,6 +173,8 @@ test("@core HR tabs hide prior content after another account or a new login repl
   await expect(page.getByText("QA stored confidential ticket body", { exact: true })).not.toBeVisible();
 
   await page.goto(`/ask-hr/tickets/${old.ticket}`); await expect(page.getByText("QA stored confidential ticket body", { exact: true })).toBeVisible();
+  // The synthetic lifecycle event must reach mounted listeners, not SSR markup.
+  await expect(page.getByLabel("Reply to HR")).toBeEnabled();
   await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
   await expect(page.getByText("QA stored confidential ticket body", { exact: true })).not.toBeVisible();
   await page.evaluate(() => window.dispatchEvent(new Event("pageshow")));

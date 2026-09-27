@@ -19,7 +19,7 @@ Stop every process sharing `.next` before rebuilding, including any separate pre
 
 Run units and type checking with `npm test` and `npm run typecheck`. For a focused project, use `npm run test:e2e -- --project=chromium-desktop`.
 
-The complete configured matrix currently contains 673 executions across ten projects. It uses **two workers, fullyParallel false and zero retries**. Mutating fixtures have unique IDs, browser contexts and artifact paths; the two-worker isolation audit is retained with Task 5 evidence. Do not overlap performance measurements with the matrix, service checks or manual browser activity.
+The complete configured matrix currently contains 715 executions across ten projects. It uses **two workers, fullyParallel false and zero retries**. Mutating fixtures have unique IDs, browser contexts and artifact paths; the two-worker isolation audit is retained with Task 5 evidence. Do not overlap performance measurements with the matrix, service checks or manual browser activity.
 
 After freezing the source, record the actual build commit and use distinct output folders:
 
@@ -74,3 +74,5 @@ Real public YouTube playback has separate controller evidence, including seek-on
 The original baseline is application main `dd8bd11`. Its local runtime on port 3200 uses separate `welearn_baseline` data; baseline 117 units, typecheck and build passed, while its forms failed accessible-label browser checks. `scripts/qa-baseline.ts` captures representative journeys with reduced motion. `QA_SCOPE=expanded` adds path, quiz, oral, practice, policy, ticket, inbox, review and integrity families. The original expanded baseline has 64 screenshots in `.artifacts/baseline/expanded-screens/`.
 
 After images must identify their own exact application source/build and preview dataset. A before/after gallery is visual evidence, not a replacement for workflow execution or the separate client visual approval gate.
+
+Initial-form regressions hold only the first application scripts while using real native inputs. Authentication preserves early editable values and native server-action submission, including a JavaScript-disabled login control. Client-only ticket, history-unlock and completion forms expose a loading status and disable submission until their handlers are ready; failed requests remain retryable. Browser contexts inherit the project TLS policy.

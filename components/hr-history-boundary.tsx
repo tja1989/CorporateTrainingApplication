@@ -3,14 +3,16 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Button, ButtonAnchor, Card, Input, PageTitle } from "./ui";
 
 export function HrHistoryUnlock({ newConversationBelow = false }: { newConversationBelow?: boolean } = {}) {
+  const [ready, setReady] = useState(false);
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useEffect(() => setReady(true), []);
   return <Card className="hr-history-unlock mb-5 p-5">
     <h2 className="mb-2 text-lg font-semibold">Your HR history is private</h2>
     <p className="mb-4 text-sm text-muted">On this shared device, verify your password to open stored conversations and tickets for five minutes.{newConversationBelow ? " You can start a new conversation below." : " Open HR Help to continue with the account currently signed in."}</p>
-    <form onSubmit={async event => {
-      event.preventDefault(); if (busy) return;
+    <form method="post" aria-busy={!ready || busy} onSubmit={async event => {
+      event.preventDefault(); if (!ready || busy) return;
       setBusy(true); setError(null);
       try {
         const response = await fetch("/api/hr/reauth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password }) });
@@ -20,9 +22,10 @@ export function HrHistoryUnlock({ newConversationBelow = false }: { newConversat
       } catch (error) { setError(error instanceof Error ? error.message : "Verification failed. Please try again."); setBusy(false); }
     }}>
       <label className="mb-2 block text-sm font-medium" htmlFor="hr-history-password">Confirm your password</label>
-      <Input id="hr-history-password" type="password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required disabled={busy} />
+      <Input id="hr-history-password" type="password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required disabled={!ready || busy} />
+      {!ready ? <p role="status" className="mt-3 text-sm text-muted">Loading verification form…</p> : null}
       {error ? <p role="alert" className="mt-3 text-sm text-destructive-text">{error}</p> : null}
-      <Button className="mt-3" type="submit" disabled={busy}>{busy ? "Verifying…" : "Verify and open history"}</Button>
+      <Button className="mt-3" type="submit" disabled={!ready || busy}>{busy ? "Verifying…" : "Verify and open history"}</Button>
     </form>
     {!newConversationBelow ? <ButtonAnchor className="mt-3" variant="secondary" href="/ask-hr">Open HR Help</ButtonAnchor> : null}
   </Card>;
