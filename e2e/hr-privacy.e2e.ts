@@ -95,8 +95,17 @@ test("@core A new shared-device text and voice conversation can create its own t
   const learner = await createPerson("LEARNER"), old = await historyFixture(learner.id); await sharedLogin(page, learner);
   await page.goto("/ask-hr"); await page.getByRole("textbox", { name: "Ask the HR assistant", exact: true }).fill("QA new shared-device text question");
   await page.getByRole("button", { name: "Send", exact: true }).click(); await expect(page.getByText(/Offline demo answer/)).toBeVisible();
+  const textConversation = decodeJwt((await context.cookies()).find(c => c.name === "ll_session")!.value).activeHrConversationId;
+  expect(textConversation).toBeTruthy(); expect(textConversation).not.toBe(old.conversation);
   expect((await page.request.get("/api/hr")).status()).toBe(403);
-  await page.getByRole("link", { name: "Talk instead", exact: true }).click();
+  // This handoff must fetch a fresh document with the server-issued session grant.
+  const [voiceDocument] = await Promise.all([
+    page.waitForResponse(response => response.request().isNavigationRequest() && new URL(response.url()).pathname === "/ask-hr/live", { timeout: 10_000 }),
+    page.waitForEvent("load"),
+    page.getByRole("link", { name: "Talk instead", exact: true }).click(),
+  ]);
+  expect(voiceDocument.status()).toBe(200);
+  await expect(page).toHaveURL(/\/ask-hr\/live$/);
   await page.getByRole("button", { name: "Continue to voice", exact: true }).click();
   await page.getByRole("button", { name: "Start talking", exact: true }).click();
   await page.getByRole("textbox", { name: "Type a message", exact: true }).fill("QA new shared-device voice question"); await page.getByRole("button", { name: "Send", exact: true }).click();
@@ -113,6 +122,7 @@ test("@core A new shared-device text and voice conversation can create its own t
   const current = decodeJwt((await context.cookies()).find(c => c.name === "ll_session")!.value);
   expect(current.hrHistoryVerifiedAt).toBeUndefined(); expect(current.activeHrConversationId).not.toBe(old.conversation);
   expect(await withDb(async db => (await db.query("SELECT conversation_id FROM hr_tickets WHERE id=$1 AND user_id=$2", [ticketId, learner.id])).rows[0].conversation_id)).toBe(current.activeHrConversationId);
+  expect(await withDb(async db => (await db.query("SELECT count(*)::int n FROM hr_messages WHERE conversation_id=$1 AND role='user' AND content=$2", [textConversation, "QA new shared-device text question"])).rows[0].n)).toBe(1);
   await page.context().clearCookies(); await sharedLogin(page, learner); await page.goto(`/ask-hr/tickets/${ticketId}`);
   await expect(page.getByLabel("Confirm your password")).toBeVisible(); await expect(page.getByText(/Employee: QA new shared-device voice question/)).toHaveCount(0);
 });

@@ -3,7 +3,8 @@ import { test, expect } from "@playwright/test";
 import { createPerson, signIn, withDb } from "./support";
 
 test("@core HR retrieval enforces country, audience, effective dates and abstention; manager-only policy denies learner deep links", async ({ page }, info) => {
-  const learner = await createPerson("LEARNER"), manager = await createPerson("MANAGER"), token = `qascope${randomUUID().replaceAll("-", "")}`;
+  // Keep exact-match retrieval fixtures distinct from phone-number redaction cases.
+  const learner = await createPerson("LEARNER"), manager = await createPerson("MANAGER"), token = `qascope${randomUUID().replaceAll("-", "").replace(/\d/g, digit => "ghijklmnop"[Number(digit)])}`;
   const country = randomUUID(), store = randomUUID();
   const docs = ["allowed", "manager", "foreign", "future"].map(kind => ({ id: randomUUID(), kind, title: `QA ${kind} ${token}` }));
   await withDb(async db => {

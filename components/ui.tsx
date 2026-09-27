@@ -67,6 +67,11 @@ export function PillLink({ active, className, ...props }: ComponentProps<typeof 
   return <Link className={cx(pillBase, active ? pillActive : pillIdle, className)} {...props} />;
 }
 
+/** Refresh server session scope when handing off to a different interaction mode. */
+export function PillAnchor({ active, className, ...props }: ComponentProps<"a"> & { active?: boolean }) {
+  return <a className={cx(pillBase, active ? pillActive : pillIdle, className)} {...props} />;
+}
+
 /* ------------------------------ Cards ------------------------------ */
 
 /** Elevation L1: surface + hairline. A shadow only appears under a hovered `.lift` card. */

@@ -103,7 +103,10 @@ for (const role of ["MANAGER", "ADMIN"] as const) {
     }
     const workspace = page.getByRole("navigation", { name: "Workspace", exact: true }).filter({ visible: true });
     const reportName = role === "ADMIN" ? "Reports" : "Team reports";
-    await workspace.getByRole("link", { name: reportName, exact: true }).click();
+    await Promise.all([
+      page.waitForEvent("load"),
+      workspace.getByRole("link", { name: reportName, exact: true }).click(),
+    ]);
     await expect(page).toHaveURL(new RegExp(`${home}/reports$`));
     if (compact) {
       await expect(page.getByRole("dialog")).toBeHidden();

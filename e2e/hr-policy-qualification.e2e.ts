@@ -40,7 +40,8 @@ test("@core Sensitive and unsupported HR questions require consent before the co
 });
 
 test("@core Policy ingestion failure preserves the active version; retry publishes new scoped answers and old citation history", async ({ page }) => {
-  const admin = await createPerson("ADMIN"), learner = await createPerson("LEARNER"), token = `Policy${randomUUID().replaceAll("-","").slice(0,10)}`;
+  // Alphabetic tokens cannot accidentally become PII-redacted phone numbers.
+  const admin = await createPerson("ADMIN"), learner = await createPerson("LEARNER"), token = `Policy${randomUUID().replaceAll("-", "").slice(0, 10).replace(/\d/g, digit => "ghijklmnop"[Number(digit)])}`;
   const title = `QA ${token} procedure`;
   const publish = async (body: string) => {
     await page.goto("/admin/corpus?view=publish");

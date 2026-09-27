@@ -2,7 +2,7 @@
 
 import { Icon, IconDisc } from "@/components/icons";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AiSurface, Button, Card, Chip, Input, PillButton, PillLink, Skeleton, cx } from "@/components/ui";
+import { AiSurface, Button, Card, Chip, Input, PillButton, PillAnchor, Skeleton, cx } from "@/components/ui";
 import { EscalationPreviewChangedError } from "@/lib/hr/escalation";
 import { EscalationPreview } from "@/components/escalation-preview";
 import { CitationChips } from "@/components/citations";
@@ -169,7 +169,7 @@ export function HrChat({ userId, loginId, loadHistory = true, activeConversation
           HR Assistant <Chip variant="ai">AI</Chip>
         </span>
         <span className="flex flex-wrap gap-2">
-          <PillLink href="/ask-hr/live"><Icon name="mic" size={14} /> Talk instead</PillLink>
+          <PillAnchor href="/ask-hr/live"><Icon name="mic" size={14} /> Talk instead</PillAnchor>
           <PillButton onClick={() => setConfirmOpen(true)} disabled={!conversationRef.current || streaming !== null}>
             Talk to a person
           </PillButton>
