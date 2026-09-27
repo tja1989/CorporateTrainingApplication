@@ -34,6 +34,7 @@ for (const role of ["MANAGER", "ADMIN"] as const) {
     });
     await signIn(page, learner); await page.goto(`/lesson/${f.lesson}`);
     await page.getByRole("button", { name: "Mark complete", exact: true }).click();
+    await expect(page.getByText("Lesson complete", { exact: true })).toBeVisible();
     await page.goto(`/quiz/${q.quiz}`); await page.getByRole("button", { name: "Start assessment", exact: true }).click();
     await page.getByRole("radio", { name: "Wash hands", exact: true }).check();
     await page.getByRole("textbox", { name: "Type the safety word", exact: true }).fill("safe");

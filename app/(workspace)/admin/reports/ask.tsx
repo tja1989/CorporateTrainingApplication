@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AiSurface, Button, Card, Input, Skeleton, Field } from "@/components/ui";
 
 type AskResult = {
@@ -12,6 +12,8 @@ type AskResult = {
 };
 
 export function AskReports({ scope }: { scope?: "team" } = {}) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => { setReady(true); }, []);
   const [error, setError] = useState("");
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
@@ -51,11 +53,13 @@ export function AskReports({ scope }: { scope?: "team" } = {}) {
           onChange={(e) => setQ(e.target.value)}
           placeholder='Ask the data — e.g. "who in Khalidiyah is overdue on Food Safety?"'
           aria-label="Ask reports"
+          disabled={!ready}
           className="min-w-0 flex-1"
         />
-        <Button type="submit" disabled={loading || !q.trim()}>Ask</Button>
+        <Button type="submit" disabled={!ready || loading || !q.trim()}>Ask</Button>
       </form>
 
+      {!ready ? <p role="status" className="mt-3 text-sm text-muted">Loading report assistant…</p> : null}
       {error ? <p role="alert" className="mt-3 text-sm text-destructive-text">{error}</p> : null}
       {loading ? <Skeleton delayed className="mt-3 h-[64px] w-full" /> : null}
 

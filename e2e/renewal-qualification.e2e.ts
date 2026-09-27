@@ -53,6 +53,7 @@ test("@core Reviewing an old oral check preserves history without completing ren
   await withDb(db=>db.query("INSERT INTO lessons(id,module_id,type,title,sort,payload) VALUES($1,$2,'INTERVIEW','QA renewable oral check',1,$3)",[oral,f.module,JSON.stringify({interview:{questionCount:1,maxMinutes:3,passPct:67,requirePass:true,scope:"course"}})]));
   const countCertificates=()=>withDb(async db=>(await db.query("SELECT count(*)::int n FROM certificates WHERE user_id=$1 AND course_id=$2",[learner.id,f.course])).rows[0].n);
   await signIn(page,learner);await page.goto(`/lesson/${f.lesson}`);await page.getByRole("button",{name:"Mark complete",exact:true}).click();
+  await expect(page.getByText("Lesson complete",{exact:true})).toBeVisible();
   const answer=async(text:string)=>{await page.getByRole("textbox",{name:"Type a message",exact:true}).fill(text);await page.getByRole("button",{name:"Send",exact:true}).click();await expect(page.getByText("Your result",{exact:true})).toBeVisible();};
   await page.goto(`/lesson/${oral}`);await page.getByRole("button",{name:"Start the oral check",exact:true}).click();await answer("Read the safety procedure carefully and ask the supervisor for help before serving customers.");
   await expect.poll(countCertificates).toBe(1);

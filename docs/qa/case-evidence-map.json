@@ -657,8 +657,22 @@
         "Certificate and learner API data require",
         "Active assessment, dialogs, media, voice and HR recovery"
       ]
+    },
+    {
+      "id": "HR:readiness",
+      "expected": "Initial conversation input waits for hydration and history; failed history remains usable and failed questions remain editable for retry.",
+      "browserTests": [
+        "HR composer waits for hydration and history"
+      ]
+    },
+    {
+      "id": "REPORTS:readiness",
+      "expected": "Both report-workspace composers wait for hydration and retain typed questions through request failure and success.",
+      "browserTests": [
+        "Ask Reports composers wait for hydration"
+      ]
     }
   ],
-  "additionalRequiredCases": 1,
-  "requiredCases": 77
+  "additionalRequiredCases": 3,
+  "requiredCases": 79
 }

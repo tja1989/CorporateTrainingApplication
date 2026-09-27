@@ -179,6 +179,7 @@ export function HrChat({ userId, loginId, loadHistory = true, activeConversation
       <div className="flex flex-col gap-3" dir="auto">
         {messages === null ? (
           <div className="flex flex-col gap-2">
+            <p role="status" className="text-sm text-muted">Loading conversation…</p>
             <Skeleton delayed className="h-4 w-2/3" />
             <Skeleton delayed className="h-4 w-1/2" />
           </div>
@@ -269,10 +270,11 @@ export function HrChat({ userId, loginId, loadHistory = true, activeConversation
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about any HR policy — any language"
           aria-label="Ask the HR assistant"
+          disabled={messages === null}
           dir="auto"
           className="min-w-0 flex-1"
         />
-        <Button type="submit" disabled={streaming !== null || !input.trim()} className="px-3" aria-label="Send">
+        <Button type="submit" disabled={messages === null || streaming !== null || !input.trim()} className="px-3" aria-label="Send">
           <Icon name="arrow-up" size={18} />
         </Button>
       </form>
