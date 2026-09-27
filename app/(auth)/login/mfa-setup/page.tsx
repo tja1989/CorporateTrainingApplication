@@ -1,28 +1,17 @@
 import { redirect } from "next/navigation";
-import { readSession } from "@/lib/auth/session";
+import { currentUser } from "@/lib/auth/guard";
 import { generateTotpSecret } from "@/lib/auth/totp";
 import { MfaSetupForm } from "./setup-form";
-import { Card } from "@/components/ui";
+import { AuthFrame } from "@/components/auth-frame";
 
 export default async function MfaSetupPage() {
-  const session = await readSession();
-  if (!session || session.role !== "ADMIN") redirect("/login");
+  const user = await currentUser();
+  if (!user || user.role !== "ADMIN") redirect("/login");
+  if (user.totpSecret) redirect(user.session.mfa ? "/admin" : "/login/mfa");
   const secret = generateTotpSecret();
-  return (
-    <main className="auth-hero flex min-h-dvh items-center justify-center px-4">
-      <Card className="animate-enter w-full max-w-md p-6">
-        <h1 className="display mb-1 text-xl">Set up two-factor</h1>
-        <p className="mb-4 text-sm text-muted">
-          Admin accounts require an authenticator app (spec FR-1.4). Add this secret to your app, then confirm with a code.
-        </p>
-        <div className="mb-4 rounded-control bg-surface-2 p-3 font-mono text-sm break-all" aria-label="TOTP secret">
-          {secret}
-        </div>
-        <p className="mb-4 text-xs text-muted">
-          Or add manually: account <code>LuLu Learn</code>, type TOTP, 30-second period, 6 digits.
-        </p>
-        <MfaSetupForm secret={secret} />
-      </Card>
-    </main>
-  );
+  return <AuthFrame title="Set up two-factor authentication" description="Admin accounts require two-factor authentication. Add this setup key to your authenticator app, then enter the code it generates.">
+    <div className="mb-4 break-all rounded-control bg-surface-2 p-4 font-mono text-base" aria-label="Authenticator setup key">{secret}</div>
+    <p className="mb-6 text-sm text-muted">Account: <strong>xprtn</strong>. Choose a time-based code (TOTP), a 30-second period, and 6 digits.</p>
+    <MfaSetupForm secret={secret} />
+  </AuthFrame>;
 }

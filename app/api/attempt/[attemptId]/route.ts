@@ -1,8 +1,8 @@
 import { eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
-import { currentUser } from "@/lib/auth/guard";
+import { apiUser as currentUser } from "@/lib/auth/guard";
 import { id } from "@/lib/ids";
-import { saveAnswers, submitAttempt, canRevealAnswers, unmapAnswer } from "@/lib/quiz/engine";
+import { AttemptWriteError, saveAnswers, submitAttempt, canRevealAnswers, unmapAnswer } from "@/lib/quiz/engine";
 import { scoreQuestion, type Answer } from "@/lib/quiz/scoring";
 
 /**
@@ -17,7 +17,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ attemp
   if (!attempt || attempt.userId !== user.id) return new Response("Not found", { status: 404 });
   const [quiz] = await db.select().from(t.quizzes).where(eq(t.quizzes.id, attempt.quizId)).limit(1);
   if (!quiz) return new Response("Not found", { status: 404 });
-  const body = (await req.json()) as { answers?: Record<string, Answer>; events?: Array<{ kind: string; detail?: Record<string, unknown> }> };
+  const body = (await req.json()) as { answers?: Record<string, Answer>; navigationIndex?: number; events?: Array<{ kind: string; detail?: Record<string, unknown> }> };
 
   if (body.events && attempt.integrityMode) {
     const severity = (kind: string): "red" | "orange" | "info" =>
@@ -33,11 +33,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ attemp
     }
   }
 
-  if (body.answers && Object.keys(body.answers).length > 0) {
+  if (body.answers || body.navigationIndex !== undefined) {
     try {
-      await saveAnswers(attempt, quiz, body.answers);
+      await saveAnswers(attempt, quiz, body.answers ?? {}, body.navigationIndex);
     } catch (err) {
-      return Response.json({ error: err instanceof Error ? err.message : "Save failed", submitted: true }, { status: 409 });
+      return Response.json({ error: err instanceof Error ? err.message : "Save failed", submitted: err instanceof AttemptWriteError && err.submitted }, { status: 409 });
     }
   }
   return Response.json({ ok: true, savedAt: new Date().toISOString() });

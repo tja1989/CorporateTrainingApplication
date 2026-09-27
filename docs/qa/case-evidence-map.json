@@ -1,0 +1,720 @@
+{
+  "qualification": "CANDIDATE MAPPING ONLY \u2014 titles identify assertions to reconcile against executed final results; source/title enumeration is not a pass",
+  "baselineRequiredCases": 76,
+  "matching": "Case-sensitive substring of executed Playwright test title; every matching required browser project must pass in each complete run",
+  "cases": [
+    {
+      "id": "AUTH:invalid",
+      "expected": "Invalid credentials preserve ID; correction signs in.",
+      "browserTests": [
+        "invalid credentials retain"
+      ]
+    },
+    {
+      "id": "AUTH:activation",
+      "expected": "Valid one-time activation; invalid/expired/mismatch recovery; code cannot be reused.",
+      "browserTests": [
+        "activation validates matching",
+        "wrong and expired activation"
+      ]
+    },
+    {
+      "id": "AUTH:privacy",
+      "expected": "New user acknowledges notice once; consent persists.",
+      "browserTests": [
+        "privacy acknowledgment persists",
+        "Certificate and learner API data require"
+      ]
+    },
+    {
+      "id": "AUTH:destinations",
+      "expected": "All three roles reach their correct workspace.",
+      "browserTests": [
+        "Root follows the authenticated workspace",
+        "workspace navigation and return"
+      ]
+    },
+    {
+      "id": "AUTH:mfa",
+      "expected": "Admin setup and verification mandatory; invalid code recoverable; direct links cannot bypass.",
+      "browserTests": [
+        "admin cannot bypass mandatory MFA",
+        "admin setup requires a valid code",
+        "Certificate and learner API data require"
+      ]
+    },
+    {
+      "id": "AUTH:reset",
+      "expected": "Manager-issued reset code activates only the intended account and is one-time.",
+      "browserTests": [
+        "manager-issued reset is scoped",
+        "import, groups and rules"
+      ]
+    },
+    {
+      "id": "AUTH:logout",
+      "expected": "Logout and expired session hide protected content; back/direct URL cannot restore access.",
+      "browserTests": [
+        "theme persistence and logout",
+        "expired session returns"
+      ]
+    },
+    {
+      "id": "NAV:learner",
+      "expected": "Home, Learning, Practice, HR Help, profile and inbox usable via intended nav.",
+      "browserTests": [
+        "learner navigation, profile disclosure",
+        "HR shows its heading",
+        "Learning path shows prerequisites"
+      ]
+    },
+    {
+      "id": "NAV:workspace",
+      "expected": "Manager/admin labeled sidebar or drawer; active state; role switching and return.",
+      "browserTests": [
+        "workspace navigation and return",
+        "My profile opens a coherent"
+      ]
+    },
+    {
+      "id": "NAV:history",
+      "expected": "Back/Forward/direct links preserve view/filter context; no dead ends.",
+      "browserTests": [
+        "Catalog pagination, language",
+        "Catalog filters survive refresh"
+      ]
+    },
+    {
+      "id": "NAV:keyboard",
+      "expected": "Skip link, menus, drawers/dialogs keyboard access, Escape/focus restoration.",
+      "browserTests": [
+        "keyboard skip link moves focus",
+        "workspace navigation and return",
+        "Stored legacy, missing",
+        "Active assessment, dialogs"
+      ]
+    },
+    {
+      "id": "DISCOVER:search",
+      "expected": "Search results/counts and course destinations agree; one action opens course.",
+      "browserTests": [
+        "Catalog filters survive refresh"
+      ]
+    },
+    {
+      "id": "DISCOVER:filters",
+      "expected": "Tag/language/duration/status filters derive from metadata and persist in URL.",
+      "browserTests": [
+        "Catalog pagination, language",
+        "Catalog filters survive refresh"
+      ]
+    },
+    {
+      "id": "DISCOVER:views",
+      "expected": "My courses/paths/browse tabs, pagination, clear, empty state survive refresh/history.",
+      "browserTests": [
+        "Catalog pagination, language",
+        "Catalog filters survive refresh"
+      ]
+    },
+    {
+      "id": "PATH:order",
+      "expected": "Course order, current/completed/locked status and overall progress agree.",
+      "browserTests": [
+        "assignment guards direct entry",
+        "Manager path assignment fans out"
+      ]
+    },
+    {
+      "id": "PATH:unlock",
+      "expected": "Completing prerequisite unlocks next; direct URL does not bypass server-enforced lock.",
+      "browserTests": [
+        "assignment guards direct entry",
+        "Manager path assignment fans out"
+      ]
+    },
+    {
+      "id": "CONTENT:text",
+      "expected": "Complete text; direct next eligible step; refresh persists and all progress surfaces agree.",
+      "browserTests": [
+        "Home resumes directly",
+        "Earned certificate preserves long"
+      ]
+    },
+    {
+      "id": "CONTENT:pdf",
+      "expected": "Readable PDF/link fallback; completion and next step persist.",
+      "browserTests": [
+        "PDF fallback delivers",
+        "Home resumes directly"
+      ]
+    },
+    {
+      "id": "CONTENT:locked",
+      "expected": "Lesson lock reason and prerequisite route work; incomplete prerequisite cannot be bypassed.",
+      "browserTests": [
+        "assignment guards direct entry",
+        "Locked video rejects"
+      ]
+    },
+    {
+      "id": "VIDEO:playback",
+      "expected": "Actual player play/pause/leave/resume restores within heartbeat interval.",
+      "browserTests": [
+        "Mocked player restores saved position"
+      ],
+      "manual": "Controller complete real public YouTube journey on the exact final clean build; structured status, scope, runtime and artifacts validated by qa_manual_evidence.py"
+    },
+    {
+      "id": "VIDEO:seek",
+      "expected": "Transcript and tutor citation seek correctly; seeking alone never earns coverage.",
+      "browserTests": [
+        "Stored legacy, missing",
+        "Tutor retries a network failure",
+        "Mocked player restores saved position"
+      ],
+      "manual": "Controller complete real public YouTube journey on the exact final clean build; structured status, scope, runtime and artifacts validated by qa_manual_evidence.py"
+    },
+    {
+      "id": "VIDEO:threshold",
+      "expected": "90% watched coverage triggers completion once; earlier coverage does not.",
+      "browserTests": [
+        "Crossing the video completion threshold"
+      ],
+      "manual": "Controller complete real public YouTube journey on the exact final clean build; structured status, scope, runtime and artifacts validated by qa_manual_evidence.py",
+      "service": "qa-service: interleaved heartbeat and renewal; stale one-bucket request rejected, fresh playback completes normally"
+    },
+    {
+      "id": "TUTOR:grounded",
+      "expected": "Real grounded question streams answer with valid citation and lesson scope.",
+      "browserTests": [
+        "Tutor retries a network failure",
+        "Stored legacy, missing",
+        "Tutor suggestions reject"
+      ],
+      "unverified": "Real AI service unavailable; deterministic retrieval, SSE, persistence, allowed citations and suggestions are locally qualified separately"
+    },
+    {
+      "id": "TUTOR:unavailable",
+      "expected": "Provider failure/network error is recoverable without fabricated success.",
+      "browserTests": [
+        "Tutor retries a network failure"
+      ]
+    },
+    {
+      "id": "QUIZ:types",
+      "expected": "Single, multiple, true/false, ordering, matching, fill-in-the-blank and free-text answers all save and score correctly.",
+      "browserTests": [
+        "All seven question types support"
+      ]
+    },
+    {
+      "id": "QUIZ:navigation",
+      "expected": "Question navigation and refresh preserve answers, the server timer and the persisted no-backtrack forward boundary, including skipped questions; a fresh sitting resets navigation.",
+      "browserTests": [
+        "Assessment navigation and refresh",
+        "Delayed autosave cannot overwrite",
+        "fresh same-page no-backtrack",
+        "No-backtrack saves skipped boundaries"
+      ]
+    },
+    {
+      "id": "QUIZ:offline",
+      "expected": "60-second disconnect/reconnect preserves queued answers and honest save state.",
+      "browserTests": [
+        "Sixty-second disconnect"
+      ]
+    },
+    {
+      "id": "QUIZ:submit",
+      "expected": "Unanswered confirmation, cancel/confirm, duplicate submit protection and stored result.",
+      "browserTests": [
+        "All seven question types support",
+        "Failed answer save",
+        "Delayed autosave cannot overwrite",
+        "Sixty-second disconnect"
+      ]
+    },
+    {
+      "id": "QUIZ-RULES:feedback",
+      "expected": "Practice/exam feedback respects release policy; sealed answers remain sealed.",
+      "browserTests": [
+        "exam answer sealing"
+      ]
+    },
+    {
+      "id": "QUIZ-RULES:window",
+      "expected": "Not-yet-open/closed/timeout correctly block or autosubmit.",
+      "browserTests": [
+        "exam answer sealing",
+        "Assessment timer submits"
+      ]
+    },
+    {
+      "id": "QUIZ-RULES:attempts",
+      "expected": "Cooldown/max attempts/time accommodation enforce server rules and useful recovery.",
+      "browserTests": [
+        "exam answer sealing",
+        "Assessment navigation and refresh",
+        "Renewal gives a fresh assessment",
+        "fresh same-page no-backtrack",
+        "No-backtrack saves skipped boundaries"
+      ]
+    },
+    {
+      "id": "REVIEW:pending",
+      "expected": "Provisional/pending does not finalize compliance or award certificate.",
+      "browserTests": [
+        "A submitted answer stays provisional",
+        "Provisional results remain pending"
+      ]
+    },
+    {
+      "id": "REVIEW:decision",
+      "expected": "Admin confirms or adjusts; learner final result and notification agree.",
+      "browserTests": [
+        "A submitted answer stays provisional",
+        "API-only legacy attempt appeal",
+        "Renewal gives a fresh assessment"
+      ]
+    },
+    {
+      "id": "REVIEW:appeal",
+      "expected": "Appeal/retry state persists and human decision remains authoritative.",
+      "browserTests": [
+        "A submitted answer stays provisional",
+        "API-only legacy attempt appeal",
+        "Renewal gives a fresh assessment"
+      ]
+    },
+    {
+      "id": "VOICE:consent",
+      "expected": "Consent and connect/listen/respond/end state/captions visible.",
+      "browserTests": [
+        "Offline oral-check demo",
+        "Monitored assessment requires consent",
+        "Configured voice microphone denial",
+        "Configured voice reconnects"
+      ]
+    },
+    {
+      "id": "VOICE:assessment",
+      "expected": "Real oral pass/fail/retake/human overturn persist across roles.",
+      "browserTests": [
+        "Offline oral-check demo",
+        "Human oral-check review",
+        "Reviewing an old oral check"
+      ],
+      "unverified": "Real voice provider unavailable; local offline typed assessment and human review persistence qualified separately"
+    },
+    {
+      "id": "VOICE:fallback",
+      "expected": "Mic denial/disconnect/reconnect/typed fallback labeled; transcript remains.",
+      "browserTests": [
+        "Configured voice microphone denial",
+        "Ending a pending microphone",
+        "Configured voice reconnects",
+        "Offline voice return to text"
+      ]
+    },
+    {
+      "id": "VOICE:cleanup",
+      "expected": "Mic ends on end/navigation; no ongoing capture.",
+      "browserTests": [
+        "Ending a pending microphone",
+        "Configured voice reconnects"
+      ],
+      "note": "Synthetic MediaStream and local WebSocket transport prove cleanup contract; physical microphone remains unverified"
+    },
+    {
+      "id": "VOICE:ios",
+      "expected": "Real Safari/iOS microphone and playback verified on hardware.",
+      "browserTests": [],
+      "unverified": "Physical iPhone Safari microphone/media hardware unavailable by user-confirmed limitation"
+    },
+    {
+      "id": "HR:citation",
+      "expected": "Question/citation/policy-section and scopes correct; unsupported answer abstains.",
+      "browserTests": [
+        "Policy citations target readable",
+        "HR retrieval enforces country",
+        "Policy ingestion failure preserves"
+      ]
+    },
+    {
+      "id": "HR:sensitive",
+      "expected": "Sensitive-topic routing offers human assistance.",
+      "browserTests": [
+        "Sensitive and unsupported HR questions"
+      ]
+    },
+    {
+      "id": "HR:escalation",
+      "expected": "Preview payload; cancel creates no ticket; confirm creates exactly one.",
+      "browserTests": [
+        "HR shows its heading",
+        "HR changed preview",
+        "Voice escalation rejects",
+        "Offline voice dialog sends"
+      ]
+    },
+    {
+      "id": "TICKET:thread",
+      "expected": "Learner escalation \u2192 admin reply/resolution \u2192 learner sees shared thread/status.",
+      "browserTests": [
+        "Sensitive and unsupported HR questions",
+        "Human grade decisions, ticket replies",
+        "Shared HR history requires credentials",
+        "new shared-device text and voice conversation",
+        "HR tabs hide prior content"
+      ]
+    },
+    {
+      "id": "TICKET:isolation",
+      "expected": "Unrelated learner/manager cannot see another HR conversation or ticket.",
+      "browserTests": [
+        "Sensitive and unsupported HR questions",
+        "Human grade decisions, ticket replies"
+      ]
+    },
+    {
+      "id": "PRACTICE:locked",
+      "expected": "Practice locked until eligibility; reason and next action provided.",
+      "browserTests": [
+        "Practice locked state"
+      ]
+    },
+    {
+      "id": "PRACTICE:session",
+      "expected": "Unlocked question/confidence/result/return saves optional state; mandatory compliance unchanged.",
+      "browserTests": [
+        "Practice supports every eligible"
+      ]
+    },
+    {
+      "id": "MANAGER:team",
+      "expected": "Search/filter and member details correct; mobile usable.",
+      "browserTests": [
+        "Admin publishes, manager assigns",
+        "manager-issued reset is scoped"
+      ]
+    },
+    {
+      "id": "MANAGER:assign",
+      "expected": "Course/path assignment persists once with correct due; learner notification and completion visible.",
+      "browserTests": [
+        "Admin publishes, manager assigns",
+        "Manager path assignment fans out"
+      ]
+    },
+    {
+      "id": "MANAGER:nudge",
+      "expected": "Nudge produces intended learner notification, no duplicates from double-submit.",
+      "browserTests": [
+        "Admin publishes, manager assigns",
+        "A reminder can be sent again"
+      ]
+    },
+    {
+      "id": "MANAGER:isolation",
+      "expected": "Second manager cannot inspect or mutate first manager team.",
+      "browserTests": [
+        "manager-issued reset is scoped",
+        "Empty-manager reports",
+        "MANAGER six report filters"
+      ]
+    },
+    {
+      "id": "PEOPLE:import",
+      "expected": "CSV valid/invalid/duplicate has row-level recovery; valid rows persist without duplicates.",
+      "browserTests": [
+        "import, groups and rules",
+        "Overlapping enrollment rules and a failed CSV row"
+      ]
+    },
+    {
+      "id": "PEOPLE:edit",
+      "expected": "Person edit/group create/group membership persist and validation retains input.",
+      "browserTests": [
+        "import, groups and rules"
+      ]
+    },
+    {
+      "id": "PEOPLE:rules",
+      "expected": "Create/disable/enable rule affects correct users without duplicate enrollments.",
+      "browserTests": [
+        "import, groups and rules",
+        "Overlapping enrollment rules and a failed CSV row"
+      ],
+      "service": true
+    },
+    {
+      "id": "AUTHOR:draft",
+      "expected": "Create draft; save settings/cover/objectives; refresh persists.",
+      "browserTests": [
+        "Admin publishes, manager assigns",
+        "Type-specific authoring"
+      ]
+    },
+    {
+      "id": "AUTHOR:types",
+      "expected": "Add all five lesson types with relevant fields and validation.",
+      "browserTests": [
+        "Type-specific authoring",
+        "Workspace mutation forms cannot submit"
+      ]
+    },
+    {
+      "id": "AUTHOR:order",
+      "expected": "Reorder lessons/modules; author and learner order agrees.",
+      "browserTests": [
+        "Type-specific authoring",
+        "Module order controls persist"
+      ]
+    },
+    {
+      "id": "AUTHOR:publish",
+      "expected": "Publish/unpublish preserves content and correct learner visibility.",
+      "browserTests": [
+        "Admin publishes, manager assigns"
+      ]
+    },
+    {
+      "id": "AUTHOR:ingest",
+      "expected": "Ingestion failure/retry status accurate, no silent fake success.",
+      "browserTests": [
+        "Failed video ingestion recovers"
+      ]
+    },
+    {
+      "id": "POLICY:version",
+      "expected": "Publish/ingest/query/supersede/query: active allowed version used, old citation reconstructable.",
+      "browserTests": [
+        "Policy ingestion failure preserves",
+        "Policy publishing keeps previous"
+      ],
+      "service": "qa-service: real queue handler failure and retry"
+    },
+    {
+      "id": "POLICY:failure",
+      "expected": "Policy ingestion failure/retry recoverable and no stale active answer misrepresented.",
+      "browserTests": [
+        "Policy ingestion failure preserves",
+        "Policy publishing keeps previous"
+      ],
+      "service": "qa-service: real queue handler failure and retry"
+    },
+    {
+      "id": "INTEGRITY:consent",
+      "expected": "Consent before monitored attempt; fullscreen unsupported gracefully degrades.",
+      "browserTests": [
+        "Monitored assessment requires consent",
+        "Monitored events are informational"
+      ]
+    },
+    {
+      "id": "INTEGRITY:events",
+      "expected": "Focus/fullscreen events persist and are reviewable; flags do not auto-fail.",
+      "browserTests": [
+        "Monitored events are informational",
+        "Human grade decisions, ticket replies"
+      ]
+    },
+    {
+      "id": "INTEGRITY:decision",
+      "expected": "Admin clear/void decisions and reasons persist. Clearing retains final pass/fail. Voiding a certified pass retains issued completion/certificate history under the existing validity policy and grants a fresh sitting.",
+      "browserTests": [
+        "Monitored events are informational",
+        "Human grade decisions, ticket replies",
+        "Human-cleared pass remains final",
+        "Human-cleared fail remains final",
+        "Voiding a certified pass preserves issued history"
+      ]
+    },
+    {
+      "id": "REPORTS:six",
+      "expected": "All six reports for both roles: filters/counts/table and exported CSV agree.",
+      "browserTests": [
+        "six report filters and actual downloaded CSV",
+        "Empty-manager reports",
+        "Report identifiers and status words remain readable"
+      ]
+    },
+    {
+      "id": "REPORTS:ask",
+      "expected": "Ask Reports typed interpretation displayed and uses proper role scope.",
+      "browserTests": [
+        "six report filters and actual downloaded CSV",
+        "Empty-manager reports",
+        "Report identifiers and status words remain readable"
+      ]
+    },
+    {
+      "id": "REPORTS:reset",
+      "expected": "Apply/reset and empty result states clear; mobile table scroll region labeled.",
+      "browserTests": [
+        "six report filters and actual downloaded CSV",
+        "Empty-manager reports"
+      ]
+    },
+    {
+      "id": "REPORTS:pagination",
+      "expected": "Bounded 50-row report pages retain deterministic full CSV order, all filters and manager scope; Back, refresh and invalid page queries preserve accessible results.",
+      "browserTests": [
+        "Report pages preserve the complete CSV order"
+      ]
+    },
+    {
+      "id": "COMPLIANCE:due",
+      "expected": "Due/reminder transitions agree across learner/manager/admin.",
+      "browserTests": [
+        "Admin publishes, manager assigns"
+      ],
+      "service": "qa-service: due-soon sweep and notification dedupe; overdue across learner/manager/admin; weekly manager digest"
+    },
+    {
+      "id": "COMPLIANCE:certificate",
+      "expected": "Completion produces correct downloadable certificate once.",
+      "browserTests": [
+        "Earned certificate preserves long",
+        "Admin publishes, manager assigns"
+      ],
+      "service": "qa-service: pool saturation completes once; forced commit rollback leaves no awards, notification or email; retry delivers once"
+    },
+    {
+      "id": "COMPLIANCE:recert",
+      "expected": "Expiry/recert keeps historical completion immutable and reassigns once.",
+      "browserTests": [
+        "Renewal gives a fresh assessment",
+        "Reviewing an old oral check"
+      ],
+      "service": "qa-service: expiry/UI renewal preserve history; shared-lock heartbeat reset and pre-renewal receipt boundary"
+    },
+    {
+      "id": "ACCOUNT/SYSTEM:profile",
+      "expected": "History/certificates/oral results/account links accurate.",
+      "browserTests": [
+        "Learning path shows prerequisites",
+        "Earned certificate preserves long",
+        "My profile opens a coherent"
+      ]
+    },
+    {
+      "id": "ACCOUNT/SYSTEM:inbox",
+      "expected": "Unread/read and destinations work across three workspaces.",
+      "browserTests": [
+        "All workspace destinations fit",
+        "Learning path shows prerequisites",
+        "Manager path assignment fans out",
+        "A submitted answer stays provisional",
+        "Every role can reach older unread notifications"
+      ]
+    },
+    {
+      "id": "ACCOUNT/SYSTEM:dsr",
+      "expected": "Authorized export/erasure on disposable fixture only; scopes enforced.",
+      "browserTests": [
+        "DSR export and erasure"
+      ],
+      "note": "API-only administrative operation; browser authentication and actual UI completion prerequisite; request/DB verification on disposable subject"
+    },
+    {
+      "id": "ACCOUNT/SYSTEM:states",
+      "expected": "Loading/empty/error/404 recoverable and correctly styled.",
+      "browserTests": [
+        "Active assessment, dialogs",
+        "Learner templates, long multilingual",
+        "Root follows the authenticated workspace",
+        "Failed answer save"
+      ]
+    },
+    {
+      "id": "ACCOUNT/SYSTEM:responsive",
+      "expected": "Every template at360/390/768/1280/1440; no page overflow/clipped action. Report and Ask Reports tables preserve readable identifiers/status words in both themes, mobile and native 200% zoom; labeled regions support keyboard horizontal scrolling without page overflow.",
+      "browserTests": [
+        "meet quality gates",
+        "fit small screens",
+        "fits small screens",
+        "All seven question formats remain reviewable",
+        "Module order controls persist",
+        "Report identifiers and status words remain readable"
+      ]
+    },
+    {
+      "id": "ACCOUNT/SYSTEM:accessibility",
+      "expected": "Both themes, keyboard,200% zoom, RTL/reduced motion and automated AA checks.",
+      "browserTests": [
+        "meet quality gates",
+        "keyboard skip link",
+        "Stored legacy, missing",
+        "workspace navigation and return"
+      ],
+      "note": "All quality traversals run CSS zoom 200% with RTL in standard projects; separate chromium-native-zoom uses real Chromium tabs.setZoom(2) at 1280\u00d7800 (640\u00d7400 CSS viewport), without stacking CSS zoom. Native screenshots use Chromium Page.captureScreenshot without a clip (captureBeyondViewport:false); standard Playwright clipped capture shifts scrolled native-zoom content."
+    },
+    {
+      "id": "ACCOUNT/SYSTEM:performance",
+      "expected": "Home/catalog/course/lesson/manager/admin median3 production mobile runs meet LCP/CLS/interaction budgets.",
+      "browserTests": [],
+      "performance": "qa-performance: all six families, median of three production mobile runs"
+    },
+    {
+      "id": "HR:privacy",
+      "expected": "Shared-device stored HR history requires recent password verification; current-login conversations remain usable. Pages, tickets, live transcripts and APIs fail closed on expiry, account switch or a new login, preserving immutable history.",
+      "browserTests": [
+        "Shared HR history requires credentials",
+        "new shared-device text and voice conversation",
+        "HR tabs hide prior content",
+        "Certificate and learner API data require",
+        "Active assessment, dialogs, media, voice and HR recovery"
+      ]
+    },
+    {
+      "id": "HR:readiness",
+      "expected": "Initial conversation input waits for hydration and history; pending and first-revealed history preserve the reader viewport and pressed controls; later questions retain follow behavior. Failed history remains usable and failed questions remain editable for retry.",
+      "browserTests": [
+        "HR composer waits for hydration and history",
+        "HR initial history preserves a held control"
+      ]
+    },
+    {
+      "id": "REPORTS:readiness",
+      "expected": "Both report-workspace composers wait for hydration and retain typed questions through request failure and success.",
+      "browserTests": [
+        "Ask Reports composers wait for hydration"
+      ]
+    },
+    {
+      "id": "AUTH:initial-values",
+      "expected": "Early native auth entries survive hydration, field changes and server validation in login, activation and both MFA stages; JavaScript-disabled native login still establishes a session.",
+      "browserTests": [
+        "Early login values survive",
+        "Early activation values survive",
+        "Early MFA setup and verification",
+        "Native login still submits"
+      ]
+    },
+    {
+      "id": "TICKET:readiness",
+      "expected": "Reply input and submit wait for their client handler, preserve text through failure, and persist exactly one successful retry.",
+      "browserTests": [
+        "Ticket reply waits for its handler"
+      ]
+    },
+    {
+      "id": "HR:unlock-readiness",
+      "expected": "Stored-history verification waits for its handler and preserves rejected credentials for correction without exposing protected content.",
+      "browserTests": [
+        "HR history unlock waits for its handler"
+      ]
+    },
+    {
+      "id": "CONTENT:readiness",
+      "expected": "Lesson completion cannot perform an unhandled initial native submission; failed saves remain retryable and only acknowledged completion persists.",
+      "browserTests": [
+        "Lesson completion waits for its handler"
+      ]
+    }
+  ],
+  "additionalRequiredCases": 8,
+  "requiredCases": 84
+}

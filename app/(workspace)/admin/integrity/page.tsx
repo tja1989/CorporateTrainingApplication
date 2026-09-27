@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { desc, eq, inArray, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
@@ -38,16 +37,16 @@ export default async function IntegrityPage() {
             const orange = evs.filter((e) => e.severity === "orange").length;
             const user = nameOf.get(a.userId);
             return (
-              <Link key={a.id} href={`/admin/integrity/${a.id}`}>
-                <Card className="lift pressable flex items-center justify-between gap-3 p-3 text-sm hover:bg-surface-2">
+              <a key={a.id} href={`/admin/integrity/${a.id}`}>
+                <Card className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm hover:bg-surface-2">
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{quizOf.get(a.quizId)?.title ?? "Quiz"} — {user?.name ?? "—"}</p>
+                    <p className="break-words font-medium text-link">{quizOf.get(a.quizId)?.title ?? "Quiz"} — {user?.name ?? "—"}</p>
                     <p className="text-xs text-muted">
                       {a.startedAt.toISOString().slice(0, 16).replace("T", " ")} · {a.state}
                       {a.maxScore ? ` · ${Math.round(((a.score ?? 0) / a.maxScore) * 100)}%` : ""}
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {red > 0 ? <Chip variant="destructive">{red} red</Chip> : null}
                     {orange > 0 ? <Chip variant="warning">{orange} orange</Chip> : null}
                     {red === 0 && orange === 0 ? <Chip variant="success">clean</Chip> : null}
@@ -55,7 +54,7 @@ export default async function IntegrityPage() {
                     {a.state === "VOIDED" ? <Chip variant="neutral">voided</Chip> : null}
                   </div>
                 </Card>
-              </Link>
+              </a>
             );
           })}
         </div>

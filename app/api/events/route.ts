@@ -1,5 +1,5 @@
 import { db, t } from "@/lib/db/client";
-import { currentUser } from "@/lib/auth/guard";
+import { apiUser as currentUser } from "@/lib/auth/guard";
 import { id } from "@/lib/ids";
 
 const ALLOWED = new Set(["citation_click", "tutor_open", "app_open", "hr_citation_click"]);

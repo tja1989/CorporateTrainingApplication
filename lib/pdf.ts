@@ -17,11 +17,11 @@ export function makePdf(lines: PdfLine[]): Buffer {
     const font = line.bold ? "/F2" : "/F1";
     const approxWidth = line.text.length * line.size * (line.bold ? 0.53 : 0.5);
     const x = Math.max(40, (W - approxWidth) / 2);
-    const [r, g, b] = line.color ?? [0.12, 0.12, 0.1];
+    const [r, g, b] = line.color ?? [0.09, 0.169, 0.302];
     content += `BT ${font} ${line.size} Tf ${r} ${g} ${b} rg 1 0 0 1 ${x.toFixed(1)} ${line.y} Tm (${esc(line.text)}) Tj ET\n`;
   }
   // border
-  content += `0.32 0.51 0.4 RG 2 w 30 30 ${W - 60} ${H - 60} re S\n`;
+  content += `0.082 0.349 0.788 RG 2 w 30 30 ${W - 60} ${H - 60} re S\n`;
 
   const objects: string[] = [];
   objects.push("<< /Type /Catalog /Pages 2 0 R >>");
@@ -46,24 +46,14 @@ export function makePdf(lines: PdfLine[]): Buffer {
   return Buffer.from(pdf, "latin1");
 }
 
-export function certificatePdf(opts: {
+export async function certificatePdf(opts: {
   learnerName: string;
   courseTitle: string;
   completedAt: Date;
   expiresAt: Date | null;
   serial: string;
-}): Buffer {
+}): Promise<Buffer> {
+  const { certificateDocument } = await import("./certificate-document");
   const fmt = (d: Date) => d.toISOString().slice(0, 10);
-  const lines: PdfLine[] = [
-    { text: "LuLu Learn", size: 18, y: 500, bold: true, color: [0.32, 0.51, 0.4] },
-    { text: "Certificate of Completion", size: 34, y: 430, bold: true },
-    { text: "This certifies that", size: 14, y: 380 },
-    { text: opts.learnerName, size: 26, y: 340, bold: true },
-    { text: "has completed", size: 14, y: 300 },
-    { text: opts.courseTitle, size: 22, y: 262, bold: true },
-    { text: `Completed on ${fmt(opts.completedAt)}${opts.expiresAt ? `  ·  Valid until ${fmt(opts.expiresAt)}` : ""}`, size: 12, y: 215 },
-    { text: `Verification ID: ${opts.serial}`, size: 10, y: 185, color: [0.35, 0.35, 0.33] },
-    { text: "Internal training record — not an accredited or government certification.", size: 9, y: 70, color: [0.45, 0.45, 0.42] },
-  ];
-  return makePdf(lines);
+  return certificateDocument({ ...opts, dateLine: `Completed on ${fmt(opts.completedAt)}${opts.expiresAt ? ` · Valid until ${fmt(opts.expiresAt)}` : ""}` });
 }

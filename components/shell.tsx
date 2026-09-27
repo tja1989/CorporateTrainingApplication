@@ -1,146 +1,70 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import type { CurrentUser } from "@/lib/auth/guard";
 import { logout, switchWorkspace } from "@/lib/auth/login";
 import { readFlash } from "@/lib/flash";
-import { LearnerTabs, SideNav, type NavItem } from "./nav";
-import { LearnerContainer } from "@/components/learner-container";
-import { ThemeToggle } from "./theme-toggle";
+import { ADMIN_NAV, MANAGER_NAV, LEARNER_NAV } from "@/lib/navigation";
+import { LearnerDesktopNav, LearnerTabs, SideNav, WorkspaceMobileNav } from "./nav";
+import { LearnerFrame } from "./learner-container";
 import { CommandPalette } from "./palette";
 import { ToastProvider } from "./toast";
 import { Icon } from "./icons";
 import { Brand } from "./brand";
-import { Chip } from "./ui";
-
-const LEARNER_TABS: NavItem[] = [
-  { href: "/home", label: "Home", icon: "home" },
-  { href: "/learn", label: "Learn", icon: "book" },
-  { href: "/drill", label: "Drill", icon: "target" },
-  { href: "/ask-hr", label: "Ask HR", icon: "sparkle" },
-  { href: "/profile", label: "Profile", icon: "user" },
-];
-
-const ADMIN_NAV: NavItem[] = [
-  { href: "/admin", label: "Overview", icon: "grid" },
-  { href: "/admin/courses", label: "Courses", icon: "book" },
-  { href: "/admin/people", label: "People & rules", icon: "users" },
-  { href: "/admin/reviews", label: "Review queues", icon: "check-square" },
-  { href: "/admin/corpus", label: "HR corpus", icon: "file-text" },
-  { href: "/admin/tickets", label: "HR tickets", icon: "mail" },
-  { href: "/admin/reports", label: "Reports", icon: "chart" },
-  { href: "/admin/integrity", label: "Integrity", icon: "shield" },
-];
-
-const MANAGER_NAV: NavItem[] = [
-  { href: "/team", label: "My team", icon: "users" },
-  { href: "/team/reports", label: "Team reports", icon: "chart" },
-];
-
-const PALETTE = [
-  ...ADMIN_NAV.map((n) => ({ label: n.label, href: n.href, group: "Admin" })),
-  { label: "My team", href: "/team", group: "Manager" },
-  { label: "Learner home", href: "/home", group: "Learner" },
-];
-
-/**
- * The rail's pinned state, so the server renders the right width with no flash.
- * Collapsed is the default: the rail opens on hover, so the icons-only strip
- * costs nothing and hands ~10rem back to the content.
- */
-async function railCollapsed(): Promise<boolean> {
-  return (await cookies()).get("ll_nav")?.value !== "open";
-}
+import { AccountMenu } from "./account-menu";
 
 async function unreadCount(userId: string): Promise<number> {
-  const [row] = await db
-    .select({ n: sql<number>`count(*)::int` })
-    .from(t.notifications)
-    .where(and(eq(t.notifications.userId, userId), isNull(t.notifications.readAt)));
+  const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(t.notifications).where(and(eq(t.notifications.userId, userId), isNull(t.notifications.readAt)));
   return row?.n ?? 0;
 }
-
-/* Header controls live on the charcoal bar, so they carry their own idle/hover
-   colours rather than the light-surface pill. */
-const headerButton =
-  "pressable touch-target inline-flex items-center justify-center gap-2 rounded-full text-rail-muted hover:bg-rail-hover hover:text-rail-fg";
-
-/** Opaque charcoal app bar — fixed 48px so `top-12` stickies line up beneath it. */
-function Header({ user, unread, inboxHref }: { user: CurrentUser; unread: number; inboxHref: string }) {
-  const ws = user.session.workspace;
-  return (
-    <header className="sticky top-0 z-30 flex h-12 items-center gap-2 bg-rail px-4 text-rail-fg">
-      <Brand href={ws === "learner" ? "/home" : ws === "manager" ? "/team" : "/admin"} />
-      <div className="flex-1" />
-      {user.role !== "LEARNER" ? (
-        <form action={switchWorkspace.bind(null, ws === "learner" ? (user.role === "ADMIN" ? "admin" : "manager") : "learner")}>
-          <button
-            type="submit"
-            className="pressable hit-area inline-flex items-center gap-1 rounded-full border border-rail-hover px-3 py-1 text-xs font-medium text-rail-fg hover:border-accent hover:text-accent"
-          >
-            <Icon name="swap" size={14} />
-            <span className="hidden sm:inline">{ws === "learner" ? "Switch to workspace" : "View as learner"}</span>
-            <span className="sm:hidden">{ws === "learner" ? "Workspace" : "Learner"}</span>
-          </button>
+const workspaceNames = { learner: "Learning workspace", admin: "Admin workspace", manager: "Manager workspace" };
+type Workspace = CurrentUser["session"]["workspace"];
+function AccountActions({ user, workspace }: { user: CurrentUser; workspace: Workspace }) {
+  return <>
+    {user.role !== "LEARNER" ? <form action={switchWorkspace.bind(null, workspace === "learner" ? (user.role === "ADMIN" ? "admin" : "manager") : "learner")}>
+      <button type="submit" className="header-control gap-2 px-3 text-sm"><Icon name="swap" size={18} />{workspace === "learner" ? `Switch to ${user.role === "ADMIN" ? "admin" : "manager"}` : "View as learner"}</button>
+    </form> : null}
+    <form action={logout}><button type="submit" className="header-control gap-2 px-3 text-sm"><Icon name="logout" size={18} />Sign out</button></form>
+  </>;
+}
+function Header({ user, workspace: ws, unread, compact = false }: { user: CurrentUser; workspace: Workspace; unread: number; compact?: boolean }) {
+  const learner = ws === "learner";
+  const home = learner ? "/home" : ws === "admin" ? "/admin" : "/team";
+  const inbox = learner ? "/inbox" : `${home}/inbox`;
+  return <header className={`app-header${compact ? " lesson-shell-header" : ""}`}>
+    <div className="header-inner">
+      {!learner ? <WorkspaceMobileNav items={ws === "admin" ? ADMIN_NAV : MANAGER_NAV} label={workspaceNames[ws]} /> : null}
+      <Brand href={home} />
+      {compact ? <Link href="/learn" className="header-control gap-2 px-3 text-sm"><Icon name="arrow-left" size={18} /><span>My Learning</span></Link> : learner ? <>
+        <form action="/learn" method="get" role="search" aria-label="Course search" className="header-search">
+          <label htmlFor="header-course-search" className="sr-only">Search courses</label>
+          <input id="header-course-search" type="search" name="q" placeholder="What do you want to learn?" />
+          <button type="submit" aria-label="Search courses"><Icon name="search" /></button>
         </form>
-      ) : null}
-      <Link href={inboxHref} aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`} className={`${headerButton} relative px-2`}>
-        <Icon name="bell" />
-        {unread > 0 ? (
-          <span className="animate-pop absolute -end-1 top-1 rounded-full bg-accent px-1 text-xs font-medium leading-4 text-accent-fg">{unread > 9 ? "9+" : unread}</span>
-        ) : null}
-      </Link>
-      <ThemeToggle className={`${headerButton} px-2`} />
-      <form action={logout}>
-        <button type="submit" className={`${headerButton} px-3 text-xs`}>
-          <Icon name="logout" size={16} />
-          <span className="hidden sm:inline">Sign out</span>
-        </button>
-      </form>
-    </header>
-  );
+        <LearnerDesktopNav items={LEARNER_NAV} />
+      </> : <p className="workspace-name text-sm font-semibold text-muted">{workspaceNames[ws]}</p>}
+      <div className="header-controls">
+        <Link href={inbox} aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`} className="header-control relative">
+          <Icon name="bell" />{unread > 0 ? <span className="absolute end-0 top-0 rounded-full bg-primary px-1 text-xs font-semibold text-primary-fg">{unread > 99 ? "99+" : unread}</span> : null}
+        </Link>
+        <AccountMenu name={user.name} workspace={workspaceNames[ws]} actions={<AccountActions user={user} workspace={ws} />} />
+      </div>
+    </div>
+  </header>;
 }
-
 export async function LearnerShell({ user, children }: { user: CurrentUser; children: React.ReactNode }) {
-  const [unread, flash, navCollapsed] = await Promise.all([unreadCount(user.id), readFlash(), railCollapsed()]);
-  return (
-    <ToastProvider initial={flash}>
-      <div className="min-h-dvh">
-        <Header user={user} unread={unread} inboxHref="/inbox" />
-        {/* Same frame as the workspace shell: rail at the start edge, content centred in what is left. */}
-        <div className="shell-body flex">
-          <LearnerTabs items={LEARNER_TABS} defaultCollapsed={navCollapsed} />
-          <main className="learner-main min-w-0 flex-1 px-4 pt-6 md:px-6">
-            <LearnerContainer>{children}</LearnerContainer>
-          </main>
-        </div>
-      </div>
-    </ToastProvider>
-  );
+  const [unread, flash] = await Promise.all([unreadCount(user.id), readFlash()]);
+  // Learner routes stay coherent when opened directly from a manager/admin session.
+  return <ToastProvider initial={flash}><LearnerFrame header={<Header user={user} workspace="learner" unread={unread} />} lessonHeader={<Header user={user} workspace="learner" unread={unread} compact />} tabs={<LearnerTabs items={LEARNER_NAV} />}>{children}</LearnerFrame></ToastProvider>;
 }
-
 export async function WorkspaceShell({ user, children }: { user: CurrentUser; children: React.ReactNode }) {
-  const [unread, flash, navCollapsed] = await Promise.all([unreadCount(user.id), readFlash(), railCollapsed()]);
+  const [unread, flash] = await Promise.all([unreadCount(user.id), readFlash()]);
   const nav = user.session.workspace === "admin" ? ADMIN_NAV : MANAGER_NAV;
-  return (
-    <ToastProvider initial={flash}>
-      <div className="min-h-dvh">
-        <Header user={user} unread={unread} inboxHref={user.session.workspace === "admin" ? "/admin/inbox" : "/team/inbox"} />
-        <div className="shell-body flex">
-          <SideNav items={nav} defaultCollapsed={navCollapsed} />
-          {/* pt-12 on phones clears the fixed workspace nav strip */}
-          <main className="min-w-0 flex-1 px-4 pb-6 pt-12 md:px-6 md:pt-6">
-            <div className="mb-3 hidden justify-end md:flex">
-              <Chip variant="neutral">
-                <Icon name="command" size={12} />K to jump
-              </Chip>
-            </div>
-            {children}
-          </main>
-        </div>
-        <CommandPalette entries={user.session.workspace === "admin" ? PALETTE : PALETTE.filter((p) => p.group !== "Admin")} />
-      </div>
-    </ToastProvider>
-  );
+  const entries = [...nav.map(item => ({ label: item.label, href: item.href, group: item.group ?? "Workspace" })), { label: "Learner home", href: "/home", group: "Learner" }];
+  return <ToastProvider initial={flash}><div className="min-h-dvh">
+    <a href="#main-content" className="skip-link">Skip to content</a>
+    <Header user={user} workspace={user.session.workspace} unread={unread} />
+    <div className="workspace-body"><SideNav items={nav} /><main id="main-content" tabIndex={-1} className="workspace-main"><div className="content-container">{children}</div></main></div>
+    <CommandPalette entries={entries} />
+  </div></ToastProvider>;
 }

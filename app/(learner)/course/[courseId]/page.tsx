@@ -1,11 +1,14 @@
 import { Icon } from "@/components/icons";
+import { CourseCover } from "@/components/course-cover";
+import { LearningProgress } from "@/components/course-card";
 import { notFound } from "next/navigation";
 import { and, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/guard";
 import { buildCourseOutline } from "@/lib/lms/course-outline";
+import { pathPrerequisite } from "@/lib/lms/path-access";
 import { CourseOutline } from "@/components/course-outline";
-import { ButtonLink, Card, Chip, PillLink, ProgressRing, complianceChip } from "@/components/ui";
+import { ButtonLink, Chip, PageTitle, PillLink, complianceChip } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +26,9 @@ export default async function CoursePage({
 
   const [course] = await db.select().from(t.courses).where(eq(t.courses.id, courseId)).limit(1);
   if (!course || course.status !== "PUBLISHED") notFound();
+
+  const pathLock = await pathPrerequisite(user.id, courseId);
+  if (pathLock) return <div><PageTitle sub={`Complete the earlier courses in “${pathLock.title}” to unlock this course.`}>{course.title}</PageTitle><ButtonLink href={`/path/${pathLock.pathId}`}>View learning path</ButtonLink></div>;
 
   const view = await buildCourseOutline({
     courseId,
@@ -53,32 +59,32 @@ export default async function CoursePage({
   const showExpandToggle = expandAll || view.modules.some((m) => m.complete);
 
   return (
-    <div className="animate-slide-up">
-      <div className="mb-6">
+    <div>
+      <div className="mb-8 grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(240px,1fr)]">
+      <div>
         <div className="mb-2 flex flex-wrap items-center gap-2">
-          <h1 className="display text-xl">{course.title}</h1>
+          <h1 className="text-2xl font-semibold sm:text-[32px]">{course.title}</h1>
           {chip ? <Chip variant={chip.variant}>{chip.label}</Chip> : null}
         </div>
-        <p className="mb-3 max-w-2xl text-sm text-muted">{course.description}</p>
+        <p className="mb-4 max-w-2xl text-muted">{course.description}</p>
         <div className="mb-4 flex flex-wrap gap-2">
-          <Chip variant="neutral">~{course.estMinutes} min</Chip>
+          <span className="text-sm text-muted">{course.estMinutes} min · {course.language.toUpperCase()}</span>
           {enrollment?.dueAt ? <Chip variant="neutral">Due {enrollment.dueAt.toISOString().slice(0, 10)}</Chip> : null}
           {course.sequentialLock ? <Chip variant="neutral">Complete in order</Chip> : null}
         </div>
         {course.objectives.length > 0 ? (
-          <Card className="mb-4 max-w-2xl p-4">
-            <h2 className="eyebrow mb-2 text-muted">You will learn to</h2>
+          <section className="mb-6 max-w-2xl">
+            <h2 className="mb-3 text-lg font-semibold">You will learn to</h2>
             <ul className="flex flex-col gap-1 text-sm">
               {course.objectives.map((o) => (
                 <li key={o} className="flex gap-2"><Icon name="check" size={16} className="mt-1 shrink-0 text-success-fg" />{o}</li>
               ))}
             </ul>
-          </Card>
+          </section>
         ) : null}
         <div className="flex flex-wrap items-center gap-4">
           {view.total > 0 ? (
             <div className="flex items-center gap-3">
-              <ProgressRing pct={view.pct} label={`${view.pct}% of ${course.title} complete`} />
               <div>
                 <span className="block text-sm font-medium">
                   {view.doneCount} of {view.total} lessons
@@ -102,10 +108,14 @@ export default async function CoursePage({
             ) : null}
           </div>
         </div>
+        {view.total > 0 ? <div className="mt-5 max-w-md"><LearningProgress pct={view.pct} label={`${view.pct}% complete`} /></div> : <p className="mt-4 text-sm text-muted">Lessons are being prepared. Check back soon.</p>}
+        {!enrollment ? <p className="mt-3 text-sm text-muted">Available to explore. This course is not currently assigned to you.</p> : null}
+      </div>
+      <CourseCover title={course.title} coverUrl={course.coverUrl} tags={course.tags} priority className="rounded-card" />
       </div>
 
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium text-muted">Course contents</h2>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="text-xl font-semibold">Course contents</h2>
         {showExpandToggle ? (
           <PillLink href={expandAll ? `/course/${courseId}` : `/course/${courseId}?outline=all`} active={expandAll}>
             {expandAll ? "Collapse finished" : "Expand all"}

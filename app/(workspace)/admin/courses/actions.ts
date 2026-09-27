@@ -1,8 +1,9 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import type { ActionResult } from "@/components/workspace-form";
+import { parseCoverUrl } from "@/lib/workspace-inputs";
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
 import { id } from "@/lib/ids";
@@ -10,13 +11,14 @@ import { enqueue } from "@/lib/jobs/queue";
 import { handlers } from "@/lib/jobs/handlers";
 import { drain } from "@/lib/jobs/queue";
 import { validateYoutubeVideo } from "@/lib/video/ingest";
+import { parseSrtVtt } from "@/lib/video/transcript";
 import { setFlash } from "@/lib/flash";
 import { parseInterviewConfig } from "@/lib/live/interview";
 
-export async function createCourseAction(form: FormData): Promise<void> {
+export async function createCourseAction(form: FormData): Promise<ActionResult> {
   const admin = await requireRole("ADMIN");
   const title = String(form.get("title") ?? "").trim();
-  if (!title) return;
+  if (!title) return { error: "Enter a title." };
   const courseId = id();
   await db.insert(t.courses).values({
     id: courseId,
@@ -26,16 +28,25 @@ export async function createCourseAction(form: FormData): Promise<void> {
     status: "DRAFT",
     createdBy: admin.id,
   });
-  redirect(`/admin/courses/${courseId}`);
+  return { href: `/admin/courses/${courseId}` };
 }
 
-export async function updateCourseAction(courseId: string, form: FormData): Promise<void> {
+export async function updateCourseAction(courseId: string, form: FormData): Promise<ActionResult> {
   await requireRole("ADMIN");
+  const cover = parseCoverUrl(String(form.get("coverUrl") ?? ""));
+  if (cover.error) return { error: cover.error };
+  const minutes = Number(form.get("estMinutes"));
+  const validity = form.get("certificateValidityDays") ? Number(form.get("certificateValidityDays")) : null;
+  if (!Number.isInteger(minutes) || minutes < 1) return { error: "Estimated minutes must be a positive whole number." };
+  if (validity !== null && (!Number.isInteger(validity) || validity < 1)) return { error: "Certificate validity must be a positive whole number, or blank." };
+  if (!String(form.get("title") ?? "").trim()) return { error: "Enter a course title." };
   await db
     .update(t.courses)
     .set({
       title: String(form.get("title") ?? "").trim() || undefined,
       description: String(form.get("description") ?? ""),
+      coverUrl: cover.value,
+      language: String(form.get("language") ?? "en").trim() || "en",
       estMinutes: Number(form.get("estMinutes") ?? 15) || 15,
       sequentialLock: form.get("sequentialLock") === "on",
       certificateEnabled: form.get("certificateEnabled") === "on",
@@ -46,7 +57,9 @@ export async function updateCourseAction(courseId: string, form: FormData): Prom
         .filter(Boolean),
     })
     .where(eq(t.courses.id, courseId));
+  await setFlash("Course settings saved.");
   revalidatePath(`/admin/courses/${courseId}`);
+  return { success: "Course settings saved." };
 }
 
 export async function setCourseStatusAction(courseId: string, status: "DRAFT" | "PUBLISHED" | "ARCHIVED"): Promise<void> {
@@ -55,23 +68,35 @@ export async function setCourseStatusAction(courseId: string, status: "DRAFT" | 
     .update(t.courses)
     .set({ status, publishedAt: status === "PUBLISHED" ? new Date() : undefined })
     .where(eq(t.courses.id, courseId));
+  await setFlash(status === "PUBLISHED" ? "Course published. Learners can now open it." : "Course moved to draft.");
   revalidatePath(`/admin/courses/${courseId}`);
 }
 
-export async function addModuleAction(courseId: string, form: FormData): Promise<void> {
+export async function addModuleAction(courseId: string, form: FormData): Promise<ActionResult> {
   await requireRole("ADMIN");
   const title = String(form.get("title") ?? "").trim();
-  if (!title) return;
+  if (!title) return { error: "Enter a module title." };
   const mods = await db.select().from(t.modules).where(eq(t.modules.courseId, courseId));
   await db.insert(t.modules).values({ id: id(), courseId, title, sort: mods.length });
+  await setFlash("Module added.");
   revalidatePath(`/admin/courses/${courseId}`);
+  return { success: "Module added." };
 }
 
-export async function addLessonAction(courseId: string, moduleId: string, form: FormData): Promise<void> {
+export async function addLessonAction(courseId: string, moduleId: string, form: FormData): Promise<ActionResult> {
   await requireRole("ADMIN");
   const type = String(form.get("type") ?? "TEXT") as "TEXT" | "PDF" | "VIDEO" | "QUIZ" | "INTERVIEW";
   const title = String(form.get("title") ?? "").trim();
-  if (!title) return;
+  if (!title) return { error: "Enter a lesson title." };
+  const [module] = await db.select().from(t.modules).where(eq(t.modules.id, moduleId)).limit(1);
+  if (!module || module.courseId !== courseId) return { error: "This module does not belong to this course. Reload and try again." };
+  if (!["TEXT", "PDF", "VIDEO", "QUIZ", "INTERVIEW"].includes(type)) return { error: "Choose a supported lesson type." };
+  if (type === "TEXT" && !String(form.get("body") ?? "").trim()) return { error: "Add the lesson content." };
+  if (type === "PDF") {
+    const file = parseCoverUrl(String(form.get("fileUrl") ?? ""));
+    if (file.error || !file.value) return { error: "Enter a local path or HTTPS URL for the PDF." };
+  }
+  if (type === "QUIZ" && (!form.get("bankId") || !Number.isInteger(Number(form.get("pickN"))) || Number(form.get("pickN")) < 1)) return { error: "Choose a question bank and a positive question count." };
   const lessons = await db.select().from(t.lessons).where(eq(t.lessons.moduleId, moduleId));
   const lessonId = id();
 
@@ -83,10 +108,17 @@ export async function addLessonAction(courseId: string, moduleId: string, form: 
   } else if (type === "VIDEO") {
     const url = String(form.get("youtubeUrl") ?? "");
     const match = url.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{6,20})/) ?? url.match(/^([\w-]{6,20})$/);
-    if (!match) return;
+    if (!match) return { error: "Enter a valid YouTube URL or video ID." };
     const youtubeId = match[1];
     const check = await validateYoutubeVideo(youtubeId);
-    if (!check.ok) throw new Error(`YouTube validation failed: ${check.reason}`);
+    if (!check.ok) return { error: `YouTube validation failed: ${check.reason}. Check the video and try again.` };
+    const [existingVideo] = await db.select().from(t.videos).where(eq(t.videos.youtubeId, youtubeId)).limit(1);
+    if (existingVideo) {
+      await db.insert(t.lessons).values({ id: lessonId, moduleId, type, title, sort: lessons.length, payload: { videoId: existingVideo.id } });
+      await setFlash("Lesson added using the existing video and transcript.");
+      revalidatePath(`/admin/courses/${courseId}`);
+      return { success: "Existing video added to this module." };
+    }
     const videoId = id();
     await db.insert(t.videos).values({
       id: videoId,
@@ -122,7 +154,9 @@ export async function addLessonAction(courseId: string, moduleId: string, form: 
   } else if (type === "INTERVIEW") {
     await db.insert(t.lessons).values({ id: lessonId, moduleId, type, title, sort: lessons.length, payload: { interview: interviewConfigFromForm(form) } });
   }
+  await setFlash("Lesson added.");
   revalidatePath(`/admin/courses/${courseId}`);
+  return { success: "Lesson added." };
 }
 
 function interviewConfigFromForm(form: FormData) {
@@ -150,11 +184,50 @@ export async function updateInterviewLessonAction(courseId: string, lessonId: st
   revalidatePath(`/admin/courses/${courseId}`);
 }
 
-export async function retryIngestAction(courseId: string, videoId: string): Promise<void> {
+export async function retryIngestAction(courseId: string, videoId: string, form: FormData): Promise<ActionResult> {
   await requireRole("ADMIN");
-  await enqueue("ingest_video", { videoId });
+  const [video] = await db.select().from(t.videos).where(eq(t.videos.id, videoId)).limit(1);
+  if (!video) return { error: "This video is no longer available. Reload the course." };
+  let rawTranscript = String(form.get("transcript") ?? "").trim();
+  if (!rawTranscript && video.transcriptSource === "manual") {
+    const [previous] = await db.select().from(t.jobs).where(and(
+      eq(t.jobs.kind, "ingest_video"),
+      sql`${t.jobs.payload}->>'videoId' = ${videoId}`,
+      sql`coalesce(${t.jobs.payload}->>'rawTranscript', '') <> ''`,
+    )).orderBy(desc(t.jobs.createdAt)).limit(1);
+    rawTranscript = String(previous?.payload.rawTranscript ?? "");
+  }
+  if (rawTranscript && !parseSrtVtt(rawTranscript).length) return { error: "Use a valid SRT or VTT transcript with timestamps and caption text. Your entry is still here." };
+  if (!rawTranscript && video.transcriptSource !== "vendor") return { error: "Add an SRT or VTT transcript to retry this video." };
+  const provider = rawTranscript ? "manual" : "vendor";
+  await db.update(t.videos).set({ transcriptSource: provider, ingestionStatus: "PENDING", failureReason: null }).where(eq(t.videos.id, videoId));
+  await enqueue("ingest_video", { videoId, provider, rawTranscript: rawTranscript || undefined });
   await drain(handlers, 3);
+  const [updated] = await db.select().from(t.videos).where(eq(t.videos.id, videoId)).limit(1);
+  if (updated?.ingestionStatus === "FAILED") return { error: "Ingestion failed. Check the transcript or try again when the transcript service is available. Your entry is still here." };
+  await setFlash(updated?.ingestionStatus === "READY" ? "Video transcript is ready." : "Video ingestion queued. Refresh to check its progress.");
   revalidatePath(`/admin/courses/${courseId}`);
+  return { success: "Video ingestion retried." };
+}
+
+export async function moveModuleAction(courseId: string, moduleId: string, dir: number): Promise<void> {
+  await requireRole("ADMIN");
+  if (dir !== -1 && dir !== 1) return;
+  await db.transaction(async tx => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${`curriculum:${courseId}`}, 0))`);
+    const modules = (await tx.select().from(t.modules).where(eq(t.modules.courseId, courseId)))
+      .sort((a, b) => a.sort - b.sort || a.id.localeCompare(b.id));
+    const index = modules.findIndex(module => module.id === moduleId);
+    if (index < 0 || !modules[index + dir]) return;
+    [modules[index], modules[index + dir]] = [modules[index + dir], modules[index]];
+    // Normalize within this course, including older equal-sort rows. IDs and
+    // every lesson/history association remain unchanged.
+    for (let sort = 0; sort < modules.length; sort++) {
+      if (modules[sort].sort !== sort) await tx.update(t.modules).set({ sort }).where(eq(t.modules.id, modules[sort].id));
+    }
+  });
+  revalidatePath(`/admin/courses/${courseId}`);
+  revalidatePath(`/course/${courseId}`);
 }
 
 export async function moveLessonAction(courseId: string, lessonId: string, dir: number): Promise<void> {

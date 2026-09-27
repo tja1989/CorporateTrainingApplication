@@ -1,4 +1,5 @@
-import { currentUser } from "@/lib/auth/guard";
+import { learnerLesson } from "@/lib/lms/lesson-access";
+import { apiUser as currentUser } from "@/lib/auth/guard";
 import { liveAvailable, logLiveUsage } from "@/lib/live/gemini";
 import { EvaluationSchema, mockEvaluate } from "@/lib/live/interview";
 import { appendInterviewTurns, completeInterview, finishInterview, getInterview, loadLessonContent } from "@/lib/live/store";
@@ -47,9 +48,11 @@ export async function POST(req: Request) {
     }
     case "end": {
       const finished = await finishInterview(row.id);
+      const outline = finished?.state === "COMPLETED" ? (await learnerLesson(user.id, row.lessonId))?.view : undefined;
       if (body.usage && !row.mock && liveAvailable()) await logLiveUsage("oral_check", body.model ?? row.model, body.usage, body.durationMs ?? 0);
       return Response.json({
         ok: true,
+        outline,
         state: finished?.state ?? row.state,
         outcome: finished?.outcome ?? null,
         scorePct: finished?.scorePct ?? null,

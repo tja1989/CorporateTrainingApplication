@@ -10,3 +10,6 @@ drizzle/meta/
 storage/
 coverage/
 .DS_Store
+.artifacts/
+test-results/
+playwright-report/

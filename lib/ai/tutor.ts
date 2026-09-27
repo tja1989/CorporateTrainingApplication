@@ -14,13 +14,14 @@ export const ABSTENTION = "I can't find this in the lesson. Try widening to the 
 const CITATION_TOLERANCE_SEC = 10;
 
 /** Server-side citation validation (spec FR-5.11): every citation must fall inside a retrieved chunk (±10s). */
-export function validateCitations(citations: TutorCitation[], chunks: Array<Pick<VideoChunkHit, "startSec" | "endSec">>): TutorCitation[] {
-  return citations.filter((c) =>
-    chunks.some(
-      (chunk) =>
-        c.startSec >= chunk.startSec - CITATION_TOLERANCE_SEC && c.startSec <= chunk.endSec + CITATION_TOLERANCE_SEC,
-    ),
-  );
+export function validateCitations(citations: TutorCitation[], chunks: Array<Pick<VideoChunkHit, "startSec" | "endSec"> & { videoId?: string }>): TutorCitation[] {
+  return citations.flatMap(c => {
+    if (!Number.isFinite(c.startSec) || c.startSec < 0 || !Number.isFinite(c.endSec) || c.endSec < c.startSec) return [];
+    const matches = chunks.filter(chunk => (!c.videoId || chunk.videoId === c.videoId) && c.startSec >= chunk.startSec - CITATION_TOLERANCE_SEC && c.startSec <= chunk.endSec + CITATION_TOLERANCE_SEC);
+    const sources = new Set(matches.map(chunk => chunk.videoId));
+    // A timestamp alone cannot identify one of several videos. Never guess a destination.
+    return matches.length && sources.size === 1 ? [{ ...c, ...(matches[0].videoId ? { videoId: matches[0].videoId } : {}) }] : [];
+  });
 }
 
 const TUTOR_SCHEMA = {
@@ -34,9 +35,10 @@ const TUTOR_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["startSec", "endSec", "quote"],
+        required: ["videoId", "startSec", "endSec", "quote"],
         properties: {
           startSec: { type: "number" },
+          videoId: { type: "string", description: "Exact video ID from the cited excerpt header" },
           endSec: { type: "number" },
           quote: { type: "string", description: "Short verbatim quote from the transcript excerpt cited" },
         },
@@ -45,7 +47,7 @@ const TUTOR_SCHEMA = {
   },
 } as const;
 
-const SYSTEM = `You are the lesson Tutor inside LuLu Learn, a corporate training platform for retail employees.
+const SYSTEM = `You are the lesson Tutor inside xprtn, a corporate training platform for retail employees.
 Answer ONLY from the provided transcript excerpts of the current training video. Ground every factual claim in an excerpt and cite it (startSec/endSec from the excerpt header, plus a short verbatim quote).
 If the excerpts do not answer the question, set answer_markdown to exactly: "${ABSTENTION}" with an empty citations array.
 Match the learner's language (including Romanized Hindi/Malayalam). Many learners use English as a second language: keep answers short, concrete, and friendly. Use simple markdown.`;
@@ -91,6 +93,7 @@ export async function* tutorAnswer(opts: {
       top.map((c) => `${excerptSentence(c.text, opts.question)}`).join("\n\n") +
       `\n\n*Offline demo answer — connect an AI key for full tutoring.*`;
     const citations = top.map((c) => ({
+      videoId: c.videoId,
       startSec: c.startSec,
       endSec: c.endSec,
       quote: c.text.slice(0, 120),
@@ -103,7 +106,7 @@ export async function* tutorAnswer(opts: {
     return;
   }
 
-  const excerpts = chunks.map((c) => `[${c.startSec}s-${c.endSec}s] ${c.text}`).join("\n\n");
+  const excerpts = chunks.map((c) => `[videoId=${c.videoId} ${c.startSec}s-${c.endSec}s] ${c.text}`).join("\n\n");
   const { text: safeQuestion } = redactPii(opts.question);
   const started = Date.now();
   const anthropic = getClient();

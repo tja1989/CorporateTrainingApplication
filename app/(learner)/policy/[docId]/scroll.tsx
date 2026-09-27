@@ -7,9 +7,7 @@ export function ScrollToSection({ anchor }: { anchor: string }) {
     const el = document.getElementById(anchor);
     if (el) {
       el.scrollIntoView({ block: "start" });
-      el.classList.add("bg-warning-tint");
-      const timer = setTimeout(() => el.classList.remove("bg-warning-tint"), 2000);
-      return () => clearTimeout(timer);
+      el.focus({ preventScroll: true });
     }
   }, [anchor]);
   return null;

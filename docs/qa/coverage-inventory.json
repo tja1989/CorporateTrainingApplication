@@ -1,0 +1,953 @@
+{
+  "baseline": "dd8bd11",
+  "routes": [
+    {
+      "route": "/activate",
+      "role": "public/auth",
+      "source": "app/(auth)/activate/page.tsx",
+      "actions": [
+        [
+          "action",
+          ""
+        ]
+      ],
+      "status": "PASSED",
+      "cases": [
+        "AUTH:activation",
+        "AUTH:invalid",
+        "AUTH:privacy",
+        "AUTH:mfa",
+        "AUTH:logout"
+      ],
+      "evidence": [
+        ".artifacts/task-2-https-matrix.log",
+        ".artifacts/task-2-auth-recovery-final.log"
+      ],
+      "runtimeCommit": "cea8c31 production source (initial matrix before dialog-only focus change); final exact-commit suite pending"
+    },
+    {
+      "route": "/login/mfa",
+      "role": "public/auth",
+      "source": "app/(auth)/login/mfa/page.tsx",
+      "actions": [
+        [
+          "action",
+          ""
+        ]
+      ],
+      "status": "PASSED",
+      "cases": [
+        "AUTH:activation",
+        "AUTH:invalid",
+        "AUTH:privacy",
+        "AUTH:mfa",
+        "AUTH:logout"
+      ],
+      "evidence": [
+        ".artifacts/task-2-https-matrix.log",
+        ".artifacts/task-2-auth-recovery-final.log"
+      ],
+      "runtimeCommit": "cea8c31 production source (initial matrix before dialog-only focus change); final exact-commit suite pending"
+    },
+    {
+      "route": "/login/mfa-setup",
+      "role": "public/auth",
+      "source": "app/(auth)/login/mfa-setup/page.tsx",
+      "actions": [],
+      "status": "PASSED",
+      "cases": [
+        "AUTH:activation",
+        "AUTH:invalid",
+        "AUTH:privacy",
+        "AUTH:mfa",
+        "AUTH:logout"
+      ],
+      "evidence": [
+        ".artifacts/task-2-https-matrix.log",
+        ".artifacts/task-2-auth-recovery-final.log"
+      ],
+      "runtimeCommit": "cea8c31 production source (initial matrix before dialog-only focus change); final exact-commit suite pending"
+    },
+    {
+      "route": "/login",
+      "role": "public/auth",
+      "source": "app/(auth)/login/page.tsx",
+      "actions": [
+        [
+          "action",
+          ""
+        ]
+      ],
+      "status": "PASSED",
+      "cases": [
+        "AUTH:activation",
+        "AUTH:invalid",
+        "AUTH:privacy",
+        "AUTH:mfa",
+        "AUTH:logout"
+      ],
+      "evidence": [
+        ".artifacts/task-2-https-matrix.log",
+        ".artifacts/task-2-auth-recovery-final.log"
+      ],
+      "runtimeCommit": "cea8c31 production source (initial matrix before dialog-only focus change); final exact-commit suite pending"
+    },
+    {
+      "route": "/ask-hr/live",
+      "role": "learner",
+      "source": "app/(learner)/ask-hr/live/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/ask-hr",
+      "role": "learner",
+      "source": "app/(learner)/ask-hr/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/ask-hr/tickets/[ticketId]",
+      "role": "learner",
+      "source": "app/(learner)/ask-hr/tickets/[ticketId]/page.tsx",
+      "actions": [
+        [
+          "replyToTicketAction.bind",
+          ""
+        ]
+      ],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/course/[courseId]",
+      "role": "learner",
+      "source": "app/(learner)/course/[courseId]/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/drill",
+      "role": "learner",
+      "source": "app/(learner)/drill/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/home",
+      "role": "learner",
+      "source": "app/(learner)/home/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/inbox",
+      "role": "learner",
+      "source": "app/(learner)/inbox/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/learn",
+      "role": "learner",
+      "source": "app/(learner)/learn/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/lesson/[lessonId]/interview",
+      "role": "learner",
+      "source": "app/(learner)/lesson/[lessonId]/interview/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/lesson/[lessonId]",
+      "role": "learner",
+      "source": "app/(learner)/lesson/[lessonId]/page.tsx",
+      "actions": [
+        [
+          "markCompleteAction.bind",
+          ""
+        ]
+      ],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/path/[pathId]",
+      "role": "learner",
+      "source": "app/(learner)/path/[pathId]/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/policy/[docId]",
+      "role": "learner",
+      "source": "app/(learner)/policy/[docId]/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/profile",
+      "role": "learner",
+      "source": "app/(learner)/profile/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/quiz/[quizId]",
+      "role": "learner",
+      "source": "app/(learner)/quiz/[quizId]/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/admin/corpus",
+      "role": "admin",
+      "source": "app/(workspace)/admin/corpus/page.tsx",
+      "actions": [
+        [
+          "publishPolicyAction",
+          ""
+        ]
+      ],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/admin/courses/[courseId]",
+      "role": "admin",
+      "source": "app/(workspace)/admin/courses/[courseId]/page.tsx",
+      "actions": [
+        [
+          "addLessonAction.bind",
+          ""
+        ],
+        [
+          "addModuleAction.bind",
+          ""
+        ],
+        [
+          "moveLessonAction.bind",
+          ""
+        ],
+        [
+          "retryIngestAction.bind",
+          ""
+        ],
+        [
+          "setCourseStatusAction.bind",
+          ""
+        ],
+        [
+          "updateCourseAction.bind",
+          ""
+        ],
+        [
+          "updateInterviewLessonAction.bind",
+          ""
+        ]
+      ],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/admin/courses",
+      "role": "admin",
+      "source": "app/(workspace)/admin/courses/page.tsx",
+      "actions": [
+        [
+          "createCourseAction",
+          ""
+        ]
+      ],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/admin/inbox",
+      "role": "admin",
+      "source": "app/(workspace)/admin/inbox/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/admin/integrity/[attemptId]",
+      "role": "admin",
+      "source": "app/(workspace)/admin/integrity/[attemptId]/page.tsx",
+      "actions": [
+        [
+          "clearAttemptAction.bind",
+          ""
+        ],
+        [
+          "voidAttemptAction.bind",
+          ""
+        ]
+      ],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/admin/integrity",
+      "role": "admin",
+      "source": "app/(workspace)/admin/integrity/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/admin",
+      "role": "admin",
+      "source": "app/(workspace)/admin/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/admin/people",
+      "role": "admin",
+      "source": "app/(workspace)/admin/people/page.tsx",
+      "actions": [
+        [
+          "createGroupAction",
+          ""
+        ],
+        [
+          "createRuleAction",
+          ""
+        ],
+        [
+          "importCsvAction",
+          ""
+        ],
+        [
+          "issueCodeAction.bind",
+          ""
+        ],
+        [
+          "toggleRuleAction.bind",
+          ""
+        ],
+        [
+          "updateUserAction.bind",
+          ""
+        ]
+      ],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/admin/reports",
+      "role": "admin",
+      "source": "app/(workspace)/admin/reports/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/admin/reviews",
+      "role": "admin",
+      "source": "app/(workspace)/admin/reviews/page.tsx",
+      "actions": [
+        [
+          "adjustGradeAction.bind",
+          ""
+        ],
+        [
+          "approveDraftAction.bind",
+          ""
+        ],
+        [
+          "confirmGradeAction.bind",
+          ""
+        ],
+        [
+          "discardDraftAction.bind",
+          ""
+        ],
+        [
+          "markInterviewReviewedAction.bind",
+          ""
+        ],
+        [
+          "overturnInterviewAction.bind",
+          ""
+        ]
+      ],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/admin/tickets/[ticketId]",
+      "role": "admin",
+      "source": "app/(workspace)/admin/tickets/[ticketId]/page.tsx",
+      "actions": [
+        [
+          "adminReplyAction.bind",
+          ""
+        ],
+        [
+          "resolveTicketAction.bind",
+          ""
+        ]
+      ],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/admin/tickets",
+      "role": "admin",
+      "source": "app/(workspace)/admin/tickets/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/team/[userId]",
+      "role": "manager",
+      "source": "app/(workspace)/team/[userId]/page.tsx",
+      "actions": [
+        [
+          "assignAction.bind",
+          ""
+        ],
+        [
+          "issueResetAction.bind",
+          ""
+        ],
+        [
+          "nudgeAction.bind",
+          ""
+        ]
+      ],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/team/[userId]/reset-code",
+      "role": "manager",
+      "source": "app/(workspace)/team/[userId]/reset-code/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/team/inbox",
+      "role": "manager",
+      "source": "app/(workspace)/team/inbox/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/team",
+      "role": "manager",
+      "source": "app/(workspace)/team/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/team/reports",
+      "role": "manager",
+      "source": "app/(workspace)/team/reports/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/",
+      "role": "public/auth",
+      "source": "app/page.tsx",
+      "actions": [],
+      "status": "NOT_TESTED"
+    },
+    {
+      "route": "/privacy-notice",
+      "role": "public/auth",
+      "source": "app/privacy-notice/page.tsx",
+      "actions": [
+        [
+          "acknowledgePrivacyNotice",
+          ""
+        ]
+      ],
+      "status": "PASSED",
+      "cases": [
+        "AUTH:activation",
+        "AUTH:invalid",
+        "AUTH:privacy",
+        "AUTH:mfa",
+        "AUTH:logout"
+      ],
+      "evidence": [
+        ".artifacts/task-2-https-matrix.log",
+        ".artifacts/task-2-auth-recovery-final.log"
+      ],
+      "runtimeCommit": "cea8c31 production source (initial matrix before dialog-only focus change); final exact-commit suite pending"
+    }
+  ],
+  "serverActions": [
+    {
+      "source": "app/(auth)/actions.ts",
+      "action": "loginAction",
+      "status": "PASSED",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
+    },
+    {
+      "source": "app/(auth)/actions.ts",
+      "action": "activateAction",
+      "status": "PASSED",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
+    },
+    {
+      "source": "app/(auth)/actions.ts",
+      "action": "mfaVerifyAction",
+      "status": "PASSED",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
+    },
+    {
+      "source": "app/(auth)/actions.ts",
+      "action": "mfaSetupBegin",
+      "status": "PASSED",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
+    },
+    {
+      "source": "app/(auth)/actions.ts",
+      "action": "mfaSetupConfirm",
+      "status": "PASSED",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
+    },
+    {
+      "source": "app/(learner)/ask-hr/tickets/[ticketId]/actions.ts",
+      "action": "replyToTicketAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(learner)/lesson/actions.ts",
+      "action": "markCompleteAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/corpus/actions.ts",
+      "action": "publishPolicyAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/courses/actions.ts",
+      "action": "createCourseAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/courses/actions.ts",
+      "action": "updateCourseAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/courses/actions.ts",
+      "action": "setCourseStatusAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/courses/actions.ts",
+      "action": "addModuleAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/courses/actions.ts",
+      "action": "addLessonAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/courses/actions.ts",
+      "action": "updateInterviewLessonAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/courses/actions.ts",
+      "action": "retryIngestAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/courses/actions.ts",
+      "action": "moveLessonAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/integrity/[attemptId]/actions.ts",
+      "action": "clearAttemptAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/integrity/[attemptId]/actions.ts",
+      "action": "voidAttemptAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/people/actions.ts",
+      "action": "updateUserAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/people/actions.ts",
+      "action": "issueCodeAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/people/actions.ts",
+      "action": "importCsvAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/people/actions.ts",
+      "action": "createRuleAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/people/actions.ts",
+      "action": "toggleRuleAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/people/actions.ts",
+      "action": "createGroupAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/reviews/actions.ts",
+      "action": "confirmGradeAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/reviews/actions.ts",
+      "action": "adjustGradeAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/reviews/actions.ts",
+      "action": "approveDraftAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/reviews/actions.ts",
+      "action": "discardDraftAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/reviews/actions.ts",
+      "action": "markInterviewReviewedAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/reviews/actions.ts",
+      "action": "overturnInterviewAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/tickets/[ticketId]/actions.ts",
+      "action": "adminReplyAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/admin/tickets/[ticketId]/actions.ts",
+      "action": "resolveTicketAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/team/actions.ts",
+      "action": "assignAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/team/actions.ts",
+      "action": "nudgeAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "app/(workspace)/team/actions.ts",
+      "action": "issueResetAction",
+      "status": "NOT_TESTED"
+    },
+    {
+      "source": "lib/auth/login.ts",
+      "action": "login",
+      "status": "PASSED",
+      "note": "Shared auth action; some also reached through app wrappers.",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
+    },
+    {
+      "source": "lib/auth/login.ts",
+      "action": "activate",
+      "status": "PASSED",
+      "note": "Shared auth action; some also reached through app wrappers.",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
+    },
+    {
+      "source": "lib/auth/login.ts",
+      "action": "verifyMfa",
+      "status": "PASSED",
+      "note": "Shared auth action; some also reached through app wrappers.",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
+    },
+    {
+      "source": "lib/auth/login.ts",
+      "action": "acknowledgePrivacyNotice",
+      "status": "PASSED",
+      "note": "Shared auth action; some also reached through app wrappers.",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
+    },
+    {
+      "source": "lib/auth/login.ts",
+      "action": "logout",
+      "status": "PASSED",
+      "note": "Shared auth action; some also reached through app wrappers.",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
+    },
+    {
+      "source": "lib/auth/login.ts",
+      "action": "issueResetCode",
+      "status": "NOT_TESTED",
+      "note": "Shared auth action; some also reached through app wrappers."
+    },
+    {
+      "source": "lib/auth/login.ts",
+      "action": "switchWorkspace",
+      "status": "PASSED",
+      "note": "Shared auth action; some also reached through app wrappers.",
+      "evidence": [
+        "e2e/auth.e2e.ts",
+        "e2e/auth-recovery.e2e.ts",
+        "e2e/navigation.e2e.ts",
+        ".artifacts/task-2-focus-nav.log"
+      ],
+      "runtimeCommit": "cea8c31 production source; final exact-commit suite pending"
+    }
+  ],
+  "apiRoutes": [
+    {
+      "route": "/api/admin/dsr/[userId]",
+      "source": "app/api/admin/dsr/[userId]/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "GET",
+        "DELETE"
+      ]
+    },
+    {
+      "route": "/api/attempt/[attemptId]/appeal",
+      "source": "app/api/attempt/[attemptId]/appeal/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "route": "/api/attempt/[attemptId]",
+      "source": "app/api/attempt/[attemptId]/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "PATCH",
+        "POST"
+      ]
+    },
+    {
+      "route": "/api/attempt/appeal-latest",
+      "source": "app/api/attempt/appeal-latest/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "route": "/api/certificates/[certId]",
+      "source": "app/api/certificates/[certId]/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "route": "/api/drill",
+      "source": "app/api/drill/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "route": "/api/events",
+      "source": "app/api/events/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "route": "/api/health",
+      "source": "app/api/health/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "route": "/api/hr/escalate",
+      "source": "app/api/hr/escalate/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "route": "/api/hr/feedback",
+      "source": "app/api/hr/feedback/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "route": "/api/hr",
+      "source": "app/api/hr/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST",
+        "GET"
+      ]
+    },
+    {
+      "route": "/api/live/hr/event",
+      "source": "app/api/live/hr/event/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "route": "/api/live/hr/session",
+      "source": "app/api/live/hr/session/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "route": "/api/live/interview/event",
+      "source": "app/api/live/interview/event/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "route": "/api/live/interview/session",
+      "source": "app/api/live/interview/session/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "route": "/api/progress",
+      "source": "app/api/progress/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "route": "/api/quiz/[quizId]/consent-info",
+      "source": "app/api/quiz/[quizId]/consent-info/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "route": "/api/quiz/[quizId]/start",
+      "source": "app/api/quiz/[quizId]/start/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "route": "/api/reports/[reportId]/csv",
+      "source": "app/api/reports/[reportId]/csv/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "route": "/api/reports/ask",
+      "source": "app/api/reports/ask/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "route": "/api/tutor",
+      "source": "app/api/tutor/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "route": "/api/tutor/suggest",
+      "source": "app/api/tutor/suggest/route.ts",
+      "status": "NOT_TESTED",
+      "methods": [
+        "GET"
+      ]
+    }
+  ]
+}

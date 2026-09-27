@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
 import { Button, cx } from "./ui";
 
 /**
@@ -8,17 +8,22 @@ import { Button, cx } from "./ui";
  * inert background and a flat scrim come for free. No frosted glass.
  */
 export function Dialog({
+  id,
   open,
   onClose,
   title,
   children,
   className,
+  returnFocusRef,
 }: {
+  id?: string;
   open: boolean;
   onClose: () => void;
   title: ReactNode;
   children: ReactNode;
   className?: string;
+  /** Explicit opener for browsers that do not focus buttons on pointer activation. */
+  returnFocusRef?: RefObject<HTMLElement | null>;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -30,15 +35,24 @@ export function Dialog({
   }, [open]);
   return (
     <dialog
+      id={id}
       ref={ref}
       aria-labelledby={titleId}
-      onClose={onClose}
+      onClose={() => {
+        onClose();
+        returnFocusRef?.current?.focus({ preventScroll: true });
+      }}
+      onClick={(event) => {
+        if (event.target !== event.currentTarget) return;
+        const bounds = event.currentTarget.getBoundingClientRect();
+        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose();
+      }}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
       }}
       className={cx(
-        "m-auto w-[calc(100%-32px)] max-w-lg rounded-card border border-border bg-surface p-6 text-foreground shadow-overlay backdrop:bg-scrim open:animate-enter",
+        "m-auto max-h-[calc(100dvh-32px)] overflow-y-auto w-[calc(100%-32px)] max-w-lg rounded-card border border-border bg-surface p-6 text-foreground shadow-overlay backdrop:bg-scrim",
         className,
       )}
     >

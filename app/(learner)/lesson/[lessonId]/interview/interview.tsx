@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useLessonProgress } from "@/components/lesson-progress";
+import { useRouter } from "next/navigation";
 import { useLiveVoice } from "@/lib/live/client/use-live-voice";
 import type { Evaluation } from "@/lib/live/shared";
 import { VoiceOrb } from "@/components/voice-orb";
@@ -11,6 +13,7 @@ import { ConfirmDialog } from "@/components/dialog";
 import { AiSurface, AnimatedNumber, Button, ButtonLink, Card, Chip } from "@/components/ui";
 
 export type OralResult = {
+  state?: string | null;
   scorePct: number | null;
   outcome: string | null;
   evaluation: Evaluation | null;
@@ -39,12 +42,22 @@ export function OralCheck({
   backHref: string;
 }) {
   const v = useLiveVoice({
+    configured,
     kind: "interview",
     sessionUrl: "/api/live/interview/session",
     eventUrl: "/api/live/interview/event",
     sessionBody: { lessonId },
     maxMinutes,
   });
+  const router = useRouter();
+  const progress = useLessonProgress();
+  const confirmRef = useRef(progress?.confirm);
+  confirmRef.current = progress?.confirm;
+  useEffect(() => {
+    if (v.status !== "ended" || v.result?.state !== "COMPLETED") return;
+    if (v.result.outline && confirmRef.current) confirmRef.current(v.result.outline);
+    else router.refresh();
+  }, [v.status, v.result?.state, v.result?.outline, router]);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const idle = v.status === "idle";
   const over = v.status === "ended" || v.status === "error";
@@ -62,7 +75,7 @@ export function OralCheck({
           gating={gating}
           starting={false}
           startLabel={previous ? "Retake the oral check" : undefined}
-          onStart={() => void v.start()}
+          onStart={() => void v.start()} onStartTyped={() => void v.start(true)}
           onTestSpeaker={v.testSpeaker}
         />
       ) : null}
@@ -80,11 +93,11 @@ export function OralCheck({
           {v.error ? <p className="text-center text-xs text-destructive-text">{v.error}</p> : null}
           <LiveCaptions turns={v.turns} emptyHint={v.status === "live" ? "The interviewer will start in a moment." : undefined} />
           {over ? (
-            result?.evaluation || result?.scorePct !== null ? (
+            result && (result.evaluation || result.scorePct !== null) ? (
               <>
                 {result ? <ResultCard title="Your result" result={result} passPct={passPct} gating={gating} /> : null}
-                <div className="flex gap-2">
-                  <ButtonLink href={backHref}>Back to course</ButtonLink>
+                <div className="flex flex-wrap gap-2">
+                  <ButtonLink href={backHref}>Return to lesson</ButtonLink>
                   <Button variant="secondary" onClick={() => void v.start()}>
                     Retake
                   </Button>
@@ -92,11 +105,11 @@ export function OralCheck({
               </>
             ) : (
               <Card className="p-4">
-                <p className="text-sm text-muted">{v.status === "error" ? "The session could not continue." : "The check ended before any answers were recorded — nothing was saved."}</p>
+                <p className="text-sm text-muted">{v.status === "error" ? "The session could not continue." : v.turns.some(turn => turn.role === "user") ? "The result is not available yet. Return to this lesson to check the saved record." : "The check ended before any answers were recorded — nothing was saved."}</p>
                 <div className="mt-3 flex gap-2">
                   <Button onClick={() => void v.start()}>Try again</Button>
                   <ButtonLink variant="secondary" href={backHref}>
-                    Back to course
+                    Return to lesson
                   </ButtonLink>
                 </div>
               </Card>
@@ -111,6 +124,7 @@ export function OralCheck({
               elapsedSec={v.elapsedSec}
               expiresAt={v.expiresAt}
               onToggleMute={v.toggleMute}
+              onTypeInstead={v.continueTyping}
               onSendText={v.sendText}
               onEnd={() => setConfirmEnd(true)}
               endLabel="End early"
@@ -138,7 +152,8 @@ export function OralCheck({
 export function ResultCard({ title, result, passPct, gating }: { title: string; result: OralResult; passPct?: number; gating?: boolean }) {
   const ev = result.evaluation;
   const pct = result.scorePct ?? 0;
-  const pass = result.outcome === "PASS";
+  const pending = result.scorePct === null || result.outcome === null || (result.state != null && result.state !== "COMPLETED");
+  const pass = !pending && result.outcome === "PASS";
   const afterTheFact = result.evaluationSource === "fallback" || result.evaluationSource === "mock";
   return (
     <Card className="p-4">
@@ -146,14 +161,14 @@ export function ResultCard({ title, result, passPct, gating }: { title: string; 
         <div>
           <p className="text-xs text-muted">{title}</p>
           <p className="display text-xl">
-            <AnimatedNumber value={pct} suffix="%" />
+            {pending ? "Result pending" : <AnimatedNumber value={pct} suffix="%" />}
           </p>
         </div>
-        <Chip variant={pass ? "success" : "warning"}>{pass ? "Passed" : "Not passed"}</Chip>
+        <Chip variant={pass ? "success" : "warning"}>{pending ? "Pending confirmation" : pass ? "Passed" : "Not passed"}</Chip>
       </div>
       <p className="mb-3 text-xs text-muted">
         {passPct !== undefined ? `Pass mark ${passPct}%. ` : ""}
-        {pass
+        {pending ? "Your result is not confirmed yet. Return to this lesson to check again." : pass
           ? gating
             ? "This lesson is now complete."
             : "Nice work."

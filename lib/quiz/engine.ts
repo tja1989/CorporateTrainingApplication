@@ -1,10 +1,12 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { isDeepStrictEqual } from "node:util";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { id } from "@/lib/ids";
 import { scoreQuiz, scoreQuestion, shuffleChoices, type Answer } from "./scoring";
 import { gradeFreeText, gradeRouting } from "./grading";
 import { markLessonComplete, awardPoints, awardBadge, recordActivityDay } from "@/lib/lms/completion";
 import { notify } from "@/lib/notify";
+import { currentCycleStart, lessonCourseId } from "@/lib/lms/learning-cycle";
 import type { QuizSettings, ServedItem } from "@/lib/db/schema";
 
 type Quiz = typeof t.quizzes.$inferSelect;
@@ -40,6 +42,23 @@ export function canRevealAnswers(s: QuizSettings, now = new Date()): boolean {
   return false;
 }
 
+/** Current allowance and result exclude historical sittings from prior renewals. */
+export async function currentQuizAttempts(quiz: Pick<Quiz, "id" | "lessonId">, userId: string) {
+  const rows = await db.select().from(t.attempts)
+    .where(and(eq(t.attempts.quizId, quiz.id), eq(t.attempts.userId, userId))).orderBy(desc(t.attempts.startedAt));
+  const lessonId = await attachedLessonId(quiz);
+  const courseId = lessonId ? await lessonCourseId(lessonId) : null;
+  const cycle = courseId ? await currentCycleStart(userId, courseId) : null;
+  return cycle ? rows.filter(row => row.startedAt >= cycle) : rows;
+}
+
+async function attachedLessonId(quiz: Pick<Quiz, "id" | "lessonId">) {
+  if (quiz.lessonId) return quiz.lessonId;
+  const [lesson] = await db.select({ id: t.lessons.id }).from(t.lessons)
+    .where(sql`${t.lessons.payload}->>'quizId' = ${quiz.id}`).limit(1);
+  return lesson?.id ?? null;
+}
+
 export async function canStart(
   quiz: Quiz,
   userId: string,
@@ -50,11 +69,7 @@ export async function canStart(
   if (ws === "before") return { ok: false, reason: `This assessment opens ${new Date(s.availableFrom!).toLocaleString()}.` };
   if (ws === "closed") return { ok: false, reason: "This assessment window has closed." };
 
-  const previous = await db
-    .select()
-    .from(t.attempts)
-    .where(and(eq(t.attempts.quizId, quiz.id), eq(t.attempts.userId, userId)))
-    .orderBy(desc(t.attempts.startedAt));
+  const previous = await currentQuizAttempts(quiz, userId);
 
   const open = previous.find((a) => a.state === "IN_PROGRESS");
   if (open) return { ok: true, resume: open };
@@ -147,16 +162,40 @@ export function pastDeadline(attempt: Attempt, graceSec: number, now = new Date(
   return !!attempt.deadlineAt && now.getTime() > attempt.deadlineAt.getTime() + graceSec * 1000;
 }
 
-export async function saveAnswers(attempt: Attempt, quiz: Quiz, answers: Record<string, Answer>): Promise<void> {
-  if (attempt.state !== "IN_PROGRESS") throw new Error("Attempt is not open");
-  if (pastDeadline(attempt, quiz.settings.graceSec)) {
+export class AttemptWriteError extends Error {
+  constructor(message: string, public submitted = false) { super(message); }
+}
+
+export async function saveAnswers(attempt: Attempt, quiz: Quiz, answers: Record<string, Answer>, navigationIndex?: number): Promise<void> {
+  const expired = await db.transaction(async tx => {
+    const [current] = await tx.select().from(t.attempts).where(eq(t.attempts.id, attempt.id)).for("update");
+    if (!current || current.userId !== attempt.userId || current.quizId !== quiz.id) throw new AttemptWriteError("Attempt not found");
+    if (current.state !== "IN_PROGRESS") throw new AttemptWriteError("Attempt is not open", true);
+    if (pastDeadline(current, quiz.settings.graceSec)) return true;
+    let nextIndex = current.navigationIndex;
+    if (quiz.settings.oneAtATime && quiz.settings.noBacktrack) {
+      if (navigationIndex !== undefined) {
+        if (!Number.isInteger(navigationIndex) || navigationIndex < current.navigationIndex || navigationIndex >= current.servedItems.length) {
+          throw new AttemptWriteError("This question is no longer available. Resume the assessment to continue from your saved position.");
+        }
+        nextIndex = navigationIndex;
+      }
+      for (const [questionId, answer] of Object.entries(answers)) {
+        const position = current.servedItems.findIndex(item => item.questionId === questionId);
+        if (position < 0 || (position !== current.navigationIndex && !isDeepStrictEqual(current.answers[questionId], answer))) {
+          throw new AttemptWriteError("Only the current question can be changed. Previously saved answers are safe.");
+        }
+      }
+    }
+    await tx.update(t.attempts).set({ answers: { ...current.answers, ...answers }, navigationIndex: nextIndex })
+      .where(eq(t.attempts.id, current.id));
+    return false;
+  });
+  // Grading may call services and completion transactions; release the save lock first.
+  if (expired) {
     await submitAttempt(attempt.id, { auto: true });
-    throw new Error("Time is up — your saved answers were submitted.");
+    throw new AttemptWriteError("Time is up — your saved answers were submitted.", true);
   }
-  await db
-    .update(t.attempts)
-    .set({ answers: { ...attempt.answers, ...answers } })
-    .where(eq(t.attempts.id, attempt.id));
 }
 
 /** Map displayed-index answers back to actual indices using the served choiceOrder. */
@@ -174,8 +213,9 @@ export function unmapAnswer(q: Question, served: ServedItem, answer: Answer | un
 }
 
 async function quizGatesRequiredCompletion(quiz: Quiz): Promise<{ lessonId: string | null; courseId: string | null; required: boolean }> {
-  if (!quiz.lessonId) return { lessonId: null, courseId: null, required: false };
-  const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, quiz.lessonId)).limit(1);
+  const lessonId = await attachedLessonId(quiz);
+  if (!lessonId) return { lessonId: null, courseId: null, required: false };
+  const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, lessonId)).limit(1);
   if (!lesson) return { lessonId: null, courseId: null, required: false };
   const [mod] = await db.select().from(t.modules).where(eq(t.modules.id, lesson.moduleId)).limit(1);
   return { lessonId: lesson.id, courseId: mod?.courseId ?? null, required: true };
@@ -283,9 +323,10 @@ export async function submitAttempt(attemptId: string, opts: { auto?: boolean } 
   if (gradingState === "FINAL" && passed && gate.lessonId) {
     await awardPoints(attempt.userId, "quiz_pass", quiz.id, 20);
     if (score.pct === 100) await awardBadge(attempt.userId, "perfect_quiz");
-    await markLessonComplete(attempt.userId, gate.lessonId);
+    await markLessonComplete(attempt.userId, gate.lessonId, attempt.startedAt);
   }
   await notify(attempt.userId, "quiz_graded", {
+    quizId: quiz.id,
     quizTitle: quiz.title,
     state: gradingState,
     outcome: `${Math.round(score.pct)}%${gradingState === "PROVISIONAL" ? " (pending confirmation)" : passed ? " — passed" : " — not passed"}`,
@@ -320,7 +361,10 @@ export async function finalizeReview(reviewId: string, reviewerId: string, final
     .from(t.questions)
     .where(inArray(t.questions.id, attempt.servedItems.map((s) => s.questionId)));
   const byId = new Map(questionRows.map((q) => [q.id, q]));
-  const reviews = await db.select().from(t.gradingReviews).where(eq(t.gradingReviews.attemptId, attempt.id));
+  // An appeal appends a new decision; the latest review for each question is
+  // authoritative while all earlier decisions stay available for audit.
+  const reviews = await db.select().from(t.gradingReviews).where(eq(t.gradingReviews.attemptId, attempt.id))
+    .orderBy(desc(t.gradingReviews.createdAt));
 
   const items = attempt.servedItems.map((served) => {
     const q = byId.get(served.questionId)!;
@@ -345,9 +389,10 @@ export async function finalizeReview(reviewId: string, reviewerId: string, final
   if (passed && gate.lessonId) {
     await awardPoints(attempt.userId, "quiz_pass", quiz.id, 20);
     if (score.pct === 100) await awardBadge(attempt.userId, "perfect_quiz");
-    await markLessonComplete(attempt.userId, gate.lessonId);
+    await markLessonComplete(attempt.userId, gate.lessonId, attempt.startedAt);
   }
   await notify(attempt.userId, "quiz_graded", {
+    quizId: quiz.id,
     quizTitle: quiz.title,
     state: "FINAL",
     outcome: `${Math.round(score.pct)}%${passed ? " — passed" : " — not passed"}`,

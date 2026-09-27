@@ -1,18 +1,19 @@
 "use client";
-
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { cx } from "@/components/ui";
+import { isLessonWorkspace } from "@/lib/navigation";
 
-/**
- * The learner content measure. It wraps the page content only — never the nav
- * rail — so the rail keeps one position (the viewport's start edge) on every
- * page and only the content's centred width changes. Lesson pages take the
- * wider measure so the course-contents rail can sit beside the lesson without
- * squeezing the video player's tutor column; every other learner surface keeps
- * the narrower reading measure.
- */
 export function LearnerContainer({ children }: { children: ReactNode }) {
-  const wide = usePathname().startsWith("/lesson/");
-  return <div className={cx("mx-auto", wide ? "max-w-7xl" : "max-w-5xl")}>{children}</div>;
+  return <div className={isLessonWorkspace(usePathname()) ? "w-full" : "content-container"}>{children}</div>;
+}
+
+/** Keeps global navigation out of the focused lesson workspace. */
+export function LearnerFrame({ header, lessonHeader, tabs, children }: { header: ReactNode; lessonHeader: ReactNode; tabs: ReactNode; children: ReactNode }) {
+  const lesson = isLessonWorkspace(usePathname());
+  return <div className="min-h-dvh">
+    <a href="#main-content" className="skip-link">Skip to content</a>
+    {lesson ? lessonHeader : header}
+    <main id="main-content" tabIndex={-1} className={lesson ? "lesson-shell-main" : "learner-main"}><LearnerContainer>{children}</LearnerContainer></main>
+    {!lesson ? tabs : null}
+  </div>;
 }
