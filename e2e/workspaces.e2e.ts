@@ -80,8 +80,10 @@ test("@core @template Admin publishes, manager assigns, learner earns a certific
   await page.getByRole("link", { name: "Continue lesson", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Welcome and help the customer", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Mark complete", exact: true }).click();
+  await expect(page.getByText("Lesson complete", { exact: true })).toBeVisible();
   await expect.poll(async () => withDb(async db => (await db.query("SELECT count(*)::int n FROM certificates WHERE user_id=$1 AND course_id=$2", [learner.id, courseId])).rows[0].n)).toBe(1);
-  await page.goto(`/course/${courseId}`);
+  await page.getByRole("link", { name: "Course overview", exact: true }).click();
+  await expect(page).toHaveURL(`/course/${courseId}`);
   const certificate = page.getByRole("link", { name: /certificate/i });
   await expect(certificate).toBeVisible();
   const certUrl = await certificate.getAttribute("href");
@@ -360,7 +362,14 @@ test("@core @template Policy publishing keeps previous versions and shows readab
     expect(docs).toHaveLength(version); expect(docs.at(-1)?.status).toBe("ACTIVE");
     if (version === 2) expect(docs[0].status).toBe("SUPERSEDED");
   }
-  await page.getByRole("navigation", { name: "Policy versions" }).getByRole("link").filter({ hasText: title }).first().click();
+  const policy = page.getByRole("navigation", { name: "Policy versions" }).getByRole("link").filter({ hasText: title }).first();
+  const destination = await policy.getAttribute("href");
+  expect(destination).toBeTruthy();
+  await policy.click();
+  await expect(page).toHaveURL(destination!);
+  // Streamed HTML can contain the correct text in hidden S:0 while the visible
+  // document is still the short loading shell. Qualify the revealed article.
+  await expect(page.locator("article")).toBeVisible();
   await expect(page.locator("article")).toContainText("Ask your supervisor");
   await expectNoPageOverflow(page); await capture(page, info, "admin-policy-detail");
   await page.getByRole("link", { name: "Assistant quality", exact: true }).click();
