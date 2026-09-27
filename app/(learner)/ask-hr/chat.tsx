@@ -176,7 +176,7 @@ export function HrChat({ userId, loginId, loadHistory = true, activeConversation
         </span>
       </div>
 
-      <div className="flex flex-col gap-3" dir="auto">
+      <div className="hr-messages flex flex-col gap-3" dir="auto">
         {messages === null ? (
           <div className="flex flex-col gap-2">
             <p role="status" className="text-sm text-muted">Loading conversation…</p>

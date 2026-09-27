@@ -556,6 +556,13 @@
       ]
     },
     {
+      "id": "REPORTS:pagination",
+      "expected": "Bounded 50-row report pages retain deterministic full CSV order, all filters and manager scope; Back, refresh and invalid page queries preserve accessible results.",
+      "browserTests": [
+        "Report pages preserve the complete CSV order"
+      ]
+    },
+    {
       "id": "COMPLIANCE:due",
       "expected": "Due/reminder transitions agree across learner/manager/admin.",
       "browserTests": [
@@ -673,6 +680,6 @@
       ]
     }
   ],
-  "additionalRequiredCases": 3,
-  "requiredCases": 79
+  "additionalRequiredCases": 4,
+  "requiredCases": 80
 }

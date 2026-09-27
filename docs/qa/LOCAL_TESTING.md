@@ -11,7 +11,7 @@ Run these commands in the managed checkout against the isolated local environmen
 - Install dependencies with `npm ci`, then browser binaries with `npx playwright install chromium firefox webkit`.
 - On a **fresh isolated database only**, `npx tsx scripts/deploy-init.ts` initializes schema/demo content. Demo seeding is destructive and is not part of a qualification run. Apply additive migrations to existing data as described in [migrations/README.md](../../migrations/README.md).
 - Build with `npm run build`, then serve with `npm run start -- -H 127.0.0.1 -p 3100`. Tests use this production build; they do not start a development server or reset data.
-- In another terminal, `npm run qa:https` creates an ignored local self-signed certificate and serves https://localhost:3443, forwarding only to loopback port 3100. Browser tests accept this local certificate. Keep production Secure cookies: WebKit rejects them on plain HTTP even on localhost. Do not disable TLS verification globally.
+- In another terminal, `npm run qa:https` creates an ignored local self-signed certificate and serves https://localhost:3443, forwarding only to loopback port 3100. Chromium uses the exact public-key pin for this certificate in disposable QA profiles, with `ignoreHTTPSErrors:false`. The QA-only `npm run test:e2e` launcher starts its Node child with `NODE_EXTRA_CA_CERTS` pointing to the same certificate, so `route.fetch()` and API requests retain strict certificate and hostname validation. Node reads this variable at startup; setting it later is insufficient. Non-loopback URLs, missing/invalid certificates and `NODE_TLS_REJECT_UNAUTHORIZED=0` fail closed. Firefox/WebKit retain their guarded local-context exception. No OS or personal-browser trust changes. Keep production Secure cookies: WebKit rejects them on plain HTTP even on localhost. Do not disable TLS verification globally.
 
 Stop every process sharing `.next` before rebuilding, including any separate preview or service runtime. The clean preview uses `welearn_preview`; it is not the development dataset used for qualification or performance.
 
@@ -19,19 +19,20 @@ Stop every process sharing `.next` before rebuilding, including any separate pre
 
 Run units and type checking with `npm test` and `npm run typecheck`. For a focused project, use `npm run test:e2e -- --project=chromium-desktop`.
 
-The complete configured matrix currently contains 655 executions across ten projects. It uses **two workers, fullyParallel false and zero retries**. Mutating fixtures have unique IDs, browser contexts and artifact paths; the two-worker isolation audit is retained with Task 5 evidence. Do not overlap performance measurements with the matrix, service checks or manual browser activity.
+The complete configured matrix currently contains 673 executions across ten projects. It uses **two workers, fullyParallel false and zero retries**. Mutating fixtures have unique IDs, browser contexts and artifact paths; the two-worker isolation audit is retained with Task 5 evidence. Do not overlap performance measurements with the matrix, service checks or manual browser activity.
 
 After freezing the source, record the actual build commit and use distinct output folders:
 
 ```sh
 unset NO_COLOR FORCE_COLOR
+export PYTHONDONTWRITEBYTECODE=1
 QA_BUILD_COMMIT=<clean-build-commit> QA_BUILD_DIRTY=0 QA_OUT=.artifacts/final-run-1 npm run test:e2e
 QA_BUILD_COMMIT=<clean-build-commit> QA_BUILD_DIRTY=0 QA_OUT=.artifacts/final-run-2 npm run test:e2e
 ```
 
 Both complete runs must pass consecutively on the same clean source and production build. Keep tracked files unchanged during both runs; write final documentation afterward and identify that documentation-only delta. An interim dirty source tree must use QA_BUILD_DIRTY=1 and cannot qualify the final gate.
 
-Each output folder contains results.json, environment.json, an html report and test-results with traces, screenshots and retained failure videos. Browser versions, runtime build ID, source commit, local database and viewport/project identity are recorded. Raw artifacts remain ignored because they can contain synthetic credentials and private test transcripts. Publish a compact evidence index with paths/hashes, not the raw authentication material.
+Each output folder contains results.json, environment.json, an html report and test-results with traces, screenshots and retained failure videos. Browser versions, runtime build ID, source commit, local database, viewport/project identity, Chromium pin and Node extra-CA path are recorded. Raw artifacts remain ignored because they can contain synthetic credentials and private test transcripts. Publish a compact evidence index with paths/hashes, not the raw authentication material.
 
 Helpers create unique QA accounts and prerequisites. Known MFA belongs only to newly created QA admins; existing MFA is not reset. Operations under qualification run through the actual UI and are verified through visible results plus persistence. API-only compatibility endpoints and background jobs are labeled separately rather than assigned invented UI controls.
 
@@ -60,11 +61,11 @@ Run `QA_BUILD_COMMIT=<clean-build-commit> QA_BUILD_DIRTY=0 QA_OUT=.artifacts/fin
 Regenerate the authored matrix and source inventory from the frozen checkout:
 
 ```sh
-npx playwright test --list --reporter=json > .artifacts/task-5-planned-matrix.json
+npm run --silent test:e2e -- --list --reporter=json > .artifacts/task-5-planned-matrix.json
 npx tsx scripts/qa-inventory.ts .artifacts/task-5-source-inventory.json
 ```
 
-Source enumeration never marks an item passed. `case-evidence-map.json` maps requirements to exact assertions; `scripts/qa-reconcile.py` requires two actual complete no-retry browser passes, both complete service runs, all performance families and an exact-build validated controller public-video manifest before writing the final workflow/coverage results. It rejects dirty or changed checkout/runtime provenance, missing cases, failed results and incomplete manual evidence.
+Use `PYTHONDONTWRITEBYTECODE=1 python3 scripts/qa-reconcile.py` when reconciling evidence so Python cache files cannot make the checkout dirty. Source enumeration never marks an item passed. `case-evidence-map.json` maps requirements to exact assertions; `scripts/qa-reconcile.py` requires two actual complete no-retry browser passes, both complete service runs, all performance families and an exact-build validated controller public-video manifest before writing the final workflow/coverage results. It rejects dirty or changed checkout/runtime provenance, missing cases, failed results and incomplete manual evidence.
 
 Real public YouTube playback has separate controller evidence, including seek-only behavior, pause/leave/resume, normal completion and persisted course state. Deterministic media fixtures do not substitute for that journey. Live AI/voice services and physical iPhone microphone/media remain **UNVERIFIED**, as explicitly accepted by the user; their later execution checklist is [EXTERNAL_GATES.md](EXTERNAL_GATES.md).
 

@@ -40,8 +40,14 @@ async function inspect(page:Page,info:TestInfo,label:string){
   await page.keyboard.press("Control+Home");
   await page.evaluate(()=>{(document.activeElement as HTMLElement)?.blur();window.scrollTo(0,0);});
   await page.keyboard.press("Tab");
-  const focus=await page.evaluate(()=>{const el=document.activeElement as HTMLElement,r=el.getBoundingClientRect(),s=getComputedStyle(el);const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {tag:el.tagName,name:el.getAttribute("aria-label")||el.textContent,rect:r.toJSON(),viewport:{width:innerWidth,height:innerHeight},hit:hit?{tag:hit.tagName,text:hit.textContent?.slice(0,120),rect:hit.getBoundingClientRect().toJSON()}:null,visible:r.width>0&&r.height>0,unobscured:!!hit&&(el===hit||el.contains(hit)),outline:s.outlineStyle,boxShadow:s.boxShadow};});
+  const entry = await page.evaluate(() => ({ tag: document.activeElement?.tagName, documentHasFocus: document.hasFocus() }));
+  // A real Tab can leave the document for browser chrome. Re-enter once only
+  // for that observed state; BODY while the document has focus still fails.
+  if (entry.tag === "BODY" && !entry.documentHasFocus) await page.keyboard.press("Tab");
+  await info.attach(`${label}-focus-entry`, { body: JSON.stringify(entry), contentType: "application/json" });
+  const focus=await page.evaluate(()=>{const el=document.activeElement as HTMLElement,r=el.getBoundingClientRect(),s=getComputedStyle(el);const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {tag:el.tagName,name:(el.getAttribute("aria-label")||el.textContent||"").slice(0,120),control:el.matches("a[href],button,input,select,textarea,summary,iframe,[tabindex]")&&el.tabIndex>=0&&!el.matches(":disabled"),documentHasFocus:document.hasFocus(),rect:r.toJSON(),viewport:{width:innerWidth,height:innerHeight},hit:hit?{tag:hit.tagName,text:hit.textContent?.slice(0,120),rect:hit.getBoundingClientRect().toJSON()}:null,visible:r.width>0&&r.height>0,unobscured:!!hit&&(el===hit||el.contains(hit)),outline:s.outlineStyle,boxShadow:s.boxShadow};});
   await info.attach(`${label}-focus`,{body:JSON.stringify(focus),contentType:"application/json"});
+  expect.soft(focus.control && focus.documentHasFocus, `${label} keyboard enters an application control`).toBe(true);
   expect.soft(focus.visible,`${label} first keyboard focus visible`).toBe(true);
   expect.soft(focus.unobscured,`${label} keyboard focus covered: ${focus.name}`).toBe(true);
   expect.soft(focus.outline!=="none"||focus.boxShadow!=="none",`${label} first keyboard focus styled`).toBe(true);
@@ -105,7 +111,28 @@ for(const theme of ["light","dark"] as const){
     await expect(page.locator("main").getByRole("alert")).toContainText("Conversation history could not load");await inspect(page,info,`${theme}-hr-error`);
     await page.unroute("**/api/hr");await page.reload();
     await page.getByRole("textbox",{name:"Ask the HR assistant",exact:true}).fill("How can I ask HR about annual leave?");await page.getByRole("button",{name:"Send",exact:true}).click();
-    await expect(page.getByText(/Offline demo answer/).last()).toBeVisible();await inspect(page,info,`${theme}-hr-answer`);
+    await expect(page.getByText(/Offline demo answer/).last()).toBeVisible();
+    const hr = page.getByRole("region", { name: "HR Assistant", exact: true });
+    await expect(hr.getByRole("status").filter({ hasText: "Responding…" })).toHaveCount(0);
+    const helpful = hr.getByRole("button", { name: "Helpful", exact: true });
+    await expect(helpful).toBeVisible();
+    const hrCitations = hr.locator('a[href^="/policy/"]');
+    await expect(hrCitations).toHaveCount(2);
+    // Exercise the natural settled scroll position before generic inspection
+    // changes it. The actual Tab sequence must clear the sticky composer.
+    await hrCitations.first().focus();
+    for (const [label, control] of [["citation", hrCitations.nth(1)], ["feedback", helpful]] as const) {
+      await page.keyboard.press("Tab"); await expect(control).toBeFocused();
+      const focused = await control.evaluate(el => {
+        const r = el.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2), style = getComputedStyle(el);
+        return { rect: r.toJSON(), viewport: { width: innerWidth, height: innerHeight }, inViewport: r.top >= 0 && r.bottom <= innerHeight, unobscured: !!hit && (el === hit || el.contains(hit)), hit: hit?.tagName, outline: style.outlineStyle, shadow: style.boxShadow };
+      });
+      await info.attach(`${theme}-hr-${label}-keyboard-focus`, { body: JSON.stringify(focused), contentType: "application/json" });
+      expect.soft(focused.inViewport && focused.unobscured, `HR ${label} keyboard focus stays above its composer`).toBe(true);
+      expect.soft(focused.outline !== "none" || focused.shadow !== "none", `HR ${label} keyboard focus is styled`).toBe(true);
+    }
+    await capture(page, info, `${theme}-hr-feedback-keyboard-focus`, { viewportOnly: true });
+    await inspect(page,info,`${theme}-hr-answer`);
     await page.goto("/ask-hr/live");await page.getByRole("button",{name:"Start talking",exact:true}).click();
     await expect(page.getByRole("textbox",{name:"Type a message",exact:true})).toBeEnabled();await inspect(page,info,`${theme}-voice-active`);
     await page.getByRole("button",{name:"End conversation",exact:true}).click();await expect(page.getByRole("link",{name:"Continue in text",exact:true})).toBeVisible();await inspect(page,info,`${theme}-voice-ended`);

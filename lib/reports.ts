@@ -42,7 +42,9 @@ async function resolveScope(filters: ReportFilters): Promise<{ userWhere: SQL | 
 
 export async function runReport(report: ReportId, filters: ReportFilters): Promise<ReportResult> {
   const { userWhere, courseIds } = await resolveScope(filters);
-  const users = await (userWhere ? db.select().from(t.users).where(userWhere) : db.select().from(t.users));
+  // Stable source order keeps page boundaries and full CSV output identical.
+  // Existing report-specific sorting (notably certificate expiry) still applies.
+  const users = await (userWhere ? db.select().from(t.users).where(userWhere) : db.select().from(t.users)).orderBy(t.users.id);
   const activeUsers = users.filter((u) => !u.erasedAt);
   const userIds = activeUsers.map((u) => u.id);
   const nameOf = new Map(activeUsers.map((u) => [u.id, u]));
@@ -55,7 +57,7 @@ export async function runReport(report: ReportId, filters: ReportFilters): Promi
     courseIds ? inArray(t.enrollments.courseId, courseIds.length ? courseIds : ["__none__"]) : undefined,
     filters.complianceStatus ? eq(t.enrollments.complianceStatus, filters.complianceStatus as never) : undefined,
   ].filter((x): x is SQL => !!x);
-  const enrollments = await db.select().from(t.enrollments).where(and(...enrollWhere));
+  const enrollments = await db.select().from(t.enrollments).where(and(...enrollWhere)).orderBy(t.enrollments.id);
 
   switch (report) {
     case "completion": {
@@ -105,7 +107,7 @@ export async function runReport(report: ReportId, filters: ReportFilters): Promi
       const records = await db
         .select()
         .from(t.completionRecords)
-        .where(userIds.length ? inArray(t.completionRecords.userId, userIds) : sql`false`);
+        .where(userIds.length ? inArray(t.completionRecords.userId, userIds) : sql`false`).orderBy(t.completionRecords.id);
       return {
         title: "Learner transcript",
         columns: ["Employee", "ID", "Course", "Completed at", "Score"],
@@ -123,7 +125,7 @@ export async function runReport(report: ReportId, filters: ReportFilters): Promi
       const certs = await db
         .select()
         .from(t.certificates)
-        .where(userIds.length ? inArray(t.certificates.userId, userIds) : sql`false`);
+        .where(userIds.length ? inArray(t.certificates.userId, userIds) : sql`false`).orderBy(t.certificates.id);
       const cutoff = Date.now() + horizon * 24 * 3600_000;
       return {
         title: `Certificates expiring within ${horizon} days`,
@@ -177,7 +179,7 @@ export async function runReport(report: ReportId, filters: ReportFilters): Promi
       const attempts = await db
         .select()
         .from(t.attempts)
-        .where(userIds.length ? inArray(t.attempts.userId, userIds) : sql`false`);
+        .where(userIds.length ? inArray(t.attempts.userId, userIds) : sql`false`).orderBy(t.attempts.id);
       const byQuiz = new Map<string, { attempts: number; passed: number; scoreSum: number }>();
       for (const a of attempts) {
         if (courseIds && !selectedQuizIds.has(a.quizId)) continue;

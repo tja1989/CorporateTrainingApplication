@@ -13,8 +13,8 @@
     "sweep": "tsx scripts/sweep.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
+    "test:e2e": "tsx scripts/qa-playwright.ts test",
+    "test:e2e:ui": "tsx scripts/qa-playwright.ts test --ui",
     "qa:https": "node scripts/qa-https.mjs"
   },
   "dependencies": {

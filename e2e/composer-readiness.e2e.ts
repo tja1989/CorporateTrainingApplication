@@ -3,7 +3,7 @@ import { createPerson, signIn, withDb, capture } from './support';
 
 async function delayedComposer(browser: Browser, authenticated: BrowserContext, baseURL: string, info: TestInfo) {
   const context = await browser.newContext({
-    storageState: await authenticated.storageState(), baseURL, ignoreHTTPSErrors: true,
+    storageState: await authenticated.storageState(), baseURL, ignoreHTTPSErrors: info.project.use.ignoreHTTPSErrors,
     viewport: info.project.use.viewport, hasTouch: info.project.use.hasTouch,
   });
   context.setDefaultTimeout(10_000); context.setDefaultNavigationTimeout(30_000);

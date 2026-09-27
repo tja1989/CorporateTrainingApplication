@@ -260,6 +260,9 @@ input, select, textarea { min-width: 0; }
 @media (min-width: 768px) { .composer-sticky { bottom: 0; } }
 /* Reverse keyboard traversal must clear the learner header on the HR unlock form. */
 .hr-history-unlock :is(input, button, a) { scroll-margin-block-start: 144px; }
+/* HR citations and feedback must clear its one-row composer on keyboard focus. */
+.hr-messages :is(button, a) { scroll-margin-block-end: calc(144px + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 768px) { .hr-messages :is(button, a) { scroll-margin-block-end: 80px; } }
 /* Keep keyboard-focused citations above the two-row Tutor composer, including
    its mobile bottom inset in the compact lesson shell. */
 .tutor-messages :is(button, a) { scroll-margin-block-end: calc(208px + env(safe-area-inset-bottom, 0px)); }

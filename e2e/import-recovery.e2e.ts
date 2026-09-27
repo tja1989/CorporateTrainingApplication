@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { test, expect } from "@playwright/test";
 import { createPerson, signIn, withDb, QA_PASSWORD } from "./support";
 
-test("@core Overlapping enrollment rules and a failed CSV row retain usable codes and allow immediate recovery", async ({ page, browser, baseURL }) => {
+test("@core Overlapping enrollment rules and a failed CSV row retain usable codes and allow immediate recovery", async ({ page, browser, baseURL }, info) => {
   test.setTimeout(120_000);
   const admin = await createPerson("ADMIN"), token = randomUUID().replaceAll("-", "").slice(0, 10), group = randomUUID(), course = randomUUID(), path = randomUUID();
   const earlier = `QAE${token}`, failed = `QAF${token}`, overlap = `QAO${token}`, retry = `QAN${token}`;
@@ -45,7 +45,7 @@ test("@core Overlapping enrollment rules and a failed CSV row retain usable code
     await submit.click(); await expect(page.getByRole("alert").filter({ hasText: "Your changes could not be saved" })).toBeVisible(); await expect(submit).toBeEnabled();
     await expect(page.getByLabel("Rows", { exact: true })).toHaveValue(new RegExp(retry));
     await page.unroute("**/admin/people?view=import"); await submit.click(); await expect(codes).toContainText(retry.toUpperCase());
-    const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: true });
+    const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: info.project.use.ignoreHTTPSErrors });
     try {
       const activation = await context.newPage();
       for (const employee of [earlier, overlap]) {

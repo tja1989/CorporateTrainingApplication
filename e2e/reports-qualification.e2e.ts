@@ -18,6 +18,68 @@ function csvRows(text: string) {
   return rows;
 }
 
+test('@core Report pages preserve the complete CSV order, refresh, Back and manager isolation', async ({ page }, info) => {
+  const manager = await createPerson('MANAGER'), admin = await createPerson('ADMIN');
+  const learner = await createPerson('LEARNER', { managerId: manager.id }), outsider = await createPerson('LEARNER');
+  const fixture = await textCourse(learner.id), store = `QA pages ${randomUUID()}`, storeId = randomUUID();
+  // Historical rows are prerequisites for reading a long report, not evidence
+  // of earned completion. Other cases earn and verify their actual awards.
+  await withDb(async db => {
+    await db.query("INSERT INTO org_units(id,type,name) VALUES($1,'store',$2)", [storeId, store]);
+    await db.query('UPDATE users SET store_id=$2 WHERE id=ANY($1)', [[learner.id, outsider.id], storeId]);
+    for (let i = 0; i < 52; i++) await db.query('INSERT INTO completion_records(id,user_id,course_id,completed_at,score) VALUES($1,$2,$3,$4,100)', [randomUUID(), i < 51 ? learner.id : outsider.id, fixture.course, new Date(Date.UTC(2020, 0, i + 1))]);
+  });
+  for (const actor of [manager, admin]) {
+    await page.context().clearCookies(); await signIn(page, actor);
+    const base = actor.role === 'MANAGER' ? '/team/reports' : '/admin/reports';
+    const query = new URLSearchParams({ report: 'transcript', course: fixture.title, store });
+    const url = `${base}?${query}`;
+    await page.goto(url);
+    const region = page.getByRole('region', { name: 'Report results', exact: true });
+    const rows = () => region.locator('tbody tr').evaluateAll(list => list.map(row => Array.from(row.querySelectorAll('td'), cell => cell.textContent!.trim())));
+    await expect(region.locator('tbody tr')).toHaveCount(50);
+    const first = await rows();
+    const pagination = page.getByRole('navigation', { name: 'Report pages', exact: true });
+    await expect(pagination).toContainText('Page 1 of 2');
+    await expect(region).toContainText('CSV includes all filtered results');
+    await expect(pagination.getByRole('link', { name: 'Previous page', exact: true })).toHaveCount(0);
+    const next = pagination.getByRole('link', { name: 'Next page', exact: true });
+    await next.focus(); await Promise.all([page.waitForEvent('load'), page.keyboard.press('Enter')]);
+    await expect(pagination).toContainText('Page 2 of 2');
+    const expectedCount = actor.role === 'MANAGER' ? 51 : 52;
+    await expect(region.locator('tbody tr')).toHaveCount(expectedCount - 50);
+    const second = await rows();
+    const visible = [...first, ...second];
+    expect(new Set(visible.map(row => JSON.stringify(row))).size).toBe(expectedCount);
+    if (actor.role === 'MANAGER') expect(visible.flat()).not.toContain(outsider.employeeId);
+    else expect(visible.flat()).toContain(outsider.employeeId);
+    const actualQuery = new URL(page.url()).searchParams;
+    expect(actualQuery.get('course')).toBe(fixture.title); expect(actualQuery.get('store')).toBe(store);
+    await expect(pagination.getByRole('link', { name: 'Next page', exact: true })).toHaveCount(0);
+    const download = page.waitForEvent('download'); await page.getByRole('link', { name: 'Export CSV', exact: true }).click();
+    const csv = readFileSync((await (await download).path())!, 'utf8').replace(/^\uFEFF/, '');
+    expect(csvRows(csv).slice(1)).toEqual(visible);
+    await info.attach(`${actor.role}-all-report-pages.csv`, { body: csv, contentType: 'text/csv' });
+    await page.reload(); await expect(pagination).toContainText('Page 2 of 2'); expect(await rows()).toEqual(second);
+    await page.goBack(); await expect(pagination).toContainText('Page 1 of 2'); expect(await rows()).toEqual(first);
+    await page.goto(`${url}&page=999999`); await expect(pagination).toContainText('Page 2 of 2');
+    await pagination.getByRole('link', { name: 'Previous page', exact: true }).click(); await expect(pagination).toContainText('Page 1 of 2');
+    for (const invalid of ['-1', '1.5', '9999999999999999999999']) {
+      await page.goto(`${url}&page=${invalid}`); await expect(pagination).toContainText('Page 1 of 2');
+    }
+    await page.goto(`${url}&page=2`);
+    await page.getByLabel('Employee ID', { exact: true }).fill(learner.employeeId);
+    await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
+    await expect(pagination).toContainText('Page 1 of 2'); expect(new URL(page.url()).searchParams.has('page')).toBe(false);
+    await page.getByRole('link', { name: 'Course completion', exact: true }).click();
+    await expect(page.getByLabel('Employee ID', { exact: true })).toHaveValue(learner.employeeId);
+    expect(new URL(page.url()).searchParams.has('page')).toBe(false);
+    await page.getByRole('link', { name: 'Reset filters', exact: true }).click();
+    await expect(page.getByLabel('Employee ID', { exact: true })).toHaveValue('');
+    expect(new URL(page.url()).searchParams.has('page')).toBe(false);
+  }
+});
+
 for (const role of ["MANAGER", "ADMIN"] as const) {
   test(`@core ${role} six report filters and actual downloaded CSV agree with persisted learner results`, async ({ page }, info) => {
     test.setTimeout(150_000);

@@ -7,6 +7,7 @@ import { cpus, platform, release } from "node:os";
 import { totpCode } from "../lib/auth/totp";
 import { createPerson, QA_PASSWORD } from "../e2e/support";
 import { randomUUID } from "node:crypto";
+import { localChromiumTls } from "../e2e/qa-tls";
 
 loadEnv();
 const base = process.env.QA_BASE ?? "https://localhost:3443";
@@ -124,9 +125,10 @@ async function main() {
   const learnerCounts = (await db.query("SELECT (SELECT count(*)::int FROM enrollments WHERE user_id=$1) enrollments,(SELECT count(DISTINCT course_id)::int FROM enrollments WHERE user_id=$1) assigned_courses,(SELECT count(*)::int FROM enrollments WHERE user_id=$1 AND source='path') path_enrollments,(SELECT count(*)::int FROM lesson_progress WHERE user_id=$1) progress_records", [learner.id])).rows[0];
   const fixture = { learnerCounts, learnerId: learner.id, employeeId: learner.employeeId, courseId: course, lessonId: lesson, strategy: "Unique learner with one manual course enrollment, no path assignment and no seeded progress; existing development content and role dashboards." };
   const dataset = (await db.query("SELECT (SELECT count(*)::int FROM users) users,(SELECT count(*)::int FROM courses) courses,(SELECT count(*)::int FROM courses WHERE status='PUBLISHED') published_courses,(SELECT count(*)::int FROM enrollments) enrollments,(SELECT count(*)::int FROM attempts) attempts,(SELECT count(*)::int FROM hr_tickets) tickets")).rows[0];
-  const browser = await chromium.launch();
+  const tls = localChromiumTls(base);
+  const browser = await chromium.launch({ args: tls.args });
   const runs: Run[] = [];
-  const metadata = { runtimeBuildId: readFileSync(".next/BUILD_ID", "utf8").trim(), measuredAt: new Date().toISOString(), buildCommit: process.env.QA_BUILD_COMMIT, buildDirty: process.env.QA_BUILD_DIRTY === "1", checkoutCommit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(), checkoutDirty: !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(), base, fixture, dataset, database: new URL(process.env.DATABASE_URL!).pathname.slice(1), browser: browser.version(), host: { platform: platform(), release: release(), cpu: cpus()[0]?.model }, config, requestedFamilies, limitations: "Production-build local lab measurements with simulated mobile CPU/network and cold browser cache. Single representative interactions, instrumented with traces; not field Core Web Vitals or physical-device results. Public video embeds remain real network requests. A subset run does not qualify omitted families." };
+  const metadata = { runtimeBuildId: readFileSync(".next/BUILD_ID", "utf8").trim(), measuredAt: new Date().toISOString(), buildCommit: process.env.QA_BUILD_COMMIT, buildDirty: process.env.QA_BUILD_DIRTY === "1", checkoutCommit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(), checkoutDirty: !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(), base, tls: tls.metadata, fixture, dataset, database: new URL(process.env.DATABASE_URL!).pathname.slice(1), browser: browser.version(), host: { platform: platform(), release: release(), cpu: cpus()[0]?.model }, config, requestedFamilies, limitations: "Production-build local lab measurements with simulated mobile CPU/network and cold browser cache. Single representative interactions, instrumented with traces; not field Core Web Vitals or physical-device results. Public video embeds remain real network requests. A subset run does not qualify omitted families." };
   try {
     for (const persona of [
       { employeeId: learner.employeeId, password: QA_PASSWORD, routes: [{ family: "home", route: "/home" }, { family: "catalog", route: "/learn?view=browse" }, { family: "course", route: `/course/${course}` }, { family: "lesson", route: `/lesson/${lesson}` }] },
@@ -134,12 +136,12 @@ async function main() {
       { employeeId: "AE90001", routes: [{ family: "admin", route: "/admin" }] },
     ]) {
       if (!persona.routes.some(item => requestedFamilies.includes(item.family))) continue;
-      const authContext = await browser.newContext({ ignoreHTTPSErrors: true });
+      const authContext = await browser.newContext({ ignoreHTTPSErrors: tls.ignoreHTTPSErrors });
       await login(await authContext.newPage(), db, persona.employeeId, persona.password);
       const storageState = await authContext.storageState();
       await authContext.close();
       for (const { family, route } of persona.routes.filter(item => requestedFamilies.includes(item.family))) for (let repetition = 1; repetition <= config.repetitions; repetition++) {
-        const context = await browser.newContext({ storageState, viewport: config.viewport, hasTouch: true, isMobile: true, ignoreHTTPSErrors: true });
+        const context = await browser.newContext({ storageState, viewport: config.viewport, hasTouch: true, isMobile: true, ignoreHTTPSErrors: tls.ignoreHTTPSErrors });
         await observe(context);
         await context.tracing.start({ screenshots: true, snapshots: true });
         const page = await context.newPage();

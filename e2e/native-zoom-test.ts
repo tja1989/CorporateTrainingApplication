@@ -2,6 +2,7 @@ import { test as base, chromium, type BrowserContext } from "@playwright/test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { localChromiumTls } from "./qa-tls";
 
 type ZoomOptions = {
   baseURL: string;
@@ -15,6 +16,7 @@ type ZoomOptions = {
  */
 export async function launchNativeZoomContext(options: ZoomOptions) {
   const origin = new URL(options.baseURL);
+  const tls = localChromiumTls(options.baseURL);
   if (!["localhost", "127.0.0.1"].includes(origin.hostname)) {
     throw new Error("Native zoom qualification requires the isolated local app");
   }
@@ -33,8 +35,8 @@ export async function launchNativeZoomContext(options: ZoomOptions) {
     headless: true,
     baseURL: options.baseURL,
     viewport: options.viewport,
-    ignoreHTTPSErrors: true,
-    args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
+    ignoreHTTPSErrors: tls.ignoreHTTPSErrors,
+    args: [...tls.args, `--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
   });
   try {
     const worker = context.serviceWorkers()[0] ?? await context.waitForEvent("serviceworker");
@@ -68,7 +70,7 @@ export async function launchNativeZoomContext(options: ZoomOptions) {
     if (factor !== 2 || after.cssZoom !== "1") throw new Error("Native zoom was not applied independently of CSS zoom");
     const metadata = {
       method: "Chrome tabs.setZoom(2), automatic mode, isolated persistent Chromium profile",
-      factor, before, after, viewport: options.viewport,
+      factor, before, after, viewport: options.viewport, tls: tls.metadata,
       browser: context.browser()?.version() ?? "Bundled Chromium",
       limits: "Native Chromium page zoom; no claim about physical iPhone or personal Chrome UI settings",
     };

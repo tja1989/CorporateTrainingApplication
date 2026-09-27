@@ -4,7 +4,7 @@ export const REPORTS: { id: ReportId; label: string }[] = [
   { id: "transcript", label: "Learner transcripts" }, { id: "cert_expiry", label: "Certificate expiry" },
   { id: "engagement", label: "Engagement" }, { id: "quiz_results", label: "Quiz results" },
 ];
-export type ReportParams = { report?: string; course?: string; store?: string; status?: string; days?: string; employee?: string };
+export type ReportParams = { report?: string; course?: string; store?: string; status?: string; days?: string; employee?: string; page?: string };
 export const COMPLIANCE_STATUSES = ["ON_TRACK", "DUE_SOON", "OVERDUE", "COMPLETED", "COMPLETED_EXPIRING", "EXPIRED"];
 export function reportFilters(params: ReportParams): ReportFilters {
   const days = Number(params.days);

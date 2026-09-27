@@ -23,7 +23,7 @@ vi.mock("@/lib/db/client", async () => {
       const query = (rows: unknown[]): any => ({
         then: (resolve: (rows: unknown[]) => unknown) => Promise.resolve(rows).then(resolve),
         where: (where: any) => query(where && /\bfalse\b/i.test(dialect.sqlToQuery(where).sql) ? [] : rows),
-        groupBy: () => query(rows), limit: async () => rows,
+        groupBy: () => query(rows), orderBy: () => query(rows), limit: async () => rows,
       });
       return query(all);
     } }),

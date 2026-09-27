@@ -523,9 +523,9 @@ test("@core @template Failed video ingestion recovers with a replacement transcr
   expect(await withDb(async db => (await db.query("SELECT ingestion_status,failure_reason FROM videos WHERE id=$1", [videoId])).rows[0])).toEqual({ ingestion_status: "READY", failure_reason: null });
 });
 
-test("@core Workspace mutation forms cannot submit before client handlers are ready", async ({ page, browser }) => {
+test("@core Workspace mutation forms cannot submit before client handlers are ready", async ({ page, browser }, info) => {
   const admin = await createPerson("ADMIN"), learner = await createPerson("LEARNER"); await signIn(page, admin);
-  const unhydrated = await browser.newContext({ storageState: await page.context().storageState(), ignoreHTTPSErrors: true });
+  const unhydrated = await browser.newContext({ storageState: await page.context().storageState(), ignoreHTTPSErrors: info.project.use.ignoreHTTPSErrors });
   try {
     // Allow inline streaming reveal scripts while withholding the application handlers.
     await unhydrated.route(/\/_next\/static\/.*\.js(?:\?.*)?$/, route => route.abort());
@@ -538,7 +538,7 @@ test("@core Workspace mutation forms cannot submit before client handlers are re
     await expect(initial.getByRole("button", { name: "Issue password reset code", exact: true })).toBeDisabled();
     await expect(initial.getByRole("status").filter({ hasText: "Preparing account help" })).toBeVisible();
   } finally { await unhydrated.close(); }
-  const delayed = await browser.newContext({ storageState: await page.context().storageState(), ignoreHTTPSErrors: true });
+  const delayed = await browser.newContext({ storageState: await page.context().storageState(), ignoreHTTPSErrors: info.project.use.ignoreHTTPSErrors });
   let releaseScripts: () => void = () => {}; const scriptsReady = new Promise<void>(resolve => { releaseScripts = resolve; });
   try {
     await delayed.route(/\/_next\/static\/.*\.js(?:\?.*)?$/, async route => { await scriptsReady; await route.continue(); });

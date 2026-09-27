@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { chromium, firefox, webkit } from "@playwright/test";
 import { assertLocalQa, withDb } from "./support";
+import { localChromiumTls } from "./qa-tls";
 
 /** Do not start/seed/reset an arbitrary database as a side effect of running tests. */
 export default async function globalSetup() {
@@ -23,6 +24,8 @@ export default async function globalSetup() {
     runtimeBuildDirty: process.env.QA_BUILD_DIRTY === "1",
     runtimeBuildId: readFileSync(".next/BUILD_ID", "utf8").trim(),
     browsers,
+    nodeExtraCaCertificate: process.env.NODE_EXTRA_CA_CERTS ?? null,
+    chromiumTls: localChromiumTls(process.env.QA_BASE ?? "https://localhost:3443").metadata,
     database: { host: database.hostname, port: database.port, name: database.pathname.slice(1) },
     baseURL: process.env.QA_BASE ?? "https://localhost:3443",
     time: new Date().toISOString(),

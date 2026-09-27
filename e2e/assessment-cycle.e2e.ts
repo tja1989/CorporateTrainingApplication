@@ -68,7 +68,7 @@ test("@core No-backtrack saves skipped boundaries across refresh and retains a f
 
 });
 
-for (const passed of [true, false]) test(`@core Human-cleared ${passed ? "pass" : "fail"} remains final in the learner result`, async ({ page, browser, baseURL }) => {
+for (const passed of [true, false]) test(`@core Human-cleared ${passed ? "pass" : "fail"} remains final in the learner result`, async ({ page, browser, baseURL }, info) => {
   const learner = await createPerson("LEARNER"), admin = await createPerson("ADMIN"), fixture = await smallQuiz();
   await signIn(page, learner); await page.goto(`/quiz/${fixture.quiz}`); await page.getByRole("button", { name: "Start assessment", exact: true }).click();
   await page.getByRole("radio", { name: passed ? "Wash hands" : "Skip washing", exact: true }).check();
@@ -76,7 +76,7 @@ for (const passed of [true, false]) test(`@core Human-cleared ${passed ? "pass" 
   await page.getByRole("button", { name: "Submit assessment", exact: true }).click();
   await expect(page.getByText(`Final result: ${passed ? "passed" : "not passed"}`, { exact: true })).toBeVisible();
   const attempt = await withDb(async db => (await db.query("SELECT id FROM attempts WHERE user_id=$1 AND quiz_id=$2", [learner.id, fixture.quiz])).rows[0].id);
-  const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: true });
+  const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: info.project.use.ignoreHTTPSErrors });
   try {
     const adminPage = await context.newPage(); await signIn(adminPage, admin); await adminPage.goto(`/admin/integrity/${attempt}`);
     await adminPage.getByRole("button", { name: "Clear — result stands", exact: true }).click();
@@ -87,7 +87,7 @@ for (const passed of [true, false]) test(`@core Human-cleared ${passed ? "pass" 
   } finally { await context.close(); }
 });
 
-test("@core Voiding a certified pass preserves issued history and grants a fresh assessment sitting", async ({ page, browser, baseURL }) => {
+test("@core Voiding a certified pass preserves issued history and grants a fresh assessment sitting", async ({ page, browser, baseURL }, info) => {
   const learner = await createPerson("LEARNER"), admin = await createPerson("ADMIN"), course = await textCourse(learner.id, { certificate: true }), fixture = await smallQuiz({ attemptsLimit: 1 });
   await withDb(async db => { await db.query("UPDATE lessons SET type='QUIZ',payload=$2 WHERE id=$1", [course.lesson, JSON.stringify({ quizId: fixture.quiz })]); await db.query("UPDATE quizzes SET lesson_id=$2 WHERE id=$1", [fixture.quiz, course.lesson]); });
   await signIn(page, learner); await page.goto(`/quiz/${fixture.quiz}`); await page.getByRole("button", { name: "Start assessment", exact: true }).click();
@@ -96,7 +96,7 @@ test("@core Voiding a certified pass preserves issued history and grants a fresh
   const history = () => withDb(async db => ({ completion: (await db.query("SELECT * FROM completion_records WHERE user_id=$1 AND course_id=$2", [learner.id, course.course])).rows, certificate: (await db.query("SELECT * FROM certificates WHERE user_id=$1 AND course_id=$2", [learner.id, course.course])).rows }));
   const before = await history(); expect(before.completion).toHaveLength(1); expect(before.certificate).toHaveLength(1);
   const attempt = await withDb(async db => (await db.query("SELECT id FROM attempts WHERE user_id=$1 AND quiz_id=$2", [learner.id, fixture.quiz])).rows[0].id);
-  const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: true });
+  const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: info.project.use.ignoreHTTPSErrors });
   try { const adminPage = await context.newPage(); await signIn(adminPage, admin); await adminPage.goto(`/admin/integrity/${attempt}`); await adminPage.getByLabel("Void reason (required)").fill("QA human decision; issued completion remains valid under the existing policy"); await adminPage.getByRole("button", { name: "Void — grant fresh attempt", exact: true }).click(); await expect(adminPage.getByText(/Voided: QA human decision/)).toBeVisible(); } finally { await context.close(); }
   expect(await history()).toEqual(before);
   await page.reload(); await expect(page.getByText("1 attempt(s) left", { exact: true })).toBeVisible(); await page.getByRole("button", { name: "Start assessment", exact: true }).click();
