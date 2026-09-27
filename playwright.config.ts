@@ -37,7 +37,7 @@ export default defineConfig({
     navigationTimeout: 30_000,
   },
   projects: [
-    { name: "chromium-native-zoom", testMatch: "**/quality-qualification.e2e.ts", use: { ...chromiumUse, viewport: { width: 1280, height: 800 } } },
+    { name: "chromium-native-zoom", testMatch: ["**/quality-qualification.e2e.ts", "**/report-readability.e2e.ts"], use: { ...chromiumUse, viewport: { width: 1280, height: 800 } } },
     { name: "chromium-desktop", use: { ...chromiumUse, viewport: { width: 1440, height: 900 } } },
     { name: "chromium-mobile", use: { ...chromiumUse, viewport: { width: 390, height: 844 }, hasTouch: true } },
     { name: "chromium-small", grep: /@template/, use: { ...chromiumUse, viewport: { width: 360, height: 800 }, hasTouch: true } },

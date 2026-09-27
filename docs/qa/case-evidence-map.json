@@ -536,7 +536,8 @@
       "expected": "All six reports for both roles: filters/counts/table and exported CSV agree.",
       "browserTests": [
         "six report filters and actual downloaded CSV",
-        "Empty-manager reports"
+        "Empty-manager reports",
+        "Report identifiers and status words remain readable"
       ]
     },
     {
@@ -544,7 +545,8 @@
       "expected": "Ask Reports typed interpretation displayed and uses proper role scope.",
       "browserTests": [
         "six report filters and actual downloaded CSV",
-        "Empty-manager reports"
+        "Empty-manager reports",
+        "Report identifiers and status words remain readable"
       ]
     },
     {
@@ -628,13 +630,14 @@
     },
     {
       "id": "ACCOUNT/SYSTEM:responsive",
-      "expected": "Every template at360/390/768/1280/1440; no page overflow/clipped action.",
+      "expected": "Every template at360/390/768/1280/1440; no page overflow/clipped action. Report and Ask Reports tables preserve readable identifiers/status words in both themes, mobile and native 200% zoom; labeled regions support keyboard horizontal scrolling without page overflow.",
       "browserTests": [
         "meet quality gates",
         "fit small screens",
         "fits small screens",
         "All seven question formats remain reviewable",
-        "Module order controls persist"
+        "Module order controls persist",
+        "Report identifiers and status words remain readable"
       ]
     },
     {

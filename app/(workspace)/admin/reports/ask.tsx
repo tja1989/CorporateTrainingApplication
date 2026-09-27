@@ -70,7 +70,7 @@ export function AskReports({ scope }: { scope?: "team" } = {}) {
           </AiSurface>
           <p className="mb-2 text-sm text-muted">{result.rows.length} results · showing the first {Math.min(result.rows.length, 15)}</p>
           <div role="region" aria-label="Ask Reports table" tabIndex={0} className="mb-2 overflow-x-auto rounded-control border border-border">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm [overflow-wrap:normal]">
               <thead>
                 <tr className="border-b border-border">
                   {result.columns.map((c) => (

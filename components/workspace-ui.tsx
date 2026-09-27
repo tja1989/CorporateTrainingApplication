@@ -84,7 +84,7 @@ export function DataTable({
       tabIndex={0}
       className="max-w-full overflow-x-auto rounded-card border border-border bg-surface"
     >
-      <table className="w-full text-sm">
+      <table className="w-full text-sm [overflow-wrap:normal]">
         <caption className="sr-only">{title}</caption>
         <thead className="bg-surface-2">
           <tr>
