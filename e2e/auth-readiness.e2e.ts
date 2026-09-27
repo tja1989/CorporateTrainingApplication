@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { test, expect } from "@playwright/test";
 import { totpCode } from "../lib/auth/totp";
 import { createPerson, QA_PASSWORD, withDb, capture } from "./support";
-import { delayedHydration, releaseAuthHydration } from "./delayed-hydration";
+import { delayedHydration, releaseAuthHydration, reloadAfterSettledWork } from "./delayed-hydration";
 
 test("@core Early login values survive hydration, shared-device changes and server validation", async ({ browser, baseURL }, info) => {
   const learner = await createPerson("LEARNER"), d = await delayedHydration(browser, baseURL!, info), p = d.page;
@@ -19,7 +19,7 @@ test("@core Early login values survive hydration, shared-device changes and serv
     await expect(id).toHaveValue(learner.employeeId); await expect(password).toHaveValue("incorrect-password");
     await expect(p.getByLabel("This is a shared device")).toBeChecked();
     await password.fill(QA_PASSWORD); await p.getByRole("button", { name: "Sign in", exact: true }).click();
-    await expect(p).toHaveURL(/\/home$/); await p.reload(); await expect(p).toHaveURL(/\/home$/);
+    await expect(p).toHaveURL(/\/home$/); await reloadAfterSettledWork(p); await expect(p).toHaveURL(/\/home$/);
     expect((await p.request.get("/api/hr")).status()).toBe(403);
     expect(d.errors).toEqual([]); await capture(p, info, "early-login-corrected");
   } finally { await d.close(); }
@@ -41,7 +41,7 @@ test("@core Early activation values survive a later field edit and validation be
     await expect(id).toHaveValue(learner.employeeId); await expect(activation).toHaveValue(code); await expect(password).toHaveValue(QA_PASSWORD); await expect(confirm).toHaveValue("later-mismatch");
     await confirm.fill(QA_PASSWORD); await p.getByRole("button", { name: "Save password & sign in", exact: true }).click();
     await expect(p).toHaveURL(/\/privacy-notice$/); await p.getByRole("button", { name: /I understand/ }).click();
-    await expect(p).toHaveURL(/\/home$/); await p.reload(); await expect(p).toHaveURL(/\/home$/);
+    await expect(p).toHaveURL(/\/home$/); await reloadAfterSettledWork(p); await expect(p).toHaveURL(/\/home$/);
     expect(await withDb(async db => (await db.query("SELECT password_state,invite_code_hash FROM users WHERE id=$1", [learner.id])).rows[0])).toEqual({ password_state: "ACTIVE", invite_code_hash: null });
     expect(d.errors).toEqual([]); await capture(p, info, "early-activation");
   } finally { await d.close(); }
@@ -73,7 +73,7 @@ test("@core Early MFA setup and verification codes remain editable after server 
       if (setup) {
         await expect(p).toHaveURL(/\/privacy-notice$/); await p.getByRole("button", { name: /I understand/ }).click();
       }
-      await expect(p).toHaveURL(/\/admin$/); await p.reload(); await expect(p).toHaveURL(/\/admin$/);
+      await expect(p).toHaveURL(/\/admin$/); await reloadAfterSettledWork(p); await expect(p).toHaveURL(/\/admin$/);
       expect(await withDb(async db => (await db.query("SELECT totp_secret FROM users WHERE id=$1", [admin.id])).rows[0].totp_secret)).toBe(secret);
       expect(d.errors).toEqual([]); await capture(p, info, setup ? "early-mfa-setup" : "early-mfa-verify");
     } finally { await d.close(); }

@@ -1,5 +1,6 @@
 import { test, expect, type Page, type WebSocketRoute } from "@playwright/test";
 import { createPerson, signIn, withDb } from "./support";
+import { reloadAfterSettledWork } from "./delayed-hydration";
 
 type MicrophoneFixture = {
   context: AudioContext;
@@ -101,7 +102,7 @@ test("@core Configured voice microphone denial recovers through typed fallback a
   await page.getByRole("link",{name:"Continue in text",exact:true}).click();
   await expect(page).toHaveURL(/\/ask-hr$/);
   await expect(page.getByText("QA denied microphone typed continuation",{exact:true})).toBeVisible();
-  await page.reload();await expect(page.getByText("QA denied microphone typed continuation",{exact:true})).toBeVisible();
+  await reloadAfterSettledWork(page);await expect(page.getByText("QA denied microphone typed continuation",{exact:true})).toBeVisible();
   expect(await withDb(async db=>(await db.query("SELECT count(*)::int n FROM hr_messages m JOIN hr_conversations c ON c.id=m.conversation_id WHERE c.user_id=$1 AND m.content=$2",[learner.id,"QA denied microphone typed continuation"])).rows[0].n)).toBe(1);
 });
 
@@ -162,7 +163,7 @@ test("@core Configured voice reconnects with the same session, preserves typed t
   await page.getByRole("link",{name:"Continue in text",exact:true}).click();
   await expect(page).toHaveURL(/\/ask-hr$/);
   await expect(page.getByText("QA reconnect retained question",{exact:true})).toBeVisible();
-  await page.reload();await expect(page.getByText("QA reconnect retained question",{exact:true})).toBeVisible();
+  await reloadAfterSettledWork(page);await expect(page.getByText("QA reconnect retained question",{exact:true})).toBeVisible();
   expect(await withDb(async db=>(await db.query("SELECT count(*)::int n FROM hr_conversations WHERE user_id=$1",[learner.id])).rows[0].n)).toBe(1);
 });
 

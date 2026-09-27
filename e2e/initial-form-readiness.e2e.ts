@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { test, expect } from "@playwright/test";
 import { createPerson, signIn, withDb, QA_PASSWORD, capture } from "./support";
 import { textCourse } from "./qualification-fixtures";
-import { delayedHydration } from "./delayed-hydration";
+import { delayedHydration, reloadAfterSettledWork } from "./delayed-hydration";
 
 async function storedTicket(userId: string) {
   const conversation = randomUUID(), ticket = randomUUID();
@@ -35,7 +35,7 @@ test("@core Ticket reply waits for its handler, retains failed input and persist
     await expect(p.getByText(body, { exact: true })).toBeVisible();
     await expect(input).toBeEnabled(); await p.waitForLoadState("load");
     // Settle background prefetch before the independent persistence reload.
-    await p.waitForLoadState("networkidle"); await p.reload();
+    await reloadAfterSettledWork(p);
     await expect(p.getByText(body, { exact: true })).toBeVisible();
     expect(await withDb(async db => (await db.query("SELECT count(*)::int n FROM hr_ticket_messages WHERE ticket_id=$1 AND body=$2", [ticket, body])).rows[0].n)).toBe(1);
     expect(d.errors).toEqual([]); await capture(p, info, "reply-persisted");
@@ -62,7 +62,7 @@ test("@core HR history unlock waits for its handler and preserves credentials th
     await expect(p.getByText("QA stored private ticket message", { exact: true })).toBeVisible();
     await expect(p.getByLabel("Reply to HR")).toBeEnabled(); await p.waitForLoadState("load");
     // Settle background prefetch before the independent persistence reload.
-    await p.waitForLoadState("networkidle"); await p.reload();
+    await reloadAfterSettledWork(p);
     await expect(p.getByText("QA stored private ticket message", { exact: true })).toBeVisible();
     expect(d.errors).toEqual([]); await capture(p, info, "history-opened");
   } finally { await d.close(); }
@@ -81,7 +81,7 @@ test("@core Lesson completion waits for its handler and retries a failed save wi
     d.release(); await expect(submit).toBeEnabled(); await submit.click();
     await expect(p.getByRole("alert").filter({ hasText: "could not be confirmed" })).toBeVisible();
     expect(await withDb(async db => (await db.query("SELECT count(*)::int n FROM lesson_progress WHERE user_id=$1 AND lesson_id=$2 AND status='COMPLETED'", [learner.id, f.lesson])).rows[0].n)).toBe(0);
-    fail = false; await submit.click(); await expect(p.getByText("Lesson complete", { exact: true })).toBeVisible(); await p.reload();
+    fail = false; await submit.click(); await expect(p.getByText("Lesson complete", { exact: true })).toBeVisible(); await reloadAfterSettledWork(p);
     await expect(p.getByText("Lesson complete", { exact: true })).toBeVisible();
     expect(await withDb(async db => (await db.query("SELECT count(*)::int n FROM lesson_progress WHERE user_id=$1 AND lesson_id=$2 AND status='COMPLETED'", [learner.id, f.lesson])).rows[0].n)).toBe(1);
     expect(d.errors).toEqual([]); await capture(p, info, "completion-retried");

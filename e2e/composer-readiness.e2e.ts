@@ -1,5 +1,6 @@
 import { test, expect, type Browser, type BrowserContext, type TestInfo } from '@playwright/test';
 import { createPerson, signIn, withDb, capture } from './support';
+import { reloadAfterSettledWork } from './delayed-hydration';
 
 async function delayedComposer(browser: Browser, authenticated: BrowserContext, baseURL: string, info: TestInfo) {
   const context = await browser.newContext({
@@ -48,14 +49,14 @@ test('@core HR composer waits for hydration and history, preserves failed questi
     await expect(p.getByRole('button', { name: 'Talk to a person', exact: true })).toBeEnabled();
     await expect(input).toHaveValue('');
     await expect.poll(() => withDb(async db => (await db.query("SELECT count(*)::int n FROM hr_messages m JOIN hr_conversations c ON c.id=m.conversation_id WHERE c.user_id=$1 AND m.role='user' AND m.content=$2", [learner.id, question])).rows[0].n)).toBe(1);
-    failHistory = true; await p.reload();
+    failHistory = true; await reloadAfterSettledWork(p);
     await expect(p.locator('main').getByRole('alert')).toContainText('Conversation history could not load');
     await expect(input).toBeEnabled();
     const second = 'Please explain the policy on training support.';
     await input.fill(second); await p.getByRole('button', { name: 'Send', exact: true }).click();
     await expect(p.getByRole('button', { name: 'Talk to a person', exact: true })).toBeEnabled();
     await expect.poll(() => withDb(async db => (await db.query("SELECT count(*)::int n FROM hr_messages m JOIN hr_conversations c ON c.id=m.conversation_id WHERE c.user_id=$1 AND m.role='user'", [learner.id])).rows[0].n)).toBe(2);
-    failHistory = false; await p.reload();
+    failHistory = false; await reloadAfterSettledWork(p);
     await expect(p.getByRole('region', { name: 'HR Assistant', exact: true })).toContainText(second);
     await expect(p.locator('main').getByRole('alert')).toHaveCount(0);
     expect(delayed.errors).toEqual([]); await capture(p, info, 'hr-composer-recovered');

@@ -22,3 +22,12 @@ export async function releaseAuthHydration(page: Page, release: () => void) {
   await page.getByRole("button", { name: "Switch to dark mode", exact: true }).click();
   await expect(page.locator("html")).toHaveClass(/dark/);
 }
+
+/** Only for an independent reload after the case has acknowledged its primary
+ * result. Settle prefetch on both sides so navigation cancellation does not
+ * contaminate the unfiltered page-error assertion. Race tests do not use this. */
+export async function reloadAfterSettledWork(page: Page) {
+  await page.waitForLoadState("networkidle");
+  await page.reload();
+  await page.waitForLoadState("networkidle");
+}
