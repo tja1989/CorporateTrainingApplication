@@ -1,14 +1,40 @@
 import { test, expect, type Page, type WebSocketRoute } from "@playwright/test";
 import { createPerson, signIn, withDb } from "./support";
 
+type MicrophoneFixture = {
+  context: AudioContext;
+  destination: MediaStreamAudioDestinationNode;
+  stream: MediaStream;
+  track: MediaStreamTrack;
+};
+
 const pageErrors = new WeakMap<Page, string[]>();
 test.afterEach(async ({ page }, info) => {
-  await info.attach("audio-diagnostics", { body: JSON.stringify(await page.evaluate(() => ({
-    audio: (window as unknown as { qaAudio: unknown }).qaAudio ?? null,
-    calls: (window as unknown as { qaMicCalls: number }).qaMicCalls,
-    accesses: (window as unknown as { qaMicAccesses: number }).qaMicAccesses,
-    fn: navigator.mediaDevices.getUserMedia.toString(),
-  }))), contentType: "application/json" });
+  await info.attach("audio-diagnostics", { body: JSON.stringify(await page.evaluate(() => {
+    const fixture = (window as unknown as { qaMicFixture?: MicrophoneFixture }).qaMicFixture;
+    return {
+      audio: (window as unknown as { qaAudio: unknown }).qaAudio ?? null,
+      calls: (window as unknown as { qaMicCalls: number }).qaMicCalls,
+      accesses: (window as unknown as { qaMicAccesses: number }).qaMicAccesses,
+      fn: navigator.mediaDevices.getUserMedia.toString(),
+      fixture: fixture ? {
+        active: fixture.stream.active,
+        context: fixture.context.state,
+        tracks: fixture.stream.getTracks().map(track => ({
+          id: track.id, state: track.readyState, retainedWrapper: track === fixture.track,
+          instrumentedStop: Object.hasOwn(track, "stop"),
+        })),
+      } : null,
+    };
+  })), contentType: "application/json" });
+  // Capture the application's outcome before cleaning up a failed fixture.
+  await page.evaluate(async () => {
+    const w = window as unknown as { qaMicFixture?: MicrophoneFixture };
+    if (!w.qaMicFixture) return;
+    w.qaMicFixture.stream.getTracks().forEach(track => { if (track.readyState !== "ended") track.stop(); });
+    if (w.qaMicFixture.context.state !== "closed") await w.qaMicFixture.context.close();
+    delete w.qaMicFixture;
+  });
   expect(pageErrors.get(page) ?? [], "Configured transport fixture must hydrate without page errors").toEqual([]);
 });
 
@@ -34,7 +60,7 @@ async function configured(page: Page) {
 }
 async function pendingMicrophone(page: Page) {
   await page.evaluate(()=>{
-    const w=window as unknown as {qaMicCalls:number;qaStops:number;qaReleaseMic:()=>void;qaMicAccesses:number};
+    const w=window as unknown as {qaMicCalls:number;qaStops:number;qaReleaseMic:()=>void;qaMicAccesses:number;qaMicFixture?:MicrophoneFixture};
     w.qaMicCalls=0;w.qaStops=0;w.qaMicAccesses=0;
     const log:unknown[]=[];(window as unknown as {qaAudio:unknown[]}).qaAudio=log;
     const resume=AudioContext.prototype.resume,close=AudioContext.prototype.close;
@@ -50,6 +76,9 @@ async function pendingMicrophone(page: Page) {
         const ctx=new AudioContext(),dest=ctx.createMediaStreamDestination();
         const track=dest.stream.getAudioTracks()[0],stop=track.stop.bind(track);
         track.stop=()=>{w.qaStops++;stop();void ctx.close();};
+        // WebKit can collect an unrooted JS track wrapper while the native track
+        // survives in its stream. Retain the wrapper carrying our stop observer.
+        w.qaMicFixture={context:ctx,destination:dest,stream:dest.stream,track};
         resolve(dest.stream);
       };});
     };}});
@@ -88,7 +117,13 @@ test("@core Ending a pending microphone request prevents session creation and st
   await expect(page.getByRole("button",{name:"Talk again",exact:true})).toBeVisible();
   await page.evaluate(()=>(window as unknown as {qaReleaseMic:()=>void}).qaReleaseMic());
   await expect.poll(()=>page.evaluate(()=>(window as unknown as {qaStops:number}).qaStops)).toBe(1);
+  await expect.poll(() => page.evaluate(() => {
+    const fixture = (window as unknown as { qaMicFixture: MicrophoneFixture }).qaMicFixture;
+    return { active: fixture.stream.active, states: fixture.stream.getTracks().map(track => track.readyState), context: fixture.context.state };
+  })).toEqual({ active: false, states: ["ended"], context: "closed" });
+  await expect(page.getByRole("button",{name:"Talk again",exact:true})).toBeVisible();
   expect(sessions).toBe(0);
+  expect(await withDb(async db => (await db.query("SELECT count(*)::int n FROM hr_conversations WHERE user_id=$1", [learner.id])).rows[0].n)).toBe(0);
 });
 
 test("@core Configured voice reconnects with the same session, preserves typed turns and ends its provider connection", async ({page})=>{
