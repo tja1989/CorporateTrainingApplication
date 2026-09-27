@@ -57,7 +57,9 @@ async function readableTable(page: Page, region: Locator, precedingControl: Loca
     await expect.poll(() => region.evaluate(el => el.scrollLeft), { message: `${label}: keyboard scrolls the table` }).toBeGreaterThan(0);
     // Real arrow key actions reveal the remaining columns; the document stays put.
     for (let i = 0; i < Math.ceil(geometry.region.contentWidth / 30); i++) await page.keyboard.press("ArrowRight", { delay: keyDuration });
-    await expect.poll(() => region.evaluate(el => Math.abs(el.scrollWidth - el.clientWidth - el.scrollLeft))).toBeLessThanOrEqual(1);
+    // Native WebKit overscroll can report an offset beyond the maximum while
+    // the final column is fully visible. A negative remainder is not a shortfall.
+    await expect.poll(() => region.evaluate(el => el.scrollWidth - el.clientWidth - el.scrollLeft)).toBeLessThanOrEqual(1);
     const last = await region.evaluate(el => {
       const cell = el.querySelector("tbody tr td:last-child")!.getBoundingClientRect();
       const box = el.getBoundingClientRect();
@@ -66,10 +68,14 @@ async function readableTable(page: Page, region: Locator, precedingControl: Loca
         documentHasFocus: document.hasFocus(), visibilityState: document.visibilityState,
         focused: document.activeElement === el, region: box.toJSON(), finalColumn: cell.toJSON(),
         scrollLeft: el.scrollLeft, clientWidth: el.clientWidth, scrollWidth: el.scrollWidth,
+        signedRemaining: el.scrollWidth - el.clientWidth - el.scrollLeft,
       };
     });
     await info.attach(`${label}-keyboard-last-column-geometry`, { body: JSON.stringify(last), contentType: "application/json" });
     expect(last.visible, `${label}: final column can be read`).toBe(true); expect(last.pageX).toBe(0);
+    expect(last.signedRemaining).toBeLessThanOrEqual(1);
+    expect(last.focused, `${label}: keyboard focus stays in the table`).toBe(true);
+    expect(last.documentHasFocus).toBe(true); expect(last.visibilityState).toBe("visible");
     await capture(page, info, `${label}-keyboard-last-column`, { viewportOnly: true });
   }
 }
