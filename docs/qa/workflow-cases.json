@@ -2,745 +2,3153 @@
   {
     "id": "AUTH:invalid",
     "expected": "Invalid credentials preserve ID; correction signs in.",
-    "status": "PASSED",
-    "actual": "Invalid credentials retain employee ID; corrected password reaches Home in all three engines at desktop/mobile.",
-    "evidence": [
-      ".artifacts/task-2-https-matrix.log",
-      ".artifacts/task-2-https-before-focus/"
+    "browserTests": [
+      "invalid credentials retain"
     ],
-    "commit": "Task2 working tree, production build; final exact-commit suite pending",
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "AUTH: invalid credentials retain the employee ID and allow correction @core"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
     "browserViewport": [
-      "Chromium153 1440x900/390x844",
-      "Firefox155 1440x900/390x844",
-      "WebKit26.6 1440x900/390x844"
-    ]
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 6
   },
   {
     "id": "AUTH:activation",
     "expected": "Valid one-time activation; invalid/expired/mismatch recovery; code cannot be reused.",
-    "status": "PASSED",
-    "actual": "Mismatch, invalid and expired code recovery, successful activation, persisted ACTIVE state and one-time consumption passed all three engines desktop/mobile.",
-    "evidence": [
-      ".artifacts/task-2-https-matrix.log",
-      ".artifacts/task-2-https-before-focus/",
-      ".artifacts/task-2-auth-recovery-final.log"
+    "browserTests": [
+      "activation validates matching",
+      "wrong and expired activation"
     ],
-    "commit": "Task2 working tree, production build; final exact-commit suite pending",
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "AUTH: activation validates matching passwords, persists setup and consumes the code @core",
+      "AUTH: wrong and expired activation codes retain entered values and leave account invited @core"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
     "browserViewport": [
-      "Chromium153 1440x900/390x844",
-      "Firefox155 1440x900/390x844",
-      "WebKit26.6 1440x900/390x844"
-    ]
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 12
   },
   {
     "id": "AUTH:privacy",
     "expected": "New user acknowledges notice once; consent persists.",
-    "status": "PASSED",
-    "actual": "New-user notice acknowledgment persists to DB and reload; learners cannot access manager/admin routes; all engines desktop/mobile.",
-    "evidence": [
-      ".artifacts/task-2-https-matrix.log",
-      ".artifacts/task-2-https-before-focus/"
+    "browserTests": [
+      "privacy acknowledgment persists",
+      "Certificate and learner API data require"
     ],
-    "commit": "Task2 working tree, production build; final exact-commit suite pending",
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Certificate and learner API data require completed MFA and privacy acknowledgment",
+      "AUTH: privacy acknowledgment persists and protected workspaces reject learners @core"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
     "browserViewport": [
-      "Chromium153 1440x900/390x844",
-      "Firefox155 1440x900/390x844",
-      "WebKit26.6 1440x900/390x844"
-    ]
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 12
   },
   {
     "id": "AUTH:destinations",
     "expected": "All three roles reach their correct workspace.",
-    "status": "PASSED",
-    "actual": "Learner, manager and administrator reach their correct workspace across all engines desktop/mobile.",
-    "evidence": [
-      ".artifacts/task-2-https-matrix.log",
-      ".artifacts/task-2-https-before-focus/"
+    "browserTests": [
+      "Root follows the authenticated workspace",
+      "workspace navigation and return"
     ],
-    "commit": "Task2 working tree, production build; final exact-commit suite pending",
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "NAV: admin workspace navigation and return from learner view @core @template",
+      "NAV: manager workspace navigation and return from learner view @core @template",
+      "Root follows the authenticated workspace; the local health endpoint reports its real database check"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
     "browserViewport": [
-      "Chromium153 1440x900/390x844",
-      "Firefox155 1440x900/390x844",
-      "WebKit26.6 1440x900/390x844"
-    ]
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 20
   },
   {
     "id": "AUTH:mfa",
     "expected": "Admin setup and verification mandatory; invalid code recoverable; direct links cannot bypass.",
-    "status": "PASSED",
-    "actual": "Setup/direct-route guard, invalid-code correction, persisted initial secret, login verification and configured-secret replacement guard passed across all engines desktop/mobile.",
-    "evidence": [
-      ".artifacts/task-2-https-matrix.log",
-      ".artifacts/task-2-https-before-focus/"
+    "browserTests": [
+      "admin cannot bypass mandatory MFA",
+      "admin setup requires a valid code",
+      "Certificate and learner API data require"
     ],
-    "commit": "Task2 working tree, production build; final exact-commit suite pending",
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Certificate and learner API data require completed MFA and privacy acknowledgment",
+      "AUTH: admin cannot bypass mandatory MFA setup with a direct URL @core",
+      "AUTH: admin setup requires a valid code and configured MFA cannot be replaced from a password session @core"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
     "browserViewport": [
-      "Chromium153 1440x900/390x844",
-      "Firefox155 1440x900/390x844",
-      "WebKit26.6 1440x900/390x844"
-    ]
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 18
   },
   {
     "id": "AUTH:reset",
     "expected": "Manager-issued reset code activates only the intended account and is one-time.",
-    "status": "PARTIAL",
-    "actual": "Desktop passes second-manager page denial, team navigation, reset issuance/audit, prior-password rejection, activation/code consumption and new-session login. Mobile fails the first team-member navigation before issuance; Task4 must fix and repeat all core engines.",
-    "evidence": [".artifacts/auth-reset-initial.log", ".artifacts/auth-reset-before-task4/"],
-    "commit": "Production source915339e; controller test added during Task3",
-    "browserViewport": ["Chromium153 1440x900 passed", "Chromium153 390x844 failed"]
+    "browserTests": [
+      "manager-issued reset is scoped",
+      "import, groups and rules"
+    ],
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Admin navigation, import, groups and rules are distinct persisted workflows",
+      "AUTH: manager-issued reset is scoped, audit-logged and consumed through account recovery @core"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 15
   },
   {
     "id": "AUTH:logout",
     "expected": "Logout and expired session hide protected content; back/direct URL cannot restore access.",
-    "status": "PASSED",
-    "actual": "UI logout, protected direct URL, browser Back, signed-session expiry and reauthentication passed across engines at both widths.",
-    "evidence": [
-      ".artifacts/task-2-https-matrix.log",
-      ".artifacts/task-2-https-before-focus/",
-      ".artifacts/task-2-auth-recovery-final.log"
+    "browserTests": [
+      "theme persistence and logout",
+      "expired session returns"
     ],
-    "commit": "Task2 working tree, production build; final exact-commit suite pending",
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "AUTH: expired session returns to sign-in and recovers through credentials @core",
+      "NAV: learner navigation, profile disclosure, theme persistence and logout @core @template"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
     "browserViewport": [
-      "Chromium153 1440x900/390x844",
-      "Firefox155 1440x900/390x844",
-      "WebKit26.6 1440x900/390x844"
-    ]
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 15
   },
   {
     "id": "NAV:learner",
     "expected": "Home, Learning, Practice, HR Help, profile and inbox usable via intended nav.",
-    "status": "PARTIAL",
-    "actual": "Home/Learning/Practice active navigation, account disclosure, dark theme persistence and logout pass across engines/widths. HR/profile/inbox full journeys remain.",
-    "evidence": [
-      ".artifacts/task-2-https-matrix.log",
-      ".artifacts/task-2-https-before-focus/"
+    "browserTests": [
+      "learner navigation, profile disclosure",
+      "HR shows its heading",
+      "Learning path shows prerequisites"
     ],
-    "commit": "Task2 working tree, production build; final exact-commit suite pending",
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template HR shows its heading, previews the actual escalation payload, and creates a readable ticket",
+      "@core @template Learning path shows prerequisites, profile preserves completed history and inbox has explicit read states",
+      "NAV: learner navigation, profile disclosure, theme persistence and logout @core @template"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
     "browserViewport": [
-      "Chromium153 1440x900/390x844",
-      "Firefox155 1440x900/390x844",
-      "WebKit26.6 1440x900/390x844"
-    ]
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 27
   },
   {
     "id": "NAV:workspace",
     "expected": "Manager/admin labeled sidebar or drawer; active state; role switching and return.",
-    "status": "PASSED",
-    "actual": "Workspace link navigation, active state, mobile drawer Escape/focus restoration and learner/workspace return passed all9 browser/viewport projects after explicit return-focus fix.",
-    "evidence": [
-      ".artifacts/task-2-focus-nav.log",
-      ".artifacts/task-2-focus-qualified/"
+    "browserTests": [
+      "workspace navigation and return",
+      "My profile opens a coherent"
     ],
-    "commit": "Task2 working tree, production build; final exact-commit suite pending",
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "NAV: admin My profile opens a coherent learner workspace @core @template",
+      "NAV: admin workspace navigation and return from learner view @core @template",
+      "NAV: manager My profile opens a coherent learner workspace @core @template",
+      "NAV: manager workspace navigation and return from learner view @core @template"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
     "browserViewport": [
-      "Chromium153 1440x900/390x844",
-      "Firefox155 1440x900/390x844",
-      "WebKit26.6 1440x900/390x844"
-    ]
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 36
   },
   {
     "id": "NAV:history",
     "expected": "Back/Forward/direct links preserve view/filter context; no dead ends.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Catalog pagination, language",
+      "Catalog filters survive refresh"
+    ],
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Catalog filters survive refresh and Back, and results open the course in one action",
+      "@core @template Catalog pagination, language, duration, sort, empty results and Forward retain their URLs"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 18
   },
   {
     "id": "NAV:keyboard",
     "expected": "Skip link, menus, drawers/dialogs keyboard access, Escape/focus restoration.",
-    "status": "PARTIAL",
-    "actual": "Account disclosure Escape and mobile workspace drawer focus return passed across engines. Skip link, remaining dialogs and full keyboard journeys remain.",
-    "evidence": [
-      ".artifacts/task-2-focus-nav.log"
+    "browserTests": [
+      "keyboard skip link moves focus",
+      "workspace navigation and return",
+      "Stored legacy, missing",
+      "Active assessment, dialogs"
     ],
-    "commit": null,
-    "browserViewport": []
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Stored legacy, missing and out-of-scope Tutor citations retain history without guessing a player; invalid transcript times stay disabled",
+      "@template Active assessment, dialogs, media, voice and HR recovery meet quality gates in dark",
+      "@template Active assessment, dialogs, media, voice and HR recovery meet quality gates in light",
+      "NAV: admin workspace navigation and return from learner view @core @template",
+      "NAV: keyboard skip link moves focus to content in learner and both workspaces @core",
+      "NAV: manager workspace navigation and return from learner view @core @template"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-native-zoom",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 42
   },
   {
     "id": "DISCOVER:search",
     "expected": "Search results/counts and course destinations agree; one action opens course.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Catalog filters survive refresh"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Catalog filters survive refresh and Back, and results open the course in one action"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 9
   },
   {
     "id": "DISCOVER:filters",
     "expected": "Tag/language/duration/status filters derive from metadata and persist in URL.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Catalog pagination, language",
+      "Catalog filters survive refresh"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Catalog filters survive refresh and Back, and results open the course in one action",
+      "@core @template Catalog pagination, language, duration, sort, empty results and Forward retain their URLs"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 18
   },
   {
     "id": "DISCOVER:views",
     "expected": "My courses/paths/browse tabs, pagination, clear, empty state survive refresh/history.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Catalog pagination, language",
+      "Catalog filters survive refresh"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Catalog filters survive refresh and Back, and results open the course in one action",
+      "@core @template Catalog pagination, language, duration, sort, empty results and Forward retain their URLs"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 18
   },
   {
     "id": "PATH:order",
     "expected": "Course order, current/completed/locked status and overall progress agree.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "assignment guards direct entry",
+      "Manager path assignment fans out"
+    ],
+    "role": [
+      "LEARNER",
+      "MANAGER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Manager path assignment fans out once and its learner inbox opens the actual path",
+      "PATH: path assignment guards direct entry and unlocks after actual completion @core",
+      "PATH: rule assignment guards direct entry and unlocks after actual completion @core"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 18
   },
   {
     "id": "PATH:unlock",
     "expected": "Completing prerequisite unlocks next; direct URL does not bypass server-enforced lock.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "assignment guards direct entry",
+      "Manager path assignment fans out"
+    ],
+    "role": [
+      "LEARNER",
+      "MANAGER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Manager path assignment fans out once and its learner inbox opens the actual path",
+      "PATH: path assignment guards direct entry and unlocks after actual completion @core",
+      "PATH: rule assignment guards direct entry and unlocks after actual completion @core"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 18
   },
   {
     "id": "CONTENT:text",
     "expected": "Complete text; direct next eligible step; refresh persists and all progress surfaces agree.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Home resumes directly",
+      "Earned certificate preserves long"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Home resumes directly, text completion unlocks the next lesson and contents stay available",
+      "@core Earned certificate preserves long multilingual names and titles, with identical course, Home and profile completion"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 15
   },
   {
     "id": "CONTENT:pdf",
     "expected": "Readable PDF/link fallback; completion and next step persist.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "PDF fallback delivers",
+      "Home resumes directly"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Home resumes directly, text completion unlocks the next lesson and contents stay available",
+      "@core PDF fallback delivers the document and completion survives refresh"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 15
   },
   {
     "id": "CONTENT:locked",
     "expected": "Lesson lock reason and prerequisite route work; incomplete prerequisite cannot be bypassed.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "assignment guards direct entry",
+      "Locked video rejects"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Locked video rejects a direct progress request",
+      "PATH: path assignment guards direct entry and unlocks after actual completion @core",
+      "PATH: rule assignment guards direct entry and unlocks after actual completion @core"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 18
   },
   {
     "id": "VIDEO:playback",
     "expected": "Actual player play/pause/leave/resume restores within heartbeat interval.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Mocked player restores saved position"
+    ],
+    "manual": "Controller complete real public YouTube journey on the exact final clean build; structured status, scope, runtime and artifacts validated by qa_manual_evidence.py",
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Mocked player restores saved position independently of watched coverage"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+      ".artifacts/handoff/public-video-xprtn-8/initial-dom.txt",
+      ".artifacts/handoff/public-video-xprtn-8/initial.jpg",
+      ".artifacts/handoff/public-video-xprtn-8/left-course-dom.txt",
+      ".artifacts/handoff/public-video-xprtn-8/paused-dom.txt",
+      ".artifacts/handoff/public-video-xprtn-8/paused-persistence.json",
+      ".artifacts/handoff/public-video-xprtn-8/paused.jpg",
+      ".artifacts/handoff/public-video-xprtn-8/prerequisites.json",
+      ".artifacts/handoff/public-video-xprtn-8/result.json",
+      ".artifacts/handoff/public-video-xprtn-8/resumed-dom.txt",
+      ".artifacts/handoff/public-video-xprtn-8/resumed-provider-dom.txt",
+      ".artifacts/handoff/public-video-xprtn-8/resumed-provider.jpg",
+      ".artifacts/handoff/public-video-xprtn-8/resumed.jpg"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 6
   },
   {
     "id": "VIDEO:seek",
     "expected": "Transcript and tutor citation seek correctly; seeking alone never earns coverage.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Stored legacy, missing",
+      "Tutor retries a network failure",
+      "Mocked player restores saved position"
+    ],
+    "manual": "Controller complete real public YouTube journey on the exact final clean build; structured status, scope, runtime and artifacts validated by qa_manual_evidence.py",
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Mocked player restores saved position independently of watched coverage",
+      "@core Stored legacy, missing and out-of-scope Tutor citations retain history without guessing a player; invalid transcript times stay disabled",
+      "@core Tutor retries a network failure, persists the local answer and routes each citation to its own allowed video"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+      ".artifacts/handoff/public-video-xprtn-8/result.json",
+      ".artifacts/handoff/public-video-xprtn-8/seek/ended-dom.txt",
+      ".artifacts/handoff/public-video-xprtn-8/seek/ended-persistence.json",
+      ".artifacts/handoff/public-video-xprtn-8/seek/ended-viewport.jpg",
+      ".artifacts/handoff/public-video-xprtn-8/seek/ended.jpg",
+      ".artifacts/handoff/public-video-xprtn-8/seek/initial-dom.txt",
+      ".artifacts/handoff/public-video-xprtn-8/seek/initial.jpg",
+      ".artifacts/handoff/public-video-xprtn-8/seek/near-end-dom.txt",
+      ".artifacts/handoff/public-video-xprtn-8/seek/prerequisites.json",
+      ".artifacts/handoff/public-video-xprtn-8/seek/seeked-dom.txt",
+      ".artifacts/handoff/public-video-xprtn-8/seek/seeked.jpg"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 18
   },
   {
     "id": "VIDEO:threshold",
     "expected": "90% watched coverage triggers completion once; earlier coverage does not.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Crossing the video completion threshold"
+    ],
+    "manual": "Controller complete real public YouTube journey on the exact final clean build; structured status, scope, runtime and artifacts validated by qa_manual_evidence.py",
+    "service": "qa-service: interleaved heartbeat and renewal; stale one-bucket request rejected, fresh playback completes normally",
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Crossing the video completion threshold keeps the existing player running and unlocks Next lesson"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+      ".artifacts/recovery-qualification-20260928/service-3/results.json",
+      ".artifacts/recovery-qualification-20260928/service-4/results.json",
+      ".artifacts/handoff/public-video-xprtn-8/completed-dom.txt",
+      ".artifacts/handoff/public-video-xprtn-8/completed-persistence.json",
+      ".artifacts/handoff/public-video-xprtn-8/completed.jpg",
+      ".artifacts/handoff/public-video-xprtn-8/course-reload-dom.txt",
+      ".artifacts/handoff/public-video-xprtn-8/course-reload.jpg",
+      ".artifacts/handoff/public-video-xprtn-8/course-return-dom.txt",
+      ".artifacts/handoff/public-video-xprtn-8/course-return.jpg",
+      ".artifacts/handoff/public-video-xprtn-8/result.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 6
   },
   {
     "id": "TUTOR:grounded",
     "expected": "Real grounded question streams answer with valid citation and lesson scope.",
+    "browserTests": [
+      "Tutor retries a network failure",
+      "Stored legacy, missing",
+      "Tutor suggestions reject"
+    ],
+    "unverified": "Real AI service unavailable; deterministic retrieval, SSE, persistence, allowed citations and suggestions are locally qualified separately",
+    "role": [
+      "LEARNER"
+    ],
     "status": "UNVERIFIED",
-    "actual": "User confirmed no approved staging access. Real provider or physical iPhone qualification remains unverified; local deterministic behavior still requires testing.",
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Stored legacy, missing and out-of-scope Tutor citations retain history without guessing a player; invalid transcript times stay disabled",
+      "@core Tutor retries a network failure, persists the local answer and routes each citation to its own allowed video",
+      "@core Tutor suggestions reject unpublished, locked and mismatched video destinations"
+    ],
+    "actual": "Real AI service unavailable; deterministic retrieval, SSE, persistence, allowed citations and suggestions are locally qualified separately",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 18
   },
   {
     "id": "TUTOR:unavailable",
     "expected": "Provider failure/network error is recoverable without fabricated success.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Tutor retries a network failure"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Tutor retries a network failure, persists the local answer and routes each citation to its own allowed video"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 6
   },
   {
     "id": "QUIZ:types",
     "expected": "Single, multiple, true/false, ordering, matching, fill-in-the-blank and free-text answers all save and score correctly.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "All seven question types support"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template All seven question types support accessible input and unanswered submission confirmation"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 9
   },
   {
     "id": "QUIZ:navigation",
-    "expected": "Question navigation and refresh preserve answers and server timer.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "expected": "Question navigation and refresh preserve answers, the server timer and the persisted no-backtrack forward boundary, including skipped questions; a fresh sitting resets navigation.",
+    "browserTests": [
+      "Assessment navigation and refresh",
+      "Delayed autosave cannot overwrite",
+      "fresh same-page no-backtrack",
+      "No-backtrack saves skipped boundaries"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core A fresh same-page no-backtrack sitting resets navigation and answers",
+      "@core Assessment navigation and refresh retain server answers and accommodated deadline",
+      "@core Delayed autosave cannot overwrite the final answer snapshot or grade",
+      "@core No-backtrack saves skipped boundaries across refresh and retains a failed forward answer until retry"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 24
   },
   {
     "id": "QUIZ:offline",
     "expected": "60-second disconnect/reconnect preserves queued answers and honest save state.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Sixty-second disconnect"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Sixty-second disconnect keeps answers in the open tab and reconnect saves before submitting once"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 6
   },
   {
     "id": "QUIZ:submit",
     "expected": "Unanswered confirmation, cancel/confirm, duplicate submit protection and stored result.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "All seven question types support",
+      "Failed answer save",
+      "Delayed autosave cannot overwrite",
+      "Sixty-second disconnect"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template All seven question types support accessible input and unanswered submission confirmation",
+      "@core Delayed autosave cannot overwrite the final answer snapshot or grade",
+      "@core Failed answer save retains typed input and blocks stale submission until retry",
+      "@core Sixty-second disconnect keeps answers in the open tab and reconnect saves before submitting once"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 27
   },
   {
     "id": "QUIZ-RULES:feedback",
     "expected": "Practice/exam feedback respects release policy; sealed answers remain sealed.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "exam answer sealing"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Assessment windows, cooldown, attempt limits and exam answer sealing are enforced"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 6
   },
   {
     "id": "QUIZ-RULES:window",
     "expected": "Not-yet-open/closed/timeout correctly block or autosubmit.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "exam answer sealing",
+      "Assessment timer submits"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Assessment timer submits the last saved answer when the server deadline closes",
+      "@core Assessment windows, cooldown, attempt limits and exam answer sealing are enforced"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 12
   },
   {
     "id": "QUIZ-RULES:attempts",
     "expected": "Cooldown/max attempts/time accommodation enforce server rules and useful recovery.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "exam answer sealing",
+      "Assessment navigation and refresh",
+      "Renewal gives a fresh assessment",
+      "fresh same-page no-backtrack",
+      "No-backtrack saves skipped boundaries"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core A fresh same-page no-backtrack sitting resets navigation and answers",
+      "@core Assessment navigation and refresh retain server answers and accommodated deadline",
+      "@core Assessment windows, cooldown, attempt limits and exam answer sealing are enforced",
+      "@core No-backtrack saves skipped boundaries across refresh and retains a failed forward answer until retry",
+      "@core Renewal gives a fresh assessment allowance and an old appealed decision cannot complete it"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 30
   },
   {
     "id": "REVIEW:pending",
     "expected": "Provisional/pending does not finalize compliance or award certificate.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "A submitted answer stays provisional",
+      "Provisional results remain pending"
+    ],
+    "role": [
+      "LEARNER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core A submitted answer stays provisional until review; confirmed fail can be appealed and adjusted to a certified pass",
+      "@core Provisional results remain pending and never claim a final pass"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 12
   },
   {
     "id": "REVIEW:decision",
     "expected": "Admin confirms or adjusts; learner final result and notification agree.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "A submitted answer stays provisional",
+      "API-only legacy attempt appeal",
+      "Renewal gives a fresh assessment"
+    ],
+    "role": [
+      "LEARNER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core A submitted answer stays provisional until review; confirmed fail can be appealed and adjusted to a certified pass",
+      "@core Renewal gives a fresh assessment allowance and an old appealed decision cannot complete it",
+      "API-only legacy attempt appeal preserves the first decision, creates one pending review and denies another learner"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 14
   },
   {
     "id": "REVIEW:appeal",
     "expected": "Appeal/retry state persists and human decision remains authoritative.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "A submitted answer stays provisional",
+      "API-only legacy attempt appeal",
+      "Renewal gives a fresh assessment"
+    ],
+    "role": [
+      "LEARNER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core A submitted answer stays provisional until review; confirmed fail can be appealed and adjusted to a certified pass",
+      "@core Renewal gives a fresh assessment allowance and an old appealed decision cannot complete it",
+      "API-only legacy attempt appeal preserves the first decision, creates one pending review and denies another learner"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 14
   },
   {
     "id": "VOICE:consent",
     "expected": "Consent and connect/listen/respond/end state/captions visible.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Offline oral-check demo",
+      "Monitored assessment requires consent",
+      "Configured voice microphone denial",
+      "Configured voice reconnects"
+    ],
+    "role": [
+      "LEARNER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Configured voice microphone denial recovers through typed fallback and persists the conversation",
+      "@core Configured voice reconnects with the same session, preserves typed turns and ends its provider connection",
+      "@core Monitored assessment requires consent before the server creates an attempt",
+      "@core Offline oral-check demo has consent, typed fallback, confirmed result and retake"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 24
   },
   {
     "id": "VOICE:assessment",
     "expected": "Real oral pass/fail/retake/human overturn persist across roles.",
+    "browserTests": [
+      "Offline oral-check demo",
+      "Human oral-check review",
+      "Reviewing an old oral check"
+    ],
+    "unverified": "Real voice provider unavailable; local offline typed assessment and human review persistence qualified separately",
+    "role": [
+      "LEARNER",
+      "ADMIN"
+    ],
     "status": "UNVERIFIED",
-    "actual": "User confirmed no approved staging access. Real provider or physical iPhone qualification remains unverified; local deterministic behavior still requires testing.",
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Human oral-check review confirms a fail or overturns it to a persisted pass",
+      "@core Offline oral-check demo has consent, typed fallback, confirmed result and retake",
+      "@core Reviewing an old oral check preserves history without completing renewed oral training"
+    ],
+    "actual": "Real voice provider unavailable; local offline typed assessment and human review persistence qualified separately",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 18
   },
   {
     "id": "VOICE:fallback",
     "expected": "Mic denial/disconnect/reconnect/typed fallback labeled; transcript remains.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Configured voice microphone denial",
+      "Ending a pending microphone",
+      "Configured voice reconnects",
+      "Offline voice return to text"
+    ],
+    "role": [
+      "LEARNER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Configured voice microphone denial recovers through typed fallback and persists the conversation",
+      "@core Configured voice reconnects with the same session, preserves typed turns and ends its provider connection",
+      "@core Ending a pending microphone request prevents session creation and stops a late stream",
+      "@core Offline voice return to text opens the saved conversation before refresh"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 24
   },
   {
     "id": "VOICE:cleanup",
     "expected": "Mic ends on end/navigation; no ongoing capture.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Ending a pending microphone",
+      "Configured voice reconnects"
+    ],
+    "note": "Synthetic MediaStream and local WebSocket transport prove cleanup contract; physical microphone remains unverified",
+    "role": [
+      "LEARNER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Configured voice reconnects with the same session, preserves typed turns and ends its provider connection",
+      "@core Ending a pending microphone request prevents session creation and stops a late stream"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 12
   },
   {
     "id": "VOICE:ios",
     "expected": "Real Safari/iOS microphone and playback verified on hardware.",
+    "browserTests": [],
+    "unverified": "Physical iPhone Safari microphone/media hardware unavailable by user-confirmed limitation",
+    "role": [
+      "LEARNER",
+      "ADMIN"
+    ],
     "status": "UNVERIFIED",
-    "actual": "User confirmed no approved staging access. Real provider or physical iPhone qualification remains unverified; local deterministic behavior still requires testing.",
+    "localStatus": "NOT_APPLICABLE",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [],
+    "actual": "Physical iPhone Safari microphone/media hardware unavailable by user-confirmed limitation",
     "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [],
+    "executedBrowserCasesPerRun": 0
   },
   {
     "id": "HR:citation",
     "expected": "Question/citation/policy-section and scopes correct; unsupported answer abstains.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Policy citations target readable",
+      "HR retrieval enforces country",
+      "Policy ingestion failure preserves"
+    ],
+    "role": [
+      "LEARNER",
+      "MANAGER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core HR retrieval enforces country, audience, effective dates and abstention; manager-only policy denies learner deep links",
+      "@core Policy citations target readable semantic sections and preserve superseded sources",
+      "@core Policy ingestion failure preserves the active version; retry publishes new scoped answers and old citation history"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 18
   },
   {
     "id": "HR:sensitive",
     "expected": "Sensitive-topic routing offers human assistance.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Sensitive and unsupported HR questions"
+    ],
+    "role": [
+      "LEARNER",
+      "MANAGER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Sensitive and unsupported HR questions require consent before the complete ticket chain, with unrelated-user denial"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 6
   },
   {
     "id": "HR:escalation",
     "expected": "Preview payload; cancel creates no ticket; confirm creates exactly one.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "HR shows its heading",
+      "HR changed preview",
+      "Voice escalation rejects",
+      "Offline voice dialog sends"
+    ],
+    "role": [
+      "LEARNER",
+      "MANAGER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template HR shows its heading, previews the actual escalation payload, and creates a readable ticket",
+      "@core HR changed preview requires another review and Cancel never shares the new turn",
+      "@core Offline voice dialog sends only the version explicitly reviewed after a new turn",
+      "@core Voice escalation rejects late flushed turns and another user's preview version"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 27
   },
   {
     "id": "TICKET:thread",
     "expected": "Learner escalation \u2192 admin reply/resolution \u2192 learner sees shared thread/status.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Sensitive and unsupported HR questions",
+      "Human grade decisions, ticket replies",
+      "Shared HR history requires credentials",
+      "new shared-device text and voice conversation",
+      "HR tabs hide prior content"
+    ],
+    "role": [
+      "LEARNER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Human grade decisions, ticket replies and integrity outcomes persist",
+      "@core A new shared-device text and voice conversation can create its own ticket without exposing stored history",
+      "@core HR tabs hide prior content after another account or a new login replaces their session",
+      "@core Sensitive and unsupported HR questions require consent before the complete ticket chain, with unrelated-user denial",
+      "@core Shared HR history requires credentials across pages and APIs and expires with the verified session"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 33
   },
   {
     "id": "TICKET:isolation",
     "expected": "Unrelated learner/manager cannot see another HR conversation or ticket.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Sensitive and unsupported HR questions",
+      "Human grade decisions, ticket replies"
+    ],
+    "role": [
+      "LEARNER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Human grade decisions, ticket replies and integrity outcomes persist",
+      "@core Sensitive and unsupported HR questions require consent before the complete ticket chain, with unrelated-user denial"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 15
   },
   {
     "id": "PRACTICE:locked",
     "expected": "Practice locked until eligibility; reason and next action provided.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Practice locked state"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Practice locked state explains eligibility and returns to learning"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 6
   },
   {
     "id": "PRACTICE:session",
     "expected": "Unlocked question/confidence/result/return saves optional state; mandatory compliance unchanged.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Practice supports every eligible"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Practice supports every eligible question kind, including multiple choices, matching and ordering"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 6
   },
   {
     "id": "MANAGER:team",
     "expected": "Search/filter and member details correct; mobile usable.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Admin publishes, manager assigns",
+      "manager-issued reset is scoped"
+    ],
+    "role": [
+      "MANAGER",
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Admin publishes, manager assigns, learner earns a certificate and both reports show the same completion",
+      "AUTH: manager-issued reset is scoped, audit-logged and consumed through account recovery @core"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 15
   },
   {
     "id": "MANAGER:assign",
     "expected": "Course/path assignment persists once with correct due; learner notification and completion visible.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Admin publishes, manager assigns",
+      "Manager path assignment fans out"
+    ],
+    "role": [
+      "MANAGER",
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Admin publishes, manager assigns, learner earns a certificate and both reports show the same completion",
+      "@core Manager path assignment fans out once and its learner inbox opens the actual path"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 15
   },
   {
     "id": "MANAGER:nudge",
     "expected": "Nudge produces intended learner notification, no duplicates from double-submit.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Admin publishes, manager assigns",
+      "A reminder can be sent again"
+    ],
+    "role": [
+      "MANAGER",
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Admin publishes, manager assigns, learner earns a certificate and both reports show the same completion",
+      "@core A reminder can be sent again after 48 hours and stays rate limited afterward"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 15
   },
   {
     "id": "MANAGER:isolation",
     "expected": "Second manager cannot inspect or mutate first manager team.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "manager-issued reset is scoped",
+      "Empty-manager reports",
+      "MANAGER six report filters"
+    ],
+    "role": [
+      "MANAGER",
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Empty-manager reports, CSV and Ask Reports never include outside users",
+      "@core MANAGER six report filters and actual downloaded CSV agree with persisted learner results",
+      "AUTH: manager-issued reset is scoped, audit-logged and consumed through account recovery @core"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 18
   },
   {
     "id": "PEOPLE:import",
     "expected": "CSV valid/invalid/duplicate has row-level recovery; valid rows persist without duplicates.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "import, groups and rules",
+      "Overlapping enrollment rules and a failed CSV row"
+    ],
+    "role": [
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Admin navigation, import, groups and rules are distinct persisted workflows",
+      "@core Overlapping enrollment rules and a failed CSV row retain usable codes and allow immediate recovery"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 15
   },
   {
     "id": "PEOPLE:edit",
     "expected": "Person edit/group create/group membership persist and validation retains input.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "import, groups and rules"
+    ],
+    "role": [
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Admin navigation, import, groups and rules are distinct persisted workflows"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 9
   },
   {
     "id": "PEOPLE:rules",
     "expected": "Create/disable/enable rule affects correct users without duplicate enrollments.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "import, groups and rules",
+      "Overlapping enrollment rules and a failed CSV row"
+    ],
+    "service": true,
+    "role": [
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Admin navigation, import, groups and rules are distinct persisted workflows",
+      "@core Overlapping enrollment rules and a failed CSV row retain usable codes and allow immediate recovery"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+      ".artifacts/recovery-qualification-20260928/service-3/results.json",
+      ".artifacts/recovery-qualification-20260928/service-4/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 15
   },
   {
     "id": "AUTHOR:draft",
     "expected": "Create draft; save settings/cover/objectives; refresh persists.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Admin publishes, manager assigns",
+      "Type-specific authoring"
+    ],
+    "role": [
+      "ADMIN",
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Admin publishes, manager assigns, learner earns a certificate and both reports show the same completion",
+      "@core @template Type-specific authoring preserves all lesson types and the editor fits small screens"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 18
   },
   {
     "id": "AUTHOR:types",
     "expected": "Add all five lesson types with relevant fields and validation.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Type-specific authoring",
+      "Workspace mutation forms cannot submit"
+    ],
+    "role": [
+      "ADMIN",
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Type-specific authoring preserves all lesson types and the editor fits small screens",
+      "@core Workspace mutation forms cannot submit before client handlers are ready"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 15
   },
   {
     "id": "AUTHOR:order",
     "expected": "Reorder lessons/modules; author and learner order agrees.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Type-specific authoring",
+      "Module order controls persist"
+    ],
+    "role": [
+      "ADMIN",
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Module order controls persist in the editor and learner outline without rewriting earned history",
+      "@core @template Type-specific authoring preserves all lesson types and the editor fits small screens"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 18
   },
   {
     "id": "AUTHOR:publish",
     "expected": "Publish/unpublish preserves content and correct learner visibility.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Admin publishes, manager assigns"
+    ],
+    "role": [
+      "ADMIN",
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Admin publishes, manager assigns, learner earns a certificate and both reports show the same completion"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 9
   },
   {
     "id": "AUTHOR:ingest",
     "expected": "Ingestion failure/retry status accurate, no silent fake success.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Failed video ingestion recovers"
+    ],
+    "role": [
+      "ADMIN",
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Failed video ingestion recovers with a replacement transcript and can retry the saved transcript"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 9
   },
   {
     "id": "POLICY:version",
     "expected": "Publish/ingest/query/supersede/query: active allowed version used, old citation reconstructable.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Policy ingestion failure preserves",
+      "Policy publishing keeps previous"
+    ],
+    "service": "qa-service: real queue handler failure and retry",
+    "role": [
+      "ADMIN",
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Policy publishing keeps previous versions and shows readable policy detail",
+      "@core Policy ingestion failure preserves the active version; retry publishes new scoped answers and old citation history"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+      ".artifacts/recovery-qualification-20260928/service-3/results.json",
+      ".artifacts/recovery-qualification-20260928/service-4/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 15
   },
   {
     "id": "POLICY:failure",
     "expected": "Policy ingestion failure/retry recoverable and no stale active answer misrepresented.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Policy ingestion failure preserves",
+      "Policy publishing keeps previous"
+    ],
+    "service": "qa-service: real queue handler failure and retry",
+    "role": [
+      "ADMIN",
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Policy publishing keeps previous versions and shows readable policy detail",
+      "@core Policy ingestion failure preserves the active version; retry publishes new scoped answers and old citation history"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+      ".artifacts/recovery-qualification-20260928/service-3/results.json",
+      ".artifacts/recovery-qualification-20260928/service-4/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 15
   },
   {
     "id": "INTEGRITY:consent",
     "expected": "Consent before monitored attempt; fullscreen unsupported gracefully degrades.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Monitored assessment requires consent",
+      "Monitored events are informational"
+    ],
+    "role": [
+      "LEARNER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Monitored assessment requires consent before the server creates an attempt",
+      "@core Monitored events are informational until human clearance or void, and void grants a fresh attempt"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 12
   },
   {
     "id": "INTEGRITY:events",
     "expected": "Focus/fullscreen events persist and are reviewable; flags do not auto-fail.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Monitored events are informational",
+      "Human grade decisions, ticket replies"
+    ],
+    "role": [
+      "LEARNER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Human grade decisions, ticket replies and integrity outcomes persist",
+      "@core Monitored events are informational until human clearance or void, and void grants a fresh attempt"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 15
   },
   {
     "id": "INTEGRITY:decision",
-    "expected": "Admin clear/void/reason/retry persist; void completion/cert consequences correct.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "expected": "Admin clear/void decisions and reasons persist. Clearing retains final pass/fail. Voiding a certified pass retains issued completion/certificate history under the existing validity policy and grants a fresh sitting.",
+    "browserTests": [
+      "Monitored events are informational",
+      "Human grade decisions, ticket replies",
+      "Human-cleared pass remains final",
+      "Human-cleared fail remains final",
+      "Voiding a certified pass preserves issued history"
+    ],
+    "role": [
+      "LEARNER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Human grade decisions, ticket replies and integrity outcomes persist",
+      "@core Human-cleared fail remains final in the learner result",
+      "@core Human-cleared pass remains final in the learner result",
+      "@core Monitored events are informational until human clearance or void, and void grants a fresh attempt",
+      "@core Voiding a certified pass preserves issued history and grants a fresh assessment sitting"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 33
   },
   {
     "id": "REPORTS:six",
     "expected": "All six reports for both roles: filters/counts/table and exported CSV agree.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "six report filters and actual downloaded CSV",
+      "Empty-manager reports",
+      "Report identifiers and status words remain readable"
+    ],
+    "role": [
+      "MANAGER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Report identifiers and status words remain readable with contained keyboard scrolling in dark",
+      "@core @template Report identifiers and status words remain readable with contained keyboard scrolling in light",
+      "@core ADMIN six report filters and actual downloaded CSV agree with persisted learner results",
+      "@core Empty-manager reports, CSV and Ask Reports never include outside users",
+      "@core MANAGER six report filters and actual downloaded CSV agree with persisted learner results"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-native-zoom",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 38
   },
   {
     "id": "REPORTS:ask",
     "expected": "Ask Reports typed interpretation displayed and uses proper role scope.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "six report filters and actual downloaded CSV",
+      "Empty-manager reports",
+      "Report identifiers and status words remain readable"
+    ],
+    "role": [
+      "MANAGER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Report identifiers and status words remain readable with contained keyboard scrolling in dark",
+      "@core @template Report identifiers and status words remain readable with contained keyboard scrolling in light",
+      "@core ADMIN six report filters and actual downloaded CSV agree with persisted learner results",
+      "@core Empty-manager reports, CSV and Ask Reports never include outside users",
+      "@core MANAGER six report filters and actual downloaded CSV agree with persisted learner results"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-native-zoom",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 38
   },
   {
     "id": "REPORTS:reset",
     "expected": "Apply/reset and empty result states clear; mobile table scroll region labeled.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "six report filters and actual downloaded CSV",
+      "Empty-manager reports"
+    ],
+    "role": [
+      "MANAGER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core ADMIN six report filters and actual downloaded CSV agree with persisted learner results",
+      "@core Empty-manager reports, CSV and Ask Reports never include outside users",
+      "@core MANAGER six report filters and actual downloaded CSV agree with persisted learner results"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 18
+  },
+  {
+    "id": "REPORTS:pagination",
+    "expected": "Bounded 50-row report pages retain deterministic full CSV order, all filters and manager scope; Back, refresh and invalid page queries preserve accessible results.",
+    "browserTests": [
+      "Report pages preserve the complete CSV order"
+    ],
+    "role": [
+      "MANAGER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Report pages preserve the complete CSV order, refresh, Back and manager isolation"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 6
   },
   {
     "id": "COMPLIANCE:due",
     "expected": "Due/reminder transitions agree across learner/manager/admin.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Admin publishes, manager assigns"
+    ],
+    "service": "qa-service: due-soon sweep and notification dedupe; overdue across learner/manager/admin; weekly manager digest",
+    "role": [
+      "LEARNER",
+      "MANAGER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Admin publishes, manager assigns, learner earns a certificate and both reports show the same completion"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+      ".artifacts/recovery-qualification-20260928/service-3/results.json",
+      ".artifacts/recovery-qualification-20260928/service-4/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 9
   },
   {
     "id": "COMPLIANCE:certificate",
     "expected": "Completion produces correct downloadable certificate once.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Earned certificate preserves long",
+      "Admin publishes, manager assigns"
+    ],
+    "service": "qa-service: pool saturation completes once; forced commit rollback leaves no awards, notification or email; retry delivers once",
+    "role": [
+      "LEARNER",
+      "MANAGER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Admin publishes, manager assigns, learner earns a certificate and both reports show the same completion",
+      "@core Earned certificate preserves long multilingual names and titles, with identical course, Home and profile completion"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+      ".artifacts/recovery-qualification-20260928/service-3/results.json",
+      ".artifacts/recovery-qualification-20260928/service-4/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 15
   },
   {
     "id": "COMPLIANCE:recert",
     "expected": "Expiry/recert keeps historical completion immutable and reassigns once.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Renewal gives a fresh assessment",
+      "Reviewing an old oral check"
+    ],
+    "service": "qa-service: expiry/UI renewal preserve history; shared-lock heartbeat reset and pre-renewal receipt boundary",
+    "role": [
+      "LEARNER",
+      "MANAGER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Renewal gives a fresh assessment allowance and an old appealed decision cannot complete it",
+      "@core Reviewing an old oral check preserves history without completing renewed oral training"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+      ".artifacts/recovery-qualification-20260928/service-3/results.json",
+      ".artifacts/recovery-qualification-20260928/service-4/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 12
   },
   {
     "id": "ACCOUNT/SYSTEM:profile",
     "expected": "History/certificates/oral results/account links accurate.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Learning path shows prerequisites",
+      "Earned certificate preserves long",
+      "My profile opens a coherent"
+    ],
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template Learning path shows prerequisites, profile preserves completed history and inbox has explicit read states",
+      "@core Earned certificate preserves long multilingual names and titles, with identical course, Home and profile completion",
+      "NAV: admin My profile opens a coherent learner workspace @core @template",
+      "NAV: manager My profile opens a coherent learner workspace @core @template"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 33
   },
   {
     "id": "ACCOUNT/SYSTEM:inbox",
     "expected": "Unread/read and destinations work across three workspaces.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "All workspace destinations fit",
+      "Learning path shows prerequisites",
+      "Manager path assignment fans out",
+      "A submitted answer stays provisional",
+      "Every role can reach older unread notifications"
+    ],
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template All workspace destinations fit and workspace inboxes keep read states",
+      "@core @template Learning path shows prerequisites, profile preserves completed history and inbox has explicit read states",
+      "@core A submitted answer stays provisional until review; confirmed fail can be appealed and adjusted to a certified pass",
+      "@core Every role can reach older unread notifications and mark the entire inbox read",
+      "@core Manager path assignment fans out once and its learner inbox opens the actual path"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 36
   },
   {
     "id": "ACCOUNT/SYSTEM:dsr",
     "expected": "Authorized export/erasure on disposable fixture only; scopes enforced.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "DSR export and erasure"
+    ],
+    "note": "API-only administrative operation; browser authentication and actual UI completion prerequisite; request/DB verification on disposable subject",
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "DSR export and erasure operate only on the disposable subject and deny non-admin callers"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile"
+    ],
+    "executedBrowserCasesPerRun": 2
   },
   {
     "id": "ACCOUNT/SYSTEM:states",
     "expected": "Loading/empty/error/404 recoverable and correctly styled.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "Active assessment, dialogs",
+      "Learner templates, long multilingual",
+      "Root follows the authenticated workspace",
+      "Failed answer save"
+    ],
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Failed answer save retains typed input and blocks stale submission until retry",
+      "@template Active assessment, dialogs, media, voice and HR recovery meet quality gates in dark",
+      "@template Active assessment, dialogs, media, voice and HR recovery meet quality gates in light",
+      "@template Learner templates, long multilingual content and system recovery meet quality gates in dark",
+      "@template Learner templates, long multilingual content and system recovery meet quality gates in light",
+      "Root follows the authenticated workspace; the local health endpoint reports its real database check"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-native-zoom",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 32
   },
   {
     "id": "ACCOUNT/SYSTEM:responsive",
-    "expected": "Every template at360/390/768/1280/1440; no page overflow/clipped action.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "expected": "Every template at360/390/768/1280/1440; no page overflow/clipped action. Report and Ask Reports tables preserve readable identifiers/status words in both themes, mobile and native 200% zoom; labeled regions support keyboard horizontal scrolling without page overflow.",
+    "browserTests": [
+      "meet quality gates",
+      "fit small screens",
+      "fits small screens",
+      "All seven question formats remain reviewable",
+      "Module order controls persist",
+      "Report identifiers and status words remain readable"
+    ],
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core @template All seven question formats remain reviewable, with approval and discard recorded",
+      "@core @template Module order controls persist in the editor and learner outline without rewriting earned history",
+      "@core @template Report identifiers and status words remain readable with contained keyboard scrolling in dark",
+      "@core @template Report identifiers and status words remain readable with contained keyboard scrolling in light",
+      "@core @template Type-specific authoring preserves all lesson types and the editor fits small screens",
+      "@template Active assessment, dialogs, media, voice and HR recovery meet quality gates in dark",
+      "@template Active assessment, dialogs, media, voice and HR recovery meet quality gates in light",
+      "@template Authentication templates meet quality gates in dark",
+      "@template Authentication templates meet quality gates in light",
+      "@template Learner templates, long multilingual content and system recovery meet quality gates in dark",
+      "@template Learner templates, long multilingual content and system recovery meet quality gates in light",
+      "@template Workspace templates meet quality gates in dark",
+      "@template Workspace templates meet quality gates in light",
+      "AUTH: sign-in and activation controls have accessible names and fit small screens @template @core"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-native-zoom",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 104
   },
   {
     "id": "ACCOUNT/SYSTEM:accessibility",
     "expected": "Both themes, keyboard,200% zoom, RTL/reduced motion and automated AA checks.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [
+      "meet quality gates",
+      "keyboard skip link",
+      "Stored legacy, missing",
+      "workspace navigation and return"
+    ],
+    "note": "All quality traversals run CSS zoom 200% with RTL in standard projects; separate chromium-native-zoom uses real Chromium tabs.setZoom(2) at 1280\u00d7800 (640\u00d7400 CSS viewport), without stacking CSS zoom. Native screenshots use Chromium Page.captureScreenshot without a clip (captureBeyondViewport:false); standard Playwright clipped capture shifts scrolled native-zoom content.",
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Stored legacy, missing and out-of-scope Tutor citations retain history without guessing a player; invalid transcript times stay disabled",
+      "@template Active assessment, dialogs, media, voice and HR recovery meet quality gates in dark",
+      "@template Active assessment, dialogs, media, voice and HR recovery meet quality gates in light",
+      "@template Authentication templates meet quality gates in dark",
+      "@template Authentication templates meet quality gates in light",
+      "@template Learner templates, long multilingual content and system recovery meet quality gates in dark",
+      "@template Learner templates, long multilingual content and system recovery meet quality gates in light",
+      "@template Workspace templates meet quality gates in dark",
+      "@template Workspace templates meet quality gates in light",
+      "NAV: admin workspace navigation and return from learner view @core @template",
+      "NAV: keyboard skip link moves focus to content in learner and both workspaces @core",
+      "NAV: manager workspace navigation and return from learner view @core @template"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-native-zoom",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 78
   },
   {
     "id": "ACCOUNT/SYSTEM:performance",
     "expected": "Home/catalog/course/lesson/manager/admin median3 production mobile runs meet LCP/CLS/interaction budgets.",
-    "status": "NOT_TESTED",
-    "actual": null,
-    "evidence": [],
-    "commit": null,
-    "browserViewport": []
+    "browserTests": [],
+    "performance": "qa-performance: all six families, median of three production mobile runs",
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/performance/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [],
+    "executedBrowserCasesPerRun": 0
+  },
+  {
+    "id": "HR:privacy",
+    "expected": "Shared-device stored HR history requires recent password verification; current-login conversations remain usable. Pages, tickets, live transcripts and APIs fail closed on expiry, account switch or a new login, preserving immutable history.",
+    "browserTests": [
+      "Shared HR history requires credentials",
+      "new shared-device text and voice conversation",
+      "HR tabs hide prior content",
+      "Certificate and learner API data require",
+      "Active assessment, dialogs, media, voice and HR recovery"
+    ],
+    "role": [
+      "LEARNER",
+      "MANAGER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core A new shared-device text and voice conversation can create its own ticket without exposing stored history",
+      "@core Certificate and learner API data require completed MFA and privacy acknowledgment",
+      "@core HR tabs hide prior content after another account or a new login replaces their session",
+      "@core Shared HR history requires credentials across pages and APIs and expires with the verified session",
+      "@template Active assessment, dialogs, media, voice and HR recovery meet quality gates in dark",
+      "@template Active assessment, dialogs, media, voice and HR recovery meet quality gates in light"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-laptop",
+      "chromium-mobile",
+      "chromium-native-zoom",
+      "chromium-small",
+      "chromium-tablet",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 36
+  },
+  {
+    "id": "HR:readiness",
+    "expected": "Initial conversation input waits for hydration and history; pending and first-revealed history preserve the reader viewport and pressed controls; later questions retain follow behavior. Failed history remains usable and failed questions remain editable for retry.",
+    "browserTests": [
+      "HR composer waits for hydration and history",
+      "HR initial history preserves a held control"
+    ],
+    "role": [
+      "LEARNER",
+      "MANAGER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core HR composer waits for hydration and history, preserves failed questions and recovers from unavailable history",
+      "@core HR initial history preserves a held control and later questions still follow before private escalation"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 12
+  },
+  {
+    "id": "REPORTS:readiness",
+    "expected": "Both report-workspace composers wait for hydration and retain typed questions through request failure and success.",
+    "browserTests": [
+      "Ask Reports composers wait for hydration"
+    ],
+    "role": [
+      "MANAGER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Ask Reports composers wait for hydration and retain questions through failed and successful requests in both workspaces"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 6
+  },
+  {
+    "id": "AUTH:initial-values",
+    "expected": "Early native auth entries survive hydration, field changes and server validation in login, activation and both MFA stages; JavaScript-disabled native login still establishes a session.",
+    "browserTests": [
+      "Early login values survive",
+      "Early activation values survive",
+      "Early MFA setup and verification",
+      "Native login still submits"
+    ],
+    "role": [
+      "all roles"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Early MFA setup and verification codes remain editable after server rejection",
+      "@core Early activation values survive a later field edit and validation before code consumption",
+      "@core Early login values survive hydration, shared-device changes and server validation",
+      "@core Native login still submits real FormData and establishes a session without JavaScript"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 24
+  },
+  {
+    "id": "TICKET:readiness",
+    "expected": "Reply input and submit wait for their client handler, preserve text through failure, and persist exactly one successful retry.",
+    "browserTests": [
+      "Ticket reply waits for its handler"
+    ],
+    "role": [
+      "LEARNER",
+      "ADMIN"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Ticket reply waits for its handler, retains failed input and persists exactly one retry"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 6
+  },
+  {
+    "id": "HR:unlock-readiness",
+    "expected": "Stored-history verification waits for its handler and preserves rejected credentials for correction without exposing protected content.",
+    "browserTests": [
+      "HR history unlock waits for its handler"
+    ],
+    "role": [
+      "LEARNER",
+      "MANAGER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core HR history unlock waits for its handler and preserves credentials through rejected verification"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 6
+  },
+  {
+    "id": "CONTENT:readiness",
+    "expected": "Lesson completion cannot perform an unhandled initial native submission; failed saves remain retryable and only acknowledged completion persists.",
+    "browserTests": [
+      "Lesson completion waits for its handler"
+    ],
+    "role": [
+      "LEARNER"
+    ],
+    "status": "PASSED",
+    "localStatus": "PASSED",
+    "setup": "Unique local prerequisites from named tests; no production/staging data. UI performs user operations; API-only and background operations are separately identified.",
+    "steps": [
+      "@core Lesson completion waits for its handler and retries a failed save without losing the action"
+    ],
+    "actual": "Passed both complete no-retry production-build runs and the associated service/manual/performance evidence where listed.",
+    "evidence": [
+      ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+      ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+    ],
+    "commit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+    "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+    "browserViewport": [
+      "chromium-desktop",
+      "chromium-mobile",
+      "firefox-desktop",
+      "firefox-mobile",
+      "webkit-desktop",
+      "webkit-mobile"
+    ],
+    "executedBrowserCasesPerRun": 6
   }
 ]

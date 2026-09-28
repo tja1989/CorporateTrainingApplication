@@ -6,20 +6,20 @@ Run these commands in the managed checkout against the isolated local environmen
 
 - Use Node 20+, PostgreSQL 16 with pgvector, and a database named `welearn_*` on localhost or 127.0.0.1.
 - Configure ignored `.env` values for DATABASE_URL, SESSION_SECRET, DATABASE_SSL=false and DEMO_MODE=true. Deterministic tests need no production secrets.
-- The existing development cluster is `.artifacts/postgres16`, port 55436, database `welearn_dev`. Preserve accumulated test records and failure evidence; do not reseed it.
-- If stopped, start that cluster with `/opt/homebrew/opt/postgresql@16/bin/pg_ctl -D .artifacts/postgres16 -l .artifacts/postgres16.log -o '-p55436 -h127.0.0.1' start`.
+- The original port 55436 cluster is missing. Recovery created `.artifacts/recovery-qualification-20260928/postgres16` on port **55437**. Preserve this cluster and all qualification databases; do not reseed them.
+- If stopped, start the recovery cluster with `/opt/homebrew/opt/postgresql@16/bin/pg_ctl -D .artifacts/recovery-qualification-20260928/postgres16 -l .artifacts/recovery-qualification-20260928/postgres16.log -o '-p55437 -h127.0.0.1' start`.
 - Install dependencies with `npm ci`, then browser binaries with `npx playwright install chromium firefox webkit`.
 - On a **fresh isolated database only**, `npx tsx scripts/deploy-init.ts` initializes schema/demo content. Demo seeding is destructive and is not part of a qualification run. Apply additive migrations to existing data as described in [migrations/README.md](../../migrations/README.md).
 - Build with `npm run build`, then serve with `npm run start -- -H 127.0.0.1 -p 3100`. Tests use this production build; they do not start a development server or reset data.
 - In another terminal, `npm run qa:https` creates an ignored local self-signed certificate and serves https://localhost:3443, forwarding only to loopback port 3100. Chromium uses the exact public-key pin for this certificate in disposable QA profiles, with `ignoreHTTPSErrors:false`. The QA-only `npm run test:e2e` launcher starts its Node child with `NODE_EXTRA_CA_CERTS` pointing to the same certificate, so `route.fetch()` and API requests retain strict certificate and hostname validation. Node reads this variable at startup; setting it later is insufficient. Non-loopback URLs, missing/invalid certificates and `NODE_TLS_REJECT_UNAUTHORIZED=0` fail closed. Firefox/WebKit retain their guarded local-context exception. No OS or personal-browser trust changes. Keep production Secure cookies: WebKit rejects them on plain HTTP even on localhost. Do not disable TLS verification globally.
 
-Stop every process sharing `.next` before rebuilding, including any separate preview or service runtime. The clean preview uses `welearn_preview`; it is not the development dataset used for qualification or performance.
+Stop every process sharing `.next` before rebuilding, including any separate preview or service runtime. The current clean preview uses `welearn_preview_recovery` on port 55437; it is not the development dataset used for qualification or performance.
 
 ## Browser matrix and evidence
 
 Run units and type checking with `npm test` and `npm run typecheck`. For a focused project, use `npm run test:e2e -- --project=chromium-desktop`.
 
-The complete configured matrix currently contains 715 executions across ten projects. It uses **two workers, fullyParallel false and zero retries**. Mutating fixtures have unique IDs, browser contexts and artifact paths; the two-worker isolation audit is retained with Task 5 evidence. Do not overlap performance measurements with the matrix, service checks or manual browser activity.
+The complete configured matrix currently contains 741 executions (114 authored cases in 32 files) across ten projects. It uses **two workers, fullyParallel false and zero retries**. Mutating fixtures have unique IDs, browser contexts and artifact paths; the renewed reports retain each actual worker/project identity. Do not overlap performance measurements with the matrix, service checks or manual browser activity.
 
 After freezing the source, record the actual build commit and use distinct output folders:
 
@@ -71,8 +71,47 @@ Real public YouTube playback has separate controller evidence, including seek-on
 
 ## Visual comparison provenance
 
-The original baseline is application main `dd8bd11`. Its local runtime on port 3200 uses separate `welearn_baseline` data; baseline 117 units, typecheck and build passed, while its forms failed accessible-label browser checks. `scripts/qa-baseline.ts` captures representative journeys with reduced motion. `QA_SCOPE=expanded` adds path, quiz, oral, practice, policy, ticket, inbox, review and integrity families. The original expanded baseline has 64 screenshots in `.artifacts/baseline/expanded-screens/`.
+The historical baseline was application main `dd8bd11`. Its separate port 3200 runtime is no longer running and its original local data/capture directory is missing. Retained records report 117 units, typecheck and build passed, while forms failed accessible-label browser checks. The verified comparison gallery preserves copies of 64 before images. `scripts/qa-baseline.ts` remains available for newly identified captures with reduced motion; `QA_SCOPE=expanded` adds path, quiz, oral, practice, policy, ticket, inbox, review and integrity families. Newly generated images must not be labeled as recovered originals.
 
 After images must identify their own exact application source/build and preview dataset. A before/after gallery is visual evidence, not a replacement for workflow execution or the separate client visual approval gate.
 
 Initial-form regressions hold only the first application scripts while using real native inputs. Authentication preserves early editable values and native server-action submission, including a JavaScript-disabled login control. Client-only ticket, history-unlock and completion forms expose a loading status and disable submission until their handlers are ready; failed requests remain retryable. Browser contexts inherit the project TLS policy.
+
+
+## 2026-09-28 recovery evidence and reproduction
+
+The local recovery helper `control.py` privately loads the new session secret, selects only loopback port 55437, clears live-provider keys and uses console email. Its private configuration and raw authentication artifacts must not be published. The existing `run-matrix.py 19/20` outputs are immutable completed evidence; the helper refuses overwriting them. For a future run, use new database/output identities and freeze the actual source/build again. Do not reuse a changed database as a fresh baseline or relabel a new run as 19/20.
+
+The retained snapshot `baseline-recovery.dump` is a new fictional baseline, not recovered historical records. Restore into a **new** `welearn_*` database with PostgreSQL16 `createdb` and `pg_restore --exit-on-error --no-owner --no-privileges`, then compare every table against `baseline-tables.json` using the guarded recovery environment. The supplied seed script can regenerate the committed demo PDF; any future baseline creation must restore its committed bytes before freezing source. Never seed an existing database.
+
+Strict reconciliation for the completed pair:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/qa-reconcile.py \
+  --runs .artifacts/recovery-qualification-20260928/matrix-19 .artifacts/recovery-qualification-20260928/matrix-20 \
+  --services .artifacts/recovery-qualification-20260928/service-3 .artifacts/recovery-qualification-20260928/service-4 \
+  --performance .artifacts/recovery-qualification-20260928/performance/results.json \
+  --manual-video .artifacts/handoff/public-video-xprtn-8/result.json \
+  --planned-matrix .artifacts/recovery-qualification-20260928/planned-matrix.json \
+  --source-inventory .artifacts/recovery-qualification-20260928/source-inventory.json
+```
+
+The full runs retained two workers and zero retries, with a passive observer restricted to six Tutor cases. No source assertions, timeout, refill or forced click was introduced. The observer and runner hashes are in `method-freeze.json`; setup/binding overhead is a disclosed scheduling difference from older uninstrumented runs. Runner-scoped `caffeinate` prevented idle/system sleep and ended with each runner; keep AC connected and the lid open because it cannot override lid-close or thermal sleep. Run services, performance and interactive browser work separately from a complete matrix.
+
+The post-run documents are an explicit documentation-only difference from qualification checkout `63ec2af`. The preserved production build was exercised, not rebuilt during recovery. A new compiled-file snapshot cannot replace the missing original build manifest. The report separates completed execution from the still-open historical Tutor acceptance item.
+
+The restored preview is [http://localhost:3300/home](http://localhost:3300/home), verified by actual learner sign-in and privacy-notice continuation. The [comparison gallery](http://localhost:3350/) serves the preserved 64 pairs. The preview serves the preserved build; the gallery is a static server. Neither is a public deployment. New preview sessions/data replace the missing old environment.
+
+
+If the restored preview is stopped and port 3300 is free, start it with the recovery environment (do not rely on an older `.env` database target):
+
+```sh
+python3 -B .artifacts/recovery-qualification-20260928/control.py command welearn_preview_recovery \
+  node node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3300
+```
+
+Start the preserved gallery separately if port 3350 is free:
+
+```sh
+python3 -m http.server 3350 --bind 127.0.0.1 --directory .artifacts/handoff/xprtn-comparison-gallery-8
+```

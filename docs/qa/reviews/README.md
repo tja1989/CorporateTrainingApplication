@@ -13,3 +13,7 @@ These records preserve the findings and verdicts at each reviewed commit. Earlie
 The first eight reports are historical reviewer records. The whole-branch record is a controller archive of the complete reviewer response. [Archive integrity](archive-integrity.json) records their hashes. The final status belongs in [QUALIFICATION.md](../QUALIFICATION.md), including unavailable external gates.
 
 The [Task 4 implementation report](task-4-implementation-report.md) was moved from the temporary planning directory without changing its contents. It preserves the original scoped implementation and validation history.
+
+## Recovery qualification — 2026-09-28
+
+[The fresh evidence review](recovery-qualification-review.md) confirms the renewed two-run evidence and supporting records are suitable for handoff. Both 741-case runs passed. Final acceptance remains open for the historical Tutor first-input incident; the reviewer grants no waiver. [Current qualification report](../QUALIFICATION.md) supersedes earlier pending execution status while preserving each historical finding.

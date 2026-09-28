@@ -2,7 +2,7 @@
 
 Plan: ../WELEARN_REWORK_PLAN.md
 
-Overall: **70%**. Baseline, shared foundation, learner and manager/admin workflows accepted; full browser qualification is in progress.
+Overall accepted: **70%**. The renewed browser execution is complete: two consecutive 741/741 runs and all local supporting checks passed. Final browser acceptance remains open for the historical Tutor primary-action failure; no acceptance waiver is inferred. See [QUALIFICATION.md](QUALIFICATION.md).
 
 | Phase | Weight | Status | Evidence |
 |---|---:|---|---|
@@ -10,8 +10,8 @@ Overall: **70%**. Baseline, shared foundation, learner and manager/admin workflo
 | Design system/branding/shells | 15% | Complete |126 units/build/typecheck;51 auth +45 nav +4 shared-surface browser checks; independent review approved |
 | Learner workflows | 25% | Complete | 148 units/build/typecheck;36 browser slice cases plus18 review regressions; scoped review approved |
 | Manager/admin workflows | 20% | Complete | 173 units/build/typecheck; 84 workflow/auth cases, 6 readiness checks, 16 narrow-screen checks and 12 review regressions passed; scoped re-review approved |
-| Browser qualification | 25% | In progress | Remaining branches, full matrix twice, accessibility/responsive/performance and dependency gates |
-| Review/handoff | 5% | Pending | |
+| Browser qualification | 25% | Execution complete; acceptance open | 1,482 passes; 84 records reconciled; historical Tutor disposition remains |
+| Review/handoff | 5% | Evidence prepared; final acceptance pending | Renewed report, coverage, reproduction and evidence index; no merge/deployment |
 
 ## Decisions
 
@@ -100,3 +100,9 @@ Overall: **70%**. Baseline, shared foundation, learner and manager/admin workflo
 - Controller public-video browser check on `f008ba5` passed: fresh learner, real WHO player, seek1:20 to end earned6% and stayed incomplete; normal playback paused0:22 saved20.517seconds; course navigation/reopen restored0:20; continued playback completed buckets0–16 without player remount/duplicate actions; course reload showed1/8 and13%, with no premature course certificate. Evidence `.artifacts/handoff/manual-video/result.json`. Cropped IAB screenshots are diagnostic only, excluded from visual qualification; keyboard UI actions, DOM and persistence records establish this behavioral result. Temporary viewport overrides were cleared. The transcript remains illustrative; no semantic match or iPhone qualification is claimed.
 
 - Task4 review fixes in `730a293` passed 12/12 amended browser cases across all six core projects, plus 173 unit tests, typecheck and build. Inactive lesson fields are disabled without losing entered values; human grading includes the scenario before the answer. Scoped re-review found both Important issues addressed and no new Critical/Important breakage. Manager/admin phase accepted: **70%**. Queue-selection feedback and compressed JSX remain documented minor items for final triage.
+
+## Recovery qualification — 2026-09-28
+
+Two consecutive complete runs passed 741/741 each at clean checkout `63ec2af`, application `0ae585f`, build `NGmjXLUbonvPoG_RYpIJW`, with zero retries/skips/flakes. All 1,482 traces passed CRC checks. Both 12-stage service runs, 181 units, typecheck, 18 performance samples, production dependency audit, surviving public-video evidence, native zoom and earned PDF bindings were verified. Strict reconciliation covers 84 requirements / 22 families and 37 routes / 23 APIs / 45 actions, retaining three external UNVERIFIED records.
+
+Code survived, but the original local database cluster and several older raw artifact directories were missing. The renewed runs used distinct verified clones of a newly seeded fictional baseline on port 55437. Historical failure summaries survive and are not replaced by these new results. The Tutor first-fill failure remains unclassified; the approved separate no-unresolved-primary-action gate remains open. Client visual approval is separate.

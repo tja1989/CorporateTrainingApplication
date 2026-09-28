@@ -1,45 +1,45 @@
 # Route coverage
 
-Current inventory with phase evidence in [coverage-inventory.json](coverage-inventory.json) and [workflow-cases.json](workflow-cases.json). NOT_TESTED and UNVERIFIED never mean pass. A route pass covers recorded cases only; final exact-commit qualification is still pending.
+Both complete 741-case runs and supporting evidence were reconciled into [coverage-inventory.json](coverage-inventory.json) and [workflow-cases.json](workflow-cases.json). PASSED_LOCAL covers the mapped local cases only; real providers and physical iPhone remain UNVERIFIED. The historical Tutor acceptance item remains open in [QUALIFICATION.md](QUALIFICATION.md).
 
-| Route | Role | Status |
+| Route | Role | Recorded local outcome |
 |---|---|---|
-| `/activate` | public/auth | PASSED |
-| `/login/mfa` | public/auth | PASSED |
-| `/login/mfa-setup` | public/auth | PASSED |
-| `/login` | public/auth | PASSED |
-| `/ask-hr/live` | learner | NOT_TESTED |
-| `/ask-hr` | learner | NOT_TESTED |
-| `/ask-hr/tickets/[ticketId]` | learner | NOT_TESTED |
-| `/course/[courseId]` | learner | NOT_TESTED |
-| `/drill` | learner | NOT_TESTED |
-| `/home` | learner | NOT_TESTED |
-| `/inbox` | learner | NOT_TESTED |
-| `/learn` | learner | NOT_TESTED |
-| `/lesson/[lessonId]/interview` | learner | NOT_TESTED |
-| `/lesson/[lessonId]` | learner | NOT_TESTED |
-| `/path/[pathId]` | learner | NOT_TESTED |
-| `/policy/[docId]` | learner | NOT_TESTED |
-| `/profile` | learner | NOT_TESTED |
-| `/quiz/[quizId]` | learner | NOT_TESTED |
-| `/admin/corpus` | admin | NOT_TESTED |
-| `/admin/courses/[courseId]` | admin | NOT_TESTED |
-| `/admin/courses` | admin | NOT_TESTED |
-| `/admin/inbox` | admin | NOT_TESTED |
-| `/admin/integrity/[attemptId]` | admin | NOT_TESTED |
-| `/admin/integrity` | admin | NOT_TESTED |
-| `/admin` | admin | NOT_TESTED |
-| `/admin/people` | admin | NOT_TESTED |
-| `/admin/reports` | admin | NOT_TESTED |
-| `/admin/reviews` | admin | NOT_TESTED |
-| `/admin/tickets/[ticketId]` | admin | NOT_TESTED |
-| `/admin/tickets` | admin | NOT_TESTED |
-| `/team/[userId]` | manager | NOT_TESTED |
-| `/team/[userId]/reset-code` | manager | NOT_TESTED |
-| `/team/inbox` | manager | NOT_TESTED |
-| `/team` | manager | NOT_TESTED |
-| `/team/reports` | manager | NOT_TESTED |
-| `/` | public/auth | NOT_TESTED |
-| `/privacy-notice` | public/auth | PASSED |
+| `/activate` | public/auth | PASSED_LOCAL |
+| `/login/mfa-setup` | public/auth | PASSED_LOCAL |
+| `/login/mfa` | public/auth | PASSED_LOCAL |
+| `/login` | public/auth | PASSED_LOCAL |
+| `/ask-hr/live` | learner | PASSED_LOCAL |
+| `/ask-hr` | learner | PASSED_LOCAL |
+| `/ask-hr/tickets/[ticketId]` | learner | PASSED_LOCAL |
+| `/course/[courseId]` | learner | PASSED_LOCAL |
+| `/drill` | learner | PASSED_LOCAL |
+| `/home` | learner | PASSED_LOCAL |
+| `/inbox` | learner | PASSED_LOCAL |
+| `/learn` | learner | PASSED_LOCAL |
+| `/lesson/[lessonId]/interview` | learner | PASSED_LOCAL |
+| `/lesson/[lessonId]` | learner | PASSED_LOCAL |
+| `/path/[pathId]` | learner | PASSED_LOCAL |
+| `/policy/[docId]` | learner | PASSED_LOCAL |
+| `/profile` | learner | PASSED_LOCAL |
+| `/quiz/[quizId]` | learner | PASSED_LOCAL |
+| `/admin/corpus` | admin | PASSED_LOCAL |
+| `/admin/courses/[courseId]` | admin | PASSED_LOCAL |
+| `/admin/courses` | admin | PASSED_LOCAL |
+| `/admin/inbox` | admin | PASSED_LOCAL |
+| `/admin/integrity/[attemptId]` | admin | PASSED_LOCAL |
+| `/admin/integrity` | admin | PASSED_LOCAL |
+| `/admin` | admin | PASSED_LOCAL |
+| `/admin/people` | admin | PASSED_LOCAL |
+| `/admin/reports` | admin | PASSED_LOCAL |
+| `/admin/reviews` | admin | PASSED_LOCAL |
+| `/admin/tickets/[ticketId]` | admin | PASSED_LOCAL |
+| `/admin/tickets` | admin | PASSED_LOCAL |
+| `/team/[userId]` | manager | PASSED_LOCAL |
+| `/team/[userId]/reset-code` | manager | PASSED_LOCAL |
+| `/team/inbox` | manager | PASSED_LOCAL |
+| `/team` | manager | PASSED_LOCAL |
+| `/team/reports` | manager | PASSED_LOCAL |
+| `/` | public/auth | PASSED_LOCAL |
+| `/privacy-notice` | public/auth | PASSED_LOCAL |
 
-Inventory: 37 page routes, 42 app/shared server actions, 22 API routes. See JSON for methods and operation evidence.
+Inventory: 37 page routes, 45 app/shared server actions and 23 API routes. The unbound compatibility wrapper remains source-reviewed, not a separately exercised visible UI control.
