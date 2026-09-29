@@ -1,5 +1,7 @@
 # xprtn browser qualification
 
+**2026-09-29 update:** The local preview now includes the [Tutor formatting fix](TUTOR_FORMATTING_FIX.md), verified by 24 focused browser executions and an actual Codex in-app browser check. The complete matrices below apply to the earlier build identified here; they have not been rerun for the formatting change. The historical WebKit input incident remains separate and unresolved.
+
 **The renewed local execution and coverage checks passed. Final acceptance remains open for the historical WebKit Tutor input failure. This is not a release approval.**
 
 On 2026-09-28, two consecutive complete runs passed **741/741 each: 1,482 executions**, with zero retries, skips, flakes, unexpected results or global Playwright reporter errors. Each run includes 114 authored cases in 32 files across 10 projects. All 1,482 trace ZIPs passed CRC checks. No application or test change was made during recovery qualification.

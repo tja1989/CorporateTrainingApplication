@@ -19,6 +19,8 @@ test("@core Tutor retries a network failure, persists the local answer and route
   await tutor.getByRole("textbox", { name: "Ask the tutor" }).fill("When should I wash hands?");
   await tutor.getByRole("button", { name: "Send", exact: true }).click();
   await expect(tutor.getByText(/Offline demo answer/)).toBeVisible();
+  await expect(tutor.locator("strong")).toHaveText("From this lesson:");
+  await expect(tutor.locator("em")).toHaveText("Offline demo answer — connect an AI key for full tutoring.");
   await tutor.getByRole("button", { name: "0:10", exact: true }).click();
   expect(await page.evaluate(() => (window as Window & { qaSeek?: number }).qaSeek)).toBe(10);
   await tutor.getByRole("button", { name: "Toggle retrieval scope" }).click();
@@ -32,6 +34,11 @@ test("@core Tutor retries a network failure, persists the local answer and route
   await page.reload();
   await page.getByRole("tab", { name: "Tutor", exact: true }).click();
   await expect(page.getByRole("region", { name: "Lesson Tutor" })).toContainText("Inspect extinguishers");
+  await expect(tutor.locator("strong")).toHaveText(["From this lesson:", "From this lesson:"]);
+  await expect(tutor.locator("em")).toHaveText([
+    "Offline demo answer — connect an AI key for full tutoring.",
+    "Offline demo answer — connect an AI key for full tutoring.",
+  ]);
   expect(await withDb(async db => (await db.query("SELECT count(*)::int n FROM tutor_messages m JOIN tutor_threads t ON t.id=m.thread_id WHERE t.user_id=$1 AND m.role='assistant'", [learner.id])).rows[0].n)).toBe(2);
 });
 

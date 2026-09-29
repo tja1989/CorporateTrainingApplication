@@ -6,6 +6,7 @@ import { AiSurface, Button, Card, Chip, Input, PillButton, Skeleton, cx } from "
 import { useLessonProgress } from "@/components/lesson-progress";
 import { Tabs } from "@/components/tabs";
 import type { TutorCitation } from "@/lib/db/schema";
+import { Markdown } from "@/lib/markdown";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
@@ -366,7 +367,7 @@ function TutorPanel({
                 </div>
               ) : (
                 <AiSurface mock={m.mock}>
-                  <span className="whitespace-pre-wrap">{m.content}</span>
+                  <Markdown text={m.content} headingOffset={2} />
                   {m.citations && m.citations.length > 0 ? (
                     <span className="mt-2 flex flex-wrap gap-2">
                       {m.citations.map((c, j) => !c.lessonId ? (
@@ -394,7 +395,7 @@ function TutorPanel({
           {streaming !== null ? (
             <div dir="auto">
               <AiSurface>
-                {streaming.length === 0 ? <Skeleton className="h-4 w-[160px]" /> : <span className="whitespace-pre-wrap">{streaming}</span>}
+                {streaming.length === 0 ? <Skeleton className="h-4 w-[160px]" /> : <Markdown text={streaming} headingOffset={2} />}
                 <span className="ms-2 text-sm text-muted" role="status">Responding…</span>
               </AiSurface>
             </div>
