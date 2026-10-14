@@ -19,9 +19,15 @@ export type NotificationKind =
   | "manager_digest"
   | "course_completed"
   | "oral_check_result"
-  | "oral_check_review";
+  | "oral_check_review"
+  | "course_submitted" | "course_approved" | "course_rejected" | "course_published" | "course_workflow_updated";
 
 const TEMPLATES: Record<NotificationKind, (p: Record<string, unknown>) => { title: string; body: string }> = {
+  course_submitted:p=>({title:"Course awaiting approval",body:`“${p.courseTitle}” is ready for Department Head review.`}),
+  course_approved:p=>({title:"Course approved",body:`“${p.courseTitle}” is approved and ready for HR publication.`}),
+  course_rejected:p=>({title:"Course needs changes",body:`“${p.courseTitle}” was rejected. ${p.comment ?? ""}`}),
+  course_published:p=>({title:"Course published",body:`“${p.courseTitle}” is available for rollout.`}),
+  course_workflow_updated:p=>({title:"Course workflow updated",body:`“${p.courseTitle}” is now ${String(p.state).toLowerCase().replaceAll("_"," ")}. ${p.comment ?? ""}`}),
   enrolled: (p) => ({ title: "New training assigned", body: `You've been enrolled in “${p.courseTitle}”.` }),
   due_soon: (p) => ({ title: "Training due soon", body: `“${p.courseTitle}” is due in ${p.days} day(s).` }),
   due_today: (p) => ({ title: "Training due today", body: `“${p.courseTitle}” is due today.` }),

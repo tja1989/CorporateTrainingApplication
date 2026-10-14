@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db, t, pool } from "@/lib/db/client";
 import { id } from "@/lib/ids";
+import type { LearningDatabase } from "@/lib/lms/learning-cycle";
 
 /**
  * Postgres-backed job queue (FOR UPDATE SKIP LOCKED) — the only queue in the
@@ -9,9 +10,9 @@ import { id } from "@/lib/ids";
 
 export type JobKind = "ingest_video" | "ingest_policy_doc" | "health_check_videos";
 
-export async function enqueue(kind: JobKind, payload: Record<string, unknown>, delayMs = 0): Promise<string> {
+export async function enqueue(kind: JobKind, payload: Record<string, unknown>, delayMs = 0, connection:LearningDatabase=db): Promise<string> {
   const jobId = id();
-  await db.insert(t.jobs).values({
+  await connection.insert(t.jobs).values({
     id: jobId,
     kind,
     payload,

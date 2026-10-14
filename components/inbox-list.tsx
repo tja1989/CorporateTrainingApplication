@@ -58,6 +58,7 @@ export async function InboxList({ userId, page = "1" }: { userId: string; page?:
 }
 
 function notificationHref(kind: string, payload: Record<string, unknown>): string {
+  if (kind.startsWith("course_") && typeof payload.href === "string" && /^\/(admin|hr|department|instructor)\/courses\/[^/]+$/.test(payload.href)) return payload.href;
   const value = (name: string) => typeof payload[name] === "string" ? encodeURIComponent(payload[name] as string) : null;
   if (kind === "hr_ticket_updated" && value("ticketId")) return `/ask-hr/tickets/${value("ticketId")}`;
   if (kind.startsWith("oral_check") && value("lessonId")) return `/lesson/${value("lessonId")}/interview`;

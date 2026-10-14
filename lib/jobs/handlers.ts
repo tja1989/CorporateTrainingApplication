@@ -8,6 +8,7 @@ export const handlers: Record<string, JobHandler> = {
     await ingestVideo(String(payload.videoId), {
       provider: payload.provider ? String(payload.provider) : undefined,
       rawTranscript: payload.rawTranscript ? String(payload.rawTranscript) : undefined,
+      binding:typeof payload.courseId==="string"?{courseId:payload.courseId,revision:Number(payload.revision)}:undefined,
     });
   },
 

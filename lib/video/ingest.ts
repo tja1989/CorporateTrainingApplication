@@ -4,16 +4,17 @@ import { id } from "@/lib/ids";
 import { getProvider } from "./transcript";
 import { chunkTranscript } from "./chunk";
 import { embed } from "@/lib/ai/embeddings";
+import { withDraftVideoWrite, type VideoDraftBinding } from "@/lib/courses/video-write";
 
 /**
  * Ingestion pipeline (spec FR-5.2/5.3): transcript → timestamped chunks →
  * embeddings → READY. Status transitions surfaced to admins with retry.
  */
-export async function ingestVideo(videoId: string, opts: { provider?: string; rawTranscript?: string }): Promise<void> {
+export async function ingestVideo(videoId: string, opts: { provider?: string; rawTranscript?: string; binding?:VideoDraftBinding }): Promise<void> {
   const [video] = await db.select().from(t.videos).where(eq(t.videos.id, videoId)).limit(1);
   if (!video) throw new Error(`Video ${videoId} not found`);
   const set = (status: typeof t.videos.$inferSelect.ingestionStatus, failureReason?: string) =>
-    db.update(t.videos).set({ ingestionStatus: status, failureReason: failureReason ?? null }).where(eq(t.videos.id, videoId));
+    withDraftVideoWrite(videoId,opts.binding,tx=>tx.update(t.videos).set({ ingestionStatus: status, failureReason: failureReason ?? null }).where(eq(t.videos.id, videoId)));
 
   try {
     await set("FETCHING");
@@ -30,9 +31,10 @@ export async function ingestVideo(videoId: string, opts: { provider?: string; ra
     await set("EMBEDDING");
     const vectors = await embed(chunks.map((c) => `${video.title}\n${c.text}`), "document");
 
-    await db.delete(t.videoChunks).where(eq(t.videoChunks.videoId, videoId));
+    await withDraftVideoWrite(videoId,opts.binding,async tx=>{
+    await tx.delete(t.videoChunks).where(eq(t.videoChunks.videoId, videoId));
     for (let i = 0; i < chunks.length; i++) {
-      await db.insert(t.videoChunks).values({
+      await tx.insert(t.videoChunks).values({
         id: id(),
         videoId,
         startSec: chunks[i].startSec,
@@ -42,16 +44,17 @@ export async function ingestVideo(videoId: string, opts: { provider?: string; ra
       });
     }
     const durationSec = Math.max(video.durationSec, chunks[chunks.length - 1].endSec);
-    await db
+    await tx
       .update(t.videos)
       .set({ ingestionStatus: "READY", failureReason: null, transcriptLang: lang, isGenerated, durationSec })
       .where(eq(t.videos.id, videoId));
+    });
 
     // AI quiz drafts land in the review queue — never auto-published (spec FR-5.4)
     const { generateDraftQuestions } = await import("@/lib/quiz/generate");
     await generateDraftQuestions(videoId).catch(() => {});
   } catch (err) {
-    await set("FAILED", err instanceof Error ? err.message : String(err));
+    await set("FAILED", err instanceof Error ? err.message : String(err)).catch(()=>{});
     throw err;
   }
 }
