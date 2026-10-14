@@ -8,7 +8,7 @@ web
 
 ## Users
 
-Frontline retail learners, their assigned managers, and HR/training administrators. Learners often use phones and employee IDs rather than corporate email. Managers monitor and assign training for direct reports; administrators author content and review assessments, HR tickets and compliance.
+Employees learn on phones using employee IDs. Instructors author assigned courses, Department Heads approve their department’s submissions, HR Heads publish and roll out training, and Super Admins manage identity and recorded interventions. Every role has its own learner workspace.
 
 ## Product Purpose
 
@@ -16,7 +16,7 @@ Make assigned training easy to find, resume and complete; provide course-grounde
 
 ## Capabilities and Constraints
 
-The existing37 page routes and all domain workflows are retained. Five lesson types, seven assessment types, learning paths, required-training rules, certificates/recertification, human review, integrity monitoring, daily optional practice, text/voice tutor and HR help, tickets, six reports, CSV import and exports. Existing Next.js/React/Tailwind/Drizzle/Postgres stack. English UI with multilingual content and RTL readiness. Offline/demo states must be labeled and cannot be claimed as live integration qualification.
+Existing learner and operational workflows are retained, with five role workspaces and audited course approval. Five lesson types, seven assessment types, learning paths, required-training rules, certificates/recertification, human review, integrity monitoring, daily optional practice, text/voice tutor and HR help, tickets, six reports, CSV import and exports. Existing Next.js/React/Tailwind/Drizzle/Postgres stack. English UI with multilingual content and RTL readiness. Offline/demo states must be labeled and cannot be claimed as live integration qualification.
 
 ## Brand Commitments
 

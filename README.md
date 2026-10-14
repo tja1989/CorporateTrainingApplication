@@ -40,7 +40,7 @@ npm run dev                    # http://localhost:3000
 | Learner | `AE10024` | Meera — Food Safety due soon; staged AI-graded answer in the review queue |
 | Learner | `AE10026` | Priya — certificate expiring → recert loop staged |
 
-Background jobs: `npm run worker` (queue) and `npm run sweep` (nightly compliance/reminders/recert/purge — run it from cron in production). Tests: `npm test` (117 tests over the state machines, scoring, routing, retrieval, Live model resolution, the nav rail's layout invariants, HR guardrails, and the design-system guardrails — closed spacing/weight/radius vocabulary, no typed glyph icons, plus WCAG contrast on every colour token in both themes).
+Background jobs: `npm run worker` (queue) and `npm run sweep` (nightly compliance/reminders/recert/purge — run it from cron in production). Tests: `npm test` (247 tests over the state machines, scoring, routing, retrieval, Live model resolution, the nav rail's layout invariants, HR guardrails, and the design-system guardrails — closed spacing/weight/radius vocabulary, no typed glyph icons, plus WCAG contrast on every colour token in both themes).
 
 ## AI configuration & honest degradation
 
@@ -83,3 +83,7 @@ Key directories: `lib/` (domain logic — compliance, rules, quiz engine, gradin
 ## Production checklist (from the spec — not yet done here)
 
 Real policy corpus with named owners + counsel review (the seeded handbook is **fictional**), DPAs with AI providers + DPIA (spec §7.11/FR-13.5), client sign-off items in spec §16 (proctoring reframe, reach channel, paid-time stance), organization-owned YouTube channel + official captions flow, per-language HR-assistant eval gates beyond English, WhatsApp/SMS channel, real SMTP transport.
+
+## Client roles and approval
+
+Five roles now have separate workspaces. Instructor submission, Department Head review and HR publication/rollout use versioned, audited decisions. Super Admin interventions require reasons. Existing users and learning history are migrated additively. See [qualification and demo provisioning](docs/qa/CLIENT_ROLES_APPROVAL.md) and the migration notes before deployment. Existing databases receive no automatic HR/Instructor promotions.

@@ -312,6 +312,10 @@ test("@core Instructor submits, Department Head rejects and approves, HR publish
     await hrPage.getByText(/Decision history/).click();
     await expectNoPageOverflow(hrPage);
     await capture(hrPage, info, "approved-published-course");
+    await hrPage.getByRole("button",{name:"Archive course",exact:true}).click();
+    await expect.poll(async()=>withDb(async db=>(await db.query("SELECT status FROM courses WHERE id=$1",[courseId])).rows[0].status)).toBe("ARCHIVED");
+    await employeePage.goto(`/course/${courseId}`);await expect(employeePage.getByRole("heading",{name:"Page not found",exact:true})).toBeVisible();
+    expect(await withDb(async db=>(await db.query("SELECT count(*)::int n FROM enrollments WHERE user_id=$1 AND course_id=$2",[employee.id,courseId])).rows[0].n)).toBe(1);
   } finally {
     await Promise.all(contexts.map((context) => context.close()));
   }

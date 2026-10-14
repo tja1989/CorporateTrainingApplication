@@ -78,8 +78,8 @@ export default async function TeamMemberPage({
 
   return (
     <div className="animate-slide-up mx-auto max-w-5xl">
-      <WorkspaceLink href="/team" className="mb-4">
-        ← My team
+      <WorkspaceLink href={manager.role==="HR_HEAD"?"/hr/people":"/team"} className="mb-4">
+        ← {manager.role==="HR_HEAD"?"Employees":"My team"}
       </WorkspaceLink>
       <PageTitle
         sub={`${member.jobTitle ?? ""} · ID ${member.employeeId}${member.email ? ` · ${member.email}` : " · no email"}`}

@@ -74,3 +74,5 @@ the compatible extra column. To remove the column, export id,navigation_index fi
 and run `ALTER TABLE attempts DROP COLUMN IF EXISTS navigation_index;` only after
 all newer processes stop. Dropping it loses forward-position enforcement across
 refresh, so leaving it in place is preferred. Never delete attempt history.
+
+Fresh fictional demo content is built while draft, then published as legacy demo material. Populated-database startup performs migrations only; it never appends supplemental lessons to reviewed courses. Department Head weekly digests follow department membership after role conversion.

@@ -1,5 +1,9 @@
 # xprtn client demo — 8 minutes
 
+## Client requirement update
+
+The five-role approval build is locally qualified in the isolated checkout. It is awaiting independent review/main integration and has not been deployed to Railway. Fresh fictional-seed logins and the approval walkthrough are in [CLIENT_ROLES_APPROVAL.md](qa/CLIENT_ROLES_APPROVAL.md). Existing hosted accounts are not automatically promoted to HR or Instructor.
+
 ## Start here
 
 Redesigned local preview: http://127.0.0.1:3100/login
