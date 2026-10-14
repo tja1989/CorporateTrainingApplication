@@ -145,6 +145,7 @@ function notificationHref(
     return `/quiz/${value("quizId")}`;
   if (value("pathId")) return `/path/${value("pathId")}`;
   if (value("courseId")) return `/course/${value("courseId")}`;
+  if (["course_feedback_digest","instructor_feedback_digest"].includes(kind) && typeof payload.href==="string" && payload.href.startsWith("/feedback?")) return payload.href;
   if (kind === "manager_digest") return "/team";
   return kind === "hr_ticket_updated"
     ? "/ask-hr"

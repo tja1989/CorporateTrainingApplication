@@ -324,6 +324,10 @@ export const feedbackRevisions=pgTable("feedback_revisions",{
  oldHidden:boolean("old_hidden"),newHidden:boolean("new_hidden").notNull(),oldExcluded:boolean("old_excluded"),newExcluded:boolean("new_excluded").notNull(),reason:text("reason").notNull().default(""),requestId:text("request_id").notNull(),at:timestamp("at",{withTimezone:true}).notNull().defaultNow(),
 },t=>[uniqueIndex("feedback_revision_request_uniq").on(t.requestId),uniqueIndex("feedback_revision_number_uniq").on(t.kind,t.responseId,t.revision),index("feedback_revision_cutoff_idx").on(t.kind,t.responseId,t.at)]);
 
+export const feedbackDigestRuns=pgTable("feedback_digest_runs",{
+ id:text("id").primaryKey(),recipientId:text("recipient_id").notNull(),intervalKind:text("interval_kind").$type<"week"|"month">().notNull(),kind:text("kind").$type<"course"|"instructor">().notNull(),periodStart:timestamp("period_start",{withTimezone:true}).notNull(),periodEnd:timestamp("period_end",{withTimezone:true}).notNull(),completedAt:timestamp("completed_at",{withTimezone:true}).notNull().defaultNow(),
+},t=>[uniqueIndex("feedback_digest_period_uniq").on(t.recipientId,t.intervalKind,t.kind,t.periodStart)]);
+
 // ---------------------------------------------------------------------------
 // Assessment
 // ---------------------------------------------------------------------------

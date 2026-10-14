@@ -17,12 +17,15 @@ export type NotificationKind =
   | "quiz_graded"
   | "hr_ticket_updated"
   | "manager_digest"
+  | "course_feedback_digest" | "instructor_feedback_digest"
   | "course_completed"
   | "oral_check_result"
   | "oral_check_review"
   | "course_submitted" | "course_approved" | "course_rejected" | "course_published" | "course_workflow_updated";
 
 const TEMPLATES: Record<NotificationKind, (p: Record<string, unknown>) => { title: string; body: string }> = {
+  course_feedback_digest:p=>({title:`${p.intervalKind==="week"?"Weekly":"Monthly"} course feedback`,body:`${p.period}: ${p.responses} response(s). ${p.average==null?"No responses.":`Average rating ${p.average} / 5.`}`}),
+  instructor_feedback_digest:p=>({title:`${p.intervalKind==="week"?"Weekly":"Monthly"} instructor feedback`,body:`${p.period}: ${p.responses} response(s). ${p.average==null?"No responses.":`Average rating ${p.average} / 5.`}`}),
   course_submitted:p=>({title:"Course awaiting approval",body:`“${p.courseTitle}” is ready for Department Head review.`}),
   course_approved:p=>({title:"Course approved",body:`“${p.courseTitle}” is approved and ready for HR publication.`}),
   course_rejected:p=>({title:"Course needs changes",body:`“${p.courseTitle}” was rejected. ${p.comment ?? ""}`}),

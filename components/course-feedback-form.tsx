@@ -1,28 +1,180 @@
 "use client";
-import {useEffect,useRef,useState} from "react";
-import {Button,Field,Textarea} from "./ui";
-import type {FeedbackKind,SavedFeedback} from "@/lib/feedback/types";
-import type {FeedbackActionResult} from "@/app/(learner)/course/[courseId]/feedback/actions";
-const scores=[[1,"Poor"],[2,"Fair"],[3,"Good"],[4,"Very good"],[5,"Excellent"]] as const;
-export function CourseFeedbackForm({kind,initial,requestId:initialRequestId,action}:{kind:FeedbackKind;initial:SavedFeedback|null;requestId:string;action:(form:FormData)=>Promise<FeedbackActionResult>}){
- const [rating,setRating]=useState(initial?.rating??0),[comment,setComment]=useState(initial?.comment??""),[saved,setSaved]=useState(initial),[revision,setRevision]=useState(initial?.revision??0),[requestId,setRequestId]=useState(initialRequestId);
- const [result,setResult]=useState<FeedbackActionResult|null>(null),[pending,setPending]=useState(false),[ready,setReady]=useState(false);const sending=useRef(false);useEffect(()=>setReady(true),[]);
- const label=kind==="course"?"Course feedback":"Instructor feedback";
- function load(value:SavedFeedback|null){setSaved(value);setRating(value?.rating??0);setComment(value?.comment??"");setRevision(value?.revision??0);setRequestId(crypto.randomUUID());setResult(null)}
- return <section aria-label={label} className="min-w-0 rounded-card border border-border bg-surface p-5 sm:p-6">
-  <h2 className="mb-2 text-xl font-semibold">{label}</h2><p className="mb-5 text-sm text-muted">{kind==="course"?"How useful was the content for your work?":"How well did the instructor help you understand the material?"}</p>
-  <form aria-busy={!ready||pending} onSubmit={event=>{event.preventDefault();if(sending.current)return;sending.current=true;setPending(true);setResult(null);const data=new FormData(event.currentTarget);void(async()=>{try{const next=await action(data);setResult(next);if(next.saved){setSaved(next.saved);setRevision(next.saved.revision);setRequestId(crypto.randomUUID())}}catch{setResult({error:"Could not save feedback. Your entries are still here; try again."})}finally{sending.current=false;setPending(false)}})()}}>
-   <fieldset disabled={!ready||pending} className="min-w-0"><input type="hidden" name="revision" value={revision}/><input type="hidden" name="requestId" value={requestId}/>
-    <fieldset className="mb-5"><legend className="mb-2 text-sm font-medium">Rating</legend><div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">{scores.map(([value,text])=><label key={value} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-control border border-border px-3 py-2 text-sm"><input type="radio" name="rating" value={value} checked={rating===value} onChange={()=>setRating(value)} required className="accent-primary"/>{value} — {text}</label>)}</div></fieldset>
-    <Field label="Comment or suggestion" hint="Optional · up to 2,000 characters"><Textarea name="comment" value={comment} onChange={event=>setComment(event.target.value)} maxLength={2000} rows={5}/></Field>
-    <Button type="submit">{pending?"Saving…":`Save ${kind} feedback`}</Button>
-   </fieldset>
-   {!ready?<p role="status" className="mt-3 text-sm text-muted">Preparing form…</p>:null}
-   {result?.error?<div className="mt-4"><p role="alert" className="rounded-control bg-destructive-tint p-3 text-sm text-destructive-text">{result.error}</p>{"current" in result?<Button type="button" variant="secondary" className="mt-3" onClick={()=>load(result.current??null)}>Load saved response</Button>:null}</div>:null}
-   {saved?<p role="status" className="mt-4 text-sm text-success-fg">Feedback saved · {saved.rating}/5 · {new Date(saved.updatedAt).toISOString().slice(0,16).replace("T"," ")} UTC</p>:null}
-   {saved?.commentHidden?<p className="mt-3 text-sm text-muted">Your comment is hidden from ordinary reports. Editing does not remove the moderation decision.</p>:null}
-   {saved?.excluded?<p className="mt-3 text-sm text-muted">This response is excluded from rating summaries by an audited moderation decision.</p>:null}
-   <noscript><p className="mt-3 text-sm text-muted">Enable JavaScript to submit feedback.</p></noscript>
-  </form>
- </section>
+import { useEffect, useRef, useState } from "react";
+import { Button, Field, Textarea } from "./ui";
+import type { FeedbackKind, SavedFeedback } from "@/lib/feedback/types";
+import type { FeedbackActionResult } from "@/app/(learner)/course/[courseId]/feedback/actions";
+const scores = [
+  [1, "Poor"],
+  [2, "Fair"],
+  [3, "Good"],
+  [4, "Very good"],
+  [5, "Excellent"],
+] as const;
+export function CourseFeedbackForm({
+  kind,
+  initial,
+  requestId: initialRequestId,
+  action,
+}: {
+  kind: FeedbackKind;
+  initial: SavedFeedback | null;
+  requestId: string;
+  action: (form: FormData) => Promise<FeedbackActionResult>;
+}) {
+  const [rating, setRating] = useState(initial?.rating ?? 0),
+    [comment, setComment] = useState(initial?.comment ?? ""),
+    [saved, setSaved] = useState(initial),
+    [revision, setRevision] = useState(initial?.revision ?? 0),
+    [requestId, setRequestId] = useState(initialRequestId);
+  const [result, setResult] = useState<FeedbackActionResult | null>(null),
+    [pending, setPending] = useState(false),
+    [ready, setReady] = useState(false);
+  const sending = useRef(false);
+  useEffect(() => setReady(true), []);
+  const label = kind === "course" ? "Course feedback" : "Instructor feedback";
+  function load(value: SavedFeedback | null) {
+    setSaved(value);
+    setRating(value?.rating ?? 0);
+    setComment(value?.comment ?? "");
+    setRevision(value?.revision ?? 0);
+    setRequestId(crypto.randomUUID());
+    setResult(null);
+  }
+  return (
+    <section
+      aria-label={label}
+      className="min-w-0 rounded-card border border-border bg-surface p-5 sm:p-6"
+    >
+      <h2 className="mb-2 text-xl font-semibold">{label}</h2>
+      <p className="mb-5 text-sm text-muted">
+        {kind === "course"
+          ? "How useful was the content for your work?"
+          : "How well did the instructor help you understand the material?"}
+      </p>
+      <form
+        aria-busy={!ready || pending}
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (sending.current) return;
+          sending.current = true;
+          setPending(true);
+          setResult(null);
+          const data = new FormData(event.currentTarget);
+          void (async () => {
+            try {
+              const next = await action(data);
+              setResult(next);
+              if (next.saved) {
+                setSaved(next.saved);
+                setRevision(next.saved.revision);
+                setRequestId(crypto.randomUUID());
+              }
+            } catch {
+              setResult({
+                error:
+                  "Could not save feedback. Your entries are still here; try again.",
+              });
+            } finally {
+              sending.current = false;
+              setPending(false);
+            }
+          })();
+        }}
+      >
+        <fieldset disabled={!ready || pending} className="min-w-0">
+          <input type="hidden" name="revision" value={revision} />
+          <input type="hidden" name="requestId" value={requestId} />
+          <fieldset className="mb-5">
+            <legend className="mb-2 text-sm font-medium">Rating</legend>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+              {scores.map(([value, text]) => (
+                <label
+                  key={value}
+                  className="flex min-h-11 cursor-pointer items-center gap-2 rounded-control border border-border px-3 py-2 text-sm"
+                >
+                  <input
+                    type="radio"
+                    name="rating"
+                    value={value}
+                    checked={rating === value}
+                    onChange={() => setRating(value)}
+                    required
+                    className="accent-primary"
+                  />
+                  {value} — {text}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <Field
+            label="Comment or suggestion"
+            hint="Optional · up to 2,000 characters"
+          >
+            <Textarea
+              name="comment"
+              value={comment}
+              onChange={(event) => setComment(event.target.value)}
+              maxLength={2000}
+              rows={5}
+            />
+          </Field>
+          <Button type="submit">
+            {pending ? "Saving…" : `Save ${kind} feedback`}
+          </Button>
+        </fieldset>
+        {!ready ? (
+          <p role="status" className="mt-3 text-sm text-muted">
+            Preparing form…
+          </p>
+        ) : null}
+        {result?.error ? (
+          <div className="mt-4">
+            <p
+              role="alert"
+              className="rounded-control bg-destructive-tint p-3 text-sm text-destructive-text"
+            >
+              {result.error}
+            </p>
+            {"current" in result ? (
+              <Button
+                type="button"
+                variant="secondary"
+                className="mt-3"
+                onClick={() => load(result.current ?? null)}
+              >
+                Load saved response
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+        {saved ? (
+          <p role="status" className="mt-4 text-sm text-success-fg">
+            Feedback saved · {saved.rating}/5 ·{" "}
+            {new Date(saved.updatedAt)
+              .toISOString()
+              .slice(0, 16)
+              .replace("T", " ")}{" "}
+            UTC
+          </p>
+        ) : null}
+        {saved?.commentHidden ? (
+          <p className="mt-3 text-sm text-muted">
+            Your comment is hidden from ordinary reports. Editing does not
+            remove the moderation decision.
+          </p>
+        ) : null}
+        {saved?.excluded ? (
+          <p className="mt-3 text-sm text-muted">
+            This response is excluded from rating summaries by an audited
+            moderation decision.
+          </p>
+        ) : null}
+        <noscript>
+          <p className="mt-3 text-sm text-muted">
+            Enable JavaScript to submit feedback.
+          </p>
+        </noscript>
+      </form>
+    </section>
+  );
 }

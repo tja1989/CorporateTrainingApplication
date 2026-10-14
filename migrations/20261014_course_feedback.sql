@@ -17,4 +17,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS feedback_revision_request_uniq ON feedback_rev
 CREATE UNIQUE INDEX IF NOT EXISTS feedback_revision_number_uniq ON feedback_revisions(kind,response_id,revision);
 CREATE INDEX IF NOT EXISTS feedback_revision_cutoff_idx ON feedback_revisions(kind,response_id,at);
 DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conname='feedback_revision_valid') THEN ALTER TABLE feedback_revisions ADD CONSTRAINT feedback_revision_valid CHECK(kind IN ('course','instructor') AND action IN ('create','edit','moderate') AND revision > 0 AND new_rating BETWEEN 1 AND 5); END IF; END $$;
+CREATE TABLE IF NOT EXISTS feedback_digest_runs(id text PRIMARY KEY,recipient_id text NOT NULL,interval_kind text NOT NULL,kind text NOT NULL,period_start timestamptz NOT NULL,period_end timestamptz NOT NULL,completed_at timestamptz NOT NULL DEFAULT now());
+CREATE UNIQUE INDEX IF NOT EXISTS feedback_digest_period_uniq ON feedback_digest_runs(recipient_id,interval_kind,kind,period_start);
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conname='feedback_digest_period_valid') THEN ALTER TABLE feedback_digest_runs ADD CONSTRAINT feedback_digest_period_valid CHECK(interval_kind IN ('week','month') AND kind IN ('course','instructor') AND period_end>period_start); END IF; END $$;
 COMMIT;

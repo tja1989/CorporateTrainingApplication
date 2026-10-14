@@ -11,6 +11,7 @@
     "seed": "tsx scripts/seed.ts",
     "worker": "tsx scripts/worker.ts",
     "sweep": "tsx scripts/sweep.ts",
+    "feedback:digests": "tsx scripts/feedback-digests.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "test:e2e": "tsx scripts/qa-playwright.ts test",
