@@ -6,9 +6,11 @@ Redesigned local preview: http://127.0.0.1:3100/login
 
 Railway: https://corporatetrainingapplication-production.up.railway.app/login
 
-The redesigned xprtn build is live on Railway at commit `24da41e`. The local preview has fictional demo data and explicitly labeled offline AI and typed oral checks. Keep this computer awake and its lid open while presenting the local preview.
+The redesigned xprtn build is live on Railway at commit `3d8ffcc` (the app code is unchanged from the merged `24da41e` release). The local preview has fictional demo data and explicitly labeled offline AI and typed oral checks. Keep this computer awake and its lid open while presenting the local preview.
 
-Provider check on 14 October: the hosted Anthropic key returns `401 invalid x-api-key`; Gemini denies project access. Use the local preview for AI/oral demonstrations until valid provider credentials have been applied and checked. The hosted learner/course interface is verified. The missing fictional policy corpus was restored (6 documents, 20 chunks), and the original hand-hygiene video's legacy duration was corrected from 148 to 86 seconds.
+Provider check on 14 October: the original hosted Anthropic key returned `401 invalid x-api-key`. The user replaced it and approved a second manual deployment, which became active at 15:39 IST with initialization ready. An actual HR question now returns `400 invalid_request_error`: the new key is not scoped to a workspace, so Anthropic requires the `anthropic-workspace-id` header. Use a workspace-scoped key for the current app, or add explicit workspace-header support before using a multi-workspace key. Gemini still denies project access. Use the local preview for AI/oral demonstrations until actual hosted answers/connections pass. The hosted learner/course interface is verified. The missing fictional policy corpus was restored (6 documents, 20 chunks), and the original hand-hygiene video's legacy duration was corrected from 148 to 86 seconds.
+
+Text model: Claude Sonnet 5.5 (`AI_MODEL=claude-sonnet-5-5`). After the user approved the manual deployment, Railway deployment `9554e12d` became active on 14 October with initialization ready at 19:03 IST. Wait for CI remained enabled. An actual hosted HR salary question still returns Anthropic's missing-workspace-header error; the model setting is deployed, but live answers remain blocked by the key's workspace requirement. Gemini access is also unresolved.
 
 | Role | Employee ID | Password | Use |
 |---|---|---|---|
@@ -64,6 +66,6 @@ Source: `3d744d7`; fresh production build: `2LqjVk9AEhX7q92s6zOxF`.
 
 181 unit tests, type check and build passed. 16 desktop/mobile Chromium workflow checks passed, including the full admin-publish → manager-assign → learner-complete → certificate/report chain. 12 additional Firefox/WebKit Tutor executions passed. The merged main checkout also passes 181 tests and its type check. The historical Tutor acceptance incident and real-provider/physical-iPhone gates remain open; today's focused smoke is not a full release qualification.
 
-The hosted database was backed up at 14:53 IST before release. GitHub CI could not start because of an account billing lock; the user approved a single manual Railway deployment using the local evidence. Wait for CI was restored afterward. Hosted initialization reports `ready` and all 30 original demo users remain.
+The hosted database was backed up at 14:53 IST before release. GitHub CI could not start because of an account billing lock; the user approved the initial manual Railway deployment using the local evidence, then separately approved the key-update deployment. Wait for CI was restored after the initial build and remained enabled during the key update. Hosted initialization reports `ready` and all 30 original demo users remain.
 
 Hosted Joseph manager sign-in and team dashboard were verified. 24 stale past-due open enrollment statuses were refreshed under the existing overdue rule; Joseph's team now shows 19 overdue assignments, consistently with the learner's overdue course. Completion history was not edited.

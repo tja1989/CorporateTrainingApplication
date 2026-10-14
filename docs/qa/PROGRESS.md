@@ -2,15 +2,17 @@
 
 ## Client demo release — 14 October 2026
 
-User authorized a bounded client demo deployment. PR #18 is merged; Railway serves xprtn commit `24da41e` with initialization ready and 30 demo users. The source checkout is updated to main. This does not close the historical Tutor acceptance item or change the 70% accepted full-plan figure below.
+User authorized a bounded client demo deployment. PR #18 is merged; Railway serves xprtn commit `3d8ffcc` (documentation update; app code unchanged from `24da41e`) with initialization ready and 30 demo users. The source checkout is updated to main. This does not close the historical Tutor acceptance item or change the 70% accepted full-plan figure below.
 
 Fresh checks: 181 units, type check, production build, 16 Chromium desktop/mobile demo workflows and 12 Firefox/WebKit Tutor checks passed. The merged main checkout also passes 181 units and type check. Hosted learner and manager logins and course pages were checked.
 
 Database backup completed at 14:53 IST. The previously empty hosted fictional policy corpus was restored with a guarded atomic insert (6 documents, 20 chunks; lexical retrieval, no vectors). The documented legacy video metadata correction changed the WHO demo duration from 148 to 86 seconds. 24 past-due open enrollment statuses were refreshed to OVERDUE using the existing compliance rule; completion history was not edited.
 
-GitHub CI could not start because the account is locked for a billing issue. User explicitly approved one manual Railway deployment using the passing local checks. Wait for CI was restored after that build started.
+GitHub CI could not start because the account is locked for a billing issue. User explicitly approved the initial manual Railway deployment using the passing local checks. Wait for CI was restored after that build started. The user then replaced the Anthropic key and separately approved a second manual deployment. Deployment `64457f4c-a37c-4c90-ba49-81cbb01acbfc` became active at 15:39 IST; Wait for CI was verified enabled, and initialization completed without reseeding the 30 existing users.
 
-**External provider blockers:** Anthropic responds `401 invalid x-api-key`; a typed-only Gemini Live connection reports project access denied. The user was asked to correct the Anthropic variable or select the labeled offline fallback. Live AI/voice is not qualified; the running local preview supports offline Tutor/HR and typed oral checks. Current walkthrough: [CLIENT_DEMO.md](../CLIENT_DEMO.md).
+**External provider blockers:** The original Anthropic key returned `401 invalid x-api-key`. After the user replaced it and the new deployment became ready, an actual HR annual-leave question returned `400 invalid_request_error`: the new key is not scoped to a workspace, and the provider requires `anthropic-workspace-id`. The current app does not set that header; a workspace-scoped key avoids the missing-header requirement. The user was asked to supply that key or the workspace ID for a scoped app change. A typed-only Gemini Live connection still reports project access denied. Live AI/voice is not qualified; the running local preview supports offline Tutor/HR and typed oral checks. Current walkthrough: [CLIENT_DEMO.md](../CLIENT_DEMO.md).
+
+User requested Claude Sonnet 5.5. Railway `AI_MODEL` was changed from `claude-sonnet-5` to the provider's verified ID `claude-sonnet-5-5` and applied. Deployment `c14687c4-5da5-4b96-9671-3fca765d8592` was skipped by the CI gate. GitHub run `38545946893` confirms the job never started because of the account billing lock. The user separately approved the manual deployment; `9554e12d-c431-4088-a62e-32478714bfcb` became active, with initialization ready at 19:03 IST on 14 October. Wait for CI was verified enabled. A real hosted HR salary question still returned `400 invalid_request_error` requiring `anthropic-workspace-id`; no successful model answer or live provider qualification is inferred. Evidence: `.artifacts/demo-ready-20261014/sonnet-55-change.png` and `sonnet-55-deployed.png` in the demo worktree.
 
 Plan: ../WELEARN_REWORK_PLAN.md
 
