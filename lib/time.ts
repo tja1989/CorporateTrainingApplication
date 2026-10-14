@@ -12,7 +12,7 @@ export function endOfDayInTz(daysFromNow: number, tz: string = DEFAULT_TZ, from:
   return new Date(localMidnightUtc.getTime() - 1000);
 }
 
-function zonedTimeToUtc(y: number, m: number, d: number, hh: number, mm: number, tz: string): Date {
+export function zonedTimeToUtc(y: number, m: number, d: number, hh: number, mm: number, tz: string): Date {
   // Interpret (y-m-d hh:mm) as wall time in tz. Two-pass offset estimation.
   const utcGuess = Date.UTC(y, m - 1, d, hh, mm);
   const offset = tzOffsetMs(new Date(utcGuess), tz);

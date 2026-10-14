@@ -48,6 +48,7 @@ export const ADMIN_NAV: NavItem[] = [
     icon: "chart",
     group: "Oversight",
   },
+  {href:"/feedback",label:"Feedback reports",icon:"chart"},
   {
     href: "/admin/integrity",
     label: "Assessment integrity",
@@ -65,6 +66,7 @@ export const HR_NAV: NavItem[] = [
   { href: "/hr/rollout", label: "Training rollout", icon: "users" },
   { href: "/hr/people", label: "Employees", icon: "users" },
   { href: "/hr/reports", label: "Reports", icon: "chart" },
+  {href:"/feedback",label:"Feedback reports",icon:"chart"},
   {
     href: "/admin/corpus",
     label: "Policy library",
@@ -90,11 +92,13 @@ export const DEPARTMENT_NAV: NavItem[] = [
   { href: "/team", label: "Department employees", icon: "users" },
   { href: "/department/rollout", label: "Training rollout", icon: "users" },
   { href: "/department/reports", label: "Reports", icon: "chart" },
+  {href:"/feedback",label:"Feedback reports",icon:"chart"},
 ];
 export const INSTRUCTOR_NAV: NavItem[] = [
   { href: "/instructor", label: "Overview", icon: "grid" },
   { href: "/instructor/courses", label: "My courses", icon: "book" },
   { href: "/instructor/reports", label: "Training reports", icon: "chart" },
+  {href:"/feedback",label:"Feedback reports",icon:"chart"},
 ];
 export function workspaceNavigation(role: string): NavItem[] {
   switch (canonicalRole(role)) {
