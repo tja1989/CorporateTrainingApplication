@@ -17,7 +17,7 @@ export default async function ResetCodePage({
   const { userId } = await params;
   const { code } = await searchParams;
   const [member] = await db.select().from(t.users).where(eq(t.users.id, userId)).limit(1);
-  if (!member || (manager.role === "MANAGER" && member.managerId !== manager.id) || !code) notFound();
+  if (!member || (manager.role === "DEPARTMENT_HEAD" && member.managerId !== manager.id) || !code) notFound();
 
   return (
     <div className="animate-slide-up mx-auto max-w-md">

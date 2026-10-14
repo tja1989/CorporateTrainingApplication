@@ -7,7 +7,8 @@ import { db, t } from "@/lib/db/client";
 import { id, activationCode } from "@/lib/ids";
 import { createSession, readSession, destroySession } from "./session";
 import { verifyTotp } from "./totp";
-import { requireRole } from "./guard";
+import { requireRole, requireUser } from "./guard";
+import { canonicalRole, defaultWorkspace, effectiveWorkspace, workspaceHome, needsMfa, allowedWorkspaces, canResetPerson, type Workspace } from "./roles";
 import { redirect } from "next/navigation";
 
 export type LoginResult = { ok: true; next: string } | { ok: false; error: string };
@@ -26,14 +27,16 @@ export async function login(employeeId: string, password: string, shared: boolea
   await recordAttempt(key, match);
   if (!match) return { ok: false, error: "Employee ID or password is incorrect." };
 
-  const workspace = user.role === "LEARNER" ? "learner" : user.role === "MANAGER" ? "manager" : "admin";
-  const needsMfaSetup = user.role === "ADMIN" && !user.totpSecret;
-  const needsMfaVerify = user.role === "ADMIN" && !!user.totpSecret;
-  await createSession({ uid: user.id, role: user.role, shared, workspace, mfa: !needsMfaVerify });
+  const role = canonicalRole(user.role);
+  if (!role) return { ok: false, error: "Employee ID or password is incorrect." };
+  const workspace = defaultWorkspace(role);
+  const needsMfaSetup = needsMfa(role) && !user.totpSecret;
+  const needsMfaVerify = needsMfa(role) && !!user.totpSecret;
+  await createSession({ uid: user.id, role, shared, workspace, mfa: !needsMfa(role) });
   if (needsMfaSetup) return { ok: true, next: "/login/mfa-setup" };
   if (needsMfaVerify) return { ok: true, next: "/login/mfa" };
   if (user.privacyNoticeVersion < 1) return { ok: true, next: "/privacy-notice" };
-  return { ok: true, next: workspace === "learner" ? "/home" : workspace === "manager" ? "/team" : "/admin" };
+  return { ok: true, next: workspaceHome(workspace) };
 }
 
 export async function activate(employeeId: string, code: string, newPassword: string): Promise<LoginResult> {
@@ -51,6 +54,8 @@ export async function activate(employeeId: string, code: string, newPassword: st
   await recordAttempt(key, match);
   if (!match) return { ok: false, error: "Activation failed. Check your employee ID and code." };
   if (newPassword.length < 8) return { ok: false, error: "Password must be at least 8 characters." };
+  const role = canonicalRole(user.role);
+  if (!role || user.erasedAt) return { ok: false, error: "Activation failed. Check your employee ID and code." };
 
   await db
     .update(t.users)
@@ -61,8 +66,9 @@ export async function activate(employeeId: string, code: string, newPassword: st
       inviteExpiresAt: null,
     })
     .where(eq(t.users.id, user.id));
-  const workspace = user.role === "LEARNER" ? "learner" : user.role === "MANAGER" ? "manager" : "admin";
-  await createSession({ uid: user.id, role: user.role, shared: false, workspace, mfa: user.role !== "ADMIN" });
+  const workspace = defaultWorkspace(role);
+  await createSession({ uid: user.id, role, shared: false, workspace, mfa: !needsMfa(role) });
+  if (needsMfa(role)) return { ok: true, next: user.totpSecret ? "/login/mfa" : "/login/mfa-setup" };
   return { ok: true, next: "/privacy-notice" };
 }
 
@@ -70,18 +76,22 @@ export async function verifyMfa(code: string): Promise<LoginResult> {
   const session = await readSession();
   if (!session) return { ok: false, error: "Session expired." };
   const [user] = await db.select().from(t.users).where(eq(t.users.id, session.uid)).limit(1);
-  if (!user?.totpSecret) return { ok: false, error: "MFA not configured." };
+  const role = user && canonicalRole(user.role);
+  if (!user?.totpSecret || user.erasedAt || !role || !needsMfa(role)) return { ok: false, error: "MFA not configured." };
   if (!verifyTotp(user.totpSecret, code)) return { ok: false, error: "Incorrect code." };
-  await createSession({ ...session, mfa: true });
-  return { ok: true, next: user.privacyNoticeVersion < 1 ? "/privacy-notice" : "/admin" };
+  const workspace = effectiveWorkspace(role, session.workspace);
+  await createSession({ ...session, role, workspace, mfa: true });
+  return { ok: true, next: user.privacyNoticeVersion < 1 ? "/privacy-notice" : workspaceHome(workspace) };
 }
 
 export async function acknowledgePrivacyNotice(): Promise<void> {
-  const session = await readSession();
-  if (!session) redirect("/login");
-  await db.update(t.users).set({ privacyNoticeVersion: 1 }).where(eq(t.users.id, session.uid));
-  await db.insert(t.consents).values({ id: id(), userId: session.uid, kind: "privacy_notice", version: "1" });
-  redirect(session.workspace === "learner" ? "/home" : session.workspace === "manager" ? "/team" : "/admin");
+  const { currentUser } = await import("./guard");
+  const user = await currentUser();
+  if (!user) redirect("/login");
+  if (needsMfa(user.role) && (!user.totpSecret || !user.session.mfa)) redirect(user.totpSecret ? "/login/mfa" : "/login/mfa-setup");
+  await db.update(t.users).set({ privacyNoticeVersion: 1 }).where(eq(t.users.id, user.id));
+  await db.insert(t.consents).values({ id: id(), userId: user.id, kind: "privacy_notice", version: "1" });
+  redirect(workspaceHome(user.session.workspace));
 }
 
 export async function logout(): Promise<void> {
@@ -93,9 +103,13 @@ export async function logout(): Promise<void> {
 export async function issueResetCode(targetUserId: string, _legacyIssuerId?: string): Promise<string> {
   // This exported server action is directly callable. Never trust the caller's
   // issuer ID or rely on the page that happened to render the reset button.
-  const issuer = await requireRole("MANAGER", "ADMIN");
+  const issuer = await requireRole("MANAGER", "ADMIN", "HR_HEAD");
   const [target] = await db.select().from(t.users).where(eq(t.users.id, targetUserId)).limit(1);
-  if (!target || target.erasedAt || (issuer.role === "MANAGER" && target.managerId !== issuer.id)) {
+  const issuerRole = canonicalRole(issuer.role), targetRole = target && canonicalRole(target.role);
+  if (!target || target.erasedAt || !issuerRole || !targetRole || !canResetPerson(
+    {id:issuer.id,role:issuerRole,departmentId:issuer.departmentId ?? null},
+    {id:target.id,role:targetRole,departmentId:target.departmentId ?? null},
+  )) {
     throw new Error("You can only reset accounts you manage.");
   }
   const code = activationCode();
@@ -117,12 +131,10 @@ export async function issueResetCode(targetUserId: string, _legacyIssuerId?: str
   return code;
 }
 
-export async function switchWorkspace(to: "admin" | "manager" | "learner"): Promise<void> {
-  const session = await readSession();
-  if (!session) redirect("/login");
-  const allowed =
-    session.role === "ADMIN" ? ["admin", "learner"] : session.role === "MANAGER" ? ["manager", "learner"] : ["learner"];
-  if (!allowed.includes(to)) redirect("/home");
-  await createSession({ ...session, workspace: to });
-  redirect(to === "learner" ? "/home" : to === "manager" ? "/team" : "/admin");
+export async function switchWorkspace(to: Workspace | "manager"): Promise<void> {
+  const user = await requireUser();
+  const workspace = to === "manager" ? "department" : to;
+  if (!allowedWorkspaces(user.role).includes(workspace)) redirect("/home");
+  await createSession({ ...user.session, role:user.role, workspace });
+  redirect(workspaceHome(workspace));
 }

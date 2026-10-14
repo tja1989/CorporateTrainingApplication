@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { WorkspaceForm } from "@/components/workspace-form";
 import { ResetCode } from "@/components/reset-code";
 import { Button, Chip, Field, Select } from "@/components/ui";
+import { ROLES, ROLE_LABELS, canonicalRole, type StoredRole } from "@/lib/auth/roles";
 import { issueCodeAction, updateUserAction } from "./actions";
 
 type Choice = { id: string; name: string };
@@ -11,7 +12,7 @@ type Person = {
   id: string;
   employeeId: string;
   name: string;
-  role: "LEARNER" | "MANAGER" | "ADMIN";
+  role: StoredRole;
   passwordState: string;
   jobTitle: string | null;
   storeId: string | null;
@@ -34,7 +35,7 @@ function PersonEditor({ person, choices }: { person: Person; choices: Choices })
   const details = useRef<HTMLDetailsElement>(null);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState({
-    role: person.role,
+    role: canonicalRole(person.role) ?? "LEARNER",
     managerId: person.managerId ?? "",
     storeId: person.storeId ?? "",
     groupId: person.groupId ?? "",
@@ -51,7 +52,7 @@ function PersonEditor({ person, choices }: { person: Person; choices: Choices })
         <span className="mt-1 block text-sm text-muted">{person.employeeId} · {person.jobTitle ?? "—"} · {storeName ?? "—"}</span>
       </span>
       <span className="flex gap-2">
-        <Chip variant={person.role === "ADMIN" ? "primary" : person.role === "MANAGER" ? "warning" : "neutral"}>{person.role.toLowerCase()}</Chip>
+        <Chip variant={person.role === "ADMIN" ? "primary" : canonicalRole(person.role) === "DEPARTMENT_HEAD" ? "warning" : "neutral"}>{ROLE_LABELS[canonicalRole(person.role) ?? "LEARNER"]}</Chip>
         {person.passwordState === "INVITED" ? <Chip variant="warning">invited</Chip> : null}
       </span>
     </summary>
@@ -60,8 +61,8 @@ function PersonEditor({ person, choices }: { person: Person; choices: Choices })
       <WorkspaceForm action={form => updateUserAction(person.id, form)} className="grid gap-3">
         {open ? <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Role">
-            <Select name="role" value={draft.role} onChange={event => setDraft({ ...draft, role: event.target.value as Person["role"] })}>
-              <option>LEARNER</option><option>MANAGER</option><option>ADMIN</option>
+            <Select name="role" value={draft.role} onChange={event => setDraft({ ...draft, role: event.target.value as typeof draft.role })}>
+              {ROLES.map(role => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}
             </Select>
           </Field>
           <Field label="Manager">

@@ -12,7 +12,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ reportId
   const url = new URL(req.url);
   const filters = {
     ...reportFilters(Object.fromEntries(url.searchParams)),
-    userIds: user.role === "MANAGER" || url.searchParams.get("scope") === "team" ? (await teamOf(user.id)).map((u) => u.id) : undefined,
+    userIds: user.role === "DEPARTMENT_HEAD" || url.searchParams.get("scope") === "team" ? (await teamOf(user.id)).map((u) => u.id) : undefined,
   };
   const result = await runReport(reportId as ReportId, filters);
   return new Response(toCsv(result), {

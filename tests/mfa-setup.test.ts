@@ -15,8 +15,14 @@ vi.mock("../lib/db/client", () => ({ t: { users: { id: "id", totpSecret: "secret
 import { mfaSetupConfirm } from "../app/(auth)/actions";
 const secret = "JBSWY3DPEHPK3PXP";
 function submission() { const form = new FormData(); form.set("secret", secret); form.set("code", totpCode(secret)); return form; }
-beforeEach(() => { state.user.totpSecret = null; state.session.mfa = false; state.persistedSecret = null; });
+beforeEach(() => { state.user.role = "ADMIN"; state.user.totpSecret = null; state.session.mfa = false; state.persistedSecret = null; });
 describe("initial MFA setup", () => {
+  it("requires and supports authenticator enrollment for HR heads", async () => {
+    state.user.role = "HR_HEAD";
+    await expect(mfaSetupConfirm(null, submission())).rejects.toThrow("redirect:/privacy-notice");
+    expect(state.persistedSecret).toBe(secret);
+    expect(state.session.mfa).toBe(true);
+  });
   it("cannot replace an already configured authenticator", async () => {
     state.user.totpSecret = "existing";
     expect(await mfaSetupConfirm(null, submission())).toEqual({ error: "Two-factor authentication is already configured. Sign in with your authenticator code." });

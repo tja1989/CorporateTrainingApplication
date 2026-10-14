@@ -15,7 +15,7 @@ import { endOfDayInTz } from "@/lib/time";
 async function authorizeOnTeam(managerId: string, role: string, userId: string) {
   const [member] = await db.select().from(t.users).where(eq(t.users.id, userId)).limit(1);
   if (!member) return null;
-  if (role === "MANAGER" && member.managerId !== managerId) return null;
+  if (role === "DEPARTMENT_HEAD" && member.managerId !== managerId) return null;
   return member;
 }
 

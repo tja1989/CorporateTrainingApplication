@@ -10,6 +10,7 @@ import {
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import type { StoredRole } from "@/lib/auth/roles";
 
 // ---------------------------------------------------------------------------
 // Identity & org
@@ -34,7 +35,8 @@ export const users = pgTable(
     id: text("id").primaryKey(),
     employeeId: text("employee_id").notNull(),
     name: text("name").notNull(),
-    role: text("role").$type<"ADMIN" | "MANAGER" | "LEARNER">().notNull(),
+    role: text("role").$type<StoredRole>().notNull(),
+    departmentId: text("department_id"),
     storeId: text("store_id"),
     managerId: text("manager_id"),
     groupIds: jsonb("group_ids").$type<string[]>().notNull().default([]),

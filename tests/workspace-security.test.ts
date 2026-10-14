@@ -3,8 +3,8 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import * as schema from "../lib/db/schema";
 
 const state = vi.hoisted(() => ({
-  actor: { id: "manager", role: "MANAGER" } as { id: string; role: string } | null,
-  target: { id: "member", managerId: "manager", erasedAt: null } as Record<string, unknown>,
+  actor: { id: "manager", role: "MANAGER", departmentId: "a" } as { id: string; role: string; departmentId?: string } | null,
+  target: { id: "member", managerId: "manager", departmentId: "a", erasedAt: null } as Record<string, unknown>,
   writes: [] as unknown[],
 }));
 vi.mock("@/lib/auth/guard", () => ({ requireRole: async (...roles: string[]) => {
@@ -37,8 +37,8 @@ import { issueResetCode } from "../lib/auth/login";
 import { runReport, type ReportId } from "../lib/reports";
 
 beforeEach(() => {
-  state.actor = { id: "manager", role: "MANAGER" };
-  state.target = { id: "member", managerId: "manager", erasedAt: null };
+  state.actor = { id: "manager", role: "MANAGER", departmentId: "a" };
+  state.target = { id: "member", managerId: "manager", departmentId: "a", erasedAt: null };
   state.writes = [];
 });
 
@@ -55,6 +55,7 @@ describe("reset action authorization at the remote entry point", () => {
   });
   it("rejects another manager's employee", async () => {
     state.target.managerId = "someone-else";
+    state.target.departmentId = "b";
     await expect(issueResetCode("member", "manager")).rejects.toThrow();
     expect(state.writes).toEqual([]);
   });

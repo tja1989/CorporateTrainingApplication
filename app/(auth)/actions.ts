@@ -7,6 +7,7 @@ import { login, activate, verifyMfa } from "@/lib/auth/login";
 import { createSession } from "@/lib/auth/session";
 import { currentUser } from "@/lib/auth/guard";
 import { generateTotpSecret, verifyTotp } from "@/lib/auth/totp";
+import { needsMfa } from "@/lib/auth/roles";
 
 export type FormState = { error?: string } | null;
 
@@ -32,14 +33,14 @@ export async function mfaVerifyAction(_prev: FormState, form: FormData): Promise
 
 export async function mfaSetupBegin(): Promise<{ secret: string } | { error: string }> {
   const user = await currentUser();
-  if (!user || user.role !== "ADMIN") return { error: "Not authorized." };
+  if (!user || !needsMfa(user.role)) return { error: "Not authorized." };
   if (user.totpSecret) return { error: "Two-factor authentication is already configured. Sign in with your authenticator code." };
   return { secret: generateTotpSecret() };
 }
 
 export async function mfaSetupConfirm(_prev: FormState, form: FormData): Promise<FormState> {
   const user = await currentUser();
-  if (!user || user.role !== "ADMIN") return { error: "Not authorized." };
+  if (!user || !needsMfa(user.role)) return { error: "Not authorized." };
   if (user.totpSecret) return { error: "Two-factor authentication is already configured. Sign in with your authenticator code." };
   const secret = String(form.get("secret") ?? "");
   const code = String(form.get("code") ?? "");

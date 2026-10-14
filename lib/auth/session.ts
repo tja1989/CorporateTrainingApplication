@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import type { StoredRole, Workspace } from "./roles";
 
 const COOKIE = "ll_session";
 const secret = () => new TextEncoder().encode(process.env.SESSION_SECRET ?? "dev-secret-do-not-use");
@@ -9,10 +10,10 @@ export type SessionData = {
   uid: string;
   /** Stable across claim updates; a fresh credential login creates a new identity. */
   loginId?: string;
-  role: "ADMIN" | "MANAGER" | "LEARNER";
+  role: StoredRole;
   shared: boolean; // shared-device login → short idle expiry
   /** Managers/admins can flip into their own learner workspace. */
-  workspace: "admin" | "manager" | "learner";
+  workspace: Workspace | "manager";
   hrHistoryVerifiedAt?: number;
   activeHrConversationId?: string;
   iat?: number;

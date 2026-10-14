@@ -10,7 +10,7 @@ export function parseDays(raw: string): Parsed<number> {
   const value = Number(raw);
   return Number.isInteger(value) && value >= 1 && value <= 3650 ? { value } : { error: "Enter a whole number of days between 1 and 3650." };
 }
-export type PeopleCsvRow = { row: number; employeeId: string; name: string; role: "ADMIN" | "MANAGER" | "LEARNER"; storeName: string; groupName: string; jobTitle: string; hireDate: string; managerEmployeeId: string };
+export type PeopleCsvRow = { row: number; employeeId: string; name: string; role: Role; storeName: string; groupName: string; jobTitle: string; hireDate: string; managerEmployeeId: string };
 export function parsePeopleCsv(csv: string): { rows: PeopleCsvRow[]; errors: { row: number; message: string }[] } {
   const rows: PeopleCsvRow[] = []; const errors: { row: number; message: string }[] = []; const seen = new Set<string>();
   csv.split(/\r?\n/).forEach((line, index) => {
@@ -25,10 +25,11 @@ export function parsePeopleCsv(csv: string): { rows: PeopleCsvRow[]; errors: { r
     if (index === 0 && cells[0].toLowerCase() === "employeeid") return;
     const [employeeIdRaw, name, roleRaw, storeName = "", groupName = "", jobTitle = "", hireDate = "", managerEmployeeId = ""] = cells;
     const employeeId = employeeIdRaw?.toUpperCase(); const role = roleRaw?.toUpperCase();
-    let message = quoted ? "Unclosed quoted field." : cells.length < 3 || cells.length > 8 ? "Use 3–8 columns in the displayed order." : !employeeId || !name ? "Employee ID and name are required." : !["ADMIN", "MANAGER", "LEARNER"].includes(role) ? "Role must be LEARNER, MANAGER or ADMIN." : hireDate && (!/^\d{4}-\d{2}-\d{2}$/.test(hireDate) || Number.isNaN(Date.parse(hireDate)) || new Date(hireDate).toISOString().slice(0,10) !== hireDate) ? "Hire date must be a valid YYYY-MM-DD date." : seen.has(employeeId) ? "Duplicate employee ID in this import." : "";
+    let message = quoted ? "Unclosed quoted field." : cells.length < 3 || cells.length > 8 ? "Use 3–8 columns in the displayed order." : !employeeId || !name ? "Employee ID and name are required." : !(ROLES as readonly string[]).includes(role) ? "Choose ADMIN, HR_HEAD, DEPARTMENT_HEAD, INSTRUCTOR or LEARNER." : hireDate && (!/^\d{4}-\d{2}-\d{2}$/.test(hireDate) || Number.isNaN(Date.parse(hireDate)) || new Date(hireDate).toISOString().slice(0,10) !== hireDate) ? "Hire date must be a valid YYYY-MM-DD date." : seen.has(employeeId) ? "Duplicate employee ID in this import." : "";
     if (message) { errors.push({ row, message }); return; }
     seen.add(employeeId);
     rows.push({ row, employeeId, name, role: role as PeopleCsvRow["role"], storeName, groupName, jobTitle, hireDate, managerEmployeeId: managerEmployeeId.toUpperCase() });
   });
   return { rows, errors };
 }
+import { ROLES, type Role } from "./auth/roles";

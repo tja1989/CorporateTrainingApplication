@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 
   const plan = await planFromQuestion(body.question.trim());
   // scope injection is server-side only: managers see their team, never model-chosen
-  if (user.role === "MANAGER" || body.scope === "team") {
+  if (user.role === "DEPARTMENT_HEAD" || body.scope === "team") {
     const team = await teamOf(user.id);
     plan.filters.userIds = team.map((u) => u.id);
   }

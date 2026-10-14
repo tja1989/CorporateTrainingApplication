@@ -15,7 +15,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ use
   const manager = await requireRole("MANAGER", "ADMIN");
   const { userId } = await params;
   const [member] = await db.select().from(t.users).where(eq(t.users.id, userId)).limit(1);
-  if (!member || member.erasedAt || (manager.role === "MANAGER" && member.managerId !== manager.id)) notFound();
+  if (!member || member.erasedAt || (manager.role === "DEPARTMENT_HEAD" && member.managerId !== manager.id)) notFound();
 
   const enrollments = await db
     .select()

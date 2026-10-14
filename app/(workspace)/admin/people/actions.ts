@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
+import { ROLES, canonicalRole, type Role } from "@/lib/auth/roles";
 import { requireRole } from "@/lib/auth/guard";
 import { id, activationCode } from "@/lib/ids";
 import { reevaluateUser, reevaluateAllUsers } from "@/lib/lms/rules";
@@ -15,10 +16,12 @@ import { issueResetCode } from "@/lib/auth/login";
 export async function updateUserAction(userId: string, form: FormData): Promise<void> {
   await requireRole("ADMIN");
   const groupId = String(form.get("groupId") ?? "");
+  const role = String(form.get("role") ?? "");
+  if (!ROLES.includes(role as Role)) throw new Error("Choose a valid role.");
   await db
     .update(t.users)
     .set({
-      role: String(form.get("role") ?? "LEARNER") as "ADMIN" | "MANAGER" | "LEARNER",
+      role: role as Role,
       managerId: String(form.get("managerId") ?? "") || null,
       storeId: String(form.get("storeId") ?? "") || null,
       groupIds: groupId ? [groupId] : [],
@@ -49,7 +52,7 @@ export async function importCsvAction(form: FormData): Promise<ActionResult> {
     const store = row.storeName ? stores.find(s => s.name.toLowerCase() === row.storeName.toLowerCase()) : undefined;
     const group = row.groupName ? groups.find(g => g.name.toLowerCase() === row.groupName.toLowerCase()) : undefined;
     const manager = row.managerEmployeeId ? byEmployeeId.get(row.managerEmployeeId) : undefined;
-    const problem = row.storeName && !store ? "Store not found." : row.groupName && !group ? "Group not found." : row.managerEmployeeId && (!manager || manager.role === "LEARNER") ? "Manager employee ID must identify an existing manager or administrator." : "";
+    const problem = row.storeName && !store ? "Store not found." : row.groupName && !group ? "Group not found." : row.managerEmployeeId && (!manager || !["ADMIN", "DEPARTMENT_HEAD"].includes(canonicalRole(manager.role) ?? "")) ? "Manager employee ID must identify an existing manager or administrator." : "";
     if (problem) { errors.push(`Row ${row.row}: ${problem}`); continue; }
     const code = activationCode(); const userId = id();
     const inviteCodeHash = await bcrypt.hash(code, 10);

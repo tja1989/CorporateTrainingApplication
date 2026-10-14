@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
+import { canonicalRole, policyAudience } from "@/lib/auth/roles";
 
 /** Resolves the country code for a store by walking org_units up to the country (default AE). */
 export async function userCountry(storeId: string | null): Promise<string> {
@@ -16,5 +17,6 @@ export async function userCountry(storeId: string | null): Promise<string> {
 
 /** Hard retrieval scope for the HR assistant (spec FR-8.5): country + audience. */
 export async function hrScopeFor(user: { storeId: string | null; role: string }): Promise<{ country: string; audience: "all" | "managers" }> {
-  return { country: await userCountry(user.storeId), audience: user.role === "LEARNER" ? "all" : "managers" };
+  const role = canonicalRole(user.role);
+  return { country: await userCountry(user.storeId), audience: role ? policyAudience(role) : "all" };
 }

@@ -4,6 +4,7 @@ import { PeopleEditorList } from "./people-editor";
 import { Icon } from "@/components/icons";
 import { asc } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
+import { canonicalRole } from "@/lib/auth/roles";
 import { requireRole } from "@/lib/auth/guard";
 import { Button, Card, Chip, Field, Input, PageHeader, Select, SectionTitle, Textarea } from "@/components/ui";
 import { importCsvAction, createRuleAction, toggleRuleAction, createGroupAction } from "./actions";
@@ -31,7 +32,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
   const rules = await db.select().from(t.enrollmentRules);
   const courses = await db.select().from(t.courses);
   const paths = await db.select().from(t.paths);
-  const managers = users.filter((u) => u.role !== "LEARNER");
+  const managers = users.filter((u) => ["ADMIN", "DEPARTMENT_HEAD"].includes(canonicalRole(u.role) ?? ""));
   const groupName = new Map(groups.map((g) => [g.id, g.name]));
   const targetName = (r: typeof rules[number]) =>
     r.targetType === "course" ? courses.find((c) => c.id === r.targetId)?.title : paths.find((p) => p.id === r.targetId)?.title;

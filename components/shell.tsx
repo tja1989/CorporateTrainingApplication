@@ -2,6 +2,7 @@ import Link from "next/link";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import type { CurrentUser } from "@/lib/auth/guard";
+import { defaultWorkspace, workspaceHome } from "@/lib/auth/roles";
 import { logout, switchWorkspace } from "@/lib/auth/login";
 import { readFlash } from "@/lib/flash";
 import { ADMIN_NAV, MANAGER_NAV, LEARNER_NAV } from "@/lib/navigation";
@@ -17,19 +18,19 @@ async function unreadCount(userId: string): Promise<number> {
   const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(t.notifications).where(and(eq(t.notifications.userId, userId), isNull(t.notifications.readAt)));
   return row?.n ?? 0;
 }
-const workspaceNames = { learner: "Learning workspace", admin: "Admin workspace", manager: "Manager workspace" };
+const workspaceNames = { learner: "Learning workspace", admin: "Super Admin workspace", manager: "Department workspace", department: "Department workspace", hr: "HR workspace", instructor: "Instructor workspace" };
 type Workspace = CurrentUser["session"]["workspace"];
 function AccountActions({ user, workspace }: { user: CurrentUser; workspace: Workspace }) {
   return <>
-    {user.role !== "LEARNER" ? <form action={switchWorkspace.bind(null, workspace === "learner" ? (user.role === "ADMIN" ? "admin" : "manager") : "learner")}>
-      <button type="submit" className="header-control gap-2 px-3 text-sm"><Icon name="swap" size={18} />{workspace === "learner" ? `Switch to ${user.role === "ADMIN" ? "admin" : "manager"}` : "View as learner"}</button>
+    {user.role !== "LEARNER" ? <form action={switchWorkspace.bind(null, workspace === "learner" ? defaultWorkspace(user.role) : "learner")}>
+      <button type="submit" className="header-control gap-2 px-3 text-sm"><Icon name="swap" size={18} />{workspace === "learner" ? `Switch to ${workspaceNames[defaultWorkspace(user.role)].replace(" workspace", "")}` : "View as learner"}</button>
     </form> : null}
     <form action={logout}><button type="submit" className="header-control gap-2 px-3 text-sm"><Icon name="logout" size={18} />Sign out</button></form>
   </>;
 }
 function Header({ user, workspace: ws, unread, compact = false }: { user: CurrentUser; workspace: Workspace; unread: number; compact?: boolean }) {
   const learner = ws === "learner";
-  const home = learner ? "/home" : ws === "admin" ? "/admin" : "/team";
+  const home = workspaceHome(ws);
   const inbox = learner ? "/inbox" : `${home}/inbox`;
   return <header className={`app-header${compact ? " lesson-shell-header" : ""}`}>
     <div className="header-inner">

@@ -12,7 +12,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ certId:
   const isOwner = cert.userId === user.id;
   const isAdmin = user.role === "ADMIN";
   const [holder] = await db.select().from(t.users).where(eq(t.users.id, cert.userId)).limit(1);
-  const isManagerOf = user.role === "MANAGER" && holder?.managerId === user.id;
+  const isManagerOf = user.role === "DEPARTMENT_HEAD" && holder?.managerId === user.id;
   if (!isOwner && !isAdmin && !isManagerOf) return new Response("Forbidden", { status: 403 });
   const [course] = await db.select().from(t.courses).where(eq(t.courses.id, cert.courseId)).limit(1);
 
