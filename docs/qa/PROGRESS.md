@@ -1,5 +1,17 @@
 # xprtn rework progress
 
+## Client demo release — 14 October 2026
+
+User authorized a bounded client demo deployment. PR #18 is merged; Railway serves xprtn commit `24da41e` with initialization ready and 30 demo users. The source checkout is updated to main. This does not close the historical Tutor acceptance item or change the 70% accepted full-plan figure below.
+
+Fresh checks: 181 units, type check, production build, 16 Chromium desktop/mobile demo workflows and 12 Firefox/WebKit Tutor checks passed. The merged main checkout also passes 181 units and type check. Hosted learner and manager logins and course pages were checked.
+
+Database backup completed at 14:53 IST. The previously empty hosted fictional policy corpus was restored with a guarded atomic insert (6 documents, 20 chunks; lexical retrieval, no vectors). The documented legacy video metadata correction changed the WHO demo duration from 148 to 86 seconds. 24 past-due open enrollment statuses were refreshed to OVERDUE using the existing compliance rule; completion history was not edited.
+
+GitHub CI could not start because the account is locked for a billing issue. User explicitly approved one manual Railway deployment using the passing local checks. Wait for CI was restored after that build started.
+
+**External provider blockers:** Anthropic responds `401 invalid x-api-key`; a typed-only Gemini Live connection reports project access denied. The user was asked to correct the Anthropic variable or select the labeled offline fallback. Live AI/voice is not qualified; the running local preview supports offline Tutor/HR and typed oral checks. Current walkthrough: [CLIENT_DEMO.md](../CLIENT_DEMO.md).
+
 Plan: ../WELEARN_REWORK_PLAN.md
 
 Overall accepted: **70%**. The renewed browser execution is complete: two consecutive 741/741 runs and all local supporting checks passed. Final browser acceptance remains open for the historical Tutor primary-action failure; no acceptance waiver is inferred. See [QUALIFICATION.md](QUALIFICATION.md).

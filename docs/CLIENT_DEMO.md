@@ -6,7 +6,9 @@ Redesigned local preview: http://127.0.0.1:3100/login
 
 Railway: https://corporatetrainingapplication-production.up.railway.app/login
 
-The public site still serves the older LuLu Learn version until the redesign deployment is verified. The local preview has fictional demo data and explicitly labeled offline AI and typed oral checks. Keep this computer awake and its lid open while presenting the local preview.
+The redesigned xprtn build is live on Railway at commit `24da41e`. The local preview has fictional demo data and explicitly labeled offline AI and typed oral checks. Keep this computer awake and its lid open while presenting the local preview.
+
+Provider check on 14 October: the hosted Anthropic key returns `401 invalid x-api-key`; Gemini denies project access. Use the local preview for AI/oral demonstrations until valid provider credentials have been applied and checked. The hosted learner/course interface is verified. The missing fictional policy corpus was restored (6 documents, 20 chunks), and the original hand-hygiene video's legacy duration was corrected from 148 to 86 seconds.
 
 | Role | Employee ID | Password | Use |
 |---|---|---|---|
@@ -60,4 +62,8 @@ Close with: **“xprtn combines structured learning, grounded assistance, assess
 
 Source: `3d744d7`; fresh production build: `2LqjVk9AEhX7q92s6zOxF`.
 
-181 unit tests, type check and build passed. 16 desktop/mobile Chromium workflow checks passed, including the full admin-publish → manager-assign → learner-complete → certificate/report chain. 12 additional Firefox/WebKit Tutor executions passed. The historical Tutor acceptance incident and real-provider/physical-iPhone gates remain open; today's focused smoke is not a full release qualification.
+181 unit tests, type check and build passed. 16 desktop/mobile Chromium workflow checks passed, including the full admin-publish → manager-assign → learner-complete → certificate/report chain. 12 additional Firefox/WebKit Tutor executions passed. The merged main checkout also passes 181 tests and its type check. The historical Tutor acceptance incident and real-provider/physical-iPhone gates remain open; today's focused smoke is not a full release qualification.
+
+The hosted database was backed up at 14:53 IST before release. GitHub CI could not start because of an account billing lock; the user approved a single manual Railway deployment using the local evidence. Wait for CI was restored afterward. Hosted initialization reports `ready` and all 30 original demo users remain.
+
+Hosted Joseph manager sign-in and team dashboard were verified. 24 stale past-due open enrollment statuses were refreshed under the existing overdue rule; Joseph's team now shows 19 overdue assignments, consistently with the learner's overdue course. Completion history was not edited.
