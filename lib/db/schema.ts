@@ -29,6 +29,12 @@ export const groups = pgTable("groups", {
   name: text("name").notNull(),
 });
 
+export const departments = pgTable("departments", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const users = pgTable(
   "users",
   {
@@ -55,7 +61,7 @@ export const users = pgTable(
     erasedAt: timestamp("erased_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("users_employee_id_uniq").on(t.employeeId)],
+  (t) => [uniqueIndex("users_employee_id_uniq").on(t.employeeId), index("users_department_idx").on(t.departmentId)],
 );
 
 export const loginAttempts = pgTable("login_attempts", {
@@ -92,9 +98,33 @@ export const courses = pgTable("courses", {
   certificateValidityDays: integer("certificate_validity_days"),
   recertLeadDays: integer("recert_lead_days").notNull().default(30),
   createdBy: text("created_by"),
+  departmentId: text("department_id"),
+  instructorId: text("instructor_id"),
+  approvalState: text("approval_state").$type<"DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED" | "LEGACY_PUBLISHED">().notNull().default("DRAFT"),
+  contentRevision: integer("content_revision").notNull().default(1),
+  submittedRevision: integer("submitted_revision"),
+  approvedRevision: integer("approved_revision"),
+  submittedBy: text("submitted_by"),
+  approvedBy: text("approved_by"),
   publishedAt: timestamp("published_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [index("courses_department_idx").on(t.departmentId), index("courses_instructor_idx").on(t.instructorId)]);
+
+export const courseWorkflowEvents = pgTable("course_workflow_events", {
+  id: text("id").primaryKey(),
+  courseId: text("course_id").notNull(),
+  actorId: text("actor_id").notNull(),
+  actorRole: text("actor_role").notNull(),
+  action: text("action").notNull(),
+  revision: integer("revision").notNull(),
+  fromState: text("from_state").notNull(),
+  toState: text("to_state").notNull(),
+  fromPublication: text("from_publication").notNull(),
+  toPublication: text("to_publication").notNull(),
+  comment: text("comment").notNull().default(""),
+  requestId: text("request_id").notNull(),
+  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [uniqueIndex("course_workflow_request_uniq").on(t.requestId), index("course_workflow_course_time_idx").on(t.courseId, t.at)]);
 
 export const modules = pgTable("modules", {
   id: text("id").primaryKey(),

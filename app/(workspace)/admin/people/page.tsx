@@ -7,7 +7,7 @@ import { db, t } from "@/lib/db/client";
 import { canonicalRole } from "@/lib/auth/roles";
 import { requireRole } from "@/lib/auth/guard";
 import { Button, Card, Chip, Field, Input, PageHeader, Select, SectionTitle, Textarea } from "@/components/ui";
-import { importCsvAction, createRuleAction, toggleRuleAction, createGroupAction } from "./actions";
+import { importCsvAction, createRuleAction, toggleRuleAction, createGroupAction, createDepartmentAction, renameDepartmentAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ const PAGE_SIZE = 25;
 export default async function PeoplePage({ searchParams }: { searchParams: Promise<{ q?: string; view?: string; page?: string }> }) {
   await requireRole("ADMIN");
   const { q, view: viewParam, page: pageParam } = await searchParams;
-  const view = ["import", "groups", "rules"].includes(viewParam ?? "") ? viewParam! : "people";
+  const view = ["import", "groups", "rules", "departments"].includes(viewParam ?? "") ? viewParam! : "people";
   const users = await db.select().from(t.users).orderBy(asc(t.users.employeeId));
   const filtered = q
     ? users.filter((u) => u.name.toLowerCase().includes(q.toLowerCase()) || u.employeeId.toLowerCase().includes(q.toLowerCase()))
@@ -29,6 +29,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
 
   const stores = (await db.select().from(t.orgUnits)).filter((o) => o.type === "store");
   const groups = await db.select().from(t.groups);
+  const departments = await db.select().from(t.departments).orderBy(asc(t.departments.name));
   const rules = await db.select().from(t.enrollmentRules);
   const courses = await db.select().from(t.courses);
   const paths = await db.select().from(t.paths);
@@ -41,7 +42,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
     <div className="animate-slide-up">
       <PageHeader title="People" sub="Manage employees, import new starters, and keep required learning aligned with their roles." />
 
-      <WorkspaceTabs label="People management" items={["people", "import", "groups", "rules"].map(v => ({ href: `/admin/people?view=${v}`, label: v === "people" ? "People" : v === "import" ? "CSV import" : v === "groups" ? "Groups" : "Enrollment rules", active: view === v }))} />
+      <WorkspaceTabs label="People management" items={["people", "import", "departments", "groups", "rules"].map(v => ({ href: `/admin/people?view=${v}`, label: v === "people" ? "People" : v === "import" ? "CSV import" : v === "departments" ? "Departments" : v === "groups" ? "Groups" : "Enrollment rules", active: view === v }))} />
       {/* minmax(0,…) rather than a bare fr: the rule form's <select>s carry whole
           course titles, and an auto-minimum track would rather push the page
           sideways than let one shrink. */}
@@ -54,12 +55,13 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
             people={visible.map(user => ({
               id: user.id, employeeId: user.employeeId, name: user.name,
               role: user.role, passwordState: user.passwordState, jobTitle: user.jobTitle,
-              managerId: user.managerId, storeId: user.storeId,
+              managerId: user.managerId, storeId: user.storeId, departmentId: user.departmentId,
               groupId: user.groupIds[0] ?? null, timeMultiplier: user.timeMultiplier,
             }))}
             managers={managers.map(({ id, name }) => ({ id, name }))}
             stores={stores.map(({ id, name }) => ({ id, name }))}
             groups={groups.map(({ id, name }) => ({ id, name }))}
+            departments={departments.map(({ id, name }) => ({ id, name }))}
           />
           <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted">
             <span>
@@ -73,6 +75,14 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
         </section> : null}
 
         <div className="flex flex-col gap-6">
+          {view === "departments" ? <Card className="p-4 sm:p-6">
+            <SectionTitle>Departments</SectionTitle>
+            <p className="mb-4 text-sm text-muted">Department membership controls Department Head approvals and employee reporting. Set membership in each person’s details.</p>
+            {departments.map(department=><WorkspaceForm key={department.id} action={renameDepartmentAction.bind(null,department.id)} className="mb-4 flex items-end gap-3">
+              <Field label="Department name"><Input name="name" defaultValue={department.name} maxLength={120} required /></Field><Button type="submit" variant="secondary" className="mb-4">Rename</Button>
+            </WorkspaceForm>)}
+            <WorkspaceForm action={createDepartmentAction}><Field label="New department"><Input name="name" maxLength={120} required /></Field><Button type="submit">Create department</Button></WorkspaceForm>
+          </Card> : null}
           {view === "import" ? <Card className="p-4 sm:p-6" aria-label="Import">
             <SectionTitle>CSV import</SectionTitle>
             <p className="mb-4 text-sm text-muted">Import valid rows and review errors by row number. Existing employees are skipped. Activation codes appear here once after import.</p><WorkspaceForm action={importCsvAction} reload={false}>

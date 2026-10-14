@@ -12,25 +12,40 @@ import { requireRole } from "@/lib/auth/guard";
 import { id, activationCode } from "@/lib/ids";
 import { reevaluateUser, reevaluateAllUsers } from "@/lib/lms/rules";
 import { issueResetCode } from "@/lib/auth/login";
+import { createDepartment, renameDepartment } from "@/lib/org/departments";
 
 export async function updateUserAction(userId: string, form: FormData): Promise<void> {
   await requireRole("ADMIN");
   const groupId = String(form.get("groupId") ?? "");
   const role = String(form.get("role") ?? "");
   if (!ROLES.includes(role as Role)) throw new Error("Choose a valid role.");
-  await db
+  const departmentId=String(form.get("departmentId") ?? "") || null;
+  if(departmentId){const [department]=await db.select({id:t.departments.id}).from(t.departments).where(eq(t.departments.id,departmentId)).limit(1);if(!department)throw new Error("Department not found.");}
+  await db.transaction(async tx=>{
+  await tx
     .update(t.users)
     .set({
       role: role as Role,
+      departmentId,
       managerId: String(form.get("managerId") ?? "") || null,
       storeId: String(form.get("storeId") ?? "") || null,
       groupIds: groupId ? [groupId] : [],
       timeMultiplier: Number(form.get("timeMultiplier") ?? 1) || 1,
     })
     .where(eq(t.users.id, userId));
-  await reevaluateUser(userId); // profile change re-fires rules (spec FR-3.2)
+  await reevaluateUser(userId,tx); // Membership does not reset learning history.
+  });
   await setFlash("Employee details saved and enrollment rules re-evaluated.");
   revalidatePath("/admin/people");
+}
+
+export async function createDepartmentAction(form:FormData):Promise<ActionResult>{
+  const actor=await requireRole("ADMIN");
+  try{await createDepartment(actor,String(form.get("name") ?? ""));revalidatePath("/admin/people");return {success:"Department created."};}catch(error){return {error:error instanceof Error?error.message:"Could not create department."};}
+}
+export async function renameDepartmentAction(departmentId:string,form:FormData):Promise<ActionResult>{
+  const actor=await requireRole("ADMIN");
+  try{await renameDepartment(actor,departmentId,String(form.get("name") ?? ""));revalidatePath("/admin/people");return {success:"Department renamed."};}catch(error){return {error:error instanceof Error?error.message:"Could not rename department."};}
 }
 
 export async function issueCodeAction(userId: string): Promise<string> {

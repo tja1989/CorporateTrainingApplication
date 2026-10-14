@@ -1,5 +1,21 @@
 # Learner resume migration
 
+## Client roles and course approval
+
+`20261014_client_roles_approval.sql` is additive and repeatable. Deployment first
+creates the schema, then runs the entire SQL transaction (after an optional fresh
+demo seed) before reporting ready. Existing managers become Department Heads with
+a dedicated department and their direct reports retain all other identity fields.
+Unassigned people stay unassigned. Existing published courses remain available as
+`LEGACY_PUBLISHED`; newer recorded workflow decisions are never reclassified.
+
+Back up before deployment. The loopback-only `scripts/qa-client-migration.ts`
+applies this migration twice and compares stable hashes of identities and six
+learning/content tables; it also verifies populated department/instructor scopes.
+Rollback keeps the added fields and events. An older binary expecting MANAGER
+requires a compatibility role reader before rollback; do not reverse roles while
+newer processes run. Never drop learning history or reseed a populated database.
+
 Before deploying the learner journey build, back up the database and apply
 `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/20260926_lesson_resume.sql`.
 The nullable column has no backfill: historical progress, watched buckets,

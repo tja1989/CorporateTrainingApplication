@@ -17,14 +17,15 @@ type Person = {
   jobTitle: string | null;
   storeId: string | null;
   managerId: string | null;
+  departmentId: string | null;
   groupId: string | null;
   timeMultiplier: number;
 };
-type Choices = { managers: Choice[]; stores: Choice[]; groups: Choice[] };
+type Choices = { managers: Choice[]; stores: Choice[]; groups: Choice[]; departments: Choice[] };
 
 /** One shared safe choice payload; closed rows do not render duplicate options. */
-export function PeopleEditorList({ people, managers, stores, groups }: Choices & { people: Person[] }) {
-  const choices = { managers, stores, groups };
+export function PeopleEditorList({ people, managers, stores, groups, departments }: Choices & { people: Person[] }) {
+  const choices = { managers, stores, groups, departments };
   return <div className="flex flex-col gap-2">
     {people.map(person => <PersonEditor key={person.id} person={person} choices={choices} />)}
     {people.length === 0 ? <p className="text-sm text-muted">No one matches this search.</p> : null}
@@ -37,6 +38,7 @@ function PersonEditor({ person, choices }: { person: Person; choices: Choices })
   const [draft, setDraft] = useState({
     role: canonicalRole(person.role) ?? "LEARNER",
     managerId: person.managerId ?? "",
+    departmentId: person.departmentId ?? "",
     storeId: person.storeId ?? "",
     groupId: person.groupId ?? "",
     timeMultiplier: String(person.timeMultiplier),
@@ -63,6 +65,12 @@ function PersonEditor({ person, choices }: { person: Person; choices: Choices })
           <Field label="Role">
             <Select name="role" value={draft.role} onChange={event => setDraft({ ...draft, role: event.target.value as typeof draft.role })}>
               {ROLES.map(role => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}
+            </Select>
+          </Field>
+          <Field label="Department">
+            <Select name="departmentId" value={draft.departmentId} onChange={event=>setDraft({...draft,departmentId:event.target.value})}>
+              <option value="">Unassigned</option>
+              {choices.departments.map(department=><option key={department.id} value={department.id}>{department.name}</option>)}
             </Select>
           </Field>
           <Field label="Manager">

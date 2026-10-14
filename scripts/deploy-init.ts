@@ -55,13 +55,22 @@ export async function runDeployInit(): Promise<void> {
   }
 
   const { rows } = await client.query("SELECT count(*)::int AS n FROM users");
-  await client.end();
   if (rows[0].n === 0 && process.env.DEMO_MODE === "true") {
     console.log("deploy-init: empty database + DEMO_MODE — seeding demo data…");
     execSync("npx tsx scripts/seed.ts", { stdio: "inherit", env: process.env });
   } else {
     console.log(`deploy-init: ${rows[0].n} user(s) present — skipping seed`);
   }
+  // Complete SQL transaction, including legacy role/department backfill. Run
+  // after a fresh seed as well, so demo managers cannot escape conversion.
+  try {
+    const migration=readFileSync(resolve(process.cwd(), "migrations/20261014_client_roles_approval.sql"), "utf8");
+    await client.query(migration);
+    console.log("deploy-init: client role/approval migration complete");
+  } catch(error) {
+    await client.query("ROLLBACK").catch(()=>{});
+    throw error;
+  } finally {await client.end();}
   if (process.env.DEMO_MODE === "true") {
     // Idempotent: brings an already-seeded demo up to date without a reseed.
     const { ensureDemoContentLessons } = await import("./seed-content");
