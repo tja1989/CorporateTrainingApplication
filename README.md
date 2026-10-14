@@ -19,9 +19,9 @@ Built to the spec in [`docs/MVP_SPEC.md`](docs/MVP_SPEC.md) (feature requirement
 
 ```bash
 # 1. Postgres 16 with pgvector, e.g.:
-#    CREATE USER lulu WITH PASSWORD 'lulu' CREATEDB;
-#    CREATE DATABASE lulu_learn OWNER lulu;
-#    CREATE EXTENSION vector;   (in lulu_learn)
+#    CREATE USER xprtn WITH PASSWORD 'xprtn' CREATEDB;
+#    CREATE DATABASE xprtn_dev OWNER xprtn;
+#    CREATE EXTENSION vector;   (in xprtn_dev)
 cp .env.example .env           # set DATABASE_URL + SESSION_SECRET
 npm install
 npm run db:push                # create schema
@@ -82,4 +82,4 @@ Key directories: `lib/` (domain logic — compliance, rules, quiz engine, gradin
 
 ## Production checklist (from the spec — not yet done here)
 
-Real policy corpus with named owners + counsel review (the seeded handbook is **fictional**), DPAs with AI providers + DPIA (spec §7.11/FR-13.5), client sign-off items in spec §16 (proctoring reframe, reach channel, paid-time stance), LuLu-owned YouTube channel + official captions flow, per-language HR-assistant eval gates beyond English, WhatsApp/SMS channel, real SMTP transport.
+Real policy corpus with named owners + counsel review (the seeded handbook is **fictional**), DPAs with AI providers + DPIA (spec §7.11/FR-13.5), client sign-off items in spec §16 (proctoring reframe, reach channel, paid-time stance), organization-owned YouTube channel + official captions flow, per-language HR-assistant eval gates beyond English, WhatsApp/SMS channel, real SMTP transport.

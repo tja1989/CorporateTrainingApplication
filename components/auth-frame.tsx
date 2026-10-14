@@ -7,7 +7,7 @@ export function AuthFrame({ title, description, children }: { title: string; des
     <div className="auth-topbar"><Brand href="/login" /><ThemeToggle /></div>
     <div className="auth-content">
       <div className="auth-intro">
-        <p className="mb-4 text-sm font-semibold text-primary">Learning at LuLu</p>
+        <p className="mb-4 text-sm font-semibold text-primary">Learning with xprtn</p>
         <h2 className="display mb-4 text-3xl">Build skills for<br />your everyday work.</h2>
         <p className="max-w-sm text-base text-muted">Find your assigned training, continue a lesson, and get support when you need it.</p>
         <div className="mt-8 border-t border-border pt-6"><p className="text-sm font-semibold">Your employee ID is all you need to get started.</p><p className="mt-2 text-sm text-muted">Your manager or HR can help with account activation and password resets.</p></div>

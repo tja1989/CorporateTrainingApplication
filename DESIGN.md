@@ -4,7 +4,7 @@ This replaces MVP_SPEC sections10-11 where visual prescriptions conflict. User-a
 
 ## Visual authority
 
-Coursera discovery and course-detail hierarchy; LinkedIn Learning's focused player and curriculum navigation. Familiar professional learning patterns, LuLu retained only as customer identity. Product name **xprtn**.
+Coursera discovery and course-detail hierarchy; LinkedIn Learning's focused player and curriculum navigation. Familiar professional learning patterns with organization-neutral product copy. Product name **xprtn**.
 
 ## Tokens
 

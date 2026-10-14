@@ -2,7 +2,7 @@
  * Transcript acquisition (spec FR-5.2), behind a swappable provider interface.
  * Providers: manual SRT/VTT upload (always available, fully lawful — the MVP
  * default), hosted vendor (demo-only; shifts ToS exposure), and — production —
- * the LuLu-owned-channel captions.download OAuth flow (fast-follow).
+ * the organization-owned-channel captions.download OAuth flow (fast-follow).
  */
 
 export type CaptionSnippet = { text: string; start: number; duration: number };

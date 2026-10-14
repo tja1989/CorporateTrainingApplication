@@ -9,7 +9,7 @@ declare global {
 
 import { cleanDatabaseUrl } from "./url";
 
-const connectionString = cleanDatabaseUrl(process.env.DATABASE_URL) ?? "postgres://lulu:lulu@127.0.0.1:5432/lulu_learn";
+const connectionString = cleanDatabaseUrl(process.env.DATABASE_URL) ?? "postgres://xprtn:xprtn@127.0.0.1:5432/xprtn_dev";
 
 function needsSsl(url: string): boolean {
   if (process.env.DATABASE_SSL === "true") return true;
