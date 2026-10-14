@@ -1,13 +1,15 @@
+import { canUseHrConversation, hrReauthenticationRequired } from "@/lib/hr/history-access";
 import { desc, eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
-import { currentUser } from "@/lib/auth/guard";
+import { apiUser as currentUser } from "@/lib/auth/guard";
 import { pseudoId } from "@/lib/hr/assistant";
 
 /** Thumbs feedback on the latest assistant message (KPI: CSAT, spec FR-8.12). */
 export async function POST(req: Request) {
   const user = await currentUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
+  if (!user || user.passwordState !== "ACTIVE") return new Response("Unauthorized", { status: 401 });
   const body = (await req.json()) as { conversationId: string; feedback: "up" | "down" };
+  if (!canUseHrConversation(user.session, body.conversationId)) return hrReauthenticationRequired();
   const [conv] = await db.select().from(t.hrConversations).where(eq(t.hrConversations.id, body.conversationId)).limit(1);
   if (!conv || conv.userId !== user.id) return new Response("Not found", { status: 404 });
   const [last] = await db

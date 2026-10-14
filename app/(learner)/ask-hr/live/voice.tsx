@@ -9,8 +9,8 @@ import { LiveCaptions } from "@/components/live-captions";
 import { LiveControls } from "@/components/live-controls";
 import { VoiceConsent } from "@/components/voice-consent";
 import { CitationChips } from "@/components/citations";
-import { ConfirmDialog } from "@/components/dialog";
-import { Button, ButtonLink, Card, Chip, PillButton, PillLink } from "@/components/ui";
+import { EscalationPreview } from "@/components/escalation-preview";
+import { Button, ButtonAnchor, Card, Chip, PillButton, PillLink } from "@/components/ui";
 
 const SUGGESTED = [
   "How many days of annual leave do I get?",
@@ -20,7 +20,7 @@ const SUGGESTED = [
 ];
 
 export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { configured: boolean; sharedDevice: boolean; demoMode?: boolean; firstName?: string }) {
-  const v = useLiveVoice({ kind: "hr", sessionUrl: "/api/live/hr/session", eventUrl: "/api/live/hr/event" });
+  const v = useLiveVoice({ configured, kind: "hr", sessionUrl: "/api/live/hr/session", eventUrl: "/api/live/hr/event" });
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [locked, setLocked] = useState(sharedDevice);
   const idle = v.status === "idle";
@@ -31,19 +31,19 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
       <Card className="flex flex-col items-center justify-center gap-3 p-6 text-center">
         <IconDisc name="sparkle" tone="ai" size={56} className="animate-pop" />
         <h2 className="display text-lg">Your HR conversations are private</h2>
-        <p className="max-w-sm text-sm text-muted">You signed in on a shared device, so voice mode waits until you confirm it&#39;s you.</p>
-        <Button onClick={() => setLocked(false)}>It&#39;s me — continue</Button>
+        <p className="max-w-sm text-sm text-muted">You can start a new conversation on this shared device. Opening stored HR history requires password verification in HR Help.</p>
+        <Button onClick={() => setLocked(false)}>Continue to voice</Button>
       </Card>
     );
   }
 
   return (
     <section aria-label="HR assistant — voice" className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-2 text-sm font-medium">
           Your assistant <Chip variant="ai">AI</Chip>
         </span>
-        <span className="flex gap-2">
+        <span className="flex flex-wrap gap-2">
           <PillLink href="/ask-hr">Text chat</PillLink>
           {v.status === "live" ? <PillButton onClick={() => setConfirmOpen(true)}>Talk to a person</PillButton> : null}
         </span>
@@ -55,7 +55,7 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
       </p>
       {demoMode ? (
         <details className="rounded-card border border-border bg-surface px-3 py-2 text-sm">
-          <summary className="cursor-pointer text-xs font-medium text-muted">Demo tips</summary>
+          <summary className="touch-target flex items-center text-xs font-medium text-muted">Demo tips</summary>
           <ul className="mt-2 flex flex-col gap-1 text-xs text-muted">
             <li>1. Tap Start, allow the microphone, and wait for the greeting — the assistant speaks first.</li>
             <li>2. Ask a policy question, then a follow-up (&quot;and sick leave?&quot;) — it re-checks the policy each time.</li>
@@ -67,7 +67,7 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
         </details>
       ) : null}
 
-      {idle ? <VoiceConsent kind="hr" configured={configured} starting={false} onStart={() => void v.start()} onTestSpeaker={v.testSpeaker} /> : null}
+      {idle ? <VoiceConsent kind="hr" configured={configured} starting={false} onStart={() => void v.start()} onStartTyped={() => void v.start(true)} onTestSpeaker={v.testSpeaker} /> : null}
 
       {!idle ? (
         <>
@@ -93,9 +93,9 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
           {v.ticketId ? (
             <p className="text-sm">
               <Chip variant="success">Ticket sent to HR</Chip>{" "}
-              <Link href={`/ask-hr/tickets/${v.ticketId}`} className="link text-link">
+              <a href={`/ask-hr/tickets/${v.ticketId}`} className="link text-link">
                 View the ticket
-              </Link>
+              </a>
             </p>
           ) : null}
           {over ? (
@@ -104,9 +104,9 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
                 {v.status === "error" ? "The session could not continue." : `Conversation ended${v.closeInfo?.reason ? ` (${v.closeInfo.reason})` : ""}. Your transcript is saved in the text chat.`}
               </p>
               <Button onClick={() => void v.start()}>Talk again</Button>
-              <ButtonLink variant="secondary" href="/ask-hr">
+              <ButtonAnchor variant="secondary" href="/ask-hr">
                 Continue in text
-              </ButtonLink>
+              </ButtonAnchor>
             </Card>
           ) : (
             <LiveControls
@@ -118,6 +118,7 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
               elapsedSec={v.elapsedSec}
               expiresAt={v.expiresAt}
               onToggleMute={v.toggleMute}
+              onTypeInstead={v.continueTyping}
               onSendText={v.sendText}
               onEnd={() => void v.stop()}
               endLabel="End conversation"
@@ -126,16 +127,11 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
         </>
       ) : null}
 
-      <ConfirmDialog
+      <EscalationPreview
         open={confirmOpen || v.pendingEscalation}
-        title="Share this conversation with HR?"
-        body="Your name and this conversation will be shared with the HR team so a person can help. Nothing is shared until you confirm."
-        confirmLabel="Share and create ticket"
-        onConfirm={() => {
-          setConfirmOpen(false);
-          void v.escalate();
-        }}
-        onCancel={() => {
+        load={v.previewEscalation}
+        confirm={async (version) => { await v.escalate(version); }}
+        close={() => {
           setConfirmOpen(false);
           v.dismissEscalation();
         }}

@@ -1,0 +1,46 @@
+{
+  "purpose": "Historical review records. Hashes match the retained local originals. A scoped approval is not final qualification.",
+  "files": [
+    {
+      "file": "task-2-review.md",
+      "sha256": "456190475089e9d1aa28388364cb10c31e4d570415d38906810d4e7dfa04d21f"
+    },
+    {
+      "file": "task-2-re-review.md",
+      "sha256": "1000b92910943868d93cddee005c1cc6791747fa8c99159016d6f371b532af24"
+    },
+    {
+      "file": "task-3-review.md",
+      "sha256": "9e44c7661bc8bc65c75918034a8904353d952d83968160284913ad4a043ea3a3"
+    },
+    {
+      "file": "task-3-re-review.md",
+      "sha256": "d2549b048f7055c411f56a0647d71c446404cfcd62455c785dae21d8f41ee120"
+    },
+    {
+      "file": "task-4-review.md",
+      "sha256": "b1d715743ee4247cb2fcdbafa5407ce23a5bd82f5bfff09e811dbbddf0dffaa0"
+    },
+    {
+      "file": "task-4-re-review.md",
+      "sha256": "9cf507819d96d4f78910c13caaff0a912af02644fa78044dac7bd61cf1ab398c"
+    },
+    {
+      "file": "task-5-review.md",
+      "sha256": "5520835e3b345d5879891a8f68f049cab7bf7329b5f3c779371dd21ded5cfdae"
+    },
+    {
+      "file": "task-5-re-review.md",
+      "sha256": "26a54db4ed8136020f14e7e5fc81615143615933f51dfb3a902fdeb3d74a589f"
+    },
+    {
+      "file": "final-candidate-review.md",
+      "sha256": "855274424eb5eca06a571dd64b44f9289e36dd4550ca27b819f9a403a0507e50"
+    },
+    {
+      "file": "task-4-implementation-report.md",
+      "sha256": "96b86f197d0fc2c887ff84537c0dbf36abc97730b8db2895db302cb225e4aeff",
+      "originalPath": ".superpowers/sdd/WELEARN_REWORK_PLAN/task-4-report.md"
+    }
+  ]
+}

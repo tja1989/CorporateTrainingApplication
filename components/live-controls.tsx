@@ -24,6 +24,7 @@ export function LiveControls({
   elapsedSec,
   expiresAt,
   onToggleMute,
+  onTypeInstead,
   onSendText,
   onEnd,
   endLabel = "End",
@@ -36,6 +37,7 @@ export function LiveControls({
   elapsedSec: number;
   expiresAt: string | null;
   onToggleMute: () => void;
+  onTypeInstead: () => void;
   onSendText: (text: string) => void;
   onEnd: () => void;
   endLabel?: string;
@@ -70,6 +72,7 @@ export function LiveControls({
             placeholder={mock ? "Type your message…" : "Type instead of speaking…"}
             disabled={!live}
             aria-label="Type a message"
+            className="min-w-0 flex-1"
             dir="auto"
             autoFocus={typedOnly}
           />
@@ -84,7 +87,7 @@ export function LiveControls({
             <PillButton type="button" active={muted} onClick={onToggleMute} disabled={!live} aria-pressed={muted}>
               {muted ? "Unmute" : "Mute"}
             </PillButton>
-            <PillButton type="button" active={typing} onClick={() => setTyping((v) => !v)} disabled={!live} aria-pressed={typing}>
+            <PillButton type="button" active={typing} onClick={() => { if (status === "mic") onTypeInstead(); setTyping((v) => !v); }} disabled={!live && status !== "mic"} aria-pressed={typing}>
               Type instead
             </PillButton>
           </>
@@ -95,7 +98,7 @@ export function LiveControls({
         <Chip variant="ai">{mock ? "offline demo" : (model ?? "…")}</Chip>
         {expiresIn !== null && !mock ? <span className="text-xs text-muted">session token · {expiresIn} min left</span> : null}
         <div className="flex-1" />
-        <Button type="button" variant="destructive" onClick={onEnd} disabled={!live && status !== "connecting" && status !== "mic"}>
+        <Button type="button" variant="destructive" onClick={onEnd} disabled={!live && status !== "connecting" && status !== "reconnecting" && status !== "mic"}>
           {endLabel}
         </Button>
       </div>

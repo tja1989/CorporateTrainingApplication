@@ -30,6 +30,7 @@ export async function seedVideos(opts: { courseIds: { customerService: string; f
       lessonTitle: "Video: Handwashing that protects",
       videoTitle: "Hand hygiene for fresh food areas",
       youtubeId: "3PmVJQUCm4E",
+      playbackDurationSec: 86, // verified public player duration; demo SRT is longer
       srt: "handwashing.srt",
     },
   ];
@@ -56,6 +57,7 @@ export async function seedVideos(opts: { courseIds: { customerService: string; f
     });
     const raw = readFileSync(resolve(process.cwd(), "scripts/assets", spec.srt), "utf8");
     await ingestVideo(videoId, { provider: "manual", rawTranscript: raw });
+    if (spec.playbackDurationSec) await db.update(t.videos).set({ durationSec: spec.playbackDurationSec }).where(eq(t.videos.id, videoId));
   }
   console.log("Videos seeded and ingested (manual SRT provider).");
 }

@@ -16,7 +16,7 @@ export type PolicySection = { path: string; heading: string; text: string };
 const approxTokens = (s: string) => Math.ceil(s.split(/\s+/).length / 0.75);
 
 export function sectionizeMarkdown(body: string): PolicySection[] {
-  const lines = body.split("\n");
+  const lines = body.replace(/\r\n?/g, "\n").split("\n");
   const sections: PolicySection[] = [];
   let h1 = "";
   let h2 = "";
@@ -77,22 +77,18 @@ export async function ingestPolicyDoc(docId: string): Promise<number> {
   if (sections.length === 0) throw new Error("Document produced no sections");
   const vectors = await embed(sections.map((s) => `${doc.title} › ${s.path}\n${s.text}`), "document");
 
-  await db.delete(t.policyChunks).where(eq(t.policyChunks.docId, docId)); // re-ingest of the SAME version only
-  for (let i = 0; i < sections.length; i++) {
-    await db.insert(t.policyChunks).values({
+  await db.transaction(async tx => {
+    await tx.delete(t.policyChunks).where(eq(t.policyChunks.docId, docId));
+    await tx.insert(t.policyChunks).values(sections.map((section, i) => ({
       id: id(),
       docId,
-      sectionPath: sections[i].path,
-      parentText: sections[i].text.length > 1500 ? "" : sections.filter((x) => x.heading === sections[i].heading).map((x) => x.text).join("\n\n").slice(0, 4000),
-      text: sections[i].text,
+      sectionPath: section.path,
+      parentText: section.text.length > 1500 ? "" : sections.filter(x => x.heading === section.heading).map(x => x.text).join("\n\n").slice(0, 4000),
+      text: section.text,
       superseded: false,
-    });
-  }
-  // set embeddings (separate pass keeps insert simple)
-  const rows = await db.select().from(t.policyChunks).where(eq(t.policyChunks.docId, docId));
-  for (let i = 0; i < rows.length && i < vectors.length; i++) {
-    await db.update(t.policyChunks).set({ embedding: vectors[i] }).where(eq(t.policyChunks.id, rows[i].id));
-  }
+      embedding: vectors[i],
+    })));
+  });
   return sections.length;
 }
 
@@ -110,7 +106,14 @@ export async function publishPolicyVersion(opts: {
   body: string;
   isDemo?: boolean;
 }): Promise<string> {
-  const existing = await db
+  // Prepare external-provider output before replacing a usable version. Failure
+  // must leave the old policy and every existing citation reconstructable.
+  const sections = sectionizeMarkdown(opts.body);
+  if (!sections.length) throw new Error("Add policy content below a heading before publishing.");
+  const vectors = await embed(sections.map(s => `${opts.title} › ${s.path}\n${s.text}`), "document");
+  if (vectors.length !== sections.length) throw new Error("Policy embeddings are incomplete. Please retry.");
+  return db.transaction(async tx => {
+  const existing = await tx
     .select()
     .from(t.policyDocs)
     .where(and(eq(t.policyDocs.title, opts.title), eq(t.policyDocs.country, opts.country), eq(t.policyDocs.status, "ACTIVE")));
@@ -118,15 +121,15 @@ export async function publishPolicyVersion(opts: {
   let version = 1;
   for (const old of existing) {
     version = Math.max(version, old.version + 1);
-    await db
+    await tx
       .update(t.policyDocs)
       .set({ status: "SUPERSEDED", supersededDate: opts.effectiveDate })
       .where(eq(t.policyDocs.id, old.id));
-    await db.update(t.policyChunks).set({ superseded: true }).where(eq(t.policyChunks.docId, old.id));
+    await tx.update(t.policyChunks).set({ superseded: true }).where(eq(t.policyChunks.docId, old.id));
   }
 
   const docId = id();
-  await db.insert(t.policyDocs).values({
+  await tx.insert(t.policyDocs).values({
     id: docId,
     title: opts.title,
     country: opts.country,
@@ -140,6 +143,11 @@ export async function publishPolicyVersion(opts: {
     status: "ACTIVE",
     isDemo: opts.isDemo ?? process.env.DEMO_MODE === "true",
   });
-  await ingestPolicyDoc(docId);
+  await tx.insert(t.policyChunks).values(sections.map((section, i) => ({
+    id: id(), docId, sectionPath: section.path,
+    parentText: section.text.length > 1500 ? "" : sections.filter(x => x.heading === section.heading).map(x => x.text).join("\n\n").slice(0,4000),
+    text: section.text, superseded: false, embedding: vectors[i],
+  })));
   return docId;
+  });
 }

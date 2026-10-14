@@ -1,3 +1,4 @@
+import type { LearningDatabase } from "./learning-cycle";
 import { and, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { courseOutline } from "@/lib/lms/queries";
@@ -18,8 +19,8 @@ export async function buildCourseOutline(opts: {
   sequentialLock: boolean;
   currentLessonId?: string | null;
   expandAll?: boolean;
-}): Promise<CourseOutlineView> {
-  const outline = await courseOutline(opts.courseId);
+}, connection: LearningDatabase = db): Promise<CourseOutlineView> {
+  const outline = await courseOutline(opts.courseId, connection);
   const lessons = outline.flatMap((o) => o.lessons);
   const lessonIds = lessons.map((l) => l.id);
   if (lessonIds.length === 0) {
@@ -40,17 +41,17 @@ export async function buildCourseOutline(opts: {
   const oralLessonIds = lessons.filter((l) => l.type === "VIDEO" || l.type === "TEXT" || l.type === "INTERVIEW").map((l) => l.id);
 
   const [progress, videos, quizzes, oralRows] = await Promise.all([
-    db
+    connection
       .select()
       .from(t.lessonProgress)
       .where(and(eq(t.lessonProgress.userId, opts.userId), inArray(t.lessonProgress.lessonId, lessonIds))),
     videoIds.length
-      ? db.select({ id: t.videos.id, durationSec: t.videos.durationSec }).from(t.videos).where(inArray(t.videos.id, videoIds))
+      ? connection.select({ id: t.videos.id, durationSec: t.videos.durationSec }).from(t.videos).where(inArray(t.videos.id, videoIds))
       : Promise.resolve([]),
     quizIds.length
-      ? db.select({ id: t.quizzes.id, settings: t.quizzes.settings }).from(t.quizzes).where(inArray(t.quizzes.id, quizIds))
+      ? connection.select({ id: t.quizzes.id, settings: t.quizzes.settings }).from(t.quizzes).where(inArray(t.quizzes.id, quizIds))
       : Promise.resolve([]),
-    latestInterviewsByLesson(opts.userId, oralLessonIds),
+    latestInterviewsByLesson(opts.userId, oralLessonIds, connection),
   ]);
 
   const oral = new Map<string, OralResult>();

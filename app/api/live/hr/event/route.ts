@@ -1,7 +1,8 @@
+import { canUseHrConversation, hrReauthenticationRequired } from "@/lib/hr/history-access";
 import { after } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
-import { currentUser } from "@/lib/auth/guard";
+import { apiUser as currentUser } from "@/lib/auth/guard";
 import { id } from "@/lib/ids";
 import { auditHrTurn } from "@/lib/hr/assistant";
 import { detectLanguage } from "@/lib/hr/guardrails";
@@ -23,10 +24,11 @@ const UNGROUNDED_WINDOW_MS = 90_000;
  */
 export async function POST(req: Request) {
   const user = await currentUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
+  if (!user || user.passwordState !== "ACTIVE") return new Response("Unauthorized", { status: 401 });
   const parsed = HrEventBody.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return new Response("Bad request", { status: 400 });
   const body = parsed.data;
+  if (!canUseHrConversation(user.session, body.conversationId)) return hrReauthenticationRequired();
   const [conv] = await db.select().from(t.hrConversations).where(eq(t.hrConversations.id, body.conversationId)).limit(1);
   if (!conv || conv.userId !== user.id) return new Response("Not found", { status: 404 });
 
@@ -59,8 +61,9 @@ export async function POST(req: Request) {
       return Response.json(result);
     }
     case "escalate": {
-      const created = await createTicketFromConversation(user, conv.id, body.subject);
+      const created = await createTicketFromConversation(user, conv.id, body.previewVersion, body.subject);
       if (!created) return new Response("Not found", { status: 404 });
+      if ("previewChanged" in created) return Response.json({ code: "preview_changed" }, { status: 409 });
       return Response.json({ ok: true, ticketId: created.ticketId });
     }
     case "end": {

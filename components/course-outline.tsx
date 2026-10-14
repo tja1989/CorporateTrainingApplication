@@ -10,8 +10,8 @@ import type { CourseOutlineView, OutlineLesson, OutlineModule } from "@/lib/lms/
  * 100+×/day surface and does not animate (§10.5), only the chevron turns.
  *
  *   page  — the course page: full-width cards, durations, oral-check chips
- *   rail  — the lesson page on xl: 14rem, current lesson highlighted
- *   panel — the lesson page below xl: the whole outline behind one disclosure
+ *   rail  — the focused lesson contents panel, current lesson highlighted
+ *   panel — the outline behind one disclosure when the page requests it
  *
  * Keep this a server component. React re-syncs the `open` attribute on every
  * render, so wrapping it in a "use client" parent would snap every section shut
@@ -84,7 +84,7 @@ function ModuleSection({ module: m, index, compact }: { module: OutlineModule; i
       <summary
         className={cx(
           "touch-target flex cursor-pointer items-center justify-between gap-2",
-          compact ? "rounded-control px-2 py-2 text-xs hover:bg-surface-2" : "px-3 py-3 text-sm",
+          compact ? "rounded-control px-3 py-3 text-sm hover:bg-surface-2" : "px-3 py-3 text-sm",
         )}
       >
         <span className="flex min-w-0 items-center gap-2">
@@ -94,7 +94,7 @@ function ModuleSection({ module: m, index, compact }: { module: OutlineModule; i
               {index + 1}
             </span>
           )}
-          <span className="min-w-0 truncate font-medium">{m.title}</span>
+          <span className="min-w-0 font-medium">{m.title}</span>
         </span>
         <span className="flex shrink-0 items-center gap-2 text-xs text-muted">
           <span>{moduleMeta(m, compact)}</span>
@@ -111,18 +111,16 @@ function ModuleSection({ module: m, index, compact }: { module: OutlineModule; i
 }
 
 function LessonRow({ lesson: l, compact }: { lesson: OutlineLesson; compact: boolean }) {
-  // The 2px start border is on every row, transparent unless current, so the
-  // highlight can move between rows without nudging the text sideways.
   const rowClass = cx(
-    "pressable touch-target flex min-w-0 flex-1 items-center gap-2 rounded-control border-s-2 px-2 py-2",
-    compact ? "text-xs" : "text-sm",
-    l.locked ? "border-transparent opacity-50" : "hover:bg-surface-2",
-    l.current ? "border-accent bg-accent-tint font-medium" : "border-transparent",
+    "pressable touch-target flex min-w-0 flex-1 items-center gap-3 rounded-control px-3 py-3",
+    "text-sm",
+    l.locked ? "text-muted" : "hover:bg-surface-2",
+    l.current ? "bg-accent-tint font-semibold text-primary" : "",
   );
   const body = (
     <>
       <LessonIcon type={l.type} state={l.state} />
-      <span className="min-w-0 flex-1 truncate">{l.title}</span>
+      <span className="min-w-0 flex-1"><span className="block">{l.title}</span>{l.locked ? <span className="mt-1 block text-xs text-muted">Complete earlier lessons to unlock</span> : null}</span>
       {!compact && l.minutes ? <span className="shrink-0 text-xs text-muted">{l.minutes} min</span> : null}
       {l.locked ? <LockMark /> : l.done ? <CheckMark /> : null}
     </>
@@ -134,7 +132,6 @@ function LessonRow({ lesson: l, compact }: { lesson: OutlineLesson; compact: boo
         /* A locked row is not a link at all — nothing to focus, nothing to announce as clickable. */
         <span className={rowClass} aria-disabled="true">
           {body}
-          <span className="sr-only">Locked until the earlier lessons are complete</span>
         </span>
       ) : (
         <Link href={l.href} aria-current={l.current ? "page" : undefined} className={rowClass}>

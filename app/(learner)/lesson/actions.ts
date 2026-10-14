@@ -1,16 +1,24 @@
 "use server";
-
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
-import { db, t } from "@/lib/db/client";
+import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/guard";
 import { markLessonComplete } from "@/lib/lms/completion";
+import { learnerLesson } from "@/lib/lms/lesson-access";
 
-export async function markCompleteAction(lessonId: string): Promise<void> {
+export async function completeLessonAction(lessonId: string): Promise<{ href: string }> {
   const user = await requireUser();
-  const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, lessonId)).limit(1);
-  if (!lesson || (lesson.type !== "TEXT" && lesson.type !== "PDF")) redirect("/home");
+  const access = await learnerLesson(user.id, lessonId);
+  if (!access || !["TEXT", "PDF"].includes(access.lesson.type)) redirect("/home");
+  if (access.self.locked) redirect(`/lesson/${lessonId}`);
   await markLessonComplete(user.id, lessonId);
-  const [mod] = await db.select().from(t.modules).where(eq(t.modules.id, lesson.moduleId)).limit(1);
-  redirect(mod ? `/course/${mod.courseId}` : "/home");
+  revalidatePath(`/lesson/${lessonId}`);
+  revalidatePath(`/course/${access.course.id}`);
+  revalidatePath("/home");
+  return { href: `/lesson/${lessonId}?completed=1` };
+}
+
+/** Preserve the existing server-action contract for older forms. */
+export async function markCompleteAction(lessonId: string): Promise<void> {
+  const result = await completeLessonAction(lessonId);
+  redirect(result.href);
 }

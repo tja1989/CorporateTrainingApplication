@@ -4,6 +4,10 @@ import { screenInput, applyOutputRail, detectLanguage, DETERMINATION_FOOTER } fr
 import { redactPii } from "@/lib/ai/gateway";
 
 describe("policy sectionizing (spec FR-8.2 — rules stay with exceptions)", () => {
+  it("preserves section citations for the CRLF text posted by browser forms", () => {
+    expect(sectionizeMarkdown("# Policy\r\n\r\n## Procedure\r\nUse the blue checklist."))
+      .toEqual([{ path: "Policy › Procedure", heading: "Procedure", text: "Use the blue checklist." }]);
+  });
   it("chunks at headings, keeping unless-clauses with their rule", () => {
     const sections = sectionizeMarkdown(
       `# Policy\n\n## Overtime\nOvertime is paid at 130%, unless you are on probation, in which case it accrues as time off.\n\n## Breaks\nBreaks are 30 minutes.`,

@@ -2,26 +2,12 @@
 
 import { Icon } from "@/components/icons";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { AiSurface, AnimatedNumber, Button, Card, Chip, Input, Select, Textarea, cx } from "@/components/ui";
+import { AiSurface, AnimatedNumber, Button, ButtonLink, Card, Chip, cx } from "@/components/ui";
+import { AttemptSaveError, isAnswered, resultStatus, saveAttemptAnswers, submitSavedAttempt } from "@/lib/quiz/client-state";
+import { QuestionInput, type Served } from "@/components/question-input";
+import type { Answer } from "@/lib/quiz/scoring";
 import { Dialog } from "@/components/dialog";
 
-type Served = {
-  questionId: string;
-  type: string;
-  points: number;
-  prompt: string;
-  stimulus: string | null;
-  options: string[] | null;
-  left: string[] | null;
-  right: string[] | null;
-  orderItems: string[] | null;
-};
-type Answer =
-  | { kind: "choice"; selected: number[] }
-  | { kind: "text"; text: string }
-  | { kind: "matching"; pairs: Record<number, number> }
-  | { kind: "ordering"; order: number[] };
 type Settings = { oneAtATime: boolean; noBacktrack: boolean; feedbackMode: string; integrityMode: boolean; passPct: number; graceSec: number };
 type Result = {
   state: string;
@@ -38,14 +24,15 @@ export function QuizRunner({
   attemptsLeft,
   latestFinalized,
   resume,
+  lessonHref,
 }: {
   quizId: string;
   windowOpen: boolean;
   attemptsLeft: number | null;
   latestFinalized: { gradingState: string; appealed: boolean } | null;
   resume: boolean;
+  lessonHref?: string;
 }) {
-  const router = useRouter();
   const [phase, setPhase] = useState<"preflight" | "consent" | "running" | "result">("preflight");
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [served, setServed] = useState<Served[]>([]);
@@ -58,6 +45,19 @@ export function QuizRunner({
   const [offline, setOffline] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [confirmSubmit, setConfirmSubmit] = useState(false);
+  const submitting = useRef(false);
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
+  const autosavePending = useRef(false);
+
+  // Autosave and final save/submit share one queue. Rejection is returned to the
+  // caller without poisoning the queue, so a retained answer can be retried.
+  const serialize = useCallback(<T,>(operation: () => Promise<T>): Promise<T> => {
+    const result = saveQueue.current.then(operation);
+    saveQueue.current = result.then(() => undefined, () => undefined);
+    return result;
+  }, []);
   const [appealSent, setAppealSent] = useState(false);
   const pendingEvents = useRef<Array<{ kind: string; detail?: Record<string, unknown> }>>([]);
   const answersRef = useRef(answers);
@@ -66,27 +66,49 @@ export function QuizRunner({
 
   const begin = useCallback(async () => {
     setError(null);
-    const res = await fetch(`/api/quiz/${quizId}/start`, { method: "POST" });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error ?? "Could not start the assessment.");
-      setPhase("preflight");
-      return;
-    }
-    setAttemptId(data.attemptId);
-    setServed(data.served);
-    setSettings(data.settings);
-    setAnswers(data.answers ?? {});
-    setDeadline(data.deadlineAt ? new Date(data.deadlineAt) : null);
-    setPhase("running");
-    if (data.settings.integrityMode) {
-      const el = document.documentElement as HTMLElement & { requestFullscreen?: () => Promise<void> };
-      if (el.requestFullscreen) {
-        el.requestFullscreen().catch(() => pendingEvents.current.push({ kind: "fullscreen_denied" }));
-      } else {
-        // iOS Safari has no programmatic fullscreen — informational, monitoring proceeds (spec FR-7.1)
-        pendingEvents.current.push({ kind: "fullscreen_unavailable", detail: { platform: navigator.userAgent.slice(0, 60) } });
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/quiz/${quizId}/start`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Could not start the assessment.");
+        setPhase("preflight");
+        return;
       }
+      setAttemptId(data.attemptId);
+      setServed(data.served);
+      setSettings(data.settings);
+      const nextAnswers = data.answers ?? {};
+      const nextDeadline = data.deadlineAt ? new Date(data.deadlineAt) : null;
+      answersRef.current = nextAnswers;
+      setAnswers(nextAnswers);
+      setDeadline(nextDeadline);
+      // Returning to preflight keeps this component mounted. A new sitting must
+      // not inherit the prior question index, result or transient save state.
+      setIndex(data.settings.oneAtATime && data.settings.noBacktrack ? (data.navigationIndex ?? 0) : 0);
+      setRemaining(nextDeadline ? Math.floor((nextDeadline.getTime() - Date.now()) / 1000) : null);
+      setSaved(true);
+      setOffline(false);
+      setResult(null);
+      setAppealSent(false);
+      setConfirmSubmit(false);
+      pendingEvents.current = [];
+      blurStart.current = null;
+      setPhase("running");
+      if (data.settings.integrityMode) {
+        const el = document.documentElement as HTMLElement & { requestFullscreen?: () => Promise<void> };
+        if (el.requestFullscreen) {
+          el.requestFullscreen().catch(() => pendingEvents.current.push({ kind: "fullscreen_denied" }));
+        } else {
+          // iOS Safari has no programmatic fullscreen — informational, monitoring proceeds (spec FR-7.1)
+          pendingEvents.current.push({ kind: "fullscreen_unavailable", detail: { platform: navigator.userAgent.slice(0, 60) } });
+        }
+      }
+    } catch {
+      setError("Could not connect. Try starting again.");
+      setPhase("preflight");
+    } finally {
+      setBusy(false);
     }
   }, [quizId]);
 
@@ -135,54 +157,105 @@ export function QuizRunner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deadline, phase]);
 
-  // autosave every 10s (+ offline buffering, spec FR-6.5)
-  useEffect(() => {
-    if (phase !== "running" || !attemptId) return;
-    const iv = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/attempt/${attemptId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ answers: answersRef.current, events: pendingEvents.current.splice(0) }),
-        });
-        if (res.status === 409) {
-          const d = await res.json();
-          setError(d.error);
-          await submit(); // eslint-disable-line @typescript-eslint/no-use-before-define
-          return;
-        }
-        setOffline(false);
-        setSaved(true);
-      } catch {
-        setOffline(true);
-        pendingEvents.current.push({ kind: "connection_lost" }); // informational, never red (spec FR-6.5)
-      }
-    }, 10_000);
-    return () => clearInterval(iv);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, attemptId]);
-
   const submit = useCallback(async () => {
-    if (!attemptId) return;
+    if (!attemptId || submitting.current) return;
+    submitting.current = true;
+    setBusy(true);
+    setError(null);
+    const snapshot = answersRef.current;
     try {
-      await fetch(`/api/attempt/${attemptId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers: answersRef.current, events: pendingEvents.current.splice(0) }),
-      }).catch(() => {});
-      const res = await fetch(`/api/attempt/${attemptId}`, { method: "POST" });
-      const data = await res.json();
+      const data = await serialize(async () => {
+        // Prior saves have now settled and removed their acknowledged events.
+        const events = [...pendingEvents.current];
+        const result = await submitSavedAttempt(attemptId, snapshot, events);
+        pendingEvents.current.splice(0, events.length);
+        return result;
+      });
+      setSaved(true);
+      setOffline(false);
       setResult(data);
       setPhase("result");
       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    } catch {
+    } catch (error) {
+      setSaved(false);
       setOffline(true);
+      setError(error instanceof Error ? error.message : "Submission failed. Keep this page open and retry.");
+    } finally {
+      submitting.current = false;
+      setBusy(false);
     }
-  }, [attemptId]);
+  }, [attemptId, serialize]);
 
-  const setAnswer = (qid: string, a: Answer) => {
-    setAnswers((prev) => ({ ...prev, [qid]: a }));
+  // Answers remain in this open tab until acknowledged by the server. Do not
+  // claim durable local storage or mark a newer edit saved by an older request.
+  useEffect(() => {
+    if (phase !== "running" || !attemptId) return;
+    const save = async () => {
+      if (autosavePending.current || submitting.current) return;
+      autosavePending.current = true;
+      try {
+        await serialize(async () => {
+          const snapshot = answersRef.current;
+          const events = [...pendingEvents.current];
+          await saveAttemptAnswers(attemptId, snapshot, events);
+          pendingEvents.current.splice(0, events.length);
+          if (!submitting.current) {
+            setOffline(false);
+            setSaved(answersRef.current === snapshot);
+            setError(null);
+          }
+        });
+      } catch (error) {
+        if (error instanceof AttemptSaveError && error.submitted) {
+          await submit();
+        } else if (!submitting.current) {
+          setSaved(false);
+          setOffline(true);
+          setError("Answers are not saved yet. Keep this tab open; we will retry when connected.");
+        }
+      } finally {
+        autosavePending.current = false;
+      }
+    };
+    const iv = setInterval(save, 10_000);
+    window.addEventListener("online", save);
+    return () => {
+      clearInterval(iv);
+      window.removeEventListener("online", save);
+    };
+  }, [phase, attemptId, serialize, submit]);
+
+  const setAnswer = (qid: string, answer: Answer) => {
+    if (submitting.current) return;
+    const next = { ...answersRef.current, [qid]: answer };
+    answersRef.current = next;
+    setAnswers(next);
     setSaved(false);
+  };
+
+  const navigateQuestion = async (nextIndex: number) => {
+    if (busy || !settings || !attemptId || nextIndex === index) return;
+    if (!settings.oneAtATime || !settings.noBacktrack) { setIndex(nextIndex); return; }
+    setBusy(true);
+    setError(null);
+    try {
+      await serialize(async () => {
+        const snapshot = answersRef.current;
+        const events = [...pendingEvents.current];
+        await saveAttemptAnswers(attemptId, snapshot, events, fetch, nextIndex);
+        pendingEvents.current.splice(0, events.length);
+        setSaved(answersRef.current === snapshot);
+        setOffline(false);
+        setIndex(nextIndex);
+      });
+    } catch (error) {
+      if (error instanceof AttemptSaveError && error.submitted) await submit();
+      else {
+        setSaved(false);
+        setOffline(true);
+        setError("Your next question could not be saved. Your answer is still here; reconnect and select Next or the question again to retry.");
+      }
+    } finally { setBusy(false); }
   };
 
   /* ---------------- preflight & consent ---------------- */
@@ -190,17 +263,17 @@ export function QuizRunner({
     const exhausted = attemptsLeft !== null && attemptsLeft <= 0 && !resume;
     return (
       <div className="flex flex-col items-start gap-3">
+        {exhausted ? <p className="text-sm text-muted">No attempts remain. Contact your training team if you need another attempt.</p> : null}
         {error ? <p role="alert" className="rounded-control bg-destructive-tint px-3 py-2 text-sm text-destructive-text">{error}</p> : null}
         {windowOpen && !exhausted ? (
           <Button
-            disabled={phase === "consent"}
+            disabled={phase === "consent" || busy}
             onClick={() => {
               // consent interstitial only for monitored assessments (spec FR-7.4)
-              fetch(`/api/quiz/${quizId}/start`, { method: "HEAD" }).catch(() => {});
               setPhase("consent");
             }}
           >
-            {resume ? "Resume attempt" : "Start"}
+            {busy ? "Preparing…" : resume ? "Resume attempt" : "Start assessment"}
           </Button>
         ) : null}
         {latestFinalized && latestFinalized.gradingState === "FINAL" && !latestFinalized.appealed && !appealSent ? (
@@ -228,7 +301,7 @@ export function QuizRunner({
           <p className="display mb-1 text-xl">
             <AnimatedNumber value={result.scorePct} suffix="%" />
           </p>
-          {result.gradingState === "PROVISIONAL" ? (
+          {resultStatus(result) === "pending" ? (
             <div>
               <Chip variant="warning">Pending confirmation</Chip>
               <p className="mt-2 text-sm text-muted">
@@ -236,10 +309,10 @@ export function QuizRunner({
                 affected until then. You&#39;ll get a notification.
               </p>
             </div>
-          ) : result.passed ? (
-            <Chip variant="success">Passed</Chip>
+          ) : resultStatus(result) === "pass" ? (
+            <Chip variant="success">Final result: passed</Chip>
           ) : (
-            <Chip variant="destructive">Not passed</Chip>
+            <Chip variant="destructive">Final result: not passed</Chip>
           )}
           {!result.reveal ? (
             <p className="mt-2 text-sm text-muted">Correct answers are revealed after the assessment window closes.</p>
@@ -264,7 +337,7 @@ export function QuizRunner({
               </Card>
             ))
           : null}
-        <Button variant="secondary" onClick={() => router.refresh()}>Done</Button>
+        <div className="flex flex-wrap gap-2">{lessonHref ? <ButtonLink href={lessonHref}>Return to lesson</ButtonLink> : null}<Button variant="secondary" onClick={() => window.location.reload()}>Review attempts and retry</Button></div>
       </div>
     );
   }
@@ -272,21 +345,14 @@ export function QuizRunner({
   /* ---------------- running ---------------- */
   if (!settings) return null;
   const visible = settings.oneAtATime ? [served[index]] : served;
-  const answeredCount = served.filter((s) => answers[s.questionId]).length;
+  const answeredCount = served.filter((s) => isAnswered(s, answers[s.questionId])).length;
 
   return (
     <div>
-      <div className="sticky top-12 z-20 mb-4 flex items-center gap-3 rounded-card border border-border bg-surface px-3 py-2 text-sm">
+      <div className="sticky top-12 z-20 mb-4 flex flex-wrap items-center gap-3 rounded-card border border-border bg-surface px-3 py-2 text-sm">
         <span className="text-muted">{answeredCount}/{served.length} answered</span>
-        {settings.oneAtATime ? (
-          <span className="flex gap-1" aria-label={`Question ${index + 1} of ${served.length}`}>
-            {served.map((_, i) => (
-              <span key={i} className={cx("size-2 rounded-full transition-colors", i === index ? "bg-primary" : answers[served[i].questionId] ? "bg-success" : "bg-border")} />
-            ))}
-          </span>
-        ) : null}
         <span className="flex-1" />
-        {offline ? <Chip variant="warning">Reconnecting — answers saved locally</Chip> : <span className={cx("text-xs text-muted transition-opacity", saved ? "opacity-100" : "opacity-60")}>{saved ? <><Icon name="check" size={12} className="me-1 inline align-text-bottom text-success-fg" />Saved</> : "Saving…"}</span>}
+        {offline ? <Chip variant="warning">Not saved — keep this tab open</Chip> : <span className={cx("text-xs text-muted transition-opacity", saved ? "opacity-100" : "opacity-60")}>{saved ? <><Icon name="check" size={12} className="me-1 inline align-text-bottom text-success-fg" />Saved</> : "Unsaved changes"}</span>}
         {remaining !== null ? (
           <Chip variant={remaining < 60 ? "destructive" : "neutral"}>
             {remaining <= 0 ? "Time up" : `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`}
@@ -294,44 +360,54 @@ export function QuizRunner({
         ) : null}
       </div>
 
-      {visible.map((q) => (
-        <QuestionInput key={q.questionId} q={q} answer={answers[q.questionId]} onChange={(a) => setAnswer(q.questionId, a)} />
-      ))}
+      {error ? <p role="alert" className="mb-4 rounded-control bg-warning-tint p-3 text-sm text-warning-fg">{error}</p> : null}
+      <nav aria-label="Question navigation" className="mb-4 flex flex-wrap gap-2">{served.map((q, i) => <button key={q.questionId} type="button" disabled={busy || (settings.noBacktrack && i < index)} aria-current={settings.oneAtATime && index === i ? "step" : undefined} aria-label={`Question ${i + 1}, ${isAnswered(q, answers[q.questionId]) ? "answered" : "unanswered"}`} className={cx("touch-target rounded-control border px-3 text-sm", index === i ? "border-primary bg-accent-tint text-primary" : "border-border", "disabled:opacity-50")} onClick={() => { if (settings.oneAtATime) void navigateQuestion(i); else document.getElementById(`question-${q.questionId}`)?.scrollIntoView({ block: "center" }); }}>{i + 1}</button>)}</nav>
+      <fieldset disabled={busy} aria-label="Assessment answers" aria-busy={busy} className="min-w-0">
+        {visible.map((q) => (
+          <QuestionInput key={q.questionId} q={q} answer={answers[q.questionId]} onChange={(a) => setAnswer(q.questionId, a)} />
+        ))}
+      </fieldset>
 
       <div className="mt-4 flex items-center gap-2">
         {settings.oneAtATime && index > 0 && !settings.noBacktrack ? (
-          <Button variant="secondary" onClick={() => setIndex((i) => i - 1)}>Back</Button>
+          <Button disabled={busy} variant="secondary" onClick={() => setIndex((i) => i - 1)}>Back</Button>
         ) : null}
         {settings.oneAtATime && index < served.length - 1 ? (
-          <Button onClick={() => setIndex((i) => i + 1)}>Next</Button>
+          <Button disabled={busy} onClick={() => void navigateQuestion(index + 1)}>Next</Button>
         ) : (
-          <Button onClick={submit}>Submit</Button>
+          <Button disabled={busy} onClick={() => answeredCount < served.length ? setConfirmSubmit(true) : void submit()}>{busy ? "Submitting…" : "Submit assessment"}</Button>
         )}
       </div>
+      <Dialog open={confirmSubmit} onClose={() => setConfirmSubmit(false)} title="Submit with unanswered questions?">
+        <p className="mb-4 text-muted">{served.length - answeredCount} question(s) are unanswered or incomplete. You can review them before submitting.</p>
+        <div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={() => setConfirmSubmit(false)}>Keep answering</Button><Button disabled={busy} onClick={() => { setConfirmSubmit(false); void submit(); }}>Submit anyway</Button></div>
+      </Dialog>
     </div>
   );
 }
 
 /** Consent interstitial for monitored assessments (spec FR-7.4) — an L2 dialog, never a bare card. */
 function ConsentGate({ quizId, onProceed, onCancel }: { quizId: string; onProceed: () => void; onCancel: () => void }) {
+  const [consentError, setConsentError] = useState<string | null>(null);
+  const [consentBusy, setConsentBusy] = useState(false);
   const [needsConsent, setNeedsConsent] = useState<boolean | null>(null);
   useEffect(() => {
     fetch(`/api/quiz/${quizId}/consent-info`)
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((d) => {
         if (!d.integrityMode) onProceed();
         else setNeedsConsent(true);
       })
-      .catch(() => onProceed());
+      .catch(() => setConsentError("Consent information could not load. Please cancel and try again."));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizId]);
-  if (needsConsent === null) return <p className="text-sm text-muted">Preparing…</p>;
+  if (needsConsent === null) return <div><p role="status" className="text-sm text-muted">{consentError ?? "Preparing…"}</p>{consentError ? <Button variant="secondary" onClick={onCancel}>Back</Button> : null}</div>;
   const fsSupported = typeof document !== "undefined" && !!document.documentElement.requestFullscreen;
   return (
     <Dialog open onClose={onCancel} title="Before you start — what this assessment records">
       <ul className="mb-3 flex list-disc flex-col gap-1 ps-6 text-sm">
         <li>When you leave this screen or switch apps (timestamps only)</li>
-        {fsSupported ? <li>Fullscreen is required; leaving it pauses the attempt</li> : <li>Fullscreen isn’t available on this device — only screen-leave events are recorded</li>}
+        {fsSupported ? <li>Fullscreen is requested; leaving it is recorded for review</li> : <li>Fullscreen isn’t available on this device — only screen-leave events are recorded</li>}
         <li>Copy and paste are disabled during the assessment</li>
         <li><strong>No camera. No microphone. No screen recording.</strong></li>
       </ul>
@@ -339,145 +415,28 @@ function ConsentGate({ quizId, onProceed, onCancel }: { quizId: string; onProcee
         Why: this keeps certifications fair. A person — never software — reviews any flags before they affect you. Events
         are deleted 6 months after the result is final. If you prefer, ask your manager for a supervised in-person sitting instead.
       </p>
+      {consentError ? <p role="alert" className="mb-3 text-sm text-destructive-text">{consentError}</p> : null}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="secondary" onClick={onCancel}>Cancel</Button>
         <Button
-          autoFocus
+          autoFocus disabled={consentBusy}
           onClick={async () => {
-            await fetch(`/api/quiz/${quizId}/consent-info`, { method: "POST" }).catch(() => {});
-            onProceed();
+            setConsentBusy(true);
+            setConsentError(null);
+            try {
+              const response = await fetch(`/api/quiz/${quizId}/consent-info`, { method: "POST" });
+              if (!response.ok) throw new Error();
+              onProceed();
+            } catch {
+              setConsentError("Acknowledgment could not be saved. Please try again.");
+            } finally {
+              setConsentBusy(false);
+            }
           }}
         >
           I understand — start
         </Button>
       </div>
     </Dialog>
-  );
-}
-
-const optionRow = "touch-target rounded-input border px-3 py-2 text-start text-sm";
-
-function QuestionInput({ q, answer, onChange }: { q: Served; answer: Answer | undefined; onChange: (a: Answer) => void }) {
-  return (
-    <Card className="mb-3 p-4">
-      {q.stimulus ? <p className="mb-2 rounded-control bg-surface-2 p-3 text-sm">{q.stimulus}</p> : null}
-      <p className="mb-3 font-medium">{q.prompt}</p>
-
-      {(q.type === "mcq_single" || q.type === "truefalse") && q.options ? (
-        <div className="flex flex-col gap-2" role="radiogroup" aria-label={q.prompt}>
-          {q.options.map((opt, i) => {
-            const selected = answer?.kind === "choice" && answer.selected[0] === i;
-            return (
-              <button
-                key={i}
-                role="radio"
-                aria-checked={selected}
-                onClick={() => onChange({ kind: "choice", selected: [i] })}
-                className={cx(optionRow, "pressable", selected ? "border-primary bg-success-tint" : "border-border hover:bg-surface-2")}
-              >
-                {opt}
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
-
-      {q.type === "mcq_multi" && q.options ? (
-        <div className="flex flex-col gap-2">
-          {q.options.map((opt, i) => {
-            const selected = answer?.kind === "choice" && answer.selected.includes(i);
-            return (
-              <label
-                key={i}
-                className={cx(optionRow, "flex cursor-pointer items-center gap-2", selected ? "border-primary bg-success-tint" : "border-border hover:bg-surface-2")}
-              >
-                <input
-                  type="checkbox"
-                  className="size-4"
-                  checked={!!selected}
-                  onChange={(e) => {
-                    const prev = answer?.kind === "choice" ? answer.selected : [];
-                    onChange({ kind: "choice", selected: e.target.checked ? [...prev, i] : prev.filter((x) => x !== i) });
-                  }}
-                />
-                {opt}
-              </label>
-            );
-          })}
-        </div>
-      ) : null}
-
-      {q.type === "fill_blank" ? (
-        <Input
-          value={answer?.kind === "text" ? answer.text : ""}
-          onChange={(e) => onChange({ kind: "text", text: e.target.value })}
-          aria-label="Your answer"
-          placeholder="Type your answer"
-        />
-      ) : null}
-
-      {q.type === "free_text" ? (
-        <Textarea
-          value={answer?.kind === "text" ? answer.text : ""}
-          onChange={(e) => onChange({ kind: "text", text: e.target.value })}
-          rows={5}
-          aria-label="Your answer"
-          placeholder="Write your answer in any language…"
-        />
-      ) : null}
-
-      {q.type === "matching" && q.left && q.right ? (
-        <div className="flex flex-col gap-2">
-          {q.left.map((left, li) => (
-            <div key={li} className="flex items-center gap-2 text-sm">
-              <span className="w-2/5">{left}</span>
-              <Select
-                value={answer?.kind === "matching" ? (answer.pairs[li] ?? "") : ""}
-                onChange={(e) => {
-                  const prev = answer?.kind === "matching" ? { ...answer.pairs } : {};
-                  prev[li] = Number(e.target.value);
-                  onChange({ kind: "matching", pairs: prev });
-                }}
-                className="flex-1"
-                aria-label={`Match for ${left}`}
-              >
-                <option value="" disabled>Choose…</option>
-                {q.right!.map((right, ri) => (
-                  <option key={ri} value={ri}>{right}</option>
-                ))}
-              </Select>
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {q.type === "ordering" && q.orderItems ? (
-        <OrderingInput items={q.orderItems} answer={answer} onChange={onChange} />
-      ) : null}
-    </Card>
-  );
-}
-
-/** Tap-based reordering (up/down buttons) — no drag required (SC 2.5.7). */
-function OrderingInput({ items, answer, onChange }: { items: string[]; answer: Answer | undefined; onChange: (a: Answer) => void }) {
-  const order = answer?.kind === "ordering" ? answer.order : items.map((_, i) => i);
-  const move = (pos: number, dir: -1 | 1) => {
-    const next = [...order];
-    const target = pos + dir;
-    if (target < 0 || target >= next.length) return;
-    [next[pos], next[target]] = [next[target], next[pos]];
-    onChange({ kind: "ordering", order: next });
-  };
-  return (
-    <ol className="flex flex-col gap-2">
-      {order.map((displayIdx, pos) => (
-        <li key={displayIdx} className="flex items-center gap-2 rounded-input border border-border px-3 py-2 text-sm">
-          <span className="w-6 text-xs text-muted">{pos + 1}.</span>
-          <span className="flex-1">{items[displayIdx]}</span>
-          <button onClick={() => move(pos, -1)} aria-label="Move up" className="touch-target pressable rounded-control px-2 hover:bg-surface-2 disabled:opacity-50" disabled={pos === 0}><Icon name="arrow-up" size={16} /></button>
-          <button onClick={() => move(pos, 1)} aria-label="Move down" className="touch-target pressable rounded-control px-2 hover:bg-surface-2 disabled:opacity-50" disabled={pos === order.length - 1}><Icon name="arrow-down" size={16} /></button>
-        </li>
-      ))}
-    </ol>
   );
 }

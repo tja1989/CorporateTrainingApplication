@@ -1,6 +1,8 @@
-import { asc, eq } from "drizzle-orm";
+import { canReadHrHistory, canUseHrConversation, hrReauthenticationRequired } from "@/lib/hr/history-access";
+import { updateHrSession } from "@/lib/auth/session";
+import { and, asc, eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
-import { currentUser } from "@/lib/auth/guard";
+import { apiUser as currentUser } from "@/lib/auth/guard";
 import { id } from "@/lib/ids";
 import { hrAnswer } from "@/lib/hr/assistant";
 import { hrScopeFor } from "@/lib/hr/scope";
@@ -10,18 +12,20 @@ export const maxDuration = 60;
 /** HR assistant chat (spec FR-8): SSE stream; persists the conversation under the real user id (FR-8.7a). */
 export async function POST(req: Request) {
   const user = await currentUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
+  if (!user || user.passwordState !== "ACTIVE") return new Response("Unauthorized", { status: 401 });
   const body = (await req.json()) as { message: string; conversationId?: string };
   if (!body.message?.trim() || body.message.length > 2000) return new Response("Bad request", { status: 400 });
 
   let conversationId = body.conversationId ?? null;
   if (conversationId) {
+    if (!canUseHrConversation(user.session, conversationId)) return hrReauthenticationRequired();
     const [conv] = await db.select().from(t.hrConversations).where(eq(t.hrConversations.id, conversationId)).limit(1);
     if (!conv || conv.userId !== user.id) conversationId = null;
   }
   if (!conversationId) {
     conversationId = id();
     await db.insert(t.hrConversations).values({ id: conversationId, userId: user.id, language: user.preferredLanguage });
+    if (user.session.shared) await updateHrSession(user.session, { activeHrConversationId: conversationId });
   }
   await db.insert(t.hrMessages).values({ id: id(), conversationId, role: "user", content: body.message.trim() });
 
@@ -58,15 +62,15 @@ export async function POST(req: Request) {
 }
 
 /** GET: the user's conversations + messages for the history list. */
-export async function GET() {
+export async function GET(req: Request) {
   const user = await currentUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
-  const conversations = await db
-    .select()
-    .from(t.hrConversations)
-    .where(eq(t.hrConversations.userId, user.id))
-    .orderBy(asc(t.hrConversations.startedAt));
-  const latest = conversations[conversations.length - 1];
+  if (!user || user.passwordState !== "ACTIVE") return new Response("Unauthorized", { status: 401 });
+  const requested = new URL(req.url).searchParams.get("conversationId");
+  if (requested ? !canUseHrConversation(user.session, requested) : !canReadHrHistory(user.session)) return hrReauthenticationRequired();
+  const conversations = await db.select().from(t.hrConversations)
+    .where(requested ? and(eq(t.hrConversations.userId, user.id), eq(t.hrConversations.id, requested)) : eq(t.hrConversations.userId, user.id)).orderBy(asc(t.hrConversations.startedAt));
+  const latest = requested ? conversations.find(c => c.id === requested) : conversations[conversations.length - 1];
+  if (requested && !latest) return new Response("Not found", { status: 404 });
   const messages = latest
     ? await db.select().from(t.hrMessages).where(eq(t.hrMessages.conversationId, latest.id)).orderBy(asc(t.hrMessages.createdAt))
     : [];

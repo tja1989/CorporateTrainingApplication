@@ -6,13 +6,13 @@ import type { ComponentProps } from "react";
  * sits beside. This replaced the typed Unicode glyphs, which rendered at
  * a different weight on every platform and arrived as colour emoji on some.
  *
- * Sized by the `size` prop (px) rather than a class: the theme declares no
- * `--spacing-5`, so a classed `size-5` would silently emit nothing.
+ * Sized by the `size` prop (px) for consistent strokes across controls.
  */
 
 export type IconName = keyof typeof PATHS;
 
 const PATHS = {
+  menu: "M4 6h16M4 12h16M4 18h16",
   home: "M3 10.5 12 3l9 7.5M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5",
   book: "M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5zM4 20.5V5.5M8 7h8M8 10.5h5",
   target: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zM12 12h.01",
@@ -107,7 +107,7 @@ export function IconDisc({
   } as const;
   return (
     <span
-      className={["inline-flex shrink-0 items-center justify-center rounded-full", tones[tone], className].filter(Boolean).join(" ")}
+      className={["inline-flex shrink-0 items-center justify-center rounded-control", tones[tone], className].filter(Boolean).join(" ")}
       style={{ width: size, height: size }}
       aria-hidden
     >

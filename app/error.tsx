@@ -1,19 +1,6 @@
 "use client";
-
-import { Button, EmptyState } from "@/components/ui";
-
+import { Button, ButtonLink } from "@/components/ui";
+import { SystemState } from "@/components/system-state";
 export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  return (
-    <main className="flex min-h-dvh items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <EmptyState
-          icon="warning"
-          tone="destructive"
-          title="Something went wrong"
-          body={error.digest ? `Please try again. Reference: ${error.digest}` : "Please try again."}
-          action={<Button onClick={reset}>Try again</Button>}
-        />
-      </div>
-    </main>
-  );
+  return <SystemState title="We couldn’t load this page" body={`Try loading the page again. If the problem continues, contact your administrator.${error.digest ? ` Reference: ${error.digest}` : ""}`}><Button onClick={reset}>Try again</Button><ButtonLink variant="secondary" href="/">Go home</ButtonLink></SystemState>;
 }

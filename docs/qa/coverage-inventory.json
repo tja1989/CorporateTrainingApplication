@@ -1,0 +1,2636 @@
+{
+  "source": {
+    "generatedAt": "2026-09-28T14:13:03.639Z",
+    "commit": "63ec2af04b6b888295826d3525c260e90a6afafe",
+    "dirty": true,
+    "qualification": "NOT_TESTED \u2014 source enumeration only; reconcile visible client actions, guards and workflow branches separately.",
+    "counts": {
+      "routes": 37,
+      "apis": 23,
+      "serverActions": 45
+    },
+    "routes": [
+      {
+        "route": "/activate",
+        "file": "app/(auth)/activate/page.tsx",
+        "role": "authentication"
+      },
+      {
+        "route": "/login/mfa-setup",
+        "file": "app/(auth)/login/mfa-setup/page.tsx",
+        "role": "authentication"
+      },
+      {
+        "route": "/login/mfa",
+        "file": "app/(auth)/login/mfa/page.tsx",
+        "role": "authentication"
+      },
+      {
+        "route": "/login",
+        "file": "app/(auth)/login/page.tsx",
+        "role": "authentication"
+      },
+      {
+        "route": "/ask-hr/live",
+        "file": "app/(learner)/ask-hr/live/page.tsx",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "route": "/ask-hr",
+        "file": "app/(learner)/ask-hr/page.tsx",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "route": "/ask-hr/tickets/[ticketId]",
+        "file": "app/(learner)/ask-hr/tickets/[ticketId]/page.tsx",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "route": "/course/[courseId]",
+        "file": "app/(learner)/course/[courseId]/page.tsx",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "route": "/drill",
+        "file": "app/(learner)/drill/page.tsx",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "route": "/home",
+        "file": "app/(learner)/home/page.tsx",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "route": "/inbox",
+        "file": "app/(learner)/inbox/page.tsx",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "route": "/learn",
+        "file": "app/(learner)/learn/page.tsx",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "route": "/lesson/[lessonId]/interview",
+        "file": "app/(learner)/lesson/[lessonId]/interview/page.tsx",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "route": "/lesson/[lessonId]",
+        "file": "app/(learner)/lesson/[lessonId]/page.tsx",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "route": "/path/[pathId]",
+        "file": "app/(learner)/path/[pathId]/page.tsx",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "route": "/policy/[docId]",
+        "file": "app/(learner)/policy/[docId]/page.tsx",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "route": "/profile",
+        "file": "app/(learner)/profile/page.tsx",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "route": "/quiz/[quizId]",
+        "file": "app/(learner)/quiz/[quizId]/page.tsx",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "route": "/admin/corpus",
+        "file": "app/(workspace)/admin/corpus/page.tsx",
+        "role": "admin"
+      },
+      {
+        "route": "/admin/courses/[courseId]",
+        "file": "app/(workspace)/admin/courses/[courseId]/page.tsx",
+        "role": "admin"
+      },
+      {
+        "route": "/admin/courses",
+        "file": "app/(workspace)/admin/courses/page.tsx",
+        "role": "admin"
+      },
+      {
+        "route": "/admin/inbox",
+        "file": "app/(workspace)/admin/inbox/page.tsx",
+        "role": "admin"
+      },
+      {
+        "route": "/admin/integrity/[attemptId]",
+        "file": "app/(workspace)/admin/integrity/[attemptId]/page.tsx",
+        "role": "admin"
+      },
+      {
+        "route": "/admin/integrity",
+        "file": "app/(workspace)/admin/integrity/page.tsx",
+        "role": "admin"
+      },
+      {
+        "route": "/admin",
+        "file": "app/(workspace)/admin/page.tsx",
+        "role": "admin"
+      },
+      {
+        "route": "/admin/people",
+        "file": "app/(workspace)/admin/people/page.tsx",
+        "role": "admin"
+      },
+      {
+        "route": "/admin/reports",
+        "file": "app/(workspace)/admin/reports/page.tsx",
+        "role": "admin"
+      },
+      {
+        "route": "/admin/reviews",
+        "file": "app/(workspace)/admin/reviews/page.tsx",
+        "role": "admin"
+      },
+      {
+        "route": "/admin/tickets/[ticketId]",
+        "file": "app/(workspace)/admin/tickets/[ticketId]/page.tsx",
+        "role": "admin"
+      },
+      {
+        "route": "/admin/tickets",
+        "file": "app/(workspace)/admin/tickets/page.tsx",
+        "role": "admin"
+      },
+      {
+        "route": "/team/[userId]",
+        "file": "app/(workspace)/team/[userId]/page.tsx",
+        "role": "manager/admin workspace"
+      },
+      {
+        "route": "/team/[userId]/reset-code",
+        "file": "app/(workspace)/team/[userId]/reset-code/page.tsx",
+        "role": "manager/admin workspace"
+      },
+      {
+        "route": "/team/inbox",
+        "file": "app/(workspace)/team/inbox/page.tsx",
+        "role": "manager/admin workspace"
+      },
+      {
+        "route": "/team",
+        "file": "app/(workspace)/team/page.tsx",
+        "role": "manager/admin workspace"
+      },
+      {
+        "route": "/team/reports",
+        "file": "app/(workspace)/team/reports/page.tsx",
+        "role": "manager/admin workspace"
+      },
+      {
+        "route": "/",
+        "file": "app/page.tsx",
+        "role": "inspect runtime guard"
+      },
+      {
+        "route": "/privacy-notice",
+        "file": "app/privacy-notice/page.tsx",
+        "role": "inspect runtime guard"
+      }
+    ],
+    "apis": [
+      {
+        "route": "/api/admin/dsr/[userId]",
+        "file": "app/api/admin/dsr/[userId]/route.ts",
+        "methods": [
+          "DELETE",
+          "GET"
+        ]
+      },
+      {
+        "route": "/api/attempt/[attemptId]/appeal",
+        "file": "app/api/attempt/[attemptId]/appeal/route.ts",
+        "methods": [
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/attempt/[attemptId]",
+        "file": "app/api/attempt/[attemptId]/route.ts",
+        "methods": [
+          "PATCH",
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/attempt/appeal-latest",
+        "file": "app/api/attempt/appeal-latest/route.ts",
+        "methods": [
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/certificates/[certId]",
+        "file": "app/api/certificates/[certId]/route.ts",
+        "methods": [
+          "GET"
+        ]
+      },
+      {
+        "route": "/api/drill",
+        "file": "app/api/drill/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/events",
+        "file": "app/api/events/route.ts",
+        "methods": [
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/health",
+        "file": "app/api/health/route.ts",
+        "methods": [
+          "GET"
+        ]
+      },
+      {
+        "route": "/api/hr/escalate",
+        "file": "app/api/hr/escalate/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/hr/feedback",
+        "file": "app/api/hr/feedback/route.ts",
+        "methods": [
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/hr/reauth",
+        "file": "app/api/hr/reauth/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/hr",
+        "file": "app/api/hr/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/live/hr/event",
+        "file": "app/api/live/hr/event/route.ts",
+        "methods": [
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/live/hr/session",
+        "file": "app/api/live/hr/session/route.ts",
+        "methods": [
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/live/interview/event",
+        "file": "app/api/live/interview/event/route.ts",
+        "methods": [
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/live/interview/session",
+        "file": "app/api/live/interview/session/route.ts",
+        "methods": [
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/progress",
+        "file": "app/api/progress/route.ts",
+        "methods": [
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/quiz/[quizId]/consent-info",
+        "file": "app/api/quiz/[quizId]/consent-info/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/quiz/[quizId]/start",
+        "file": "app/api/quiz/[quizId]/start/route.ts",
+        "methods": [
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/reports/[reportId]/csv",
+        "file": "app/api/reports/[reportId]/csv/route.ts",
+        "methods": [
+          "GET"
+        ]
+      },
+      {
+        "route": "/api/reports/ask",
+        "file": "app/api/reports/ask/route.ts",
+        "methods": [
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/tutor",
+        "file": "app/api/tutor/route.ts",
+        "methods": [
+          "POST"
+        ]
+      },
+      {
+        "route": "/api/tutor/suggest",
+        "file": "app/api/tutor/suggest/route.ts",
+        "methods": [
+          "GET"
+        ]
+      }
+    ],
+    "serverActions": [
+      {
+        "id": "app/(auth)/actions.ts:loginAction:13",
+        "file": "app/(auth)/actions.ts",
+        "line": 13,
+        "name": "loginAction",
+        "kind": "module export",
+        "role": "authentication"
+      },
+      {
+        "id": "app/(auth)/actions.ts:activateAction:19",
+        "file": "app/(auth)/actions.ts",
+        "line": 19,
+        "name": "activateAction",
+        "kind": "module export",
+        "role": "authentication"
+      },
+      {
+        "id": "app/(auth)/actions.ts:mfaVerifyAction:27",
+        "file": "app/(auth)/actions.ts",
+        "line": 27,
+        "name": "mfaVerifyAction",
+        "kind": "module export",
+        "role": "authentication"
+      },
+      {
+        "id": "app/(auth)/actions.ts:mfaSetupBegin:33",
+        "file": "app/(auth)/actions.ts",
+        "line": 33,
+        "name": "mfaSetupBegin",
+        "kind": "module export",
+        "role": "authentication"
+      },
+      {
+        "id": "app/(auth)/actions.ts:mfaSetupConfirm:40",
+        "file": "app/(auth)/actions.ts",
+        "line": 40,
+        "name": "mfaSetupConfirm",
+        "kind": "module export",
+        "role": "authentication"
+      },
+      {
+        "id": "app/(learner)/ask-hr/tickets/[ticketId]/actions.ts:replyToTicketAction:10",
+        "file": "app/(learner)/ask-hr/tickets/[ticketId]/actions.ts",
+        "line": 10,
+        "name": "replyToTicketAction",
+        "kind": "module export",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "id": "app/(learner)/lesson/actions.ts:completeLessonAction:8",
+        "file": "app/(learner)/lesson/actions.ts",
+        "line": 8,
+        "name": "completeLessonAction",
+        "kind": "module export",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "id": "app/(learner)/lesson/actions.ts:markCompleteAction:21",
+        "file": "app/(learner)/lesson/actions.ts",
+        "line": 21,
+        "name": "markCompleteAction",
+        "kind": "module export",
+        "role": "authenticated learner workspace"
+      },
+      {
+        "id": "app/(workspace)/admin/corpus/actions.ts:publishPolicyAction:9",
+        "file": "app/(workspace)/admin/corpus/actions.ts",
+        "line": 9,
+        "name": "publishPolicyAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/courses/actions.ts:createCourseAction:18",
+        "file": "app/(workspace)/admin/courses/actions.ts",
+        "line": 18,
+        "name": "createCourseAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/courses/actions.ts:updateCourseAction:34",
+        "file": "app/(workspace)/admin/courses/actions.ts",
+        "line": 34,
+        "name": "updateCourseAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/courses/actions.ts:setCourseStatusAction:65",
+        "file": "app/(workspace)/admin/courses/actions.ts",
+        "line": 65,
+        "name": "setCourseStatusAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/courses/actions.ts:addModuleAction:75",
+        "file": "app/(workspace)/admin/courses/actions.ts",
+        "line": 75,
+        "name": "addModuleAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/courses/actions.ts:addLessonAction:86",
+        "file": "app/(workspace)/admin/courses/actions.ts",
+        "line": 86,
+        "name": "addLessonAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/courses/actions.ts:updateInterviewLessonAction:174",
+        "file": "app/(workspace)/admin/courses/actions.ts",
+        "line": 174,
+        "name": "updateInterviewLessonAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/courses/actions.ts:retryIngestAction:187",
+        "file": "app/(workspace)/admin/courses/actions.ts",
+        "line": 187,
+        "name": "retryIngestAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/courses/actions.ts:moveModuleAction:213",
+        "file": "app/(workspace)/admin/courses/actions.ts",
+        "line": 213,
+        "name": "moveModuleAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/courses/actions.ts:moveLessonAction:233",
+        "file": "app/(workspace)/admin/courses/actions.ts",
+        "line": 233,
+        "name": "moveLessonAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/integrity/[attemptId]/actions.ts:clearAttemptAction:9",
+        "file": "app/(workspace)/admin/integrity/[attemptId]/actions.ts",
+        "line": 9,
+        "name": "clearAttemptAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/integrity/[attemptId]/actions.ts:voidAttemptAction:19",
+        "file": "app/(workspace)/admin/integrity/[attemptId]/actions.ts",
+        "line": 19,
+        "name": "voidAttemptAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/people/actions.ts:updateUserAction:15",
+        "file": "app/(workspace)/admin/people/actions.ts",
+        "line": 15,
+        "name": "updateUserAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/people/actions.ts:issueCodeAction:33",
+        "file": "app/(workspace)/admin/people/actions.ts",
+        "line": 33,
+        "name": "issueCodeAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/people/actions.ts:importCsvAction:38",
+        "file": "app/(workspace)/admin/people/actions.ts",
+        "line": 38,
+        "name": "importCsvAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/people/actions.ts:createRuleAction:73",
+        "file": "app/(workspace)/admin/people/actions.ts",
+        "line": 73,
+        "name": "createRuleAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/people/actions.ts:toggleRuleAction:99",
+        "file": "app/(workspace)/admin/people/actions.ts",
+        "line": 99,
+        "name": "toggleRuleAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/people/actions.ts:createGroupAction:109",
+        "file": "app/(workspace)/admin/people/actions.ts",
+        "line": 109,
+        "name": "createGroupAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/reviews/actions.ts:confirmGradeAction:11",
+        "file": "app/(workspace)/admin/reviews/actions.ts",
+        "line": 11,
+        "name": "confirmGradeAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/reviews/actions.ts:adjustGradeAction:18",
+        "file": "app/(workspace)/admin/reviews/actions.ts",
+        "line": 18,
+        "name": "adjustGradeAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/reviews/actions.ts:approveDraftAction:33",
+        "file": "app/(workspace)/admin/reviews/actions.ts",
+        "line": 33,
+        "name": "approveDraftAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/reviews/actions.ts:discardDraftAction:40",
+        "file": "app/(workspace)/admin/reviews/actions.ts",
+        "line": 40,
+        "name": "discardDraftAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/reviews/actions.ts:markInterviewReviewedAction:47",
+        "file": "app/(workspace)/admin/reviews/actions.ts",
+        "line": 47,
+        "name": "markInterviewReviewedAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/reviews/actions.ts:overturnInterviewAction:54",
+        "file": "app/(workspace)/admin/reviews/actions.ts",
+        "line": 54,
+        "name": "overturnInterviewAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/tickets/[ticketId]/actions.ts:adminReplyAction:11",
+        "file": "app/(workspace)/admin/tickets/[ticketId]/actions.ts",
+        "line": 11,
+        "name": "adminReplyAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/admin/tickets/[ticketId]/actions.ts:resolveTicketAction:24",
+        "file": "app/(workspace)/admin/tickets/[ticketId]/actions.ts",
+        "line": 24,
+        "name": "resolveTicketAction",
+        "kind": "module export",
+        "role": "admin"
+      },
+      {
+        "id": "app/(workspace)/team/actions.ts:assignAction:22",
+        "file": "app/(workspace)/team/actions.ts",
+        "line": 22,
+        "name": "assignAction",
+        "kind": "module export",
+        "role": "manager/admin workspace"
+      },
+      {
+        "id": "app/(workspace)/team/actions.ts:nudgeAction:48",
+        "file": "app/(workspace)/team/actions.ts",
+        "line": 48,
+        "name": "nudgeAction",
+        "kind": "module export",
+        "role": "manager/admin workspace"
+      },
+      {
+        "id": "app/(workspace)/team/actions.ts:issueResetAction:59",
+        "file": "app/(workspace)/team/actions.ts",
+        "line": 59,
+        "name": "issueResetAction",
+        "kind": "module export",
+        "role": "manager/admin workspace"
+      },
+      {
+        "id": "components/inbox-list.tsx:markAllRead:21",
+        "file": "components/inbox-list.tsx",
+        "line": 21,
+        "name": "markAllRead",
+        "kind": "inline server action",
+        "role": "inspect runtime guard"
+      },
+      {
+        "id": "lib/auth/login.ts:login:15",
+        "file": "lib/auth/login.ts",
+        "line": 15,
+        "name": "login",
+        "kind": "module export",
+        "role": "inspect runtime guard"
+      },
+      {
+        "id": "lib/auth/login.ts:activate:39",
+        "file": "lib/auth/login.ts",
+        "line": 39,
+        "name": "activate",
+        "kind": "module export",
+        "role": "inspect runtime guard"
+      },
+      {
+        "id": "lib/auth/login.ts:verifyMfa:69",
+        "file": "lib/auth/login.ts",
+        "line": 69,
+        "name": "verifyMfa",
+        "kind": "module export",
+        "role": "inspect runtime guard"
+      },
+      {
+        "id": "lib/auth/login.ts:acknowledgePrivacyNotice:79",
+        "file": "lib/auth/login.ts",
+        "line": 79,
+        "name": "acknowledgePrivacyNotice",
+        "kind": "module export",
+        "role": "inspect runtime guard"
+      },
+      {
+        "id": "lib/auth/login.ts:logout:87",
+        "file": "lib/auth/login.ts",
+        "line": 87,
+        "name": "logout",
+        "kind": "module export",
+        "role": "inspect runtime guard"
+      },
+      {
+        "id": "lib/auth/login.ts:issueResetCode:93",
+        "file": "lib/auth/login.ts",
+        "line": 93,
+        "name": "issueResetCode",
+        "kind": "module export",
+        "role": "inspect runtime guard"
+      },
+      {
+        "id": "lib/auth/login.ts:switchWorkspace:120",
+        "file": "lib/auth/login.ts",
+        "line": 120,
+        "name": "switchWorkspace",
+        "kind": "module export",
+        "role": "inspect runtime guard"
+      }
+    ]
+  },
+  "qualification": "Local UI and API/service evidence reconciled; real AI/voice and physical iPhone remain explicitly UNVERIFIED in workflow-cases.json",
+  "routes": [
+    {
+      "route": "/activate",
+      "file": "app/(auth)/activate/page.tsx",
+      "role": "authentication",
+      "cases": [
+        "AUTH:activation",
+        "AUTH:initial-values"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/login/mfa-setup",
+      "file": "app/(auth)/login/mfa-setup/page.tsx",
+      "role": "authentication",
+      "cases": [
+        "AUTH:mfa",
+        "AUTH:initial-values"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/login/mfa",
+      "file": "app/(auth)/login/mfa/page.tsx",
+      "role": "authentication",
+      "cases": [
+        "AUTH:mfa",
+        "AUTH:initial-values"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/login",
+      "file": "app/(auth)/login/page.tsx",
+      "role": "authentication",
+      "cases": [
+        "AUTH:invalid",
+        "AUTH:destinations",
+        "AUTH:initial-values"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/ask-hr/live",
+      "file": "app/(learner)/ask-hr/live/page.tsx",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "VOICE:consent",
+        "VOICE:fallback",
+        "VOICE:cleanup",
+        "HR:privacy"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/ask-hr",
+      "file": "app/(learner)/ask-hr/page.tsx",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "HR:citation",
+        "HR:escalation",
+        "HR:privacy",
+        "HR:readiness"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/ask-hr/tickets/[ticketId]",
+      "file": "app/(learner)/ask-hr/tickets/[ticketId]/page.tsx",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "TICKET:thread",
+        "TICKET:isolation",
+        "TICKET:readiness",
+        "HR:privacy",
+        "HR:unlock-readiness"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/course/[courseId]",
+      "file": "app/(learner)/course/[courseId]/page.tsx",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "CONTENT:text",
+        "AUTHOR:order",
+        "COMPLIANCE:certificate"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+        ".artifacts/recovery-qualification-20260928/service-3/results.json",
+        ".artifacts/recovery-qualification-20260928/service-4/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/drill",
+      "file": "app/(learner)/drill/page.tsx",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "PRACTICE:locked",
+        "PRACTICE:session"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/home",
+      "file": "app/(learner)/home/page.tsx",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "CONTENT:text",
+        "COMPLIANCE:due"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+        ".artifacts/recovery-qualification-20260928/service-3/results.json",
+        ".artifacts/recovery-qualification-20260928/service-4/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/inbox",
+      "file": "app/(learner)/inbox/page.tsx",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "ACCOUNT/SYSTEM:inbox"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/learn",
+      "file": "app/(learner)/learn/page.tsx",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "DISCOVER:search",
+        "DISCOVER:filters",
+        "DISCOVER:views"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/lesson/[lessonId]/interview",
+      "file": "app/(learner)/lesson/[lessonId]/interview/page.tsx",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "VOICE:assessment"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/lesson/[lessonId]",
+      "file": "app/(learner)/lesson/[lessonId]/page.tsx",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "CONTENT:text",
+        "CONTENT:pdf",
+        "CONTENT:readiness",
+        "VIDEO:threshold",
+        "TUTOR:grounded"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/handoff/public-video-xprtn-8/completed-dom.txt",
+        ".artifacts/handoff/public-video-xprtn-8/completed-persistence.json",
+        ".artifacts/handoff/public-video-xprtn-8/completed.jpg",
+        ".artifacts/handoff/public-video-xprtn-8/course-reload-dom.txt",
+        ".artifacts/handoff/public-video-xprtn-8/course-reload.jpg",
+        ".artifacts/handoff/public-video-xprtn-8/course-return-dom.txt",
+        ".artifacts/handoff/public-video-xprtn-8/course-return.jpg",
+        ".artifacts/handoff/public-video-xprtn-8/result.json",
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+        ".artifacts/recovery-qualification-20260928/service-3/results.json",
+        ".artifacts/recovery-qualification-20260928/service-4/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/path/[pathId]",
+      "file": "app/(learner)/path/[pathId]/page.tsx",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "PATH:order",
+        "PATH:unlock"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/policy/[docId]",
+      "file": "app/(learner)/policy/[docId]/page.tsx",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "HR:citation",
+        "POLICY:version"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+        ".artifacts/recovery-qualification-20260928/service-3/results.json",
+        ".artifacts/recovery-qualification-20260928/service-4/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/profile",
+      "file": "app/(learner)/profile/page.tsx",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "ACCOUNT/SYSTEM:profile"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/quiz/[quizId]",
+      "file": "app/(learner)/quiz/[quizId]/page.tsx",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "QUIZ:types",
+        "QUIZ:submit",
+        "REVIEW:appeal"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/admin/corpus",
+      "file": "app/(workspace)/admin/corpus/page.tsx",
+      "role": "admin",
+      "cases": [
+        "POLICY:version",
+        "POLICY:failure"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+        ".artifacts/recovery-qualification-20260928/service-3/results.json",
+        ".artifacts/recovery-qualification-20260928/service-4/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/admin/courses/[courseId]",
+      "file": "app/(workspace)/admin/courses/[courseId]/page.tsx",
+      "role": "admin",
+      "cases": [
+        "AUTHOR:types",
+        "AUTHOR:order",
+        "AUTHOR:publish",
+        "AUTHOR:ingest"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/admin/courses",
+      "file": "app/(workspace)/admin/courses/page.tsx",
+      "role": "admin",
+      "cases": [
+        "AUTHOR:draft"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/admin/inbox",
+      "file": "app/(workspace)/admin/inbox/page.tsx",
+      "role": "admin",
+      "cases": [
+        "ACCOUNT/SYSTEM:inbox"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/admin/integrity/[attemptId]",
+      "file": "app/(workspace)/admin/integrity/[attemptId]/page.tsx",
+      "role": "admin",
+      "cases": [
+        "INTEGRITY:decision"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/admin/integrity",
+      "file": "app/(workspace)/admin/integrity/page.tsx",
+      "role": "admin",
+      "cases": [
+        "INTEGRITY:events"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/admin",
+      "file": "app/(workspace)/admin/page.tsx",
+      "role": "admin",
+      "cases": [
+        "NAV:workspace",
+        "ACCOUNT/SYSTEM:responsive"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/admin/people",
+      "file": "app/(workspace)/admin/people/page.tsx",
+      "role": "admin",
+      "cases": [
+        "PEOPLE:import",
+        "PEOPLE:edit",
+        "PEOPLE:rules",
+        "AUTH:reset"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+        ".artifacts/recovery-qualification-20260928/service-3/results.json",
+        ".artifacts/recovery-qualification-20260928/service-4/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/admin/reports",
+      "file": "app/(workspace)/admin/reports/page.tsx",
+      "role": "admin",
+      "cases": [
+        "REPORTS:six",
+        "REPORTS:pagination",
+        "REPORTS:ask",
+        "REPORTS:reset",
+        "REPORTS:readiness"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/admin/reviews",
+      "file": "app/(workspace)/admin/reviews/page.tsx",
+      "role": "admin",
+      "cases": [
+        "REVIEW:decision",
+        "REVIEW:appeal",
+        "VOICE:assessment"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/admin/tickets/[ticketId]",
+      "file": "app/(workspace)/admin/tickets/[ticketId]/page.tsx",
+      "role": "admin",
+      "cases": [
+        "TICKET:thread"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/admin/tickets",
+      "file": "app/(workspace)/admin/tickets/page.tsx",
+      "role": "admin",
+      "cases": [
+        "TICKET:thread"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/team/[userId]",
+      "file": "app/(workspace)/team/[userId]/page.tsx",
+      "role": "manager/admin workspace",
+      "cases": [
+        "MANAGER:assign",
+        "MANAGER:nudge",
+        "AUTH:reset"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/team/[userId]/reset-code",
+      "file": "app/(workspace)/team/[userId]/reset-code/page.tsx",
+      "role": "manager/admin workspace",
+      "cases": [
+        "ACCOUNT/SYSTEM:accessibility",
+        "AUTH:reset"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/team/inbox",
+      "file": "app/(workspace)/team/inbox/page.tsx",
+      "role": "manager/admin workspace",
+      "cases": [
+        "ACCOUNT/SYSTEM:inbox"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/team",
+      "file": "app/(workspace)/team/page.tsx",
+      "role": "manager/admin workspace",
+      "cases": [
+        "MANAGER:team"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/team/reports",
+      "file": "app/(workspace)/team/reports/page.tsx",
+      "role": "manager/admin workspace",
+      "cases": [
+        "REPORTS:six",
+        "REPORTS:pagination",
+        "REPORTS:ask",
+        "MANAGER:isolation",
+        "REPORTS:readiness"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/",
+      "file": "app/page.tsx",
+      "role": "inspect runtime guard",
+      "cases": [
+        "AUTH:destinations"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/privacy-notice",
+      "file": "app/privacy-notice/page.tsx",
+      "role": "inspect runtime guard",
+      "cases": [
+        "AUTH:privacy"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    }
+  ],
+  "apiRoutes": [
+    {
+      "route": "/api/admin/dsr/[userId]",
+      "file": "app/api/admin/dsr/[userId]/route.ts",
+      "methods": [
+        "DELETE",
+        "GET"
+      ],
+      "cases": [
+        "ACCOUNT/SYSTEM:dsr"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/attempt/[attemptId]/appeal",
+      "file": "app/api/attempt/[attemptId]/appeal/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "cases": [
+        "REVIEW:appeal"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/attempt/[attemptId]",
+      "file": "app/api/attempt/[attemptId]/route.ts",
+      "methods": [
+        "PATCH",
+        "POST"
+      ],
+      "cases": [
+        "QUIZ:navigation",
+        "QUIZ:offline",
+        "QUIZ:submit"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/attempt/appeal-latest",
+      "file": "app/api/attempt/appeal-latest/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "cases": [
+        "REVIEW:appeal"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/certificates/[certId]",
+      "file": "app/api/certificates/[certId]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "cases": [
+        "COMPLIANCE:certificate",
+        "AUTH:mfa"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+        ".artifacts/recovery-qualification-20260928/service-3/results.json",
+        ".artifacts/recovery-qualification-20260928/service-4/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/drill",
+      "file": "app/api/drill/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "cases": [
+        "PRACTICE:session"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/events",
+      "file": "app/api/events/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "cases": [
+        "VIDEO:seek",
+        "HR:citation"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/handoff/public-video-xprtn-8/result.json",
+        ".artifacts/handoff/public-video-xprtn-8/seek/ended-dom.txt",
+        ".artifacts/handoff/public-video-xprtn-8/seek/ended-persistence.json",
+        ".artifacts/handoff/public-video-xprtn-8/seek/ended-viewport.jpg",
+        ".artifacts/handoff/public-video-xprtn-8/seek/ended.jpg",
+        ".artifacts/handoff/public-video-xprtn-8/seek/initial-dom.txt",
+        ".artifacts/handoff/public-video-xprtn-8/seek/initial.jpg",
+        ".artifacts/handoff/public-video-xprtn-8/seek/near-end-dom.txt",
+        ".artifacts/handoff/public-video-xprtn-8/seek/prerequisites.json",
+        ".artifacts/handoff/public-video-xprtn-8/seek/seeked-dom.txt",
+        ".artifacts/handoff/public-video-xprtn-8/seek/seeked.jpg",
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/health",
+      "file": "app/api/health/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "cases": [
+        "ACCOUNT/SYSTEM:states"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/hr/escalate",
+      "file": "app/api/hr/escalate/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "cases": [
+        "HR:escalation",
+        "HR:privacy"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/hr/feedback",
+      "file": "app/api/hr/feedback/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "cases": [
+        "HR:citation",
+        "HR:privacy"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/hr/reauth",
+      "file": "app/api/hr/reauth/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "cases": [
+        "HR:unlock-readiness",
+        "HR:privacy",
+        "AUTH:mfa",
+        "AUTH:privacy"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/hr",
+      "file": "app/api/hr/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "cases": [
+        "HR:citation",
+        "HR:sensitive",
+        "HR:privacy",
+        "HR:readiness"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/live/hr/event",
+      "file": "app/api/live/hr/event/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "cases": [
+        "VOICE:fallback",
+        "VOICE:cleanup",
+        "HR:escalation",
+        "HR:privacy"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/live/hr/session",
+      "file": "app/api/live/hr/session/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "cases": [
+        "VOICE:consent",
+        "VOICE:fallback",
+        "HR:privacy"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/live/interview/event",
+      "file": "app/api/live/interview/event/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "cases": [
+        "VOICE:assessment",
+        "COMPLIANCE:recert"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+        ".artifacts/recovery-qualification-20260928/service-3/results.json",
+        ".artifacts/recovery-qualification-20260928/service-4/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/live/interview/session",
+      "file": "app/api/live/interview/session/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "cases": [
+        "VOICE:assessment"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/progress",
+      "file": "app/api/progress/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "cases": [
+        "VIDEO:threshold",
+        "CONTENT:locked"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/handoff/public-video-xprtn-8/completed-dom.txt",
+        ".artifacts/handoff/public-video-xprtn-8/completed-persistence.json",
+        ".artifacts/handoff/public-video-xprtn-8/completed.jpg",
+        ".artifacts/handoff/public-video-xprtn-8/course-reload-dom.txt",
+        ".artifacts/handoff/public-video-xprtn-8/course-reload.jpg",
+        ".artifacts/handoff/public-video-xprtn-8/course-return-dom.txt",
+        ".artifacts/handoff/public-video-xprtn-8/course-return.jpg",
+        ".artifacts/handoff/public-video-xprtn-8/result.json",
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+        ".artifacts/recovery-qualification-20260928/service-3/results.json",
+        ".artifacts/recovery-qualification-20260928/service-4/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/quiz/[quizId]/consent-info",
+      "file": "app/api/quiz/[quizId]/consent-info/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "cases": [
+        "INTEGRITY:consent"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/quiz/[quizId]/start",
+      "file": "app/api/quiz/[quizId]/start/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "cases": [
+        "QUIZ-RULES:attempts"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/reports/[reportId]/csv",
+      "file": "app/api/reports/[reportId]/csv/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "cases": [
+        "REPORTS:six"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/reports/ask",
+      "file": "app/api/reports/ask/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "cases": [
+        "REPORTS:ask",
+        "REPORTS:readiness"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/tutor",
+      "file": "app/api/tutor/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "cases": [
+        "TUTOR:grounded",
+        "TUTOR:unavailable"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "route": "/api/tutor/suggest",
+      "file": "app/api/tutor/suggest/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "cases": [
+        "TUTOR:grounded"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    }
+  ],
+  "serverActions": [
+    {
+      "id": "app/(auth)/actions.ts:loginAction:13",
+      "file": "app/(auth)/actions.ts",
+      "line": 13,
+      "name": "loginAction",
+      "kind": "module export",
+      "role": "authentication",
+      "cases": [
+        "AUTH:invalid"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(auth)/actions.ts:activateAction:19",
+      "file": "app/(auth)/actions.ts",
+      "line": 19,
+      "name": "activateAction",
+      "kind": "module export",
+      "role": "authentication",
+      "cases": [
+        "AUTH:activation"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(auth)/actions.ts:mfaVerifyAction:27",
+      "file": "app/(auth)/actions.ts",
+      "line": 27,
+      "name": "mfaVerifyAction",
+      "kind": "module export",
+      "role": "authentication",
+      "cases": [
+        "AUTH:mfa"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(auth)/actions.ts:mfaSetupBegin:33",
+      "file": "app/(auth)/actions.ts",
+      "line": 33,
+      "name": "mfaSetupBegin",
+      "kind": "module export",
+      "role": "authentication",
+      "cases": [
+        "AUTH:mfa"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(auth)/actions.ts:mfaSetupConfirm:40",
+      "file": "app/(auth)/actions.ts",
+      "line": 40,
+      "name": "mfaSetupConfirm",
+      "kind": "module export",
+      "role": "authentication",
+      "cases": [
+        "AUTH:mfa"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(learner)/ask-hr/tickets/[ticketId]/actions.ts:replyToTicketAction:10",
+      "file": "app/(learner)/ask-hr/tickets/[ticketId]/actions.ts",
+      "line": 10,
+      "name": "replyToTicketAction",
+      "kind": "module export",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "TICKET:thread",
+        "TICKET:readiness"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(learner)/lesson/actions.ts:completeLessonAction:8",
+      "file": "app/(learner)/lesson/actions.ts",
+      "line": 8,
+      "name": "completeLessonAction",
+      "kind": "module export",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "CONTENT:text",
+        "CONTENT:pdf",
+        "CONTENT:readiness"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(learner)/lesson/actions.ts:markCompleteAction:21",
+      "file": "app/(learner)/lesson/actions.ts",
+      "line": 21,
+      "name": "markCompleteAction",
+      "kind": "module export",
+      "role": "authenticated learner workspace",
+      "cases": [
+        "CONTENT:text",
+        "CONTENT:pdf"
+      ],
+      "status": "NOT_EXPOSED_IN_CURRENT_UI",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW",
+      "note": "Unbound compatibility wrapper delegates authorization/completion to completeLessonAction then redirects. Source reviewed; no distinct visible control or independently invoked wrapper claimed."
+    },
+    {
+      "id": "app/(workspace)/admin/corpus/actions.ts:publishPolicyAction:9",
+      "file": "app/(workspace)/admin/corpus/actions.ts",
+      "line": 9,
+      "name": "publishPolicyAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "POLICY:version",
+        "POLICY:failure"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+        ".artifacts/recovery-qualification-20260928/service-3/results.json",
+        ".artifacts/recovery-qualification-20260928/service-4/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/courses/actions.ts:createCourseAction:18",
+      "file": "app/(workspace)/admin/courses/actions.ts",
+      "line": 18,
+      "name": "createCourseAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "AUTHOR:draft"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/courses/actions.ts:updateCourseAction:34",
+      "file": "app/(workspace)/admin/courses/actions.ts",
+      "line": 34,
+      "name": "updateCourseAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "AUTHOR:draft"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/courses/actions.ts:setCourseStatusAction:65",
+      "file": "app/(workspace)/admin/courses/actions.ts",
+      "line": 65,
+      "name": "setCourseStatusAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "AUTHOR:publish"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/courses/actions.ts:addModuleAction:75",
+      "file": "app/(workspace)/admin/courses/actions.ts",
+      "line": 75,
+      "name": "addModuleAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "AUTHOR:draft"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/courses/actions.ts:addLessonAction:86",
+      "file": "app/(workspace)/admin/courses/actions.ts",
+      "line": 86,
+      "name": "addLessonAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "AUTHOR:types"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/courses/actions.ts:updateInterviewLessonAction:174",
+      "file": "app/(workspace)/admin/courses/actions.ts",
+      "line": 174,
+      "name": "updateInterviewLessonAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "AUTHOR:types"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/courses/actions.ts:retryIngestAction:187",
+      "file": "app/(workspace)/admin/courses/actions.ts",
+      "line": 187,
+      "name": "retryIngestAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "AUTHOR:ingest"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/courses/actions.ts:moveModuleAction:213",
+      "file": "app/(workspace)/admin/courses/actions.ts",
+      "line": 213,
+      "name": "moveModuleAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "AUTHOR:order"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/courses/actions.ts:moveLessonAction:233",
+      "file": "app/(workspace)/admin/courses/actions.ts",
+      "line": 233,
+      "name": "moveLessonAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "AUTHOR:order"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/integrity/[attemptId]/actions.ts:clearAttemptAction:9",
+      "file": "app/(workspace)/admin/integrity/[attemptId]/actions.ts",
+      "line": 9,
+      "name": "clearAttemptAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "INTEGRITY:decision"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/integrity/[attemptId]/actions.ts:voidAttemptAction:19",
+      "file": "app/(workspace)/admin/integrity/[attemptId]/actions.ts",
+      "line": 19,
+      "name": "voidAttemptAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "INTEGRITY:decision"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/people/actions.ts:updateUserAction:15",
+      "file": "app/(workspace)/admin/people/actions.ts",
+      "line": 15,
+      "name": "updateUserAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "PEOPLE:edit",
+        "PEOPLE:rules"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+        ".artifacts/recovery-qualification-20260928/service-3/results.json",
+        ".artifacts/recovery-qualification-20260928/service-4/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/people/actions.ts:issueCodeAction:33",
+      "file": "app/(workspace)/admin/people/actions.ts",
+      "line": 33,
+      "name": "issueCodeAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "AUTH:reset"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/people/actions.ts:importCsvAction:38",
+      "file": "app/(workspace)/admin/people/actions.ts",
+      "line": 38,
+      "name": "importCsvAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "PEOPLE:import"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/people/actions.ts:createRuleAction:73",
+      "file": "app/(workspace)/admin/people/actions.ts",
+      "line": 73,
+      "name": "createRuleAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "PEOPLE:rules"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+        ".artifacts/recovery-qualification-20260928/service-3/results.json",
+        ".artifacts/recovery-qualification-20260928/service-4/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/people/actions.ts:toggleRuleAction:99",
+      "file": "app/(workspace)/admin/people/actions.ts",
+      "line": 99,
+      "name": "toggleRuleAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "PEOPLE:rules"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+        ".artifacts/recovery-qualification-20260928/service-3/results.json",
+        ".artifacts/recovery-qualification-20260928/service-4/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/people/actions.ts:createGroupAction:109",
+      "file": "app/(workspace)/admin/people/actions.ts",
+      "line": 109,
+      "name": "createGroupAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "PEOPLE:edit"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/reviews/actions.ts:confirmGradeAction:11",
+      "file": "app/(workspace)/admin/reviews/actions.ts",
+      "line": 11,
+      "name": "confirmGradeAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "REVIEW:decision"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/reviews/actions.ts:adjustGradeAction:18",
+      "file": "app/(workspace)/admin/reviews/actions.ts",
+      "line": 18,
+      "name": "adjustGradeAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "REVIEW:appeal"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/reviews/actions.ts:approveDraftAction:33",
+      "file": "app/(workspace)/admin/reviews/actions.ts",
+      "line": 33,
+      "name": "approveDraftAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "AUTHOR:types"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/reviews/actions.ts:discardDraftAction:40",
+      "file": "app/(workspace)/admin/reviews/actions.ts",
+      "line": 40,
+      "name": "discardDraftAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "AUTHOR:types"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/reviews/actions.ts:markInterviewReviewedAction:47",
+      "file": "app/(workspace)/admin/reviews/actions.ts",
+      "line": 47,
+      "name": "markInterviewReviewedAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "VOICE:assessment"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/reviews/actions.ts:overturnInterviewAction:54",
+      "file": "app/(workspace)/admin/reviews/actions.ts",
+      "line": 54,
+      "name": "overturnInterviewAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "VOICE:assessment",
+        "COMPLIANCE:recert"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json",
+        ".artifacts/recovery-qualification-20260928/service-3/results.json",
+        ".artifacts/recovery-qualification-20260928/service-4/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/tickets/[ticketId]/actions.ts:adminReplyAction:11",
+      "file": "app/(workspace)/admin/tickets/[ticketId]/actions.ts",
+      "line": 11,
+      "name": "adminReplyAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "TICKET:thread"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/admin/tickets/[ticketId]/actions.ts:resolveTicketAction:24",
+      "file": "app/(workspace)/admin/tickets/[ticketId]/actions.ts",
+      "line": 24,
+      "name": "resolveTicketAction",
+      "kind": "module export",
+      "role": "admin",
+      "cases": [
+        "TICKET:thread"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/team/actions.ts:assignAction:22",
+      "file": "app/(workspace)/team/actions.ts",
+      "line": 22,
+      "name": "assignAction",
+      "kind": "module export",
+      "role": "manager/admin workspace",
+      "cases": [
+        "MANAGER:assign"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/team/actions.ts:nudgeAction:48",
+      "file": "app/(workspace)/team/actions.ts",
+      "line": 48,
+      "name": "nudgeAction",
+      "kind": "module export",
+      "role": "manager/admin workspace",
+      "cases": [
+        "MANAGER:nudge"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "app/(workspace)/team/actions.ts:issueResetAction:59",
+      "file": "app/(workspace)/team/actions.ts",
+      "line": 59,
+      "name": "issueResetAction",
+      "kind": "module export",
+      "role": "manager/admin workspace",
+      "cases": [
+        "AUTH:reset"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "components/inbox-list.tsx:markAllRead:21",
+      "file": "components/inbox-list.tsx",
+      "line": 21,
+      "name": "markAllRead",
+      "kind": "inline server action",
+      "role": "inspect runtime guard",
+      "cases": [
+        "ACCOUNT/SYSTEM:inbox"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "lib/auth/login.ts:login:15",
+      "file": "lib/auth/login.ts",
+      "line": 15,
+      "name": "login",
+      "kind": "module export",
+      "role": "inspect runtime guard",
+      "cases": [
+        "AUTH:invalid"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "lib/auth/login.ts:activate:39",
+      "file": "lib/auth/login.ts",
+      "line": 39,
+      "name": "activate",
+      "kind": "module export",
+      "role": "inspect runtime guard",
+      "cases": [
+        "AUTH:activation"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "lib/auth/login.ts:verifyMfa:69",
+      "file": "lib/auth/login.ts",
+      "line": 69,
+      "name": "verifyMfa",
+      "kind": "module export",
+      "role": "inspect runtime guard",
+      "cases": [
+        "AUTH:mfa"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "lib/auth/login.ts:acknowledgePrivacyNotice:79",
+      "file": "lib/auth/login.ts",
+      "line": 79,
+      "name": "acknowledgePrivacyNotice",
+      "kind": "module export",
+      "role": "inspect runtime guard",
+      "cases": [
+        "AUTH:privacy"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "lib/auth/login.ts:logout:87",
+      "file": "lib/auth/login.ts",
+      "line": 87,
+      "name": "logout",
+      "kind": "module export",
+      "role": "inspect runtime guard",
+      "cases": [
+        "AUTH:logout"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "lib/auth/login.ts:issueResetCode:93",
+      "file": "lib/auth/login.ts",
+      "line": 93,
+      "name": "issueResetCode",
+      "kind": "module export",
+      "role": "inspect runtime guard",
+      "cases": [
+        "AUTH:reset"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    },
+    {
+      "id": "lib/auth/login.ts:switchWorkspace:120",
+      "file": "lib/auth/login.ts",
+      "line": 120,
+      "name": "switchWorkspace",
+      "kind": "module export",
+      "role": "inspect runtime guard",
+      "cases": [
+        "NAV:workspace"
+      ],
+      "status": "PASSED_LOCAL",
+      "evidence": [
+        ".artifacts/recovery-qualification-20260928/matrix-19/results.json",
+        ".artifacts/recovery-qualification-20260928/matrix-20/results.json"
+      ],
+      "runtimeCommit": "0ae585fa7a29d0e33723f1d6b773983f3f0c9029",
+      "runtimeBuildId": "NGmjXLUbonvPoG_RYpIJW"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
-import { currentUser } from "@/lib/auth/guard";
+import { apiUser as currentUser } from "@/lib/auth/guard";
 import { certificatePdf } from "@/lib/pdf";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ certId: string }> }) {
@@ -16,7 +16,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ certId:
   if (!isOwner && !isAdmin && !isManagerOf) return new Response("Forbidden", { status: 403 });
   const [course] = await db.select().from(t.courses).where(eq(t.courses.id, cert.courseId)).limit(1);
 
-  const pdf = certificatePdf({
+  const pdf = await certificatePdf({
     learnerName: holder?.name ?? "Employee",
     courseTitle: course?.title ?? "Course",
     completedAt: cert.issuedAt,

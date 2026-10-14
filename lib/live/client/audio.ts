@@ -107,7 +107,7 @@ export function micSupported(): boolean {
   return typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia && typeof AudioWorkletNode !== "undefined";
 }
 
-export async function createMicCapture(opts: { onChunk: (base64Pcm: string) => void; onLevel: (rms: number) => void }): Promise<MicCapture> {
+export async function createMicCapture(opts: { onChunk: (base64Pcm: string) => void; onLevel: (rms: number) => void; onError?: (error: unknown) => void }): Promise<MicCapture> {
   const stream = await navigator.mediaDevices.getUserMedia({
     audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
   });
@@ -133,8 +133,8 @@ export async function createMicCapture(opts: { onChunk: (base64Pcm: string) => v
       opts.onChunk(bytesToBase64(new Uint8Array(e.data.pcm)));
     }
   };
-  if (ctx.state === "suspended") void ctx.resume();
-  return {
+  let stopped = false;
+  const capture: MicCapture = {
     get muted() {
       return muted;
     },
@@ -145,6 +145,8 @@ export async function createMicCapture(opts: { onChunk: (base64Pcm: string) => v
       muted = false;
     },
     stop() {
+      if (stopped) return;
+      stopped = true;
       node.port.onmessage = null;
       try {
         source.disconnect();
@@ -154,9 +156,17 @@ export async function createMicCapture(opts: { onChunk: (base64Pcm: string) => v
         /* already torn down */
       }
       stream.getTracks().forEach((track) => track.stop());
-      void ctx.close();
+      if (ctx.state !== "closed") void ctx.close();
     },
   };
+  if (ctx.state === "suspended") void ctx.resume().catch(error => {
+    // A canceled permission request can deliver its stream after End. Stopping
+    // that capture rejects the pending resume in Firefox/WebKit; it is expected.
+    if (stopped || ctx.state === "closed") return;
+    capture.stop();
+    opts.onError?.(error);
+  });
+  return capture;
 }
 
 // ---------------------------------------------------------------------------
@@ -184,7 +194,10 @@ export function createPlayer(): Player {
       return active.size > 0;
     },
     async unlock() {
-      if (ctx.state === "suspended") await ctx.resume();
+      if (ctx.state === "suspended") {
+        try { await ctx.resume(); }
+        catch (error) { if ((ctx.state as AudioContextState) !== "closed") throw error; }
+      }
     },
     enqueue(pcm) {
       const samples = pcm16ToFloat32(pcm);
@@ -228,7 +241,7 @@ export function createPlayer(): Player {
     },
     close() {
       player.flush();
-      void ctx.close();
+      if (ctx.state !== "closed") void ctx.close();
     },
   };
   return player;

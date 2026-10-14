@@ -1,3 +1,4 @@
+import type { LearningDatabase } from "./learning-cycle";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 
@@ -9,21 +10,21 @@ export type CourseWithProgress = {
   pct: number;
 };
 
-export async function courseProgress(userId: string, courseIds: string[]): Promise<Map<string, { total: number; done: number }>> {
+export async function courseProgress(userId: string, courseIds: string[], connection: LearningDatabase = db): Promise<Map<string, { total: number; done: number }>> {
   const out = new Map<string, { total: number; done: number }>();
   if (courseIds.length === 0) return out;
-  const mods = await db.select().from(t.modules).where(inArray(t.modules.courseId, courseIds));
+  const mods = await connection.select().from(t.modules).where(inArray(t.modules.courseId, courseIds));
   const modByCourse = new Map<string, string[]>();
   for (const m of mods) {
     modByCourse.set(m.courseId, [...(modByCourse.get(m.courseId) ?? []), m.id]);
   }
   const allModIds = mods.map((m) => m.id);
   const lessonRows = allModIds.length
-    ? await db.select().from(t.lessons).where(inArray(t.lessons.moduleId, allModIds))
+    ? await connection.select().from(t.lessons).where(inArray(t.lessons.moduleId, allModIds))
     : [];
   const lessonIds = lessonRows.map((l) => l.id);
   const progress = lessonIds.length
-    ? await db
+    ? await connection
         .select()
         .from(t.lessonProgress)
         .where(and(eq(t.lessonProgress.userId, userId), inArray(t.lessonProgress.lessonId, lessonIds)))
@@ -91,11 +92,11 @@ export async function totalPoints(userId: string): Promise<number> {
   return row?.n ?? 0;
 }
 
-export async function courseOutline(courseId: string) {
-  const mods = await db.select().from(t.modules).where(eq(t.modules.courseId, courseId));
+export async function courseOutline(courseId: string, connection: LearningDatabase = db) {
+  const mods = await connection.select().from(t.modules).where(eq(t.modules.courseId, courseId));
   mods.sort((a, b) => a.sort - b.sort);
   const lessonRows = mods.length
-    ? await db.select().from(t.lessons).where(inArray(t.lessons.moduleId, mods.map((m) => m.id)))
+    ? await connection.select().from(t.lessons).where(inArray(t.lessons.moduleId, mods.map((m) => m.id)))
     : [];
   return mods.map((m) => ({
     module: m,

@@ -1,3 +1,4 @@
+import { HrHistoryBoundary } from "@/components/hr-history-boundary";
 import { requireUser } from "@/lib/auth/guard";
 import { liveAvailable } from "@/lib/live/gemini";
 import { PageHeader } from "@/components/ui";
@@ -9,9 +10,9 @@ export const dynamic = "force-dynamic";
 export default async function HrLivePage() {
   const user = await requireUser();
   return (
-    <div className="animate-slide-up">
+    <HrHistoryBoundary userId={user.id} loginId={user.session.loginId!} expiresAt={(user.session.exp ?? 0) * 1000} sessionOnly><div className="animate-slide-up">
       <PageHeader title="Talk to your assistant" sub="HR policy, your courses, and what's due — spoken, with the source cited. Answers are in English." />
       <HrVoice configured={liveAvailable()} sharedDevice={user.session.shared} demoMode={process.env.DEMO_MODE === "true"} firstName={user.name.split(" ")[0] ?? ""} />
-    </div>
+    </div></HrHistoryBoundary>
   );
 }

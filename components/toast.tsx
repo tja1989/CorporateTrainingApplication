@@ -67,7 +67,7 @@ export function ToastProvider({ initial, children }: { initial?: Flash | null; c
       <div
         role="status"
         aria-live="polite"
-        className="pointer-events-none fixed inset-x-4 bottom-12 z-50 flex flex-col items-center gap-2 md:inset-x-auto md:bottom-6 md:end-6 md:items-end"
+        className="pointer-events-none fixed inset-x-4 bottom-20 z-50 flex flex-col items-center gap-2 md:inset-x-auto md:bottom-6 md:end-6 md:items-end"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <AnimatePresence initial={false}>
@@ -83,7 +83,7 @@ export function ToastProvider({ initial, children }: { initial?: Flash | null; c
                 transition={{ duration: DUR.base, ease: EASE_OUT }}
                 className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-card border border-border bg-surface px-4 py-3 text-sm text-foreground shadow-overlay"
               >
-                <span className={cx("animate-pop flex size-8 shrink-0 items-center justify-center rounded-full", tone.disc)} aria-hidden>
+                <span className={cx("flex size-8 shrink-0 items-center justify-center rounded-control", tone.disc)} aria-hidden>
                   <Icon name={tone.icon} size={16} />
                 </span>
                 <span className="flex-1 pt-1">{t.message}</span>

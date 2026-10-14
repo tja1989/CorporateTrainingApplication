@@ -3,10 +3,10 @@
  * `tests/design-guardrails.test.ts` asserts the two stay identical.
  *
  *  fast  150ms — press, hover, colour, tab indicator
- *  base  250ms — page/list entry, dialogs, toasts, tab slide
- *  slow  400ms — progress-ring fill, counters, celebration
+ *  base  200ms — dialogs, toasts, tab feedback
+ *  slow  250ms — longer state feedback
  */
-export const DUR = { fast: 0.15, base: 0.25, slow: 0.4 } as const;
+export const DUR = { fast: 0.15, base: 0.2, slow: 0.25 } as const;
 
 /** Entries and exits. */
 export const EASE_OUT: [number, number, number, number] = [0.23, 1, 0.32, 1];

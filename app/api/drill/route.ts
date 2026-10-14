@@ -1,4 +1,4 @@
-import { currentUser } from "@/lib/auth/guard";
+import { apiUser as currentUser } from "@/lib/auth/guard";
 import { buildDrillSession, recordDrillAnswer, completeDrillSession } from "@/lib/quiz/drill";
 import { scoreQuestion, type Answer } from "@/lib/quiz/scoring";
 import { db, t } from "@/lib/db/client";
@@ -14,6 +14,11 @@ export async function GET() {
       questionId: q.id,
       type: q.type,
       prompt: q.body.prompt,
+      points: q.points,
+      stimulus: q.body.stimulus ?? null,
+      left: q.body.pairs?.map(pair => pair.left) ?? null,
+      right: q.body.pairs?.map(pair => pair.right) ?? null,
+      orderItems: q.body.orderItems ?? null,
       options: q.type === "truefalse" ? ["True", "False"] : (q.body.options ?? null),
     })),
   });
@@ -40,7 +45,9 @@ export async function POST(req: Request) {
     correct,
     explanation: q.body.explanation ?? null,
     correctAnswer:
-      q.type === "fill_blank"
+      q.type === "matching" ? (q.body.pairs ?? []).map(pair => `${pair.left}: ${pair.right}`).join("; ") || null
+      : q.type === "ordering" ? (q.body.orderItems ?? []).join(" → ") || null
+      : q.type === "fill_blank"
         ? (q.body.acceptedAnswers?.[0] ?? null)
         : q.type === "truefalse"
           ? (q.body.correct?.[0] === 0 ? "True" : "False")

@@ -1,8 +1,10 @@
+import { WorkspaceLink } from "@/components/workspace-ui";
+import { WorkspaceForm, SubmitButton } from "@/components/workspace-form";
 import { notFound } from "next/navigation";
 import { asc, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
-import { Button, Card, Chip, PageTitle, Textarea, cx } from "@/components/ui";
+import { Button, Card, Chip, PageTitle, Textarea, Field, cx } from "@/components/ui";
 import { adminReplyAction, resolveTicketAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -24,28 +26,30 @@ export default async function AdminTicketPage({ params }: { params: Promise<{ ti
 
   return (
     <div className="animate-slide-up mx-auto max-w-2xl">
+      <WorkspaceLink href="/admin/tickets" className="mb-4">← HR tickets</WorkspaceLink>
+      <div className="mb-3"><Chip variant={ticket.state === "RESOLVED" ? "success" : "warning"}>{ticket.state.toLowerCase().replaceAll("_", " ")}</Chip></div>
       <PageTitle sub={`${requester?.name ?? "Employee"} · ${requester?.jobTitle ?? ""} · ${requester?.employeeId ?? ""}`}>
         {ticket.subject}
       </PageTitle>
       <div className="mb-4 flex flex-col gap-2">
         {messages.map((m) => (
           <Card key={m.id} className={cx("p-3 text-sm", m.authorId !== ticket.userId && "bg-ai-tint")}>
-            <p className="mb-1 text-xs font-medium text-muted">{nameOf.get(m.authorId) ?? "—"}</p>
-            <p className="whitespace-pre-wrap">{m.body}</p>
+            <p className="mb-2 text-sm font-medium text-muted">{nameOf.get(m.authorId) ?? "—"} · {m.createdAt.toISOString().slice(0,16).replace("T", " ")}</p>
+            <p className="whitespace-pre-wrap break-words">{m.body}</p>
           </Card>
         ))}
       </div>
       {ticket.state !== "RESOLVED" ? (
         <div className="flex flex-col gap-2">
-          <form action={adminReplyAction.bind(null, ticket.id)}>
-            <Textarea name="body" rows={3} required placeholder="Reply to the employee…" className="mb-2" />
+          <WorkspaceForm action={adminReplyAction.bind(null, ticket.id)}>
+            <Field label="Reply to employee"><Textarea name="body" rows={5} required maxLength={4000} placeholder="Write a reply that helps the employee take the next step." /></Field>
             <div className="flex gap-2">
               <Button type="submit">Reply</Button>
             </div>
-          </form>
-          <form action={resolveTicketAction.bind(null, ticket.id)}>
-            <Button type="submit" variant="secondary">Mark resolved</Button>
-          </form>
+          </WorkspaceForm>
+          <WorkspaceForm action={resolveTicketAction.bind(null, ticket.id)}>
+            <SubmitButton variant="secondary">Mark resolved</SubmitButton>
+          </WorkspaceForm>
         </div>
       ) : (
         <Chip variant="success">Resolved</Chip>

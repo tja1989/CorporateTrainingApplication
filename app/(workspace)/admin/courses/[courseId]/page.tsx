@@ -1,207 +1,451 @@
-import { Icon } from "@/components/icons";
-import { LessonIcon } from "@/components/lesson-icon";
-import type { LessonType } from "@/lib/lms/outline";
 import { notFound } from "next/navigation";
 import { eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
-import { Button, Card, Chip, Field, Input, PageTitle, Select, Textarea, cx } from "@/components/ui";
+import {
+  Button,
+  Chip,
+  Field,
+  Input,
+  PageHeader,
+  Textarea,
+  Icon,
+} from "@/components/ui";
+import {
+  WorkspaceLink,
+  WorkspaceTabs,
+  WorkspaceSection,
+} from "@/components/workspace-ui";
+import { WorkspaceForm, SubmitButton } from "@/components/workspace-form";
+import { CourseCover } from "@/components/course-cover";
+import { LessonIcon } from "@/components/lesson-icon";
+import type { LessonType } from "@/lib/lms/outline";
+import { parseInterviewConfig } from "@/lib/live/interview";
+import { LessonForm, InterviewFields } from "../lesson-form";
 import {
   updateCourseAction,
   setCourseStatusAction,
   addModuleAction,
-  addLessonAction,
   updateInterviewLessonAction,
   retryIngestAction,
   moveLessonAction,
+  moveModuleAction,
 } from "../actions";
-
-import { parseInterviewConfig } from "@/lib/live/interview";
-import type { InterviewConfig } from "@/lib/db/schema";
-
 export const dynamic = "force-dynamic";
-
-
-export default async function CourseEditorPage({ params }: { params: Promise<{ courseId: string }> }) {
+export default async function CourseEditorPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ courseId: string }>;
+  searchParams: Promise<{ view?: string }>;
+}) {
   await requireRole("ADMIN");
   const { courseId } = await params;
-  const [course] = await db.select().from(t.courses).where(eq(t.courses.id, courseId)).limit(1);
+  const view =
+    (await searchParams).view === "settings" ? "settings" : "curriculum";
+  const [course] = await db
+    .select()
+    .from(t.courses)
+    .where(eq(t.courses.id, courseId))
+    .limit(1);
   if (!course) notFound();
-  const mods = (await db.select().from(t.modules).where(eq(t.modules.courseId, courseId))).sort((a, b) => a.sort - b.sort);
-  const lessonRows = mods.length ? await db.select().from(t.lessons).where(inArray(t.lessons.moduleId, mods.map((m) => m.id))) : [];
-  const videoIds = lessonRows.map((l) => l.payload.videoId).filter((v): v is string => !!v);
-  const videoRows = videoIds.length ? await db.select().from(t.videos).where(inArray(t.videos.id, videoIds)) : [];
-  const videoOf = new Map(videoRows.map((v) => [v.id, v]));
+  const mods = (
+    await db.select().from(t.modules).where(eq(t.modules.courseId, courseId))
+  ).sort((a, b) => a.sort - b.sort);
+  const lessons = mods.length
+    ? await db
+        .select()
+        .from(t.lessons)
+        .where(
+          inArray(
+            t.lessons.moduleId,
+            mods.map((m) => m.id),
+          ),
+        )
+    : [];
+  const videoIds = lessons.flatMap((l) =>
+    l.payload.videoId ? [l.payload.videoId] : [],
+  );
+  const videos = videoIds.length
+    ? await db.select().from(t.videos).where(inArray(t.videos.id, videoIds))
+    : [];
   const banks = await db.select().from(t.questionBanks);
-
   return (
-    <div className="animate-slide-up">
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <PageTitle>{course.title}</PageTitle>
-        <Chip variant={course.status === "PUBLISHED" ? "success" : "warning"}>{course.status.toLowerCase()}</Chip>
-        <form action={setCourseStatusAction.bind(null, course.id, course.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED")}>
-          <Button type="submit" variant="secondary">{course.status === "PUBLISHED" ? "Unpublish" : "Publish"}</Button>
-        </form>
-      </div>
-
-      <div className="grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <div>
-          {mods.map((mod) => {
-            const lessons = lessonRows.filter((l) => l.moduleId === mod.id).sort((a, b) => a.sort - b.sort);
+    <div className="min-w-0">
+      <a
+        href="/admin/courses"
+        className="link mb-4 inline-flex touch-target items-center"
+      >
+        ← All courses
+      </a>
+      <PageHeader
+        title={course.title}
+        sub={`${mods.length} module${mods.length === 1 ? "" : "s"} · ${lessons.length} lesson${lessons.length === 1 ? "" : "s"} · ${course.estMinutes} min`}
+        actions={
+          <>
+            <Chip
+              variant={course.status === "PUBLISHED" ? "success" : "warning"}
+            >
+              {course.status.toLowerCase()}
+            </Chip>
+            {course.status === "PUBLISHED" ? (
+              <WorkspaceLink href={`/course/${course.id}`}>
+                View learner course
+              </WorkspaceLink>
+            ) : null}
+            <WorkspaceForm
+              action={setCourseStatusAction.bind(
+                null,
+                course.id,
+                course.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED",
+              )}
+            >
+              <SubmitButton variant="secondary">
+                {course.status === "PUBLISHED" ? "Unpublish" : "Publish"}
+              </SubmitButton>
+            </WorkspaceForm>
+          </>
+        }
+      />
+      <WorkspaceTabs
+        label="Course editor"
+        items={[
+          {
+            href: `/admin/courses/${course.id}`,
+            label: "Curriculum",
+            active: view === "curriculum",
+          },
+          {
+            href: `/admin/courses/${course.id}?view=settings`,
+            label: "Settings",
+            active: view === "settings",
+          },
+        ]}
+      />
+      {view === "curriculum" ? (
+        <div className="max-w-4xl space-y-6">
+          <p className="mb-4 text-sm text-muted">
+            Build your modules in learning order.{" "}
+            {course.sequentialLock
+              ? "Learners must complete lessons in order."
+              : "Learners can choose their lesson order."}{" "}
+            {course.status !== "PUBLISHED"
+              ? "Publish when the course is ready to make it available to learners."
+              : "Changes to this published course are visible to learners."}
+          </p>
+          {mods.map((mod, index) => {
+            const items = lessons
+              .filter((l) => l.moduleId === mod.id)
+              .sort((a, b) => a.sort - b.sort);
             return (
-              <Card key={mod.id} className="mb-4 p-4">
-                <h2 className="mb-2 font-medium">{mod.title}</h2>
-                <ul className="mb-3 flex flex-col gap-1">
-                  {lessons.map((lesson, i) => {
-                    const video = lesson.payload.videoId ? videoOf.get(lesson.payload.videoId) : null;
+              <WorkspaceSection
+                key={mod.id}
+                title={mod.title}
+                description={`Module ${index + 1} · ${items.length} lesson${items.length === 1 ? "" : "s"}`}
+              >
+                <div
+                  role="group"
+                  aria-label={`${mod.title} order`}
+                  className="mb-3 flex flex-wrap items-center justify-end gap-1"
+                >
+                  <span className="me-2 text-sm text-muted">Module order</span>
+                  <WorkspaceForm
+                    action={moveModuleAction.bind(null, course.id, mod.id, -1)}
+                  >
+                    <Button
+                      variant="ghost"
+                      type="submit"
+                      aria-label={`Move module ${mod.title} up`}
+                      disabled={index === 0}
+                      className="px-2"
+                    >
+                      <Icon name="arrow-up" size={16} />
+                    </Button>
+                  </WorkspaceForm>
+                  <WorkspaceForm
+                    action={moveModuleAction.bind(null, course.id, mod.id, 1)}
+                  >
+                    <Button
+                      variant="ghost"
+                      type="submit"
+                      aria-label={`Move module ${mod.title} down`}
+                      disabled={index === mods.length - 1}
+                      className="px-2"
+                    >
+                      <Icon name="arrow-down" size={16} />
+                    </Button>
+                  </WorkspaceForm>
+                </div>
+                <ol className="mb-4 divide-y divide-border">
+                  {items.map((lesson, i) => {
+                    const video = videos.find(
+                      (v) => v.id === lesson.payload.videoId,
+                    );
                     return (
-                      <li key={lesson.id} className="rounded-control bg-surface-2 px-3 py-2 text-sm">
-                        <div className="flex items-center gap-2">
-                        <LessonIcon type={lesson.type as LessonType} />
-                        <span className="flex-1 truncate">{lesson.title}</span>
+                      <li key={lesson.id} className="min-w-0 py-3">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                          <LessonIcon type={lesson.type as LessonType} />
+                          <div className="min-w-0 flex-1">
+                            <p className="break-words font-medium">
+                              {lesson.title}
+                            </p>
+                            <p className="text-sm text-muted">
+                              {lesson.type.toLowerCase()}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 gap-1">
+                            <WorkspaceForm
+                              action={moveLessonAction.bind(
+                                null,
+                                course.id,
+                                lesson.id,
+                                -1,
+                              )}
+                            >
+                              <Button
+                                variant="ghost"
+                                type="submit"
+                                aria-label={`Move ${lesson.title} up`}
+                                disabled={i === 0}
+                                className="px-2"
+                              >
+                                <Icon name="arrow-up" size={16} />
+                              </Button>
+                            </WorkspaceForm>
+                            <WorkspaceForm
+                              action={moveLessonAction.bind(
+                                null,
+                                course.id,
+                                lesson.id,
+                                1,
+                              )}
+                            >
+                              <Button
+                                variant="ghost"
+                                type="submit"
+                                aria-label={`Move ${lesson.title} down`}
+                                disabled={i === items.length - 1}
+                                className="px-2"
+                              >
+                                <Icon name="arrow-down" size={16} />
+                              </Button>
+                            </WorkspaceForm>
+                          </div>
+                        </div>
                         {video ? (
-                          <span className="flex items-center gap-2">
-                            <Chip variant={video.ingestionStatus === "READY" ? "success" : video.ingestionStatus === "FAILED" ? "destructive" : "warning"}>
-                              {video.ingestionStatus.toLowerCase()}
+                          <div className="mt-2">
+                            <Chip
+                              variant={
+                                video.ingestionStatus === "READY"
+                                  ? "success"
+                                  : video.ingestionStatus === "FAILED"
+                                    ? "destructive"
+                                    : "warning"
+                              }
+                            >
+                              Video {video.ingestionStatus.toLowerCase()}
                             </Chip>
                             {video.ingestionStatus === "FAILED" ? (
-                              <form action={retryIngestAction.bind(null, course.id, video.id)}>
-                                <button type="submit" className="link text-xs text-link">retry</button>
-                              </form>
+                              <details className="mt-2">
+                                <summary className="touch-target flex items-center text-sm text-link">
+                                  Retry video ingestion
+                                </summary>
+                                <p className="my-3 text-sm text-muted">
+                                  The transcript could not be prepared. Correct
+                                  the transcript below, or leave it blank to
+                                  retry the saved transcript or configured
+                                  service.
+                                </p>
+                                {video.failureReason ? (
+                                  <p className="mb-3 break-words text-sm text-destructive-text">
+                                    {video.failureReason}
+                                  </p>
+                                ) : null}
+                                <WorkspaceForm
+                                  action={retryIngestAction.bind(
+                                    null,
+                                    course.id,
+                                    video.id,
+                                  )}
+                                >
+                                  <Field
+                                    label="Replacement transcript (SRT or VTT)"
+                                    hint="Use captions you have permission to use. Include timestamps and caption text."
+                                  >
+                                    <Textarea name="transcript" rows={5} />
+                                  </Field>
+                                  <SubmitButton variant="secondary">
+                                    Retry ingestion
+                                  </SubmitButton>
+                                </WorkspaceForm>
+                              </details>
                             ) : null}
-                          </span>
+                          </div>
                         ) : null}
-                        <form action={moveLessonAction.bind(null, course.id, lesson.id, -1)}>
-                          <button aria-label="Move up" className={cx("touch-target rounded-control px-1 hover:bg-surface", i === 0 && "opacity-30")} disabled={i === 0}><Icon name="arrow-up" size={16} /></button>
-                        </form>
-                        <form action={moveLessonAction.bind(null, course.id, lesson.id, 1)}>
-                          <button aria-label="Move down" className={cx("touch-target rounded-control px-1 hover:bg-surface", i === lessons.length - 1 && "opacity-30")} disabled={i === lessons.length - 1}><Icon name="arrow-down" size={16} /></button>
-                        </form>
-                        </div>
-                        {lesson.type === "INTERVIEW" ? (() => {
-                          const cfg = parseInterviewConfig(lesson.payload.interview);
-                          return (
-                            <details className="mt-2">
-                              <summary className="cursor-pointer text-xs text-link">
-                                Oral check · {cfg.questionCount} questions · pass {cfg.passPct}% · scope: {cfg.scope}{cfg.requirePass ? " · pass required" : ""}
-                              </summary>
-                              <form action={updateInterviewLessonAction.bind(null, course.id, lesson.id)} className="mt-2">
-                                <Field label="Title"><Input name="title" defaultValue={lesson.title} /></Field>
-                                <InterviewFields cfg={cfg} />
-                                <Button type="submit" variant="secondary">Save oral check</Button>
-                              </form>
-                            </details>
-                          );
-                        })() : null}
+                        {lesson.type === "INTERVIEW" ? (
+                          <details className="mt-2">
+                            <summary className="touch-target flex items-center text-sm text-link">
+                              Edit oral check settings
+                            </summary>
+                            <WorkspaceForm
+                              action={updateInterviewLessonAction.bind(
+                                null,
+                                course.id,
+                                lesson.id,
+                              )}
+                            >
+                              <Field label="Oral check title">
+                                <Input
+                                  name="title"
+                                  defaultValue={lesson.title}
+                                  required
+                                />
+                              </Field>
+                              <InterviewFields
+                                cfg={parseInterviewConfig(
+                                  lesson.payload.interview,
+                                )}
+                              />
+                              <Button type="submit" variant="secondary">
+                                Save oral check
+                              </Button>
+                            </WorkspaceForm>
+                          </details>
+                        ) : null}
                       </li>
                     );
                   })}
-                  {lessons.length === 0 ? <li className="text-sm text-muted">No lessons yet.</li> : null}
-                </ul>
-
-                <details>
-                  <summary className="cursor-pointer text-sm font-medium text-link">+ Add lesson</summary>
-                  <form action={addLessonAction.bind(null, course.id, mod.id)} className="mt-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field label="Type">
-                        <Select name="type" defaultValue="TEXT">
-                          <option value="TEXT">Text</option>
-                          <option value="PDF">PDF</option>
-                          <option value="VIDEO">YouTube video</option>
-                          <option value="QUIZ">Quiz</option>
-                          <option value="INTERVIEW">Interview (voice oral check)</option>
-                        </Select>
-                      </Field>
-                      <Field label="Title"><Input name="title" required /></Field>
-                    </div>
-                    <Field label="TEXT: markdown body"><Textarea name="body" rows={4} /></Field>
-                    <Field label="PDF: file URL"><Input name="fileUrl" placeholder="/demo/… or https://…" /></Field>
-                    <Field label="VIDEO: YouTube URL or ID" hint="Public or unlisted, embeddable. Paste an SRT/VTT transcript below (lawful manual path) or leave empty to use the vendor fetcher (demo only).">
-                      <Input name="youtubeUrl" placeholder="https://www.youtube.com/watch?v=…" />
-                    </Field>
-                    <Field label="VIDEO: transcript (SRT/VTT)"><Textarea name="transcript" rows={3} placeholder="1\n00:00:00,000 --> 00:00:05,000\n…" /></Field>
-                    <div className="grid grid-cols-3 items-end gap-3">
-                      <Field label="QUIZ: draw from bank">
-                        <Select name="bankId" defaultValue="">
-                          <option value="">— none —</option>
-                          {banks.map((b) => (
-                            <option key={b.id} value={b.id}>{b.name}</option>
-                          ))}
-                        </Select>
-                      </Field>
-                      <Field label="Pick N"><Input name="pickN" type="number" defaultValue={5} min={1} /></Field>
-                      <div className="mb-4 flex flex-col gap-1 text-sm">
-                        <label className="flex items-center gap-2"><input type="checkbox" name="exam" /> Exam mode</label>
-                        <label className="flex items-center gap-2"><input type="checkbox" name="integrity" /> Integrity monitoring</label>
-                      </div>
-                    </div>
-                    <fieldset className="mb-3 rounded-control border border-border p-3">
-                      <legend className="px-1 text-xs text-muted">INTERVIEW: oral check settings (ignored for other types)</legend>
-                      <InterviewFields />
-                    </fieldset>
-                    <Button type="submit">Add lesson</Button>
-                  </form>
+                  {!items.length ? (
+                    <li className="py-3 text-sm text-muted">
+                      Add the first lesson to this module.
+                    </li>
+                  ) : null}
+                </ol>
+                <details className="border-t border-border pt-3">
+                  <summary className="touch-target flex items-center font-medium text-link">
+                    Add lesson to {mod.title}
+                  </summary>
+                  <LessonForm
+                    courseId={course.id}
+                    moduleId={mod.id}
+                    banks={banks}
+                  />
                 </details>
-              </Card>
+              </WorkspaceSection>
             );
           })}
-
-          <Card className="p-4">
-            <form action={addModuleAction.bind(null, course.id)} className="flex items-end gap-2">
-              <Field label="New module title"><Input name="title" required /></Field>
-              <Button type="submit" variant="secondary" className="mb-4">Add module</Button>
-            </form>
-          </Card>
+          <WorkspaceSection
+            title="Add a module"
+            description="Group related lessons under a clear title."
+          >
+            <WorkspaceForm action={addModuleAction.bind(null, course.id)}>
+              <Field label="New module title">
+                <Input name="title" required />
+              </Field>
+              <Button type="submit" variant="secondary">
+                Add module
+              </Button>
+            </WorkspaceForm>
+          </WorkspaceSection>
         </div>
-
-        <Card className="h-fit p-4">
-          <h2 className="eyebrow mb-2 text-muted">Course settings</h2>
-          <form action={updateCourseAction.bind(null, course.id)}>
-            <Field label="Title"><Input name="title" defaultValue={course.title} /></Field>
-            <Field label="Description"><Textarea name="description" rows={2} defaultValue={course.description} /></Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Est. minutes"><Input name="estMinutes" type="number" defaultValue={course.estMinutes} /></Field>
-              <Field label="Tags (comma-sep)"><Input name="tags" defaultValue={course.tags.join(", ")} /></Field>
+      ) : (
+        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <WorkspaceSection title="Course settings">
+            <WorkspaceForm action={updateCourseAction.bind(null, course.id)}>
+              <Field label="Course title">
+                <Input name="title" defaultValue={course.title} required />
+              </Field>
+              <Field label="Description">
+                <Textarea
+                  name="description"
+                  rows={5}
+                  defaultValue={course.description}
+                />
+              </Field>
+              <Field
+                label="Cover image URL"
+                hint="An HTTPS image URL or a local / path. Leave blank to use the subject illustration."
+              >
+                <Input name="coverUrl" defaultValue={course.coverUrl ?? ""} />
+              </Field>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Estimated minutes">
+                  <Input
+                    name="estMinutes"
+                    type="number"
+                    min={1}
+                    defaultValue={course.estMinutes}
+                    required
+                  />
+                </Field>
+                <Field
+                  label="Language code"
+                  hint="For example en, ar, hi or ml"
+                >
+                  <Input
+                    name="language"
+                    defaultValue={course.language}
+                    required
+                  />
+                </Field>
+              </div>
+              <Field label="Tags" hint="Separate topics with commas.">
+                <Input name="tags" defaultValue={course.tags.join(", ")} />
+              </Field>
+              <fieldset className="mb-4 border-t border-border pt-4">
+                <legend className="font-semibold">
+                  Completion and certificates
+                </legend>
+                <label className="touch-target flex items-center gap-3 text-sm">
+                  <input
+                    type="checkbox"
+                    name="sequentialLock"
+                    defaultChecked={course.sequentialLock}
+                  />
+                  Complete lessons in order
+                </label>
+                <label className="touch-target mb-3 flex items-center gap-3 text-sm">
+                  <input
+                    type="checkbox"
+                    name="certificateEnabled"
+                    defaultChecked={course.certificateEnabled}
+                  />
+                  Issue certificate on completion
+                </label>
+                <Field
+                  label="Certificate validity (days)"
+                  hint="Leave blank for a certificate that never expires."
+                >
+                  <Input
+                    name="certificateValidityDays"
+                    type="number"
+                    min={1}
+                    defaultValue={course.certificateValidityDays ?? ""}
+                  />
+                </Field>
+              </fieldset>
+              <Button type="submit">Save settings</Button>
+            </WorkspaceForm>
+          </WorkspaceSection>
+          <aside className="min-w-0">
+            <div className="overflow-hidden rounded-card border border-border bg-surface">
+              <CourseCover
+                title={course.title}
+                coverUrl={course.coverUrl}
+                tags={course.tags}
+              />
+              <div className="p-4">
+                <h2 className="font-semibold">Course cover</h2>
+                <p className="mt-2 text-sm text-muted">
+                  This saved cover appears in the catalog and on the learner
+                  course page. A missing or broken image uses the subject
+                  illustration.
+                </p>
+              </div>
             </div>
-            <label className="mb-2 flex items-center gap-2 text-sm">
-              <input type="checkbox" name="sequentialLock" defaultChecked={course.sequentialLock} /> Complete lessons in order
-            </label>
-            <label className="mb-2 flex items-center gap-2 text-sm">
-              <input type="checkbox" name="certificateEnabled" defaultChecked={course.certificateEnabled} /> Issue certificate
-            </label>
-            <Field label="Certificate validity (days, blank = never expires)">
-              <Input name="certificateValidityDays" type="number" defaultValue={course.certificateValidityDays ?? ""} />
-            </Field>
-            <Button type="submit">Save settings</Button>
-          </form>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-/** Oral-check settings (spec FR-14.2 v1.4) — shared by "Add lesson" and the inline editor. */
-function InterviewFields({ cfg }: { cfg?: InterviewConfig }) {
-  return (
-    <div className="grid gap-2 sm:grid-cols-3">
-      <Field label="Questions (1–6)"><Input name="questionCount" type="number" min={1} max={6} defaultValue={cfg?.questionCount ?? 3} /></Field>
-      <Field label="Pass mark %"><Input name="passPct" type="number" min={50} max={100} defaultValue={cfg?.passPct ?? 67} /></Field>
-      <Field label="Max minutes (3–9)"><Input name="maxMinutes" type="number" min={3} max={9} defaultValue={cfg?.maxMinutes ?? 6} /></Field>
-      <Field label="Ask about" hint="Which lesson content the interviewer may use">
-        <Select name="scope" defaultValue={cfg?.scope ?? "module"}>
-          <option value="previous">The previous lesson</option>
-          <option value="module">Lessons in this module</option>
-          <option value="course">Everything in the course</option>
-        </Select>
-      </Field>
-      <div className="sm:col-span-2">
-        <Field label="Focus (optional)" hint="Topics or instructions for the interviewer, e.g. “the LAST complaint method”">
-          <Textarea name="focus" rows={2} defaultValue={cfg?.focus ?? ""} />
-        </Field>
-      </div>
-      <label className="flex items-center gap-2 text-sm sm:col-span-3">
-        <input type="checkbox" name="requirePass" defaultChecked={cfg?.requirePass ?? true} /> Passing is required to complete this lesson
-      </label>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }

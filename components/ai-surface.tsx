@@ -26,7 +26,7 @@ export function AiSurface({
       className={cx(
         "rounded-card bg-ai-tint px-3 py-2 text-sm text-foreground",
         variant === "bubble" && "inline-block max-w-[92%] text-start",
-        variant === "block" && "border-s-2 border-s-ai",
+        variant === "block" && "w-full",
         className,
       )}
     >

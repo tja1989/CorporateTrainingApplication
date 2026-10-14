@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { db, t } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/guard";
+import { learnerLesson } from "@/lib/lms/lesson-access";
 import { liveAvailable } from "@/lib/live/gemini";
 import { PASS_PCT, QUESTION_COUNT, maxMinutesFor } from "@/lib/live/interview";
 import { latestInterviewsByLesson, loadLessonContent } from "@/lib/live/store";
@@ -14,10 +15,13 @@ export const dynamic = "force-dynamic";
 export default async function InterviewPage({ params }: { params: Promise<{ lessonId: string }> }) {
   const user = await requireUser();
   const { lessonId } = await params;
+  const access = await learnerLesson(user.id, lessonId);
+  if (!access) notFound();
+  if (access.self.locked) return <EmptyState title="Finish the earlier learning first" body="This oral check opens after the course and lesson prerequisites are complete." action={<ButtonLink href={access.pathLock ? `/path/${access.pathLock.pathId}` : `/course/${access.course.id}`}>View prerequisites</ButtonLink>} />;
   const loaded = await loadLessonContent(lessonId);
   if (!loaded || loaded.course.status !== "PUBLISHED") notFound();
   if (loaded.lesson.type === "INTERVIEW") redirect(`/lesson/${lessonId}`);
-  const backHref = `/course/${loaded.course.id}`;
+  const backHref = `/lesson/${lessonId}`;
   const [progress] = await db
     .select({ status: t.lessonProgress.status })
     .from(t.lessonProgress)
@@ -33,7 +37,7 @@ export default async function InterviewPage({ params }: { params: Promise<{ less
         tone="ai"
         title="No oral check for this lesson"
         body="Oral checks run on video lessons with a transcript and on text lessons."
-        action={<ButtonLink href={backHref}>Back to course</ButtonLink>}
+        action={<ButtonLink href={backHref}>Return to lesson</ButtonLink>}
       />
     );
   }
@@ -55,7 +59,7 @@ export default async function InterviewPage({ params }: { params: Promise<{ less
         sub={`${loaded.lesson.title} · ${loaded.course.title}`}
         actions={
           <ButtonLink variant="secondary" href={backHref}>
-            Back to course
+            Return to lesson
           </ButtonLink>
         }
       />

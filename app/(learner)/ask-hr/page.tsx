@@ -1,53 +1,57 @@
+import { canReadHrHistory, hrHistoryExpiresAt } from "@/lib/hr/history-access";
+import { HrHistoryBoundary, HrHistoryUnlock } from "@/components/hr-history-boundary";
 import { Icon, IconDisc } from "@/components/icons";
 import { desc, eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/guard";
 import { HrChat } from "./chat";
-import { Card, Chip } from "@/components/ui";
-import Link from "next/link";
+import { Card, Chip, PageTitle } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function AskHrPage() {
   const user = await requireUser();
-  const tickets = await db
+  const historyAvailable = user.passwordState === "ACTIVE" && canReadHrHistory(user.session);
+  const tickets = historyAvailable ? await db
     .select()
     .from(t.hrTickets)
     .where(eq(t.hrTickets.userId, user.id))
     .orderBy(desc(t.hrTickets.createdAt))
-    .limit(5);
+    .limit(50) : [];
 
   // The conversation flows in the page (no inner scroll region — spec §10.7
   // v1.2); the composer sticks to the bottom of the viewport.
   return (
-    <div className="animate-slide-up mx-auto max-w-2xl">
+    <HrHistoryBoundary userId={user.id} loginId={user.session.loginId!} sessionOnly={!historyAvailable} expiresAt={historyAvailable ? hrHistoryExpiresAt(user.session) : (user.session.exp ?? 0) * 1000}><div className="animate-slide-up mx-auto max-w-2xl">
+      <PageTitle sub="Ask about company policies, with sources you can read.">HR Help</PageTitle>
+      {!historyAvailable ? <HrHistoryUnlock newConversationBelow /> : null}
       {tickets.length > 0 ? (
-        <div className="mb-4 flex flex-col gap-2" aria-label="Your HR tickets">
+        <details className="mb-5 rounded-card border border-border bg-surface p-4"><summary className="touch-target flex items-center font-medium">Your HR tickets ({tickets.length})</summary><div className="mt-3 flex flex-col gap-2" aria-label="Your HR tickets">
           {tickets.map((ticket) => (
-            <Link key={ticket.id} href={`/ask-hr/tickets/${ticket.id}`}>
-              <Card className="lift pressable flex items-center justify-between gap-2 px-3 py-2 text-sm hover:bg-surface-2">
+            <a key={ticket.id} className="touch-target block" href={`/ask-hr/tickets/${ticket.id}`}>
+              <Card className="lift pressable touch-target flex items-center justify-between gap-2 px-3 py-2 text-sm hover:bg-surface-2">
                 <span className="flex min-w-0 items-center gap-2"><Icon name="mail" size={14} className="shrink-0 text-muted" /><span className="truncate">{ticket.subject}</span></span>
                 <Chip variant={ticket.state === "RESOLVED" ? "success" : ticket.state === "IN_PROGRESS" ? "warning" : "neutral"}>
                   {ticket.state.toLowerCase().replace("_", " ")}
                 </Chip>
               </Card>
-            </Link>
+            </a>
           ))}
-        </div>
+        </div></details>
       ) : null}
-      <Link href="/ask-hr/live" className="mb-4 block">
-        <Card className="lift pressable flex items-center justify-between gap-3 p-3 hover:bg-surface-2">
-          <span className="flex items-center gap-3">
+      <a href="/ask-hr/live" className="mb-4 block">
+        <Card className="lift pressable flex flex-wrap items-center justify-between gap-3 p-3 hover:bg-surface-2">
+          <span className="flex min-w-0 flex-1 items-center gap-3">
             <IconDisc name="mic" tone="ai" size={48} />
-            <span>
+            <span className="min-w-0">
               <span className="block text-sm font-medium">Talk to your assistant</span>
               <span className="block text-xs text-muted">Live voice — HR policy, your courses, and what&#39;s due, with sources cited.</span>
             </span>
           </span>
           <Chip variant="ai">AI</Chip>
         </Card>
-      </Link>
-      <HrChat sharedDevice={user.session.shared} />
-    </div>
+      </a>
+      <HrChat userId={user.id} loginId={user.session.loginId!} loadHistory={historyAvailable} activeConversationId={user.session.activeHrConversationId} sessionExpiresAt={user.session.shared ? (user.session.exp ?? 0) * 1000 : null} />
+    </div></HrHistoryBoundary>
   );
 }

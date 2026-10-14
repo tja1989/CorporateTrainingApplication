@@ -1,12 +1,17 @@
-import type { ReactNode } from "react";
+import { createElement, type ReactNode } from "react";
 
 /** Tiny markdown renderer (headings, bold, italics, lists, paragraphs, code). */
-export function Markdown({ text }: { text: string }) {
-  const blocks = text.split(/\n{2,}/);
+export function markdownBlocks(text: string): string[] {
+  return text.replace(/\r\n?/g, "\n").replace(/^(#{1,6}\s+[^\n]+)$/gm, "\n\n$1\n\n")
+    .split(/\n{2,}/).map(block => block.trim()).filter(Boolean);
+}
+
+export function Markdown({ text, headingOffset = 0, highlightAnchor }: { text: string; headingOffset?: number; highlightAnchor?: string | null }) {
+  const blocks = markdownBlocks(text);
   return (
     <div className="prose-ll">
       {blocks.map((block, i) => (
-        <Block key={i} block={block.trim()} />
+        <Block key={i} block={block.trim()} headingOffset={headingOffset} highlightAnchor={highlightAnchor} />
       ))}
     </div>
   );
@@ -16,16 +21,20 @@ export function slugify(s: string): string {
   return s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "");
 }
 
-function Block({ block }: { block: string }) {
+function Block({ block, headingOffset, highlightAnchor }: { block: string; headingOffset: number; highlightAnchor?: string | null }) {
   if (!block) return null;
-  const h = block.match(/^(#{1,3})\s+(.*)$/);
+  const h = block.match(/^(#{1,6})\s+(.*)$/);
   if (h) {
-    const level = h[1].length;
+    const level = Math.min(6, h[1].length + headingOffset);
     const content = inline(h[2]);
     const anchor = slugify(h[2]);
-    if (level === 1) return <h1 id={anchor}>{content}</h1>;
-    if (level === 2) return <h2 id={anchor}>{content}</h2>;
-    return <h3 id={anchor}>{content}</h3>;
+    const highlighted = anchor === highlightAnchor;
+    return createElement(`h${level}`, {
+      id: anchor,
+      className: `scroll-mt-24${level >= 4 ? " mb-2 mt-6 font-semibold" : ""}${highlighted ? " rounded-control bg-accent-tint px-3 py-2" : ""}`,
+      tabIndex: highlighted ? -1 : undefined,
+      "data-cited-section": highlighted ? true : undefined,
+    }, content);
   }
   const lines = block.split("\n");
   if (lines.every((l) => /^[-*]\s+/.test(l))) {

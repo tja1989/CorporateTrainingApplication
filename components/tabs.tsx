@@ -6,13 +6,14 @@ import { useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { DUR, EASE_OUT } from "@/lib/motion";
 import { cx } from "./ui";
+import { nextTabIndex } from "@/lib/navigation";
 
-const groupClass = "flex gap-1 rounded-full bg-surface-2 p-1";
-const tabClass = "relative flex-1 touch-target rounded-full px-3 py-2 text-center text-sm font-medium transition-colors";
+const groupClass = "flex gap-4 border-b border-border";
+const tabClass = "relative flex-1 touch-target px-3 py-3 text-center text-sm font-medium transition-colors";
 const indicatorTransition = { duration: DUR.base, ease: EASE_OUT };
 
 function Indicator({ id }: { id: string }) {
-  return <motion.span layoutId={id} className="absolute inset-0 rounded-full bg-surface shadow-card" transition={indicatorTransition} aria-hidden />;
+  return <motion.span layoutId={id} className="absolute inset-x-0 bottom-0 h-[3px] bg-primary" transition={indicatorTransition} aria-hidden />;
 }
 
 /** Controlled tablist with a sliding indicator and arrow-key navigation. */
@@ -23,7 +24,7 @@ export function Tabs({
   label,
   className,
 }: {
-  tabs: Array<{ id: string; label: ReactNode }>;
+  tabs: Array<{ id: string; label: ReactNode; panelId?: string }>;
   value: string;
   onChange: (id: string) => void;
   label: string;
@@ -32,8 +33,8 @@ export function Tabs({
   const uid = useId();
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
   function onKey(e: KeyboardEvent, i: number) {
-    const last = tabs.length - 1;
-    const next = e.key === "ArrowRight" ? Math.min(i + 1, last) : e.key === "ArrowLeft" ? Math.max(i - 1, 0) : e.key === "Home" ? 0 : e.key === "End" ? last : null;
+    const rtl = getComputedStyle(e.currentTarget).direction === "rtl";
+    const next = nextTabIndex(e.key, i, tabs.length, rtl);
     if (next === null) return;
     e.preventDefault();
     onChange(tabs[next].id);
@@ -52,10 +53,11 @@ export function Tabs({
             role="tab"
             type="button"
             aria-selected={active}
+            aria-controls={tab.panelId}
             tabIndex={active ? 0 : -1}
             onClick={() => onChange(tab.id)}
             onKeyDown={(e) => onKey(e, i)}
-            className={cx(tabClass, active ? "text-foreground" : "text-muted hover:text-foreground")}
+            className={cx(tabClass, active ? "text-primary" : "text-muted hover:text-foreground")}
           >
             {active ? <Indicator id={uid} /> : null}
             <span className="relative z-10">{tab.label}</span>
@@ -85,7 +87,7 @@ export function LinkTabs({ items, label, className, param }: { items: Array<{ hr
       {items.map((item) => {
         const active = isActive(item.href);
         return (
-          <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={cx(tabClass, "flex-none whitespace-nowrap", active ? "text-foreground" : "text-muted hover:text-foreground")}>
+          <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={cx(tabClass, "flex-none whitespace-nowrap", active ? "text-primary" : "text-muted hover:text-foreground")}>
             {active ? <Indicator id={uid} /> : null}
             <span className="relative z-10">{item.label}</span>
           </Link>

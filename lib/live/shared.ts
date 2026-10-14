@@ -72,7 +72,7 @@ export const HrSessionBody = z.object({
 export const HrEventBody = z.discriminatedUnion("type", [
   z.object({ type: z.literal("turn"), conversationId: z.string(), turns: z.array(TurnSchema).min(1).max(50) }),
   z.object({ type: z.literal("tool"), conversationId: z.string(), name: z.string().max(64), args: z.record(z.unknown()).default({}) }),
-  z.object({ type: z.literal("escalate"), conversationId: z.string(), subject: z.string().max(200).optional() }),
+  z.object({ type: z.literal("escalate"), conversationId: z.string(), subject: z.string().max(200).optional(), previewVersion: z.string().max(64).optional() }),
   z.object({ type: z.literal("end"), conversationId: z.string(), model: z.string().max(80).optional(), usage: UsageSchema.optional(), durationMs: z.number().int().min(0).optional() }),
 ]);
 

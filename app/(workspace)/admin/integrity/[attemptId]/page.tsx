@@ -1,3 +1,5 @@
+import { WorkspaceLink } from "@/components/workspace-ui";
+import { WorkspaceForm, SubmitButton } from "@/components/workspace-form";
 import { notFound } from "next/navigation";
 import { asc, eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
@@ -31,6 +33,7 @@ export default async function IntegrityDetailPage({ params }: { params: Promise<
 
   return (
     <div className="animate-slide-up mx-auto max-w-2xl">
+      <WorkspaceLink href="/admin/integrity" className="mb-4">← Integrity review</WorkspaceLink>
       <PageTitle
         sub={`${user?.name ?? "—"} (${user?.employeeId ?? "—"}) · started ${attempt.startedAt.toISOString().slice(0, 16).replace("T", " ")} · ${attempt.state}${attempt.maxScore ? ` · ${Math.round(((attempt.score ?? 0) / attempt.maxScore) * 100)}%` : ""}`}
       >
@@ -63,15 +66,15 @@ export default async function IntegrityDetailPage({ params }: { params: Promise<
 
       {open ? (
         <div className="flex flex-col gap-3 sm:flex-row">
-          <form action={clearAttemptAction.bind(null, attempt.id)}>
-            <Button type="submit">Clear — result stands</Button>
-          </form>
-          <form action={voidAttemptAction.bind(null, attempt.id)} className="flex items-end gap-2">
+          <WorkspaceForm action={clearAttemptAction.bind(null, attempt.id)}>
+            <SubmitButton>Clear — result stands</SubmitButton>
+          </WorkspaceForm>
+          <WorkspaceForm action={voidAttemptAction.bind(null, attempt.id)} className="flex flex-col gap-2">
             <Field label="Void reason (required)">
               <Input name="reason" required placeholder="e.g. second person assisting confirmed" />
             </Field>
-            <Button type="submit" variant="destructive">Void — grant fresh attempt</Button>
-          </form>
+            <SubmitButton variant="destructive">Void — grant fresh attempt</SubmitButton>
+          </WorkspaceForm>
         </div>
       ) : (
         <Chip variant={attempt.state === "CLEARED" ? "success" : "neutral"}>

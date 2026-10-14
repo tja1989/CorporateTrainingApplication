@@ -246,6 +246,7 @@ export const lessonProgress = pgTable(
     lessonId: text("lesson_id").notNull(),
     status: text("status").$type<"NOT_STARTED" | "IN_PROGRESS" | "COMPLETED">().notNull().default("NOT_STARTED"),
     watchedBuckets: jsonb("watched_buckets").$type<number[]>(), // 5s bucket indices
+    lastPositionSec: real("last_position_sec"), // resume only; never used as watched coverage
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("lesson_progress_uniq").on(t.userId, t.lessonId)],
@@ -355,6 +356,7 @@ export const attempts = pgTable(
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     servedItems: jsonb("served_items").$type<ServedItem[]>().notNull(),
     answers: jsonb("answers").$type<Record<string, unknown>>().notNull().default({}),
+    navigationIndex: integer("navigation_index").notNull().default(0),
     score: real("score"),
     maxScore: real("max_score"),
     passed: boolean("passed"),
@@ -537,7 +539,7 @@ export const tutorThreads = pgTable("tutor_threads", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export type TutorCitation = { startSec: number; endSec: number; quote: string };
+export type TutorCitation = { startSec: number; endSec: number; quote: string; videoId?: string; lessonId?: string; lessonTitle?: string };
 
 export const tutorMessages = pgTable(
   "tutor_messages",
