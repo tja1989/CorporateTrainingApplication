@@ -8,6 +8,7 @@ import {
 } from "./learning-cycle";
 import { endOfDayInTz } from "@/lib/time";
 import type { DueRule, RuleCriteria } from "@/lib/db/schema";
+import { isCourseAvailable } from "@/lib/courses/availability";
 import { lockAssessmentCurriculum } from "@/lib/courses/workflow";
 
 type User = typeof t.users.$inferSelect;
@@ -177,11 +178,16 @@ export async function reevaluateUser(
     const ancestry = await storeAncestry(user.storeId, tx);
     const tz = await storeTz(user.storeId, tx);
     const targets = new Map<string, Rule>();
+    const assignable = new Map<string, Rule>();
     for (const rule of rules.filter((r) =>
       userMatchesRule(user, r.criteria, ancestry),
     )) {
-      for (const courseId of await targetCourseIds(rule, tx))
-        if (!targets.has(courseId)) targets.set(courseId, rule);
+      const courseIds = await targetCourseIds(rule, tx);
+      // Keep matching coverage for existing history, but assign a path only as a whole.
+      for (const courseId of courseIds) if (!targets.has(courseId)) targets.set(courseId, rule);
+      const courses = courseIds.length ? await tx.select().from(t.courses).where(inArray(t.courses.id, courseIds)) : [];
+      if (!courseIds.length || courses.length !== new Set(courseIds).size || courses.some(c => !isCourseAvailable(c))) continue;
+      for (const courseId of courseIds) if (!assignable.has(courseId)) assignable.set(courseId, rule);
     }
     const before = await tx
       .select()
@@ -198,27 +204,12 @@ export async function reevaluateUser(
       .from(t.enrollments)
       .where(eq(t.enrollments.userId, userId));
     let enrolled = 0;
-    for (const [courseId, rule] of targets) {
+    for (const [courseId, rule] of assignable) {
       if (
         existing.some(
           (e) =>
             e.courseId === courseId &&
             ["NOT_STARTED", "IN_PROGRESS", "COMPLETED"].includes(e.status),
-        )
-      )
-        continue;
-      const [course] = await tx
-        .select()
-        .from(t.courses)
-        .where(eq(t.courses.id, courseId))
-        .limit(1);
-      if (
-        !course ||
-        course.status !== "PUBLISHED" ||
-        !(
-          course.approvalState === "LEGACY_PUBLISHED" ||
-          (course.approvalState === "APPROVED" &&
-            course.approvedRevision === course.contentRevision)
         )
       )
         continue;
@@ -291,6 +282,11 @@ export async function enrollUser(
   let n = 0;
   for (const courseId of courseIds) {
     const create = async (tx: LearningTransaction) => {
+      if (source === "recert") {
+        await lockAssessmentCurriculum(tx);
+        const [course] = await tx.select().from(t.courses).where(eq(t.courses.id, courseId)).limit(1);
+        if (!course || !isCourseAvailable(course)) return false;
+      }
       await lockLearningCourse(tx, userId, courseId);
       const existing = await tx
         .select()

@@ -374,8 +374,9 @@ export async function runReport(
 
 export function toCsv(result: ReportResult): string {
   const esc = (v: string | number) => {
-    const s = String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    const raw = String(v);
+    const s = typeof v === "string" && /^(?:[\t\r\n]|\s*[=+\-@])/.test(raw) ? `'${raw}` : raw;
+    return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   return [
     result.columns.map(esc).join(","),

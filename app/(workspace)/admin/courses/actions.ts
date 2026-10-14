@@ -459,6 +459,24 @@ export async function addLessonAction(
     return errorResult(error);
   }
 }
+/** Correct an existing text/PDF lesson without replacing its learning identity. */
+export async function updateContentLessonAction(courseId: string, lessonId: string, form: FormData): Promise<ActionResult> {
+  const actor = await requirePermission("course.author");
+  try {
+    await mutateDraftCourse(actor, courseId, async (tx) => {
+      const lesson = await courseLesson(tx, courseId, lessonId);
+      if (!["TEXT", "PDF"].includes(lesson.type)) throw new Error("This lesson does not support text or PDF editing.");
+      const title = String(form.get("title") ?? "").trim();
+      if (!title) throw new Error("Enter a lesson title.");
+      const body = String(form.get("body") ?? "");
+      const file = parseCoverUrl(String(form.get("fileUrl") ?? ""));
+      if (lesson.type === "TEXT" && !body.trim()) throw new Error("Add the lesson content.");
+      if (lesson.type === "PDF" && (file.error || !file.value)) throw new Error("Enter a local path or HTTPS URL for the PDF.");
+      await tx.update(t.lessons).set({title, payload: {...lesson.payload, ...(lesson.type === "TEXT" ? {body} : {fileUrl: file.value!})}, searchText: lesson.type === "TEXT" ? body : null}).where(eq(t.lessons.id, lessonId));
+    }, revision(form));
+    refresh(courseId);return {success: "Lesson content saved. Submit this revision for approval."};
+  } catch (error) { return errorResult(error); }
+}
 export async function updateInterviewLessonAction(
   courseId: string,
   lessonId: string,

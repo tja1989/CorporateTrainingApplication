@@ -37,6 +37,7 @@ import {
   updateCourseAction,
   addModuleAction,
   updateInterviewLessonAction,
+  updateContentLessonAction,
   retryIngestAction,
   moveLessonAction,
   moveModuleAction,
@@ -394,6 +395,17 @@ export async function CourseEditor({
                                 <Button type="submit" variant="secondary">
                                   Save oral check
                                 </Button>
+                              </WorkspaceForm>
+                            </details>
+                          ) : null}
+                          {editable && ["TEXT", "PDF"].includes(lesson.type) ? (
+                            <details className="mt-3">
+                              <summary className="touch-target flex items-center text-sm text-link">Edit lesson content</summary>
+                              <WorkspaceForm action={updateContentLessonAction.bind(null, course.id, lesson.id)}>
+                                <input type="hidden" name="revision" value={course.contentRevision} />
+                                <Field label="Lesson title"><Input name="title" defaultValue={lesson.title} required /></Field>
+                                {lesson.type === "TEXT" ? <Field label="Lesson content"><Textarea name="body" defaultValue={lesson.payload.body ?? ""} rows={8} required /></Field> : <Field label="PDF file URL"><Input name="fileUrl" defaultValue={lesson.payload.fileUrl ?? ""} required /></Field>}
+                                <Button type="submit" variant="secondary">Save lesson content</Button>
                               </WorkspaceForm>
                             </details>
                           ) : null}

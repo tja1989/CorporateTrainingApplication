@@ -218,3 +218,10 @@ it("Admin intervention requires a reason and consistent explicit target states",
     ).ok,
   ).toBe(false);
 });
+
+it("HR restores an archived course only while its approved revision is current", () => {
+  const archived = context({actor: hr, publication: "ARCHIVED", state: "APPROVED", approvedRevision: 2});
+  expect(decideCourseAction(archived, input("publish"))).toEqual({ok:true,state:"APPROVED",publication:"PUBLISHED"});
+  expect(decideCourseAction({...archived,approvedRevision:1},input("publish")).ok).toBe(false);
+  expect(decideCourseAction({...archived,actor:trainer},input("publish")).ok).toBe(false);
+});

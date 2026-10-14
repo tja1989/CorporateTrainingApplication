@@ -2,7 +2,7 @@
 
 import bcrypt from "bcryptjs";
 import { throttled, recordAttempt } from "./rate-limit";
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { id, activationCode } from "@/lib/ids";
 import { createSession, readSession, destroySession } from "./session";
@@ -64,6 +64,7 @@ export async function login(
   const needsMfaVerify = needsMfa(role) && !!user.totpSecret;
   await createSession({
     uid: user.id,
+    authVersion: user.authVersion ?? 0,
     role,
     shared,
     workspace,
@@ -122,19 +123,23 @@ export async function activate(
       error: "Activation failed. Check your employee ID and code.",
     };
 
-  await db
+  const [activated] = await db
     .update(t.users)
     .set({
+      authVersion: sql`${t.users.authVersion} + 1`,
       passwordHash: await bcrypt.hash(newPassword, 10),
       passwordState: "ACTIVE",
       inviteCodeHash: null,
       inviteExpiresAt: null,
     })
-    .where(eq(t.users.id, user.id));
+    .where(and(eq(t.users.id, user.id), eq(t.users.passwordState, "INVITED"), eq(t.users.inviteCodeHash, user.inviteCodeHash), eq(t.users.authVersion, user.authVersion ?? 0)))
+    .returning();
+  if (!activated) return { ok: false, error: "Activation code changed. Ask for a new code." };
   const workspace = defaultWorkspace(role);
   await createSession({
     uid: user.id,
     role,
+    authVersion: activated.authVersion,
     shared: false,
     workspace,
     mfa: !needsMfa(role),
@@ -156,6 +161,8 @@ export async function verifyMfa(code: string): Promise<LoginResult> {
     .where(eq(t.users.id, session.uid))
     .limit(1);
   const role = user && canonicalRole(user.role);
+  if (!user || user.passwordState !== "ACTIVE" || (session.authVersion ?? 0) !== (user.authVersion ?? 0))
+    return { ok: false, error: "Session expired. Sign in again." };
   if (!user?.totpSecret || user.erasedAt || !role || !needsMfa(role))
     return { ok: false, error: "MFA not configured." };
   if (!verifyTotp(user.totpSecret, code))
@@ -239,6 +246,7 @@ export async function issueResetCode(
       inviteCodeHash: await bcrypt.hash(code, 10),
       inviteExpiresAt: new Date(Date.now() + 14 * 24 * 3600_000),
       passwordState: "INVITED",
+      authVersion: sql`${t.users.authVersion} + 1`,
       passwordHash: null,
     })
     .where(eq(t.users.id, targetUserId));

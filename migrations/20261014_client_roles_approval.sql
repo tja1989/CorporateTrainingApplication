@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS departments (
   id text PRIMARY KEY, name text NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE users ADD COLUMN IF NOT EXISTS department_id text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_version integer NOT NULL DEFAULT 0;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS department_id text;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS instructor_id text;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS approval_state text NOT NULL DEFAULT 'DRAFT';

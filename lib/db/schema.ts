@@ -50,6 +50,7 @@ export const users = pgTable(
     hireDate: timestamp("hire_date", { withTimezone: true }),
     preferredLanguage: text("preferred_language").notNull().default("en"),
     email: text("email"),
+    authVersion: integer("auth_version").notNull().default(0),
     passwordHash: text("password_hash"),
     passwordState: text("password_state").$type<"INVITED" | "ACTIVE">().notNull().default("INVITED"),
     inviteCodeHash: text("invite_code_hash"),

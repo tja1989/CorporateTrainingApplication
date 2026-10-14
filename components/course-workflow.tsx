@@ -113,10 +113,10 @@ export async function CourseWorkflow({
           </>
         ) : null}
         {actor.role === "HR_HEAD" &&
-        draft &&
+        ["DRAFT", "ARCHIVED"].includes(course.status) &&
         course.approvalState === "APPROVED" &&
         course.approvedRevision === course.contentRevision ? (
-          <Action action="publish" label="Publish course" />
+          <Action action="publish" label={course.status === "ARCHIVED" ? "Restore and publish course" : "Publish course"} />
         ) : null}
         {author && course.status === "PUBLISHED" ? (
           <Action action="revise" label="Revise published course" />

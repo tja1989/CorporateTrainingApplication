@@ -36,6 +36,7 @@ vi.mock("@/lib/db/client", async () => ({
     select: () => {
       const rows = state.responses.shift() ?? [state.course];
       const q: any = {
+        innerJoin: () => q,
         from: () => q,
         where: () => q,
         limit: async () => rows,
@@ -43,7 +44,7 @@ vi.mock("@/lib/db/client", async () => ({
       };
       return q;
     },
-    update: () => ({ set: () => ({ where: state.writes }) }),
+    update: () => ({ set: (values: unknown) => ({ where: async () => state.writes(values) }) }),
     insert: () => ({ values: state.writes }),
   },
 }));
@@ -52,6 +53,7 @@ import {
   updateCourseAction,
   updateInterviewLessonAction,
   addLessonAction,
+  updateContentLessonAction,
 } from "../app/(workspace)/admin/courses/actions";
 beforeEach(() => {
   vi.clearAllMocks();
@@ -101,4 +103,31 @@ it("adding a quiz cannot write around a rejected ownership gate", async () => {
     error: "You cannot edit this course.",
   });
   expect(state.writes).not.toHaveBeenCalled();
+});
+
+it("correcting a rejected text lesson cannot bypass the draft revision guard",async()=>{
+ const form=new FormData();form.set("title","Corrected lesson");form.set("body","Correct procedure");form.set("revision","2");
+ expect(await updateContentLessonAction("c","lesson",form)).toEqual({error:"Withdraw this submitted course before editing."});
+ expect(state.mutate).toHaveBeenCalledWith(state.actor,"c",expect.any(Function),2);
+ expect(state.writes).not.toHaveBeenCalled();
+});
+
+it("text correction preserves lesson payload metadata and its identity",async()=>{
+ const {db}=await import("../lib/db/client");
+ state.mutate.mockImplementation(async (_actor,_course,run)=>run(db));
+ state.responses=[[{lesson:{id:"lesson",type:"TEXT",title:"Wrong",payload:{body:"Wrong content",language:"en"}}}]];
+ const form=new FormData();form.set("title","Corrected");form.set("body","Correct procedure");form.set("revision","2");
+ expect(await updateContentLessonAction("c","lesson",form)).toMatchObject({success:expect.any(String)});
+ expect(state.writes).toHaveBeenCalledWith({title:"Corrected",payload:{body:"Correct procedure",language:"en"},searchText:"Correct procedure"});
+});
+it("PDF correction validates its URL and checks course membership before writing",async()=>{
+ const {db}=await import("../lib/db/client");state.mutate.mockImplementation(async (_actor,_course,run)=>run(db));
+ const form=new FormData();form.set("title","Correct PDF");form.set("fileUrl","javascript:alert(1)");
+ state.responses=[[{lesson:{type:"PDF",payload:{fileUrl:"/old.pdf"}}}]];
+ expect(await updateContentLessonAction("c","lesson",form)).toMatchObject({error:expect.stringContaining("HTTPS")});expect(state.writes).not.toHaveBeenCalled();
+ state.responses=[[]];form.set("fileUrl","/correct.pdf");
+ expect(await updateContentLessonAction("c","foreign",form)).toMatchObject({error:expect.stringContaining("does not belong")});expect(state.writes).not.toHaveBeenCalled();
+ state.responses=[[{lesson:{type:"PDF",payload:{fileUrl:"/old.pdf"}}}]];
+ expect(await updateContentLessonAction("c","lesson",form)).toMatchObject({success:expect.any(String)});
+ expect(state.writes).toHaveBeenCalledWith({title:"Correct PDF",payload:{fileUrl:"/correct.pdf"},searchText:null});
 });

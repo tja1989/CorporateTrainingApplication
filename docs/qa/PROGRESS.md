@@ -124,3 +124,7 @@ Code survived, but the original local database cluster and several older raw art
 ## Client roles / approval — 14 October 2026
 
 Implementation foundation `05ea9fa`: five role workspaces, scoped departments, audited approval/publication, rollout and compatible migration. Local evidence: 247 units, production build/type check, 24 cross-engine role/approval cases, 56 existing browser cases plus two corrected transcript-recovery cases, and three additional session/MFA/membership cases. This does not alter the historical 70% whole-product acceptance or imply a hosted deployment. [Detailed qualification](CLIENT_ROLES_APPROVAL.md).
+
+### Role/approval independent review correction pass
+
+255/255 unit tests, type check and production build passed. All seven Important reviewer findings have test-first corrections; no deferred minors. The real database probe confirms unavailable renewal preserves progress and remains pending, concurrent eligible renewal creates exactly one cycle, and unavailable ordered paths create no partial assignments while independent valid rules remain. Existing path/renewal/HR privacy/inbox browser regressions: 16/16 desktop/mobile. These checks qualify the local role/approval phase; whole-product/provider/device gates and Railway deployment remain separate.

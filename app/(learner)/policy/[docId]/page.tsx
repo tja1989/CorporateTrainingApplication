@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
+import { policyAudience } from "@/lib/auth/roles";
 import { requireUser } from "@/lib/auth/guard";
 import { Markdown, slugify } from "@/lib/markdown";
 import { Card, Chip, PageTitle } from "@/components/ui";
@@ -21,7 +22,7 @@ export default async function PolicyPage({
   const { section } = await searchParams;
   const [doc] = await db.select().from(t.policyDocs).where(eq(t.policyDocs.id, docId)).limit(1);
   if (!doc) notFound();
-  if (doc.audience === "managers" && user.role === "LEARNER") notFound();
+  if (doc.audience === "managers" && policyAudience(user.role) !== "managers") notFound();
 
   const anchor = section ? slugify(section.split("›").pop()?.replace(/\(\d+\)\s*$/, "").trim() ?? "") : null;
 

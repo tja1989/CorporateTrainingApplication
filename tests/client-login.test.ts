@@ -34,7 +34,7 @@ vi.mock("../lib/db/client", () => ({
     }),
     update: () => ({
       set: (values: Record<string, unknown>) => ({
-        where: async () => Object.assign(state.user, values),
+        where: () => ({ returning: async () => { Object.assign(state.user, {...values, authVersion: Number(state.user.authVersion) + 1}); return [state.user]; } }),
       }),
     }),
     insert: () => ({ values: async () => {} }),
@@ -50,6 +50,7 @@ beforeEach(() => {
     role: "HR_HEAD",
     passwordHash: hash,
     passwordState: "ACTIVE",
+    authVersion: 0,
     erasedAt: null,
     privacyNoticeVersion: 1,
     totpSecret: null,
@@ -116,4 +117,11 @@ describe("five-role credential lifecycle", () => {
     ).toHaveLength(3);
     expect(parsePeopleCsv("X4,Old,MANAGER").errors).toHaveLength(1);
   });
+});
+
+it("MFA cannot refresh a revoked login after reset and reactivation", async () => {
+  state.user.totpSecret = "JBSWY3DPEHPK3PXP"; state.user.authVersion = 2;
+  state.session.authVersion = 0;
+  expect((await verifyMfa(totpCode(String(state.user.totpSecret)))).ok).toBe(false);
+  expect(state.created).toBeNull();
 });

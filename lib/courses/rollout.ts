@@ -7,6 +7,7 @@ import { endOfDayInTz } from "@/lib/time";
 import { notify } from "@/lib/notify";
 import { lockAssessmentCurriculum, lockCurriculum } from "./workflow";
 import type { LearningDatabase } from "@/lib/lms/learning-cycle";
+import { isCourseAvailable } from "./availability";
 export type RolloutInput = {
   target: { type: "course" | "path"; id: string };
   audience: { type: "employee" | "department" | "group"; id: string };
@@ -50,15 +51,7 @@ export async function availableTraining(
     .where(inArray(t.courses.id, courseIds));
   if (
     courses.length !== new Set(courseIds).size ||
-    courses.some(
-      (c) =>
-        c.status !== "PUBLISHED" ||
-        !(
-          c.approvalState === "LEGACY_PUBLISHED" ||
-          (c.approvalState === "APPROVED" &&
-            c.approvedRevision === c.contentRevision)
-        ),
-    )
+    courses.some(c => !isCourseAvailable(c))
   )
     throw new Error(
       "Every target course must be published and approved before rollout.",

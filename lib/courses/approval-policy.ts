@@ -107,7 +107,7 @@ export function decideCourseAction(
           "Only HR Head can publish an approved course. Super Admin must use a recorded intervention.",
         );
       if (
-        c.publication !== "DRAFT" ||
+        !["DRAFT", "ARCHIVED"].includes(c.publication) ||
         c.state !== "APPROVED" ||
         c.approvedRevision !== c.revision
       )

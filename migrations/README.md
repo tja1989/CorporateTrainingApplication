@@ -76,3 +76,5 @@ all newer processes stop. Dropping it loses forward-position enforcement across
 refresh, so leaving it in place is preferred. Never delete attempt history.
 
 Fresh fictional demo content is built while draft, then published as legacy demo material. Populated-database startup performs migrations only; it never appends supplemental lessons to reviewed courses. Department Head weekly digests follow department membership after role conversion.
+
+The client role migration also adds `users.auth_version` with default zero. Existing signed cookies remain generation zero until an account reset increments the generation; activation increments it again and issues only the new generation. Older cookies cannot become valid again after reactivation. No passwords or historical learning fields are rewritten by this additive column.

@@ -8,6 +8,8 @@ const secret = () => new TextEncoder().encode(process.env.SESSION_SECRET ?? "dev
 
 export type SessionData = {
   uid: string;
+  /** Persistent credential generation; legacy cookies belong to generation zero. */
+  authVersion?: number;
   /** Stable across claim updates; a fresh credential login creates a new identity. */
   loginId?: string;
   role: StoredRole;

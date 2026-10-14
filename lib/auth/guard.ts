@@ -25,6 +25,7 @@ export async function currentUser(): Promise<CurrentUser | null> {
     .where(eq(t.users.id, session.uid))
     .limit(1);
   if (!user || user.erasedAt || user.passwordState !== "ACTIVE") return null;
+  if ((session.authVersion ?? 0) !== (user.authVersion ?? 0)) return null;
   const role = canonicalRole(user.role);
   if (!role) return null;
   return {

@@ -56,9 +56,16 @@ test("@core Existing signed sessions follow role changes, renewed HR MFA and acc
     await page.goto("/hr");await expect(page).toHaveURL(/\/login\/mfa$/);
     await page.getByLabel("Authenticator code",{exact:true}).fill(totpCode(subject.totpSecret!));await page.getByRole("button",{name:"Verify & continue",exact:true}).click();await expect(page).toHaveURL(/\/hr$/);
     expect((await page.request.get("/api/reports/engagement/csv")).status()).toBe(200);
+    const oldCookie=await page.context().cookies();
     await editorPage.locator("main details summary").click();await editorPage.getByRole("button",{name:"Issue reset/activation code",exact:true}).click();await expect(editorPage.getByRole("region",{name:"Issued reset code",exact:true})).toBeVisible();
     expect((await page.request.get("/api/reports/engagement/csv")).status()).toBe(403);
     await page.goto("/hr");await expect(page).toHaveURL(/\/login$/);
+    const code=(await editorPage.getByRole("region",{name:"Issued reset code",exact:true}).locator("p.font-mono").textContent())!.trim();
+    await page.goto("/activate");await page.getByLabel("Employee ID",{exact:true}).fill(subject.employeeId);await page.getByLabel("Activation or reset code",{exact:true}).fill(code);await page.getByLabel("Choose a password",{exact:true}).fill("new-demo-password");await page.getByLabel("Confirm password",{exact:true}).fill("new-demo-password");await page.getByRole("button",{name:"Save password & sign in",exact:true}).click();
+    await expect(page).toHaveURL(/\/login\/mfa$/);await page.getByLabel("Authenticator code",{exact:true}).fill(totpCode(subject.totpSecret!));await page.getByRole("button",{name:"Verify & continue",exact:true}).click();await expect(page).toHaveURL(/\/hr$/);
+    const freshCookie=await page.context().cookies();await page.context().clearCookies();await page.context().addCookies(oldCookie);
+    expect((await page.request.get("/api/reports/engagement/csv")).status()).toBe(403);await page.goto("/login/mfa");await page.getByLabel("Authenticator code",{exact:true}).fill(totpCode(subject.totpSecret!));await page.getByRole("button",{name:"Verify & continue",exact:true}).click();await expect(page.getByRole("alert").filter({hasText:"Session expired. Sign in again."})).toBeVisible();
+    await page.context().clearCookies();await page.context().addCookies(freshCookie);expect((await page.request.get("/api/reports/engagement/csv")).status()).toBe(200);
   }finally{await editorContext.close();}
 });
 

@@ -40,7 +40,7 @@ npm run dev                    # http://localhost:3000
 | Learner | `AE10024` | Meera — Food Safety due soon; staged AI-graded answer in the review queue |
 | Learner | `AE10026` | Priya — certificate expiring → recert loop staged |
 
-Background jobs: `npm run worker` (queue) and `npm run sweep` (nightly compliance/reminders/recert/purge — run it from cron in production). Tests: `npm test` (247 tests over the state machines, scoring, routing, retrieval, Live model resolution, the nav rail's layout invariants, HR guardrails, and the design-system guardrails — closed spacing/weight/radius vocabulary, no typed glyph icons, plus WCAG contrast on every colour token in both themes).
+Background jobs: `npm run worker` (queue) and `npm run sweep` (nightly compliance/reminders/recert/purge — run it from cron in production). Tests: `npm test` (255 tests over the state machines, scoring, routing, retrieval, Live model resolution, the nav rail's layout invariants, HR guardrails, and the design-system guardrails — closed spacing/weight/radius vocabulary, no typed glyph icons, plus WCAG contrast on every colour token in both themes).
 
 ## AI configuration & honest degradation
 

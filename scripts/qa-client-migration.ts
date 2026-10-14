@@ -13,7 +13,7 @@ async function snapshot() {
   for(const table of tables){
     const {rows}=await client.query(`SELECT to_jsonb(r) AS row FROM ${table} r ORDER BY id`);
     result[table]=hash(rows.map(({row})=>{
-      if(table==="users"){delete row.department_id;if(row.role==="MANAGER")row.role="DEPARTMENT_HEAD";}
+      if(table==="users"){delete row.department_id;delete row.auth_version;if(row.role==="MANAGER")row.role="DEPARTMENT_HEAD";}
       if(table==="courses")for(const column of ["department_id","instructor_id","content_revision","submitted_revision","approved_revision","approval_state","submitted_by","approved_by"])delete row[column];
       return row;
     }));

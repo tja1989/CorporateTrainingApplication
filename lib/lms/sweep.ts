@@ -6,6 +6,8 @@ import { enrollUser } from "./rules";
 import { notify } from "@/lib/notify";
 import { daysUntil, localDate } from "@/lib/time";
 import {canonicalRole} from "@/lib/auth/roles";
+import { isCourseAvailable } from "@/lib/courses/availability";
+import { lockAssessmentCurriculum } from "@/lib/courses/workflow";
 import {trainingScope} from "@/lib/auth/scope";
 
 /**
@@ -60,22 +62,22 @@ export async function runDailySweep(now = new Date()): Promise<Record<string, nu
   const certs = await db.select().from(t.certificates).where(isNull(t.certificates.recertTriggeredAt));
   for (const cert of certs) {
     if (!cert.expiresAt || cert.kind !== "internal") continue;
-    const [course] = await db.select().from(t.courses).where(eq(t.courses.id, cert.courseId)).limit(1);
-    if (!course) continue;
-    const lead = course.recertLeadDays ?? 30;
-    if (cert.expiresAt.getTime() - now.getTime() <= lead * 24 * 3600_000) {
-      const n = await enrollUser(cert.userId, { type: "course", id: cert.courseId }, "recert", cert.id, cert.expiresAt);
-      await db.update(t.certificates).set({ recertTriggeredAt: now }).where(eq(t.certificates.id, cert.id));
-      if (n > 0) {
-        await notify(
-          cert.userId,
-          "cert_expiring",
-          { courseTitle: course.title, days: Math.max(0, daysUntil(cert.expiresAt, now)), courseId: course.id },
-          `cert_expiring:${cert.id}`,
-        );
-        stats.recerts++;
-      }
-    }
+    const afterCommit: Array<() => Promise<void>> = [];
+    const created = await db.transaction(async tx => {
+      await lockAssessmentCurriculum(tx);
+      const [current] = await tx.select().from(t.certificates).where(eq(t.certificates.id, cert.id)).limit(1);
+      if (!current || current.recertTriggeredAt || !current.expiresAt) return false;
+      const [course] = await tx.select().from(t.courses).where(eq(t.courses.id, cert.courseId)).limit(1);
+      if (!course || !isCourseAvailable(course)) return false;
+      const lead = course.recertLeadDays ?? 30;
+      if (current.expiresAt.getTime() - now.getTime() > lead * 24 * 3600_000) return false;
+      const n = await enrollUser(cert.userId, {type: "course", id: cert.courseId}, "recert", cert.id, current.expiresAt, tx);
+      await tx.update(t.certificates).set({recertTriggeredAt: now}).where(eq(t.certificates.id, cert.id));
+      if (n) await notify(cert.userId, "cert_expiring", {courseTitle: course.title, days: Math.max(0, daysUntil(current.expiresAt, now)), courseId: course.id}, `cert_expiring:${cert.id}`, undefined, {connection: tx, afterCommit});
+      return n > 0;
+    });
+    await Promise.allSettled(afterCommit.map(deliver => deliver()));
+    if (created) stats.recerts++;
   }
 
   // ---- 4) Retention purge (spec FR-13.3 maximums)

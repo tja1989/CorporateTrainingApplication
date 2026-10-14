@@ -32,6 +32,7 @@ beforeEach(() => {
     id: "u",
     role: "LEARNER",
     passwordState: "ACTIVE",
+    authVersion: 0,
     departmentId: "a",
     erasedAt: null,
     privacyNoticeVersion: 1,
@@ -96,4 +97,17 @@ describe("database-authoritative role access", () => {
     state.session!.mfa = true;
     expect(await apiUser()).toBeNull();
   });
+});
+
+it("a reset cookie stays revoked after reactivation, while the new generation works", async () => {
+  state.user!.role = "HR_HEAD"; state.user!.totpSecret = "configured";
+  state.session!.role = "HR_HEAD"; state.session!.authVersion = 0;
+  expect((await apiUser())?.role).toBe("HR_HEAD");
+  state.user!.passwordState = "INVITED"; state.user!.authVersion = 1;
+  expect(await currentUser()).toBeNull();
+  state.user!.passwordState = "ACTIVE"; state.user!.authVersion = 2;
+  expect(await currentUser()).toBeNull();
+  expect(await apiUser()).toBeNull();
+  state.session!.authVersion = 2;
+  expect((await apiUser())?.role).toBe("HR_HEAD");
 });
