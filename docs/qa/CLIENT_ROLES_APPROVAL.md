@@ -1,6 +1,6 @@
 # Client roles and course approval qualification
 
-Implementation: role/workflow commits through `e421795`, followed by the independently reviewed correction pass. This is local qualification, not a Railway deployment. Main integration and independent review are recorded below when completed.
+Implementation: role/workflow commits through `e421795`, followed by the independently reviewed correction pass. This is local qualification, not a Railway deployment. Independent review and corrections are complete. Main includes the reviewed implementation at `254632b`; 36/36 final cross-engine browser cases, 255 unit tests, type check and production build pass on the integrated tree. This phase is ready for the separately authorized release process.
 
 ## Implemented contract
 
