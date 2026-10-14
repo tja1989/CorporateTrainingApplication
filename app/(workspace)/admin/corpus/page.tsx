@@ -3,7 +3,7 @@ import { WorkspaceTabs, WorkspaceLink } from "@/components/workspace-ui";
 import { WorkspaceForm } from "@/components/workspace-form";
 import { desc, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
-import { requireRole } from "@/lib/auth/guard";
+import { requirePermission } from "@/lib/auth/guard";
 import { Card, Chip, PageTitle, DemoBanner, Button, Field, Input, Select, Textarea, Tile } from "@/components/ui";
 import { publishPolicyAction } from "./actions";
 
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function CorpusPage({ searchParams }: { searchParams: Promise<{ view?: string; doc?: string }> }) {
   const { view: viewParam, doc: docId } = await searchParams;
   const view = viewParam === "publish" || viewParam === "quality" ? viewParam : "documents";
-  await requireRole("ADMIN");
+  await requirePermission("hr.manage");
   const docs = await db.select().from(t.policyDocs).orderBy(desc(t.policyDocs.effectiveDate));
 
   // KPI dashboard (spec FR-8.12)

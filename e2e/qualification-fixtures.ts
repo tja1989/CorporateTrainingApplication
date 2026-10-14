@@ -7,7 +7,7 @@ export async function textCourse(userId: string, options: { title?: string; cert
   const course = randomUUID(), module = randomUUID(), lesson = randomUUID();
   const title = options.title ?? `QA qualification ${course.slice(0, 8)}`;
   await withDb(async db => {
-    await db.query("INSERT INTO courses(id,title,status,certificate_enabled,certificate_validity_days) VALUES($1,$2,'PUBLISHED',$3,30)", [course, title, options.certificate ?? false]);
+    await db.query("INSERT INTO courses(id,title,approval_state,status,certificate_enabled,certificate_validity_days) VALUES($1,$2,'LEGACY_PUBLISHED','PUBLISHED',$3,30)", [course, title, options.certificate ?? false]);
     await db.query("INSERT INTO modules(id,course_id,title) VALUES($1,$2,'Qualification module')", [module, course]);
     await db.query("INSERT INTO lessons(id,module_id,type,title,payload) VALUES($1,$2,'TEXT','Read the safety checklist',$3)", [lesson, module, JSON.stringify({ body: "# Safety checklist\n\nRead the procedure carefully and ask your supervisor for help. مرحباً بكم। सुरक्षित रहें। സുരക്ഷിതരായിരിക്കുക." })]);
     await db.query("INSERT INTO enrollments(id,user_id,course_id,source,due_at) VALUES($1,$2,$3,'manual',$4)", [randomUUID(), userId, course, options.dueAt ?? null]);
@@ -49,7 +49,7 @@ export async function assessmentFixture() {
 export async function tutorFixture() {
   const course = randomUUID(), module = randomUUID(), lessons = [randomUUID(), randomUUID()], videos = [randomUUID(), randomUUID()];
   await withDb(async db => {
-    await db.query("INSERT INTO courses(id,title,status) VALUES($1,'QA tutor scoped course','PUBLISHED')", [course]);
+    await db.query("INSERT INTO courses(id,title,approval_state,status) VALUES($1,'QA tutor scoped course','LEGACY_PUBLISHED','PUBLISHED')", [course]);
     await db.query("INSERT INTO modules(id,course_id,title) VALUES($1,$2,'Video sources')", [module, course]);
     for (let i=0; i<2; i++) {
       await db.query("INSERT INTO videos(id,youtube_id,title,duration_sec,ingestion_status) VALUES($1,$2,$3,100,'READY')", [videos[i], `QA${videos[i].slice(0,9)}`, `QA source ${i+1}`]);

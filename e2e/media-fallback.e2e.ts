@@ -7,7 +7,7 @@ test("@core PDF fallback delivers the document and completion survives refresh",
   const learner = await createPerson("LEARNER");
   const course = randomUUID(), module = randomUUID(), lesson = randomUUID();
   await withDb(async db => {
-    await db.query("INSERT INTO courses (id,title,status) VALUES ($1,$2,'PUBLISHED')", [course, `QA PDF ${course.slice(0, 6)}`]);
+    await db.query("INSERT INTO courses (id,title,approval_state,status) VALUES ($1,$2,'LEGACY_PUBLISHED','PUBLISHED')", [course, `QA PDF ${course.slice(0, 6)}`]);
     await db.query("INSERT INTO modules (id,course_id,title) VALUES ($1,$2,'Reference material')", [module, course]);
     await db.query("INSERT INTO lessons (id,module_id,type,title,payload) VALUES ($1,$2,'PDF','Printable hygiene reference',$3)", [lesson, module, JSON.stringify({ fileUrl: "/demo/food-safety-hygiene-card.pdf" })]);
     await db.query("INSERT INTO enrollments (id,user_id,course_id,source,status) VALUES ($1,$2,$3,'manual','IN_PROGRESS')", [randomUUID(), learner.id, course]);

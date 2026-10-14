@@ -1,4 +1,5 @@
 import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
+import {canonicalRole,ROLE_LABELS} from "@/lib/auth/roles";
 import { db, t } from "@/lib/db/client";
 import { aiAvailable, structuredCall } from "@/lib/ai/gateway";
 
@@ -8,7 +9,13 @@ import { aiAvailable, structuredCall } from "@/lib/ai/gateway";
  * from a model. Scope (team vs all) is applied server-side from the caller.
  */
 
-export type ReportId = "completion" | "compliance" | "transcript" | "cert_expiry" | "engagement" | "quiz_results";
+export type ReportId =
+  | "completion"
+  | "compliance"
+  | "transcript"
+  | "cert_expiry"
+  | "engagement"
+  | "quiz_results";
 
 export type ReportFilters = {
   courseTitle?: string;
@@ -17,35 +24,71 @@ export type ReportFilters = {
   daysWindow?: number; // cert expiry horizon / engagement window
   employeeId?: string;
   userIds?: string[]; // scope injection (manager team) — server-set, never model-set
+  courseIds?: string[];
+  instructorView?: boolean; // server-set: excludes account and unrelated activity
 };
 
-export type ReportResult = { title: string; columns: string[]; rows: Array<Array<string | number>> };
+export type ReportResult = {
+  title: string;
+  columns: string[];
+  rows: Array<Array<string | number>>;
+};
 
-async function resolveScope(filters: ReportFilters): Promise<{ userWhere: SQL | undefined; courseIds?: string[] }> {
+async function resolveScope(
+  filters: ReportFilters,
+): Promise<{ userWhere: SQL | undefined; courseIds?: string[] }> {
   const clauses: SQL[] = [];
-  if (filters.userIds !== undefined) clauses.push(filters.userIds.length ? inArray(t.users.id, filters.userIds) : sql`false`);
+  if (filters.userIds !== undefined)
+    clauses.push(
+      filters.userIds.length
+        ? inArray(t.users.id, filters.userIds)
+        : sql`false`,
+    );
   if (filters.storeName) {
-    const stores = await db.select().from(t.orgUnits).where(sql`lower(name) LIKE ${"%" + filters.storeName.toLowerCase() + "%"}`);
-    clauses.push(inArray(t.users.storeId, stores.map((s) => s.id).concat(["__none__"])));
+    const stores = await db
+      .select()
+      .from(t.orgUnits)
+      .where(
+        sql`lower(name) LIKE ${"%" + filters.storeName.toLowerCase() + "%"}`,
+      );
+    clauses.push(
+      inArray(t.users.storeId, stores.map((s) => s.id).concat(["__none__"])),
+    );
   }
-  if (filters.employeeId) clauses.push(eq(t.users.employeeId, filters.employeeId.toUpperCase()));
-  let courseIds: string[] | undefined;
+  if (filters.employeeId)
+    clauses.push(eq(t.users.employeeId, filters.employeeId.toUpperCase()));
+  let courseIds: string[] | undefined = filters.courseIds;
   if (filters.courseTitle) {
     const courses = await db
       .select()
       .from(t.courses)
-      .where(sql`lower(title) LIKE ${"%" + filters.courseTitle.toLowerCase() + "%"}`);
-    courseIds = courses.map((c) => c.id);
+      .where(
+        sql`lower(title) LIKE ${"%" + filters.courseTitle.toLowerCase() + "%"}`,
+      );
+    const matches = courses.map((c) => c.id);
+    courseIds =
+      courseIds === undefined
+        ? matches
+        : courseIds.filter((id) => matches.includes(id));
   }
   return { userWhere: clauses.length ? and(...clauses) : undefined, courseIds };
 }
 
-export async function runReport(report: ReportId, filters: ReportFilters): Promise<ReportResult> {
+export async function runReport(
+  report: ReportId,
+  filters: ReportFilters,
+): Promise<ReportResult> {
   const { userWhere, courseIds } = await resolveScope(filters);
   // Stable source order keeps page boundaries and full CSV output identical.
   // Existing report-specific sorting (notably certificate expiry) still applies.
-  const users = await (userWhere ? db.select().from(t.users).where(userWhere) : db.select().from(t.users)).orderBy(t.users.id);
-  const activeUsers = users.filter((u) => !u.erasedAt);
+  const users = await (
+    userWhere
+      ? db.select().from(t.users).where(userWhere)
+      : db.select().from(t.users)
+  ).orderBy(t.users.id);
+  const activeUsers = users.filter(
+    (u) => !u.erasedAt && (!courseIds || courseIds.length > 0),
+  );
   const userIds = activeUsers.map((u) => u.id);
   const nameOf = new Map(activeUsers.map((u) => [u.id, u]));
   const allCourses = await db.select().from(t.courses);
@@ -54,17 +97,53 @@ export async function runReport(report: ReportId, filters: ReportFilters): Promi
   const storeNameOf = new Map(units.map((u) => [u.id, u.name]));
   const enrollWhere = [
     userIds.length ? inArray(t.enrollments.userId, userIds) : sql`false`,
-    courseIds ? inArray(t.enrollments.courseId, courseIds.length ? courseIds : ["__none__"]) : undefined,
-    filters.complianceStatus ? eq(t.enrollments.complianceStatus, filters.complianceStatus as never) : undefined,
+    courseIds
+      ? inArray(
+          t.enrollments.courseId,
+          courseIds.length ? courseIds : ["__none__"],
+        )
+      : undefined,
+    filters.complianceStatus
+      ? eq(t.enrollments.complianceStatus, filters.complianceStatus as never)
+      : undefined,
   ].filter((x): x is SQL => !!x);
-  const enrollments = await db.select().from(t.enrollments).where(and(...enrollWhere)).orderBy(t.enrollments.id);
+  const enrollments = await db
+    .select()
+    .from(t.enrollments)
+    .where(and(...enrollWhere))
+    .orderBy(t.enrollments.id);
 
+  const protect = (result: ReportResult): ReportResult => {
+    if (!filters.instructorView) return result;
+    const remove = new Set(["ID", "Store", "Role", "Serial"]);
+    const indexes = result.columns.flatMap((column, index) =>
+      remove.has(column) ? [] : [index],
+    );
+    return {
+      ...result,
+      columns: indexes.map((i) => result.columns[i]),
+      rows: result.rows.map((row) => indexes.map((i) => row[i])),
+    };
+  };
   switch (report) {
     case "completion": {
-      const byCourse = new Map<string, { enrolled: number; completed: number; overdue: number; inProgress: number }>();
+      const byCourse = new Map<
+        string,
+        {
+          enrolled: number;
+          completed: number;
+          overdue: number;
+          inProgress: number;
+        }
+      >();
       for (const e of enrollments) {
         if (e.status === "WITHDRAWN") continue;
-        const s = byCourse.get(e.courseId) ?? { enrolled: 0, completed: 0, overdue: 0, inProgress: 0 };
+        const s = byCourse.get(e.courseId) ?? {
+          enrolled: 0,
+          completed: 0,
+          overdue: 0,
+          inProgress: 0,
+        };
         s.enrolled++;
         if (e.status === "COMPLETED") s.completed++;
         else if (e.status === "IN_PROGRESS") s.inProgress++;
@@ -73,7 +152,14 @@ export async function runReport(report: ReportId, filters: ReportFilters): Promi
       }
       return {
         title: "Course completion",
-        columns: ["Course", "Enrolled", "Completed", "In progress", "Overdue", "Completion %"],
+        columns: [
+          "Course",
+          "Enrolled",
+          "Completed",
+          "In progress",
+          "Overdue",
+          "Completion %",
+        ],
         rows: [...byCourse.entries()].map(([cid, s]) => [
           courseOf.get(cid)?.title ?? cid,
           s.enrolled,
@@ -85,7 +171,7 @@ export async function runReport(report: ReportId, filters: ReportFilters): Promi
       };
     }
     case "compliance": {
-      return {
+      return protect({
         title: "Compliance matrix",
         columns: ["Employee", "ID", "Store", "Course", "Status", "Due date"],
         rows: enrollments
@@ -101,38 +187,53 @@ export async function runReport(report: ReportId, filters: ReportFilters): Promi
               e.dueAt?.toISOString().slice(0, 10) ?? "—",
             ];
           }),
-      };
+      });
     }
     case "transcript": {
       const records = await db
         .select()
         .from(t.completionRecords)
-        .where(userIds.length ? inArray(t.completionRecords.userId, userIds) : sql`false`).orderBy(t.completionRecords.id);
-      return {
+        .where(
+          userIds.length
+            ? inArray(t.completionRecords.userId, userIds)
+            : sql`false`,
+        )
+        .orderBy(t.completionRecords.id);
+      return protect({
         title: "Learner transcript",
         columns: ["Employee", "ID", "Course", "Completed at", "Score"],
-        rows: records.filter(r => !courseIds || courseIds.includes(r.courseId)).map((r) => [
-          nameOf.get(r.userId)?.name ?? "—",
-          nameOf.get(r.userId)?.employeeId ?? "—",
-          courseOf.get(r.courseId)?.title ?? r.courseId,
-          r.completedAt.toISOString().slice(0, 10),
-          r.score ?? "—",
-        ]),
-      };
+        rows: records
+          .filter((r) => !courseIds || courseIds.includes(r.courseId))
+          .map((r) => [
+            nameOf.get(r.userId)?.name ?? "—",
+            nameOf.get(r.userId)?.employeeId ?? "—",
+            courseOf.get(r.courseId)?.title ?? r.courseId,
+            r.completedAt.toISOString().slice(0, 10),
+            r.score ?? "—",
+          ]),
+      });
     }
     case "cert_expiry": {
       const horizon = filters.daysWindow ?? 90;
       const certs = await db
         .select()
         .from(t.certificates)
-        .where(userIds.length ? inArray(t.certificates.userId, userIds) : sql`false`).orderBy(t.certificates.id);
+        .where(
+          userIds.length ? inArray(t.certificates.userId, userIds) : sql`false`,
+        )
+        .orderBy(t.certificates.id);
       const cutoff = Date.now() + horizon * 24 * 3600_000;
-      return {
+      return protect({
         title: `Certificates expiring within ${horizon} days`,
         columns: ["Employee", "ID", "Course", "Expires", "Serial"],
         rows: certs
-          .filter((c) => (!courseIds || courseIds.includes(c.courseId)) && c.expiresAt && c.expiresAt.getTime() <= cutoff)
-          .sort((a, b) => (a.expiresAt!.getTime() - b.expiresAt!.getTime()))
+          .filter(
+            (c) =>
+              (!courseIds || courseIds.includes(c.courseId)) &&
+              c.expiresAt &&
+              c.expiresAt.getTime() <= cutoff,
+          )
+          .sort((a, b) => a.expiresAt!.getTime() - b.expiresAt!.getTime())
           .map((c) => [
             nameOf.get(c.userId)?.name ?? "—",
             nameOf.get(c.userId)?.employeeId ?? "—",
@@ -140,30 +241,67 @@ export async function runReport(report: ReportId, filters: ReportFilters): Promi
             c.expiresAt!.toISOString().slice(0, 10),
             c.serial,
           ]),
-      };
+      });
     }
     case "engagement": {
+      if (filters.instructorView)
+        return {
+          title: "Course engagement",
+          columns: [
+            "Learner",
+            "Course",
+            "Learning status",
+            "Assigned at",
+            "Completed at",
+          ],
+          rows: enrollments
+            .filter((e) => e.status !== "WITHDRAWN")
+            .map((e) => [
+              nameOf.get(e.userId)?.name ?? "—",
+              courseOf.get(e.courseId)?.title ?? e.courseId,
+              e.status,
+              e.createdAt.toISOString().slice(0, 10),
+              e.completedAt?.toISOString().slice(0, 10) ?? "—",
+            ]),
+        };
       const window = filters.daysWindow ?? 30;
       const cutoff = new Date(Date.now() - window * 24 * 3600_000);
       const events = await db
         .select({ userId: t.uiEvents.userId, n: sql<number>`count(*)::int` })
         .from(t.uiEvents)
-        .where(and(userIds.length ? inArray(t.uiEvents.userId, userIds) : sql`false`, sql`ts > ${cutoff}`))
+        .where(
+          and(
+            userIds.length ? inArray(t.uiEvents.userId, userIds) : sql`false`,
+            sql`ts > ${cutoff}`,
+          ),
+        )
         .groupBy(t.uiEvents.userId);
       const activity = new Map(events.map((e) => [e.userId, e.n]));
       const points = await db
-        .select({ userId: t.pointsLedger.userId, n: sql<number>`coalesce(sum(amount),0)::int` })
+        .select({
+          userId: t.pointsLedger.userId,
+          n: sql<number>`coalesce(sum(amount),0)::int`,
+        })
         .from(t.pointsLedger)
-        .where(userIds.length ? inArray(t.pointsLedger.userId, userIds) : sql`false`)
+        .where(
+          userIds.length ? inArray(t.pointsLedger.userId, userIds) : sql`false`,
+        )
         .groupBy(t.pointsLedger.userId);
       const pointsOf = new Map(points.map((p) => [p.userId, p.n]));
       return {
         title: `Engagement (${window}d)`,
-        columns: ["Employee", "ID", "Role", "Active events", "Points", "Status"],
+        columns: [
+          "Employee",
+          "ID",
+          "Role",
+          "Active events",
+          "Points",
+          "Status",
+        ],
         rows: activeUsers.map((u) => [
           u.name,
           u.employeeId,
-          u.role,
+          ROLE_LABELS[canonicalRole(u.role)??"LEARNER"],
           activity.get(u.id) ?? 0,
           pointsOf.get(u.id) ?? 0,
           (activity.get(u.id) ?? 0) === 0 ? "INACTIVE" : "ACTIVE",
@@ -172,19 +310,49 @@ export async function runReport(report: ReportId, filters: ReportFilters): Promi
     }
     case "quiz_results": {
       const quizzes = await db.select().from(t.quizzes);
-      const selectedModules = courseIds?.length ? await db.select().from(t.modules).where(inArray(t.modules.courseId, courseIds)) : [];
-      const selectedLessons = selectedModules.length ? await db.select().from(t.lessons).where(inArray(t.lessons.moduleId, selectedModules.map(m => m.id))) : [];
-      const selectedQuizIds = new Set(selectedLessons.flatMap(l => l.payload.quizId ? [l.payload.quizId] : []));
+      const selectedModules = courseIds?.length
+        ? await db
+            .select()
+            .from(t.modules)
+            .where(inArray(t.modules.courseId, courseIds))
+        : [];
+      const selectedLessons = selectedModules.length
+        ? await db
+            .select()
+            .from(t.lessons)
+            .where(
+              inArray(
+                t.lessons.moduleId,
+                selectedModules.map((m) => m.id),
+              ),
+            )
+        : [];
+      const selectedQuizIds = new Set(
+        selectedLessons.flatMap((l) =>
+          l.payload.quizId ? [l.payload.quizId] : [],
+        ),
+      );
       const quizOf = new Map(quizzes.map((q) => [q.id, q]));
       const attempts = await db
         .select()
         .from(t.attempts)
-        .where(userIds.length ? inArray(t.attempts.userId, userIds) : sql`false`).orderBy(t.attempts.id);
-      const byQuiz = new Map<string, { attempts: number; passed: number; scoreSum: number }>();
+        .where(
+          userIds.length ? inArray(t.attempts.userId, userIds) : sql`false`,
+        )
+        .orderBy(t.attempts.id);
+      const byQuiz = new Map<
+        string,
+        { attempts: number; passed: number; scoreSum: number }
+      >();
       for (const a of attempts) {
         if (courseIds && !selectedQuizIds.has(a.quizId)) continue;
-        if (a.state === "IN_PROGRESS" || a.state === "VOIDED" || !a.maxScore) continue;
-        const s = byQuiz.get(a.quizId) ?? { attempts: 0, passed: 0, scoreSum: 0 };
+        if (a.state === "IN_PROGRESS" || a.state === "VOIDED" || !a.maxScore)
+          continue;
+        const s = byQuiz.get(a.quizId) ?? {
+          attempts: 0,
+          passed: 0,
+          scoreSum: 0,
+        };
         s.attempts++;
         if (a.passed) s.passed++;
         s.scoreSum += ((a.score ?? 0) / a.maxScore) * 100;
@@ -209,26 +377,53 @@ export function toCsv(result: ReportResult): string {
     const s = String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  return [result.columns.map(esc).join(","), ...result.rows.map((r) => r.map(esc).join(","))].join("\n");
+  return [
+    result.columns.map(esc).join(","),
+    ...result.rows.map((r) => r.map(esc).join(",")),
+  ].join("\n");
 }
 
 /* ------------------------- Ask Reports (NL) ------------------------- */
 
-export type QueryPlan = { report: ReportId; filters: ReportFilters; explanation: string };
+export type QueryPlan = {
+  report: ReportId;
+  filters: ReportFilters;
+  explanation: string;
+};
 
 const PLAN_SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: ["report", "filters", "explanation"],
   properties: {
-    report: { type: "string", enum: ["completion", "compliance", "transcript", "cert_expiry", "engagement", "quiz_results"] },
+    report: {
+      type: "string",
+      enum: [
+        "completion",
+        "compliance",
+        "transcript",
+        "cert_expiry",
+        "engagement",
+        "quiz_results",
+      ],
+    },
     filters: {
       type: "object",
       additionalProperties: false,
       properties: {
         courseTitle: { type: "string" },
         storeName: { type: "string" },
-        complianceStatus: { type: "string", enum: ["ON_TRACK", "DUE_SOON", "OVERDUE", "COMPLETED", "COMPLETED_EXPIRING", "EXPIRED"] },
+        complianceStatus: {
+          type: "string",
+          enum: [
+            "ON_TRACK",
+            "DUE_SOON",
+            "OVERDUE",
+            "COMPLETED",
+            "COMPLETED_EXPIRING",
+            "EXPIRED",
+          ],
+        },
         daysWindow: { type: "number" },
         employeeId: { type: "string" },
       },
@@ -260,27 +455,46 @@ export async function planFromQuestion(question: string): Promise<QueryPlan> {
   else if (/inactive|engag|active|login/.test(q)) report = "engagement";
   else if (/quiz|exam|score|pass rate/.test(q)) report = "quiz_results";
   else if (/transcript|history/.test(q)) report = "transcript";
-  const storeMatch = q.match(/store\s+([\p{L}\d]+)|in\s+([\p{L}]+)\s+(?:hypermarket|store|mall)/u);
+  const storeMatch = q.match(
+    /store\s+([\p{L}\d]+)|in\s+([\p{L}]+)\s+(?:hypermarket|store|mall)/u,
+  );
   if (storeMatch) filters.storeName = storeMatch[1] ?? storeMatch[2];
   const knownStores = ["khalidiyah", "mushrif", "barsha", "silicon"];
   for (const s of knownStores) if (q.includes(s)) filters.storeName = s;
   const courseMatch = q.match(/on\s+([\w &]+?)(?:\?|$| in | at | for )/);
-  if (courseMatch && !/overdue|training/.test(courseMatch[1])) filters.courseTitle = courseMatch[1].trim();
-  for (const known of ["food safety", "customer service", "fire", "pos", "cash"]) {
+  if (courseMatch && !/overdue|training/.test(courseMatch[1]))
+    filters.courseTitle = courseMatch[1].trim();
+  for (const known of [
+    "food safety",
+    "customer service",
+    "fire",
+    "pos",
+    "cash",
+  ]) {
     if (q.includes(known)) filters.courseTitle = known;
   }
   const days = q.match(/(\d+)\s*days?/);
   if (days) filters.daysWindow = Number(days[1]);
-  return { report, filters, explanation: "Offline planner: keyword-matched report and filters (connect an AI key for full natural-language planning)." };
+  return {
+    report,
+    filters,
+    explanation:
+      "Offline planner: keyword-matched report and filters (connect an AI key for full natural-language planning).",
+  };
 }
 
 export function narrate(result: ReportResult, plan: QueryPlan): string {
   const n = result.rows.length;
   if (n === 0) return `No rows match — ${plan.explanation}`;
-  if (plan.report === "compliance" && plan.filters.complianceStatus === "OVERDUE") {
+  if (
+    plan.report === "compliance" &&
+    plan.filters.complianceStatus === "OVERDUE"
+  ) {
     return `${n} enrollment(s) are overdue${plan.filters.courseTitle ? ` on “${plan.filters.courseTitle}”` : ""}${plan.filters.storeName ? ` in ${plan.filters.storeName}` : ""}.`;
   }
-  if (plan.report === "cert_expiry") return `${n} certificate(s) expire within ${plan.filters.daysWindow ?? 90} days. Renewal training is auto-assigned by the recert loop.`;
-  if (plan.report === "engagement") return `${n} people in scope; ${result.rows.filter((r) => r[5] === "INACTIVE").length} have no activity in the window.`;
+  if (plan.report === "cert_expiry")
+    return `${n} certificate(s) expire within ${plan.filters.daysWindow ?? 90} days. Renewal training is auto-assigned by the recert loop.`;
+  if (plan.report === "engagement")
+    return `${n} people in scope; ${result.rows.filter((r) => r[5] === "INACTIVE").length} have no activity in the window.`;
   return `${n} row(s) returned. ${plan.explanation}`;
 }

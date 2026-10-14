@@ -13,39 +13,73 @@ import { id, activationCode } from "@/lib/ids";
 import { reevaluateUser, reevaluateAllUsers } from "@/lib/lms/rules";
 import { issueResetCode } from "@/lib/auth/login";
 import { createDepartment, renameDepartment } from "@/lib/org/departments";
+import { availableTraining } from "@/lib/courses/rollout";
 
-export async function updateUserAction(userId: string, form: FormData): Promise<void> {
+export async function updateUserAction(
+  userId: string,
+  form: FormData,
+): Promise<void> {
   await requireRole("ADMIN");
   const groupId = String(form.get("groupId") ?? "");
   const role = String(form.get("role") ?? "");
   if (!ROLES.includes(role as Role)) throw new Error("Choose a valid role.");
-  const departmentId=String(form.get("departmentId") ?? "") || null;
-  if(departmentId){const [department]=await db.select({id:t.departments.id}).from(t.departments).where(eq(t.departments.id,departmentId)).limit(1);if(!department)throw new Error("Department not found.");}
-  await db.transaction(async tx=>{
-  await tx
-    .update(t.users)
-    .set({
-      role: role as Role,
-      departmentId,
-      managerId: String(form.get("managerId") ?? "") || null,
-      storeId: String(form.get("storeId") ?? "") || null,
-      groupIds: groupId ? [groupId] : [],
-      timeMultiplier: Number(form.get("timeMultiplier") ?? 1) || 1,
-    })
-    .where(eq(t.users.id, userId));
-  await reevaluateUser(userId,tx); // Membership does not reset learning history.
+  const departmentId = String(form.get("departmentId") ?? "") || null;
+  if (departmentId) {
+    const [department] = await db
+      .select({ id: t.departments.id })
+      .from(t.departments)
+      .where(eq(t.departments.id, departmentId))
+      .limit(1);
+    if (!department) throw new Error("Department not found.");
+  }
+  await db.transaction(async (tx) => {
+    await tx
+      .update(t.users)
+      .set({
+        role: role as Role,
+        departmentId,
+        managerId: String(form.get("managerId") ?? "") || null,
+        storeId: String(form.get("storeId") ?? "") || null,
+        groupIds: groupId ? [groupId] : [],
+        timeMultiplier: Number(form.get("timeMultiplier") ?? 1) || 1,
+      })
+      .where(eq(t.users.id, userId));
+    await reevaluateUser(userId, tx); // Membership does not reset learning history.
   });
   await setFlash("Employee details saved and enrollment rules re-evaluated.");
   revalidatePath("/admin/people");
 }
 
-export async function createDepartmentAction(form:FormData):Promise<ActionResult>{
-  const actor=await requireRole("ADMIN");
-  try{await createDepartment(actor,String(form.get("name") ?? ""));revalidatePath("/admin/people");return {success:"Department created."};}catch(error){return {error:error instanceof Error?error.message:"Could not create department."};}
+export async function createDepartmentAction(
+  form: FormData,
+): Promise<ActionResult> {
+  const actor = await requireRole("ADMIN");
+  try {
+    await createDepartment(actor, String(form.get("name") ?? ""));
+    revalidatePath("/admin/people");
+    return { success: "Department created." };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Could not create department.",
+    };
+  }
 }
-export async function renameDepartmentAction(departmentId:string,form:FormData):Promise<ActionResult>{
-  const actor=await requireRole("ADMIN");
-  try{await renameDepartment(actor,departmentId,String(form.get("name") ?? ""));revalidatePath("/admin/people");return {success:"Department renamed."};}catch(error){return {error:error instanceof Error?error.message:"Could not rename department."};}
+export async function renameDepartmentAction(
+  departmentId: string,
+  form: FormData,
+): Promise<ActionResult> {
+  const actor = await requireRole("ADMIN");
+  try {
+    await renameDepartment(actor, departmentId, String(form.get("name") ?? ""));
+    revalidatePath("/admin/people");
+    return { success: "Department renamed." };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Could not rename department.",
+    };
+  }
 }
 
 export async function issueCodeAction(userId: string): Promise<string> {
@@ -56,24 +90,69 @@ export async function issueCodeAction(userId: string): Promise<string> {
 export async function importCsvAction(form: FormData): Promise<ActionResult> {
   await requireRole("ADMIN");
   const parsed = parsePeopleCsv(String(form.get("csv") ?? ""));
-  if (!parsed.rows.length && !parsed.errors.length) return { error: "Paste at least one employee row." };
-  const stores = (await db.select().from(t.orgUnits)).filter(o => o.type === "store");
+  if (!parsed.rows.length && !parsed.errors.length)
+    return { error: "Paste at least one employee row." };
+  const stores = (await db.select().from(t.orgUnits)).filter(
+    (o) => o.type === "store",
+  );
   const groups = await db.select().from(t.groups);
   const existing = await db.select().from(t.users);
-  const byEmployeeId = new Map(existing.map(u => [u.employeeId, u]));
-  const errors = parsed.errors.map(e => `Row ${e.row}: ${e.message}`); const codes: string[] = [];
+  const byEmployeeId = new Map(existing.map((u) => [u.employeeId, u]));
+  const errors = parsed.errors.map((e) => `Row ${e.row}: ${e.message}`);
+  const codes: string[] = [];
   for (const row of parsed.rows) {
-    if (byEmployeeId.has(row.employeeId)) { errors.push(`Row ${row.row}: ${row.employeeId} already exists; skipped.`); continue; }
-    const store = row.storeName ? stores.find(s => s.name.toLowerCase() === row.storeName.toLowerCase()) : undefined;
-    const group = row.groupName ? groups.find(g => g.name.toLowerCase() === row.groupName.toLowerCase()) : undefined;
-    const manager = row.managerEmployeeId ? byEmployeeId.get(row.managerEmployeeId) : undefined;
-    const problem = row.storeName && !store ? "Store not found." : row.groupName && !group ? "Group not found." : row.managerEmployeeId && (!manager || !["ADMIN", "DEPARTMENT_HEAD"].includes(canonicalRole(manager.role) ?? "")) ? "Manager employee ID must identify an existing manager or administrator." : "";
-    if (problem) { errors.push(`Row ${row.row}: ${problem}`); continue; }
-    const code = activationCode(); const userId = id();
+    if (byEmployeeId.has(row.employeeId)) {
+      errors.push(`Row ${row.row}: ${row.employeeId} already exists; skipped.`);
+      continue;
+    }
+    const store = row.storeName
+      ? stores.find((s) => s.name.toLowerCase() === row.storeName.toLowerCase())
+      : undefined;
+    const group = row.groupName
+      ? groups.find((g) => g.name.toLowerCase() === row.groupName.toLowerCase())
+      : undefined;
+    const manager = row.managerEmployeeId
+      ? byEmployeeId.get(row.managerEmployeeId)
+      : undefined;
+    const problem =
+      row.storeName && !store
+        ? "Store not found."
+        : row.groupName && !group
+          ? "Group not found."
+          : row.managerEmployeeId &&
+              (!manager ||
+                !["ADMIN", "DEPARTMENT_HEAD"].includes(
+                  canonicalRole(manager.role) ?? "",
+                ))
+            ? "Manager employee ID must identify an existing manager or administrator."
+            : "";
+    if (problem) {
+      errors.push(`Row ${row.row}: ${problem}`);
+      continue;
+    }
+    const code = activationCode();
+    const userId = id();
     const inviteCodeHash = await bcrypt.hash(code, 10);
     try {
-      const inserted = await db.transaction(async tx => {
-        const [person] = await tx.insert(t.users).values({ id: userId, employeeId: row.employeeId, name: row.name, role: row.role, storeId: store?.id ?? null, managerId: manager?.id ?? null, groupIds: group ? [group.id] : [], jobTitle: row.jobTitle || null, hireDate: row.hireDate ? new Date(row.hireDate) : null, passwordState: "INVITED", inviteCodeHash, inviteExpiresAt: new Date(Date.now() + 14 * 24 * 3600_000) }).returning();
+      const inserted = await db.transaction(async (tx) => {
+        const [person] = await tx
+          .insert(t.users)
+          .values({
+            id: userId,
+            employeeId: row.employeeId,
+            name: row.name,
+            role: row.role,
+            storeId: store?.id ?? null,
+            managerId: manager?.id ?? null,
+            departmentId: manager?.departmentId ?? null,
+            groupIds: group ? [group.id] : [],
+            jobTitle: row.jobTitle || null,
+            hireDate: row.hireDate ? new Date(row.hireDate) : null,
+            passwordState: "INVITED",
+            inviteCodeHash,
+            inviteExpiresAt: new Date(Date.now() + 14 * 24 * 3600_000),
+          })
+          .returning();
         await reevaluateUser(userId, tx);
         return person;
       });
@@ -81,21 +160,40 @@ export async function importCsvAction(form: FormData): Promise<ActionResult> {
       codes.push(`${row.employeeId}: ${code}`);
     } catch {
       // A failed row rolls back its account and assignments; earlier codes remain usable.
-      errors.push(`Row ${row.row}: ${row.employeeId} could not be imported. Check whether the employee already exists, then retry this row.`);
+      errors.push(
+        `Row ${row.row}: ${row.employeeId} could not be imported. Check whether the employee already exists, then retry this row.`,
+      );
     }
   }
   revalidatePath("/admin/people");
-  return { success: `${codes.length} employee${codes.length === 1 ? "" : "s"} imported. ${errors.length} row${errors.length === 1 ? "" : "s"} need attention.`, error: errors.length ? errors.join("\n") : undefined, codes };
+  return {
+    success: `${codes.length} employee${codes.length === 1 ? "" : "s"} imported. ${errors.length} row${errors.length === 1 ? "" : "s"} need attention.`,
+    error: errors.length ? errors.join("\n") : undefined,
+    codes,
+  };
 }
 
 export async function createRuleAction(form: FormData): Promise<ActionResult> {
   await requireRole("ADMIN");
   const target = String(form.get("target") ?? "");
   const [targetType, targetId] = target.split(":");
-  if (!targetId || !["course", "path"].includes(targetType)) return { error: "Choose a course or learning path." };
+  if (!targetId || !["course", "path"].includes(targetType))
+    return { error: "Choose a course or learning path." };
   const days = parseDays(String(form.get("dueDays") ?? "14"));
   if (days.error) return { error: days.error };
-  if (!String(form.get("name") ?? "").trim()) return { error: "Enter a rule name." };
+  if (!String(form.get("name") ?? "").trim())
+    return { error: "Enter a rule name." };
+  try {
+    await availableTraining({
+      type: targetType as "course" | "path",
+      id: targetId,
+    });
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Choose available training.",
+    };
+  }
   await db.insert(t.enrollmentRules).values({
     id: id(),
     name: String(form.get("name") ?? "Rule"),
@@ -116,9 +214,18 @@ export async function createRuleAction(form: FormData): Promise<ActionResult> {
 
 export async function toggleRuleAction(ruleId: string): Promise<void> {
   await requireRole("ADMIN");
-  const [rule] = await db.select().from(t.enrollmentRules).where(eq(t.enrollmentRules.id, ruleId)).limit(1);
+  const [rule] = await db
+    .select()
+    .from(t.enrollmentRules)
+    .where(eq(t.enrollmentRules.id, ruleId))
+    .limit(1);
   if (!rule) return;
-  await db.update(t.enrollmentRules).set({ active: !rule.active }).where(eq(t.enrollmentRules.id, ruleId));
+  if (!rule.active)
+    await availableTraining({ type: rule.targetType, id: rule.targetId });
+  await db
+    .update(t.enrollmentRules)
+    .set({ active: !rule.active })
+    .where(eq(t.enrollmentRules.id, ruleId));
   await reevaluateAllUsers();
   await setFlash("Changes saved.");
   revalidatePath("/admin/people");

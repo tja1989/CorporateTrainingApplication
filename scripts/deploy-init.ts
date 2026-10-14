@@ -71,15 +71,8 @@ export async function runDeployInit(): Promise<void> {
     await client.query("ROLLBACK").catch(()=>{});
     throw error;
   } finally {await client.end();}
-  if (process.env.DEMO_MODE === "true") {
-    // Idempotent: brings an already-seeded demo up to date without a reseed.
-    const { ensureDemoContentLessons } = await import("./seed-content");
-    const content = await ensureDemoContentLessons();
-    console.log(`deploy-init: demo content lessons ensured (${content} added)`);
-    const { ensureDemoInterviewLessons } = await import("./seed-interviews");
-    const added = await ensureDemoInterviewLessons();
-    console.log(`deploy-init: demo oral-check lessons ensured (${added} added)`);
-  }
+  // Fresh seed builds demo lessons before publication. Populated databases
+  // receive only migrations here; startup must never change reviewed content.
   console.log("deploy-init: done");
 }
 

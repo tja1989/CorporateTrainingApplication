@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
+import { canResetPerson, canonicalRole } from "@/lib/auth/roles";
 import { requireRole } from "@/lib/auth/guard";
 import { Card, PageTitle, ButtonLink } from "@/components/ui";
 
@@ -13,22 +14,42 @@ export default async function ResetCodePage({
   params: Promise<{ userId: string }>;
   searchParams: Promise<{ code?: string }>;
 }) {
-  const manager = await requireRole("MANAGER", "ADMIN");
+  const manager = await requireRole("DEPARTMENT_HEAD", "ADMIN", "HR_HEAD");
   const { userId } = await params;
   const { code } = await searchParams;
-  const [member] = await db.select().from(t.users).where(eq(t.users.id, userId)).limit(1);
-  if (!member || (manager.role === "DEPARTMENT_HEAD" && member.managerId !== manager.id) || !code) notFound();
+  const [member] = await db
+    .select()
+    .from(t.users)
+    .where(eq(t.users.id, userId))
+    .limit(1);
+  if (
+    !member ||
+    !canResetPerson(manager, {
+      id: member.id,
+      role: canonicalRole(member.role)!,
+      departmentId: member.departmentId,
+    }) ||
+    !code
+  )
+    notFound();
 
   return (
     <div className="animate-slide-up mx-auto max-w-md">
-      <PageTitle sub={`One-time activation code for ${member.name} (${member.employeeId}). Shown once — write it down or tell them now.`}>
+      <PageTitle
+        sub={`One-time activation code for ${member.name} (${member.employeeId}). Shown once — write it down or tell them now.`}
+      >
         Reset code issued
       </PageTitle>
       <Card className="mb-4 p-6 text-center">
         <p className="font-mono text-xl font-medium tracking-widest">{code}</p>
-        <p className="mt-2 text-xs text-muted">Valid 14 days. They sign in at /activate with their employee ID and this code.</p>
+        <p className="mt-2 text-xs text-muted">
+          Valid 14 days. They sign in at /activate with their employee ID and
+          this code.
+        </p>
       </Card>
-      <ButtonLink variant="secondary" href={`/team/${member.id}`}>Back</ButtonLink>
+      <ButtonLink variant="secondary" href={`/team/${member.id}`}>
+        Back
+      </ButtonLink>
     </div>
   );
 }

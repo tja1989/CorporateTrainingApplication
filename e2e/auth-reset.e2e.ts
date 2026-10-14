@@ -13,6 +13,7 @@ test("AUTH: manager-issued reset is scoped, audit-logged and consumed through ac
 
   await context.clearCookies();
   await signIn(page, manager);
+  await page.goto("/team");
   await page.locator(`a[href="/team/${person.id}"]`).click();
   await expect(page.getByRole("heading", { name: person.name, exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Issue password reset code", exact: true }).click();

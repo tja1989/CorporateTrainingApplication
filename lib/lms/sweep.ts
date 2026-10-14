@@ -5,6 +5,8 @@ import { computeComplianceStatus } from "./compliance";
 import { enrollUser } from "./rules";
 import { notify } from "@/lib/notify";
 import { daysUntil, localDate } from "@/lib/time";
+import {canonicalRole} from "@/lib/auth/roles";
+import {trainingScope} from "@/lib/auth/scope";
 
 /**
  * Nightly sweep (spec FR-3.3/3.4/3.5, FR-13.3): compliance recompute, reminder
@@ -83,10 +85,12 @@ export async function runDailySweep(now = new Date()): Promise<Record<string, nu
 
 /** Weekly manager digest incl. the not-reached-directly list (spec FR-3.4). */
 export async function runWeeklyDigest(now = new Date()): Promise<number> {
-  const managers = await db.select().from(t.users).where(inArray(t.users.role, ["MANAGER", "ADMIN"]));
+  const managers = await db.select().from(t.users).where(and(inArray(t.users.role, ["MANAGER", "DEPARTMENT_HEAD", "ADMIN"]),isNull(t.users.erasedAt)));
   let sent = 0;
   for (const manager of managers) {
-    const team = await db.select().from(t.users).where(eq(t.users.managerId, manager.id));
+    const role=canonicalRole(manager.role)!;
+    const scope=role==="DEPARTMENT_HEAD"?await trainingScope({id:manager.id,role,departmentId:manager.departmentId}):null;
+    const team = await db.select().from(t.users).where(and(isNull(t.users.erasedAt),scope?(scope.userIds?.length?inArray(t.users.id,scope.userIds):sql`false`):eq(t.users.managerId, manager.id)));
     if (team.length === 0) continue;
     const teamIds = team.map((u) => u.id);
     const problem = await db

@@ -1,10 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  distDir: process.env.NEXT_BUILD_DIR || ".next",
   // The Gemini SDK's node build imports ws/google-auth-library/fs — keep it external on the server;
   // client chunks resolve its `browser` export automatically.
   serverExternalPackages: ["@google/genai", "pdfkit"],
-  outputFileTracingIncludes: { "/api/certificates/*": ["./public/fonts/*.ttf"] },
+  outputFileTracingIncludes: {
+    "/api/certificates/*": ["./public/fonts/*.ttf"],
+  },
   // Allow the YouTube IFrame API + embeds while keeping a restrictive default CSP.
   async headers() {
     return [

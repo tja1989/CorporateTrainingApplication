@@ -17,9 +17,16 @@ async function saveBulkRuleAndReload(page: Page, button: Locator, info: TestInfo
   await info.attach(`bulk-rule-${label}`, { body: JSON.stringify({ dataset, started: new Date(started).toISOString(), finished: new Date().toISOString(), durationMs: Date.now() - started, responseStatus: response.status() }), contentType: "application/json" });
 }
 const reports = ["completion", "compliance", "transcript", "cert_expiry", "engagement", "quiz_results"];
+async function recordedPublish(page:Page){
+  await page.getByText("Super Admin intervention",{exact:true}).click();
+  await page.getByLabel("Approval state",{exact:true}).selectOption("APPROVED");
+  await page.getByLabel("Publication state",{exact:true}).selectOption("PUBLISHED");
+  await page.getByLabel("Intervention reason",{exact:true}).fill("QA historical journey: recorded Super Admin intervention.");
+  await saveAndReload(page,page.getByRole("button",{name:"Apply recorded intervention",exact:true}));
+}
 async function freshSignIn(page: Page, person: Awaited<ReturnType<typeof createPerson>>) { await page.context().clearCookies(); await signIn(page, person); }
 
-test("@core @template Admin publishes, manager assigns, learner earns a certificate and both reports show the same completion", async ({ page }, info) => {
+test("@core @template Recorded Super Admin intervention publishes, Department Head assigns, learner earns a certificate and both reports show the same completion", async ({ page }, info) => {
   test.setTimeout(150_000);
   const admin = await createPerson("ADMIN"), manager = await createPerson("MANAGER");
   const learner = await createPerson("LEARNER", { managerId: manager.id, name: `QA chain learner ${randomUUID().slice(0,6)}` });
@@ -54,13 +61,13 @@ test("@core @template Admin publishes, manager assigns, learner earns a certific
   await expectNoPageOverflow(page);
   await capture(page, info, "admin-curriculum");
   await page.getByRole("link", { name: "Settings", exact: true }).click();
-  await saveAndReload(page, page.getByRole("button", { name: "Publish", exact: true }));
-  await expect(page.getByRole("button", { name: "Unpublish", exact: true })).toBeVisible();
+  await recordedPublish(page);
+  await expect(page.getByRole("button", { name: "Revise published course", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "View learner course", exact: true }).click();
   await expect(page).toHaveURL(`/course/${courseId}`);
   await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible();
 
-  await freshSignIn(page, manager);
+  await freshSignIn(page, manager); await page.goto("/team");
   await page.getByLabel("Search team").fill(learner.employeeId);
   await page.getByRole("button", { name: "Apply", exact: true }).click();
   await page.locator(`a[href="/team/${learner.id}"]`).click();
@@ -106,13 +113,13 @@ test("@core @template Admin publishes, manager assigns, learner earns a certific
     await expectNoPageOverflow(page); await capture(page, info, `${person.role.toLowerCase()}-same-record-report`);
   }
   await page.goto(`/admin/courses/${courseId}?view=settings`);
-  await saveAndReload(page, page.getByRole("button", { name: "Unpublish", exact: true }));
+  await saveAndReload(page, page.getByRole("button", { name: "Revise published course", exact: true }));
   await freshSignIn(page, learner); await page.goto(`/course/${courseId}`);
   await expect(page.getByRole("heading", { name: /not found/i })).toBeVisible();
   await page.goto(`/learn?view=browse&q=${encodeURIComponent(title)}`);
   await expect(page.locator(`a[href='/course/${courseId}']`)).toHaveCount(0);
   await freshSignIn(page, admin); await page.goto(`/admin/courses/${courseId}?view=settings`);
-  await saveAndReload(page, page.getByRole("button", { name: "Publish", exact: true }));
+  await recordedPublish(page);
   await freshSignIn(page, learner); await page.goto(`/course/${courseId}`);
   await expect(page.getByRole("link", { name: /certificate/i })).toBeVisible();
   expect(await withDb(async db => (await db.query("SELECT count(*)::int n FROM certificates WHERE user_id=$1 AND course_id=$2", [learner.id, courseId])).rows[0].n)).toBe(1);
@@ -167,12 +174,12 @@ test("@core @template Admin navigation, import, groups and rules are distinct pe
     page.getByRole("link", { name: "People", exact: true }).last().click(),
   ]);
   expect(peopleResponse.status()).toBe(200);
-  const choiceCounts = await withDb(async db => (await db.query("SELECT (SELECT count(*)::int FROM users) users,(SELECT count(*)::int FROM users WHERE role!='LEARNER') managers,(SELECT count(*)::int FROM groups) groups,(SELECT count(*)::int FROM org_units WHERE type='store') stores")).rows[0]);
+  const choiceCounts = await withDb(async db => (await db.query("SELECT (SELECT count(*)::int FROM users) users,(SELECT count(*)::int FROM users WHERE role IN ('ADMIN','DEPARTMENT_HEAD')) managers,(SELECT count(*)::int FROM groups) groups,(SELECT count(*)::int FROM org_units WHERE type='store') stores")).rows[0]);
   await expect(page.getByLabel("Search people",{exact:true})).toBeVisible();
   await expect(page.locator("main details summary")).toHaveCount(Math.min(25,choiceCounts.users));
   await info.attach("people-document", { body: JSON.stringify({ dataset: choiceCounts, bytes: (await peopleResponse.body()).length, loadMs: Date.now()-peopleStarted, closedSelects: await page.locator("main details select").count(), closedOptions: await page.locator("main details option").count() }), contentType: "application/json" });
   await expect(page.locator("main details select")).toHaveCount(0);
-  const expectedChoices=await withDb(async db => (await db.query("SELECT ARRAY(SELECT id::text FROM users WHERE role!='LEARNER') managers,ARRAY(SELECT id::text FROM groups) groups,ARRAY(SELECT id::text FROM org_units WHERE type='store') stores")).rows[0]);
+  const expectedChoices=await withDb(async db => (await db.query("SELECT ARRAY(SELECT id::text FROM users WHERE role IN ('ADMIN','DEPARTMENT_HEAD')) managers,ARRAY(SELECT id::text FROM groups) groups,ARRAY(SELECT id::text FROM org_units WHERE type='store') stores")).rows[0]);
   await page.getByLabel("Search people").fill(employeeId);
   await Promise.all([page.waitForEvent("load", { timeout: 30_000 }), page.getByRole("button", { name: "Search", exact: true }).click()]);
   const personSummary = page.locator("main details summary");
@@ -380,11 +387,11 @@ test("@core Manager path assignment fans out once and its learner inbox opens th
   const manager = await createPerson("MANAGER"), learner = await createPerson("LEARNER", { managerId: manager.id });
   const path = randomUUID(), first = randomUUID(), second = randomUUID(), title = `QA path ${path.slice(0,8)}`;
   await withDb(async db => {
-    await db.query("INSERT INTO courses(id,title,status) VALUES($1,'QA path first','PUBLISHED'),($2,'QA path second','PUBLISHED')", [first, second]);
+    await db.query("INSERT INTO courses(id,title,approval_state,status) VALUES($1,'QA path first','LEGACY_PUBLISHED','PUBLISHED'),($2,'QA path second','LEGACY_PUBLISHED','PUBLISHED')", [first, second]);
     await db.query("INSERT INTO paths(id,title) VALUES($1,$2)", [path, title]);
     await db.query("INSERT INTO path_courses(id,path_id,course_id,sort) VALUES($1,$2,$3,0),($4,$2,$5,1)", [randomUUID(), path, first, randomUUID(), second]);
   });
-  await signIn(page, manager); await page.locator(`a[href="/team/${learner.id}"]`).click();
+  await signIn(page, manager); await page.goto("/team"); await page.locator(`a[href="/team/${learner.id}"]`).click();
   await page.getByLabel("Course or path").selectOption(`path:${path}`);
   await saveAndReload(page, page.getByRole("button", { name: "Assign training", exact: true }));
   await expect(page.getByRole("region", { name: "Current learning" })).toContainText("QA path first");
@@ -416,7 +423,7 @@ test("@core @template All workspace destinations fit and workspace inboxes keep 
 test("@core A reminder can be sent again after 48 hours and stays rate limited afterward", async ({ page }) => {
   const manager = await createPerson("MANAGER"), learner = await createPerson("LEARNER", { managerId: manager.id });
   await withDb(db => db.query("INSERT INTO notifications(id,user_id,kind,payload,dedupe_key,sent_at) VALUES($1,$2,'overdue','{}',$3,now()-interval '49 hours')", [randomUUID(),learner.id,`nudge:${learner.id}`]));
-  await signIn(page,manager); await page.locator(`a[href="/team/${learner.id}"]`).click();
+  await signIn(page,manager); await page.goto("/team"); await page.locator(`a[href="/team/${learner.id}"]`).click();
   await saveAndReload(page, page.getByRole("button", { name: "Send reminder now", exact: true }));
   await expect(page.getByRole("button", { name: "Nudged in the last 48h" })).toBeDisabled();
   expect(await withDb(async db => (await db.query("SELECT count(*)::int n FROM notifications WHERE user_id=$1 AND dedupe_key=$2", [learner.id,`nudge:${learner.id}`])).rows[0].n)).toBe(2);
@@ -479,7 +486,7 @@ test("@core Human oral-check review confirms a fail or overturns it to a persist
   const admin = await createPerson("ADMIN"), learner = await createPerson("LEARNER");
   const course = randomUUID(), mod = randomUUID(), lesson = randomUUID(), fail = randomUUID(), overturn = randomUUID();
   await withDb(async db => {
-    await db.query("INSERT INTO courses(id,title,status) VALUES($1,'QA oral review course','PUBLISHED')", [course]);
+    await db.query("INSERT INTO courses(id,title,approval_state,status) VALUES($1,'QA oral review course','LEGACY_PUBLISHED','PUBLISHED')", [course]);
     await db.query("INSERT INTO modules(id,course_id,title) VALUES($1,$2,'QA oral checks')", [mod,course]);
     await db.query("INSERT INTO lessons(id,module_id,type,title,payload) VALUES($1,$2,'INTERVIEW','QA reviewable oral check',$3)", [lesson,mod,JSON.stringify({ interview: { questionCount: 1, maxMinutes: 3, passPct: 67, requirePass: true, scope: "course" } })]);
     for (const id of [fail,overturn]) await db.query("INSERT INTO live_interviews(id,user_id,lesson_id,course_id,state,model,mock,outcome,score_pct,completed_at,transcript) VALUES($1,$2,$3,$4,'COMPLETED','offline-qa',true,'FAIL',33,now(),$5)", [id,learner.id,lesson,course,JSON.stringify([{ role: "user", text: "I would ask for help." }])]);
@@ -511,6 +518,12 @@ test("@core @template Failed video ingestion recovers with a replacement transcr
   await page.getByLabel("Lesson title", { exact: true }).fill("QA failed video");
   await page.getByLabel("YouTube URL or video ID").fill(`QA${course.replaceAll("-", "").slice(0,9)}`);
   await page.getByLabel("Transcript (SRT or VTT)", { exact: true }).fill("An invalid transcript with no timestamps");
+  await page.getByRole("button", { name: "Add lesson", exact: true }).click();
+  await expect(page.locator("main").getByRole("alert")).toContainText("SRT or VTT");
+  await expect(page.getByLabel("Transcript (SRT or VTT)", { exact: true })).toHaveValue("An invalid transcript with no timestamps");
+  expect(await withDb(async db=>(await db.query("SELECT count(*)::int n FROM lessons WHERE module_id=$1",[mod])).rows[0].n)).toBe(0);
+  // Provider-free QA creates a real failed vendor job, then recovers it with captions.
+  await page.getByLabel("Transcript (SRT or VTT)", { exact: true }).fill("");
   await saveAndReload(page, page.getByRole("button", { name: "Add lesson", exact: true }));
   await expect(page.getByText("Video failed", { exact: true })).toBeVisible();
   const videoId = await withDb(async db => (await db.query("SELECT payload->>'videoId' id FROM lessons WHERE module_id=$1", [mod])).rows[0].id);

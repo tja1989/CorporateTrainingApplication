@@ -3,14 +3,14 @@ import { WorkspaceForm, SubmitButton } from "@/components/workspace-form";
 import { notFound } from "next/navigation";
 import { asc, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
-import { requireRole } from "@/lib/auth/guard";
+import { requirePermission } from "@/lib/auth/guard";
 import { Button, Card, Chip, PageTitle, Textarea, Field, cx } from "@/components/ui";
 import { adminReplyAction, resolveTicketAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminTicketPage({ params }: { params: Promise<{ ticketId: string }> }) {
-  await requireRole("ADMIN");
+  await requirePermission("hr.manage");
   const { ticketId } = await params;
   const [ticket] = await db.select().from(t.hrTickets).where(eq(t.hrTickets.id, ticketId)).limit(1);
   if (!ticket) notFound();

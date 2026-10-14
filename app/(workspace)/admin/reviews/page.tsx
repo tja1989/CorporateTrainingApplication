@@ -3,7 +3,7 @@ import { WorkspaceForm, SubmitButton } from "@/components/workspace-form";
 import { QuestionGuide, questionTypeLabels } from "./question-guide";
 import { asc, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
-import { requireRole } from "@/lib/auth/guard";
+import { requirePermission } from "@/lib/auth/guard";
 import { AiSurface, Button, Card, Chip, PageTitle, EmptyState, Input, Field } from "@/components/ui";
 import { approveDraftAction, discardDraftAction, confirmGradeAction, adjustGradeAction, markInterviewReviewedAction, overturnInterviewAction } from "./actions";
 import { pendingInterviewReviews } from "@/lib/live/store";
@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export default async function ReviewsPage({ searchParams }: { searchParams: Promise<{ view?: string; item?: string }> }) {
   const { view: v, item } = await searchParams;
   const view = v === "drafts" || v === "oral" ? v : "grades";
-  await requireRole("ADMIN");
+  await requirePermission("assessment.review");
 
   const pendingGrades = await db
     .select()

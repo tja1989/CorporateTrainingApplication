@@ -1,13 +1,38 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const state = vi.hoisted(() => ({ user: null as Record<string, unknown> | null, session: null as Record<string, unknown> | null }));
-vi.mock("next/navigation", () => ({ redirect: (path: string) => { throw new Error(`redirect:${path}`); } }));
-vi.mock("../lib/auth/session", () => ({ readSession: async () => state.session }));
-vi.mock("../lib/db/client", () => ({ t: { users: { id: "id" } }, db: { select: () => ({ from: () => ({ where: () => ({ limit: async () => state.user ? [state.user] : [] }) }) }) } }));
+const state = vi.hoisted(() => ({
+  user: null as Record<string, unknown> | null,
+  session: null as Record<string, unknown> | null,
+}));
+vi.mock("next/navigation", () => ({
+  redirect: (path: string) => {
+    throw new Error(`redirect:${path}`);
+  },
+}));
+vi.mock("../lib/auth/session", () => ({
+  readSession: async () => state.session,
+}));
+vi.mock("../lib/db/client", () => ({
+  t: { users: { id: "id" } },
+  db: {
+    select: () => ({
+      from: () => ({
+        where: () => ({ limit: async () => (state.user ? [state.user] : []) }),
+      }),
+    }),
+  },
+}));
 import { requireUser } from "../lib/auth/guard";
 
 beforeEach(() => {
-  state.user = { id: "u1", role: "ADMIN", totpSecret: null, privacyNoticeVersion: 1, erasedAt: null };
+  state.user = {
+    id: "u1",
+    role: "ADMIN",
+    passwordState: "ACTIVE",
+    totpSecret: null,
+    privacyNoticeVersion: 1,
+    erasedAt: null,
+  };
   state.session = { uid: "u1", role: "ADMIN", workspace: "admin", mfa: true };
 });
 describe("mandatory administrator authentication", () => {

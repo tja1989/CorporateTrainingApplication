@@ -9,7 +9,7 @@ test("@core Overlapping enrollment rules and a failed CSV row retain usable code
   const trigger = `qa_import_${token}`;
   await withDb(async db => {
     await db.query("INSERT INTO groups(id,name) VALUES($1,$2)", [group, `QA overlap ${token}`]);
-    await db.query("INSERT INTO courses(id,title,status) VALUES($1,'QA overlap course','PUBLISHED')", [course]);
+    await db.query("INSERT INTO courses(id,title,approval_state,status) VALUES($1,'QA overlap course','LEGACY_PUBLISHED','PUBLISHED')", [course]);
     await db.query("INSERT INTO paths(id,title) VALUES($1,'QA overlap path')", [path]);
     await db.query("INSERT INTO path_courses(id,path_id,course_id,sort) VALUES($1,$2,$3,0)", [randomUUID(), path, course]);
     for (const [type, target] of [["course", course], ["path", path]]) await db.query("INSERT INTO enrollment_rules(id,name,criteria,target_type,target_id,active) VALUES($1,$2,$3,$4,$5,true)", [randomUUID(), `QA overlap ${type} ${token}`, JSON.stringify({ groupId: group }), type, target]);

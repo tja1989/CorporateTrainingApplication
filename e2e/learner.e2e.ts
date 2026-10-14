@@ -6,7 +6,7 @@ async function learningFixture(userId: string, sequential = true) {
   const course = randomUUID(), module = randomUUID(), text = randomUUID(), pdf = randomUUID(), video = randomUUID(), interview = randomUUID(), videoId = randomUUID();
   const title = `QA Learning ${course.slice(0, 6)}`;
   await withDb(async db => {
-    await db.query("INSERT INTO courses (id,title,description,status,sequential_lock,language,tags,objectives) VALUES ($1,$2,'Training for the shop floor','PUBLISHED',$3,'en','[\"qa-learning\"]','[\"Serve safely\"]')", [course, title, sequential]);
+    await db.query("INSERT INTO courses (id,title,description,approval_state,status,sequential_lock,language,tags,objectives) VALUES ($1,$2,'Training for the shop floor','LEGACY_PUBLISHED','PUBLISHED',$3,'en','[\"qa-learning\"]','[\"Serve safely\"]')", [course, title, sequential]);
     await db.query("INSERT INTO modules (id,course_id,title) VALUES ($1,$2,'Getting started')", [module, course]);
     await db.query("INSERT INTO videos (id,youtube_id,title,duration_sec,ingestion_status) VALUES ($1,$2,'QA video',100,'READY')", [videoId, `QA${videoId.slice(0, 9)}`]);
     const items = [[text, "TEXT", "Read the service guide", { body: "# The first step\n\nWelcome customers and follow the safety checklist. Keep aisles clear and ask a supervisor whenever you need help." }], [pdf, "PDF", "Printable service guide", { fileUrl: "/demo/food-safety-hygiene-card.pdf" }], [video, "VIDEO", "Watch the service guide", { videoId }], [interview, "INTERVIEW", "Talk through the service guide", { interview: { scope: "course", questionCount: 3, maxMinutes: 3, passPct: 70, requirePass: true } }]];

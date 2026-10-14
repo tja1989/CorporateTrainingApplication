@@ -20,7 +20,7 @@ test(`PATH: ${source} assignment guards direct entry and unlocks after actual co
     }
     for (const [index, course, lesson] of [[0, first, firstLesson], [1, second, secondLesson]] as const) {
       const module = randomUUID();
-      await db.query("INSERT INTO courses(id,title,status,sequential_lock) VALUES ($1,$2,'PUBLISHED',false)", [course, `${title} — Step ${index + 1}`]);
+      await db.query("INSERT INTO courses(id,title,approval_state,status,sequential_lock) VALUES ($1,$2,'LEGACY_PUBLISHED','PUBLISHED',false)", [course, `${title} — Step ${index + 1}`]);
       await db.query("INSERT INTO modules(id,course_id,title,sort) VALUES ($1,$2,'Training',0)", [module, course]);
       await db.query("INSERT INTO lessons(id,module_id,type,title,payload) VALUES ($1,$2,'TEXT',$3,$4)", [lesson, module, `Ordered lesson ${index + 1}`, JSON.stringify({ body: index ? "The second-step training content is now unlocked." : "Finish the first training step before moving to the next course." })]);
       await db.query("INSERT INTO path_courses(id,path_id,course_id,sort) VALUES ($1,$2,$3,$4)", [randomUUID(), path, course, index]);

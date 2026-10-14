@@ -4,12 +4,12 @@ import { revalidatePath } from "next/cache";
 import { setFlash } from "@/lib/flash";
 import { eq } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
-import { requireRole } from "@/lib/auth/guard";
+import { requirePermission } from "@/lib/auth/guard";
 import { id } from "@/lib/ids";
 import { notify } from "@/lib/notify";
 
 export async function adminReplyAction(ticketId: string, form: FormData): Promise<void> {
-  const admin = await requireRole("ADMIN");
+  const admin = await requirePermission("hr.manage");
   const [ticket] = await db.select().from(t.hrTickets).where(eq(t.hrTickets.id, ticketId)).limit(1);
   if (!ticket) return;
   const body = String(form.get("body") ?? "").trim();
@@ -22,7 +22,7 @@ export async function adminReplyAction(ticketId: string, form: FormData): Promis
 }
 
 export async function resolveTicketAction(ticketId: string): Promise<void> {
-  const admin = await requireRole("ADMIN");
+  const admin = await requirePermission("hr.manage");
   const [ticket] = await db.select().from(t.hrTickets).where(eq(t.hrTickets.id, ticketId)).limit(1);
   if (!ticket) return;
   await db.update(t.hrTickets).set({ state: "RESOLVED", assigneeId: admin.id }).where(eq(t.hrTickets.id, ticketId));

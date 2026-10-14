@@ -15,6 +15,7 @@ test("@core @template Module order controls persist in the editor and learner ou
   const history = await withDb(async db => ({ completion: (await db.query("SELECT * FROM completion_records WHERE user_id=$1 AND course_id=$2", [learner.id, f.course])).rows, certificate: (await db.query("SELECT * FROM certificates WHERE user_id=$1 AND course_id=$2", [learner.id, f.course])).rows }));
   expect(history.certificate).toHaveLength(1);
   await page.context().clearCookies(); await signIn(page, admin); await page.goto(`/admin/courses/${f.course}`);
+  await Promise.all([page.waitForEvent("load"),page.getByRole("button",{name:"Revise published course",exact:true}).click()]);
   await expect(page.getByRole("button", { name: "Move module Qualification module up", exact: true })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Move module Follow-up module down", exact: true })).toBeDisabled();
   await Promise.all([page.waitForEvent("load"), page.getByRole("button", { name: "Move module Follow-up module up", exact: true }).click()]);
@@ -28,6 +29,11 @@ test("@core @template Module order controls persist in the editor and learner ou
   await Promise.all([page.waitForEvent("load"), page.getByRole("button", { name: "Move module Follow-up module up", exact: true }).click()]);
   await expect(titles).toHaveText(["Follow-up module", "Qualification module"]);
   await capture(page, info, "module-order-editor");
+  await page.getByText("Super Admin intervention",{exact:true}).click();
+  await page.getByLabel("Approval state",{exact:true}).selectOption("APPROVED");
+  await page.getByLabel("Publication state",{exact:true}).selectOption("PUBLISHED");
+  await page.getByLabel("Intervention reason",{exact:true}).fill("QA ordering verification: publish the revised curriculum with recorded intervention.");
+  await Promise.all([page.waitForEvent("load"),page.getByRole("button",{name:"Apply recorded intervention",exact:true}).click()]);
   await page.context().clearCookies(); await signIn(page, learner); await page.goto(`/course/${f.course}`);
   const links = page.locator(`main a[href='/lesson/${lesson}'],main a[href='/lesson/${f.lesson}']`);
   await expect(links).toHaveCount(2);

@@ -89,7 +89,7 @@ test("@core Practice supports every eligible question kind, including multiple c
   const person = await createPerson("LEARNER"), quiz = await assessmentFixture();
   const course = randomUUID(), module = randomUUID();
   await withDb(async db => {
-    await db.query("INSERT INTO courses (id,title,status) VALUES ($1,'QA practice course','PUBLISHED')", [course]);
+    await db.query("INSERT INTO courses (id,title,approval_state,status) VALUES ($1,'QA practice course','LEGACY_PUBLISHED','PUBLISHED')", [course]);
     await db.query("INSERT INTO modules (id,course_id,title) VALUES ($1,$2,'Practice')", [module, course]);
     await db.query("INSERT INTO lessons (id,module_id,type,title,payload) VALUES ($1,$2,'QUIZ','Practice source',$3)", [randomUUID(), module, JSON.stringify({ quizId: quiz })]);
     const intro = randomUUID();
@@ -137,7 +137,7 @@ test("@core Quiz lesson opens preflight and a final pass unlocks the next lesson
   await withDb(async db => {
     const row = (await db.query("SELECT sections FROM quizzes WHERE id=$1", [quiz])).rows[0];
     await db.query("UPDATE quizzes SET lesson_id=$2, sections=$3 WHERE id=$1", [quiz, lesson, JSON.stringify([{ fixed: [row.sections[0].fixed[0]] }])]);
-    await db.query("INSERT INTO courses (id,title,status,sequential_lock) VALUES ($1,'QA assessed course','PUBLISHED',true)", [course]);
+    await db.query("INSERT INTO courses (id,title,approval_state,status,sequential_lock) VALUES ($1,'QA assessed course','LEGACY_PUBLISHED','PUBLISHED',true)", [course]);
     await db.query("INSERT INTO modules (id,course_id,title) VALUES ($1,$2,'Service')", [module, course]);
     await db.query("INSERT INTO lessons (id,module_id,type,title,sort,payload) VALUES ($1,$2,'QUIZ','Greeting assessment',0,$3),($4,$2,'TEXT','After the assessment',1,$5)", [lesson, module, JSON.stringify({ quizId: quiz }), next, JSON.stringify({ body: "The next course lesson." })]);
     await db.query("INSERT INTO enrollments (id,user_id,course_id,source) VALUES ($1,$2,$3,'manual')", [randomUUID(), person.id, course]);

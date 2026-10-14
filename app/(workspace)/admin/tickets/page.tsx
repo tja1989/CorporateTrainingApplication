@@ -1,6 +1,6 @@
 import { desc, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
-import { requireRole } from "@/lib/auth/guard";
+import { requirePermission } from "@/lib/auth/guard";
 import { Card, Chip, PageTitle, EmptyState, Button, Field, Input, Select } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 /** HR ticket queue — visible to ADMIN/HR only, never line managers (spec FR-8.7a). */
 export default async function TicketsPage({ searchParams }: { searchParams: Promise<{ q?: string; state?: string }> }) {
   const { q = "", state = "" } = await searchParams;
-  await requireRole("ADMIN");
+  await requirePermission("hr.manage");
   const allTickets = await db.select().from(t.hrTickets).orderBy(desc(t.hrTickets.createdAt));
   const tickets = allTickets.filter(t => (!state || t.state === state) && (!q || t.subject.toLowerCase().includes(q.toLowerCase()))).sort((a,b) => Number(a.state === "RESOLVED") - Number(b.state === "RESOLVED"));
   const userIds = [...new Set(tickets.map((ticket) => ticket.userId))];

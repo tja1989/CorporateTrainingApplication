@@ -6,7 +6,7 @@ test("@core @template Catalog pagination, language, duration, sort, empty result
   const learner = await createPerson("LEARNER");
   const token = `Catalog-${randomUUID().slice(0, 8)}`;
   await withDb(async db => {
-    for (let i = 0; i < 14; i++) await db.query("INSERT INTO courses(id,title,status,language,est_minutes,tags) VALUES($1,$2,'PUBLISHED',$3,$4,$5)", [randomUUID(), `${token} ${String(i).padStart(2,"0")} العربية हिंदी മലയാളം`, i < 13 ? "ml" : "en", i < 13 ? 10 : 90, JSON.stringify([token])]);
+    for (let i = 0; i < 14; i++) await db.query("INSERT INTO courses(id,title,approval_state,status,language,est_minutes,tags) VALUES($1,$2,'LEGACY_PUBLISHED','PUBLISHED',$3,$4,$5)", [randomUUID(), `${token} ${String(i).padStart(2,"0")} العربية हिंदी മലയാളം`, i < 13 ? "ml" : "en", i < 13 ? 10 : 90, JSON.stringify([token])]);
   });
   await signIn(page, learner);
   await page.goto("/learn?view=browse");

@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { canonicalRole, needsMfa, defaultWorkspace, allowedWorkspaces, workspaceHome, policyAudience, canResetPerson } from "../lib/auth/roles";
+import {
+  canonicalRole,
+  needsMfa,
+  defaultWorkspace,
+  allowedWorkspaces,
+  workspaceHome,
+  policyAudience,
+  canResetPerson,
+} from "../lib/auth/roles";
 import { hasPermission } from "../lib/auth/permissions";
 
 describe("client permission roles", () => {
@@ -23,13 +31,17 @@ describe("client permission roles", () => {
     expect(needsMfa("INSTRUCTOR")).toBe(false);
   });
   it.each([
-    ["ADMIN", "admin", "/admin"], ["HR_HEAD", "hr", "/hr"],
-    ["DEPARTMENT_HEAD", "department", "/department"], ["INSTRUCTOR", "instructor", "/instructor"],
+    ["ADMIN", "admin", "/admin"],
+    ["HR_HEAD", "hr", "/hr"],
+    ["DEPARTMENT_HEAD", "department", "/department"],
+    ["INSTRUCTOR", "instructor", "/instructor"],
     ["LEARNER", "learner", "/home"],
   ] as const)("routes %s to its own workspace", (role, workspace, home) => {
     expect(defaultWorkspace(role)).toBe(workspace);
     expect(workspaceHome(workspace)).toBe(home);
-    expect(allowedWorkspaces(role)).toEqual(role === "LEARNER" ? ["learner"] : [workspace, "learner"]);
+    expect(allowedWorkspaces(role)).toEqual(
+      role === "LEARNER" ? ["learner"] : [workspace, "learner"],
+    );
   });
   it("does not turn HR into an identity administrator", () => {
     expect(hasPermission("HR_HEAD", "course.publish")).toBe(true);
@@ -37,12 +49,37 @@ describe("client permission roles", () => {
     expect(hasPermission("HR_HEAD", "course.override")).toBe(false);
   });
   it("restricts password resets to authorized employee accounts", () => {
-    const head = {id:"head", role:"DEPARTMENT_HEAD" as const, departmentId:"a"};
-    const employee = {id:"employee",role:"LEARNER" as const,departmentId:"a"};
+    const head = {
+      id: "head",
+      role: "DEPARTMENT_HEAD" as const,
+      departmentId: "a",
+    };
+    const employee = {
+      id: "employee",
+      role: "LEARNER" as const,
+      departmentId: "a",
+    };
     expect(canResetPerson(head, employee)).toBe(true);
-    expect(canResetPerson(head, {...employee,departmentId:"b"})).toBe(false);
-    expect(canResetPerson({...head,departmentId:null}, {...employee,departmentId:null})).toBe(false);
-    expect(canResetPerson({id:"hr",role:"HR_HEAD",departmentId:null}, {...employee,role:"ADMIN"})).toBe(false);
-    expect(canResetPerson({id:"trainer",role:"INSTRUCTOR",departmentId:"a"}, employee)).toBe(false);
+    expect(canResetPerson(head, { ...employee, departmentId: "b" })).toBe(
+      false,
+    );
+    expect(
+      canResetPerson(
+        { ...head, departmentId: null },
+        { ...employee, departmentId: null },
+      ),
+    ).toBe(false);
+    expect(
+      canResetPerson(
+        { id: "hr", role: "HR_HEAD", departmentId: null },
+        { ...employee, role: "ADMIN" },
+      ),
+    ).toBe(false);
+    expect(
+      canResetPerson(
+        { id: "trainer", role: "INSTRUCTOR", departmentId: "a" },
+        employee,
+      ),
+    ).toBe(false);
   });
 });

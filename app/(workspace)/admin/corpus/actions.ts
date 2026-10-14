@@ -3,11 +3,11 @@
 import type { ActionResult } from "@/components/workspace-form";
 import { revalidatePath } from "next/cache";
 import { setFlash } from "@/lib/flash";
-import { requireRole } from "@/lib/auth/guard";
+import { requirePermission } from "@/lib/auth/guard";
 import { publishPolicyVersion } from "@/lib/hr/ingest";
 
 export async function publishPolicyAction(form: FormData): Promise<ActionResult> {
-  await requireRole("ADMIN");
+  await requirePermission("hr.manage");
   const title = String(form.get("title") ?? "").trim();
   const body = String(form.get("body") ?? "").trim();
   if (!title || !body) return { error: "Enter a policy title and document content." };

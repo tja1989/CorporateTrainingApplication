@@ -64,7 +64,9 @@ export function LessonForm({
   courseId,
   moduleId,
   banks,
+  revision,
 }: {
+  revision?: number;
   courseId: string;
   moduleId: string;
   banks: { id: string; name: string }[];
@@ -75,6 +77,7 @@ export function LessonForm({
       action={addLessonAction.bind(null, courseId, moduleId)}
       className="mt-4"
     >
+      <input type="hidden" name="revision" value={revision} />
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Lesson type">
           <Select
