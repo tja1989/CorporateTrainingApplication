@@ -2,7 +2,7 @@ import { Icon } from "@/components/icons";
 import { CourseCover } from "@/components/course-cover";
 import { LearningProgress } from "@/components/course-card";
 import { notFound } from "next/navigation";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/guard";
 import { buildCourseOutline } from "@/lib/lms/course-outline";
@@ -54,6 +54,8 @@ export default async function CoursePage({
     .where(and(eq(t.certificates.userId, user.id), eq(t.certificates.courseId, courseId)))
     .limit(1);
 
+  const [completion] = await db.select().from(t.completionRecords).where(and(eq(t.completionRecords.userId,user.id),eq(t.completionRecords.courseId,courseId))).orderBy(desc(t.completionRecords.completedAt),desc(t.completionRecords.id)).limit(1);
+  const [contentFeedback,trainerFeedback]=completion?await Promise.all([db.select({id:t.courseFeedback.id}).from(t.courseFeedback).where(and(eq(t.courseFeedback.employeeId,user.id),eq(t.courseFeedback.completionRecordId,completion.id))).limit(1),db.select({id:t.instructorFeedback.id}).from(t.instructorFeedback).where(and(eq(t.instructorFeedback.employeeId,user.id),eq(t.instructorFeedback.completionRecordId,completion.id))).limit(1)]):[[],[]];
   const chip = enrollment ? complianceChip(enrollment.complianceStatus) : null;
   // The toggle only means something once a section has folded itself away.
   const showExpandToggle = expandAll || view.modules.some((m) => m.complete);
@@ -103,6 +105,7 @@ export default async function CoursePage({
                 {view.doneCount > 0 ? "Continue" : "Start course"}
               </ButtonLink>
             ) : null}
+            {completion ? <ButtonLink variant="secondary" href={`/course/${courseId}/feedback?completionId=${completion.id}`}>{contentFeedback.length||trainerFeedback.length?"Edit your feedback":"Give course feedback"}</ButtonLink> : null}
             {cert ? (
               <ButtonLink variant="secondary" href={`/api/certificates/${cert.id}`}>Download certificate</ButtonLink>
             ) : null}
