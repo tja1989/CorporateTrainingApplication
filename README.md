@@ -87,3 +87,9 @@ Real policy corpus with named owners + counsel review (the seeded handbook is **
 ## Client roles and approval
 
 Five roles now have separate workspaces. Instructor submission, Department Head review and HR publication/rollout use versioned, audited decisions. Super Admin interventions require reasons. Existing users and learning history are migrated additively. See [qualification and demo provisioning](docs/qa/CLIENT_ROLES_APPROVAL.md) and the migration notes before deployment. Existing databases receive no automatic HR/Instructor promotions.
+
+## Course and instructor feedback
+
+Completed learning cycles support optional course and delivered-instructor ratings, editable audited responses, scoped reports/CSV, reasoned HR moderation and deduplicated weekly/monthly in-app summaries. Historical assignment snapshots preserve report ownership. Instructors cannot rate themselves. [Feedback qualification and operations](docs/qa/CLIENT_FEEDBACK.md) distinguish local evidence from hosted deployment, real email and installed schedules.
+
+The remaining client delivery register covers course dates/prerequisites/folders, targeted notifications and real email, profile/future-learning/dashboard/mark-sheet details, and client-authorized HRMS synchronization. These remain requested work; feedback delivery does not complete the entire checklist.

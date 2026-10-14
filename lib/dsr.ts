@@ -1,4 +1,4 @@
-import { and, eq, inArray, or } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { lockFeedback } from "@/lib/feedback/service";
 import { pseudoId } from "@/lib/hr/assistant";
@@ -195,6 +195,25 @@ export async function eraseUser(userId: string): Promise<void> {
         .update(t.feedbackRevisions)
         .set({ oldComment: null, newComment: "", reason: "" })
         .where(ownedRevisions);
+    // Employee edits retain the most recent moderation reason. Scrub its current copy
+    // only when that moderation event belongs to the erased account.
+    for (const [kind, table] of [
+      ["course", t.courseFeedback],
+      ["instructor", t.instructorFeedback],
+    ] as const) {
+      const authored = sql`SELECT response_id FROM (
+        SELECT DISTINCT ON (response_id) response_id, actor_id
+        FROM feedback_revisions WHERE kind=${kind} AND action='moderate'
+        ORDER BY response_id, revision DESC
+      ) latest WHERE actor_id=${userId}`;
+      // Lock matching rows first, then re-evaluate after any competing moderator commits.
+      await connection.execute(
+        sql`SELECT id FROM ${table} WHERE id IN (${authored}) FOR UPDATE`,
+      );
+      await connection.execute(
+        sql`UPDATE ${table} SET moderation_reason='' WHERE id IN (${authored})`,
+      );
+    }
     // Remove private reasons authored by this person without altering other authors' comments.
     await connection
       .update(t.feedbackRevisions)
@@ -244,7 +263,7 @@ export async function eraseUser(userId: string): Promise<void> {
       .delete(t.loginAttempts)
       .where(eq(t.loginAttempts.key, user.employeeId));
     // pseudonymize the profile; completion records and certificates stay (statutory)
-    await db
+    await connection
       .update(t.users)
       .set({
         name: "Former colleague",

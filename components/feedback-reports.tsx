@@ -1,15 +1,8 @@
-import {
-  Button,
-  ButtonAnchor,
-  Field,
-  Input,
-  PageTitle,
-  PillLink,
-  Select,
-} from "./ui";
+import { Button, ButtonAnchor, PageTitle, PillLink } from "./ui";
 import type { FeedbackReport } from "@/lib/feedback/reports";
 import type { FeedbackReportParams } from "@/lib/feedback/report-options";
 import type { Actor } from "@/lib/auth/roles";
+import { FeedbackPeriodFields } from "./feedback-period-fields";
 import { FeedbackModeration } from "./feedback-moderation";
 import { DEFAULT_TZ } from "@/lib/time";
 export function FeedbackReports({
@@ -60,6 +53,36 @@ export function FeedbackReports({
           Instructor
         </PillLink>
       </nav>
+      {report ? (
+        <>
+          <p className="mb-4 text-sm text-muted">
+            {report.periodLabel} · Based on original submission date and the
+            latest revision before this period ends.
+          </p>
+          <dl className="mb-5 grid grid-cols-2 gap-3">
+            <div className="rounded-card border border-border bg-surface p-4">
+              <dt className="text-sm text-muted">Responses</dt>
+              <dd
+                data-testid="feedback-response-count"
+                className="mt-1 text-3xl font-semibold"
+              >
+                {report.responses}
+              </dd>
+            </div>
+            <div className="rounded-card border border-border bg-surface p-4">
+              <dt className="text-sm text-muted">Average rating</dt>
+              <dd
+                data-testid="feedback-average"
+                className="mt-1 text-3xl font-semibold"
+              >
+                {report.average === null
+                  ? "No responses"
+                  : `${report.average} / 5`}
+              </dd>
+            </div>
+          </dl>
+        </>
+      ) : null}
       <form
         method="get"
         className="mb-6 rounded-card border border-border bg-surface p-4 sm:p-5"
@@ -75,21 +98,7 @@ export function FeedbackReports({
             value={params.instructorId}
           />
         ) : null}
-        <div className="grid gap-x-4 sm:grid-cols-3">
-          <Field label="Reporting period">
-            <Select name="period" defaultValue={params.period ?? "week"}>
-              <option value="week">This week</option>
-              <option value="month">This month</option>
-              <option value="custom">Custom dates</option>
-            </Select>
-          </Field>
-          <Field label="Start date" hint="For custom periods">
-            <Input type="date" name="start" defaultValue={params.start ?? ""} />
-          </Field>
-          <Field label="Through date" hint="Includes this day">
-            <Input type="date" name="end" defaultValue={params.end ?? ""} />
-          </Field>
-        </div>
+        <FeedbackPeriodFields params={params} />
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit">Apply period</Button>
           {report ? (
@@ -113,32 +122,6 @@ export function FeedbackReports({
       ) : null}
       {report ? (
         <>
-          <p className="mb-4 text-sm text-muted">
-            {report.periodLabel} · Based on original submission date and the
-            latest revision before this period ends.
-          </p>
-          <dl className="mb-6 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-card border border-border bg-surface p-5">
-              <dt className="text-sm text-muted">Responses</dt>
-              <dd
-                data-testid="feedback-response-count"
-                className="mt-1 text-3xl font-semibold"
-              >
-                {report.responses}
-              </dd>
-            </div>
-            <div className="rounded-card border border-border bg-surface p-5">
-              <dt className="text-sm text-muted">Average rating</dt>
-              <dd
-                data-testid="feedback-average"
-                className="mt-1 text-3xl font-semibold"
-              >
-                {report.average === null
-                  ? "No responses"
-                  : `${report.average} / 5`}
-              </dd>
-            </div>
-          </dl>
           <section
             aria-label="Rating distribution"
             className="mb-6 rounded-card border border-border bg-surface p-5"

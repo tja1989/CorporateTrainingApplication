@@ -32,6 +32,8 @@ export function CourseFeedbackForm({
   const sending = useRef(false);
   useEffect(() => setReady(true), []);
   const label = kind === "course" ? "Course feedback" : "Instructor feedback";
+  const dirty =
+    rating !== (saved?.rating ?? 0) || comment !== (saved?.comment ?? "");
   function load(value: SavedFeedback | null) {
     setSaved(value);
     setRating(value?.rating ?? 0);
@@ -66,6 +68,8 @@ export function CourseFeedbackForm({
               setResult(next);
               if (next.saved) {
                 setSaved(next.saved);
+                setRating(next.saved.rating);
+                setComment(next.saved.comment);
                 setRevision(next.saved.revision);
                 setRequestId(crypto.randomUUID());
               }
@@ -90,7 +94,7 @@ export function CourseFeedbackForm({
               {scores.map(([value, text]) => (
                 <label
                   key={value}
-                  className="flex min-h-11 cursor-pointer items-center gap-2 rounded-control border border-border px-3 py-2 text-sm"
+                  className="touch-target flex cursor-pointer items-center gap-2 rounded-control border border-border px-3 py-2 text-sm"
                 >
                   <input
                     type="radio"
@@ -147,14 +151,24 @@ export function CourseFeedbackForm({
             ) : null}
           </div>
         ) : null}
-        {saved ? (
-          <p role="status" className="mt-4 text-sm text-success-fg">
-            Feedback saved · {saved.rating}/5 ·{" "}
-            {new Date(saved.updatedAt)
-              .toISOString()
-              .slice(0, 16)
-              .replace("T", " ")}{" "}
-            UTC
+        {saved || dirty ? (
+          <p
+            role="status"
+            className={`mt-4 text-sm ${dirty ? "text-muted" : "text-success-fg"}`}
+          >
+            {dirty ? "Unsaved changes" : "Feedback saved"}
+            {saved ? (
+              <>
+                {" "}
+                · {dirty ? "Last saved: " : ""}
+                {saved.rating}/5 ·{" "}
+                {new Date(saved.updatedAt)
+                  .toISOString()
+                  .slice(0, 16)
+                  .replace("T", " ")}{" "}
+                UTC
+              </>
+            ) : null}
           </p>
         ) : null}
         {saved?.commentHidden ? (

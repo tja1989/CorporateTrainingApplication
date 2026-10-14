@@ -431,6 +431,7 @@ test("@core Instructor submits, Department Head rejects and approves, HR publish
       await employeePage
         .getByRole("button", { name: "Mark complete", exact: true })
         .click();
+      await employeePage.waitForURL(`/lesson/${lesson.id}?completed=1`);
       await expect(
         employeePage.getByText("Lesson complete", { exact: true }),
       ).toBeVisible();

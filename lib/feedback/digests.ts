@@ -63,12 +63,31 @@ export async function runFeedbackDigests(
     );
   for (const person of recipients)
     for (const kind of ["course", "instructor"] as const) {
-      const role = canonicalRole(person.role)!;
       const key = feedbackDigestKey(interval, kind, person.id, period.start),
         afterCommit: Array<() => Promise<void>> = [];
       try {
         const delivered = await db.transaction(async (tx) => {
           await lockFeedback(tx, `digest:${key}`);
+          await lockFeedback(tx, `user:${person.id}`);
+          const [recipient] = await tx
+            .select()
+            .from(t.users)
+            .where(
+              and(
+                eq(t.users.id, person.id),
+                eq(t.users.passwordState, "ACTIVE"),
+                isNull(t.users.erasedAt),
+                inArray(t.users.role, [
+                  "HR_HEAD",
+                  "DEPARTMENT_HEAD",
+                  "MANAGER",
+                  "INSTRUCTOR",
+                ]),
+              ),
+            )
+            .limit(1);
+          if (!recipient) return null;
+          const role = canonicalRole(recipient.role)!;
           const match = and(
             eq(t.feedbackDigestRuns.recipientId, person.id),
             eq(t.feedbackDigestRuns.intervalKind, interval),
@@ -82,7 +101,7 @@ export async function runFeedbackDigests(
             .limit(1);
           if (done) return false;
           const report = await feedbackReport(
-            { id: person.id, role, departmentId: person.departmentId },
+            { id: recipient.id, role, departmentId: recipient.departmentId },
             { kind, period },
             tx,
           );
@@ -108,21 +127,19 @@ export async function runFeedbackDigests(
             undefined,
             { connection: tx, afterCommit },
           );
-          await tx
-            .insert(t.feedbackDigestRuns)
-            .values({
-              id: id(),
-              recipientId: person.id,
-              intervalKind: interval,
-              kind,
-              periodStart: period.start,
-              periodEnd: period.end,
-            });
+          await tx.insert(t.feedbackDigestRuns).values({
+            id: id(),
+            recipientId: person.id,
+            intervalKind: interval,
+            kind,
+            periodStart: period.start,
+            periodEnd: period.end,
+          });
           return true;
         });
         await Promise.allSettled(afterCommit.map((deliver) => deliver()));
         if (delivered) stats.sent++;
-        else stats.alreadySent++;
+        else if (delivered === false) stats.alreadySent++;
       } catch (error) {
         failures.push(
           `${person.id}/${kind}: ${error instanceof Error ? error.message : "Delivery failed"}`,

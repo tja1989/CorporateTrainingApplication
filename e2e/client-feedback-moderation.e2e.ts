@@ -24,6 +24,11 @@ test("@core HR moderation is audited, author sees saved state, and Instructor ca
   await expect(panel).toBeVisible();
   const item = panel.getByTestId(`moderation-${response.id}`);
   await item.locator("summary").click();
+  for (const checkbox of await item.getByRole("checkbox").all()) {
+    expect(
+      (await checkbox.locator("..").boundingBox())!.height,
+    ).toBeGreaterThanOrEqual(44);
+  }
   await item.getByLabel("Hide comment from reports", { exact: true }).check();
   await item.getByLabel("Moderation reason", { exact: true }).fill("   ");
   await item
@@ -36,6 +41,7 @@ test("@core HR moderation is audited, author sees saved state, and Instructor ca
   const request = page.waitForRequest(
     (req) => req.method() === "POST" && !!req.headers()["next-action"],
   );
+  const savedNavigation = page.waitForEvent("load");
   await item
     .getByRole("button", { name: "Save moderation", exact: true })
     .click();
@@ -52,7 +58,7 @@ test("@core HR moderation is audited, author sees saved state, and Instructor ca
       ),
     )
     .toBe(2);
-  await page.reload();
+  await savedNavigation;
   await expect(
     page.getByRole("region", { name: "Feedback responses", exact: true }),
   ).not.toContainText("Helpful examples");
@@ -124,6 +130,7 @@ test("@core HR moderation is audited, author sees saved state, and Instructor ca
   await updated
     .getByLabel("Moderation reason", { exact: true })
     .fill("Invalid response");
+  const excludedNavigation = page.waitForEvent("load");
   await updated
     .getByRole("button", { name: "Save moderation", exact: true })
     .click();
@@ -139,7 +146,7 @@ test("@core HR moderation is audited, author sees saved state, and Instructor ca
       ),
     )
     .toBe(3);
-  await page.reload();
+  await excludedNavigation;
   await expect(page.getByTestId("feedback-response-count")).toHaveText("1");
   const audit = await withDb(
     async (db) =>

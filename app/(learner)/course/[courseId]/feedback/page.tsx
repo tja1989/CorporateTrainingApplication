@@ -80,7 +80,12 @@ export default async function FeedbackPage({
           requestId={id()}
           action={saveFeedbackAction.bind(null, completionId, "course")}
         />
-        {current.delivery?.instructorId ? (
+        {current.delivery?.instructorId === user.id ? (
+          <p className="rounded-control bg-surface-2 p-4 text-sm text-muted">
+            You delivered this training. You can give course feedback, but
+            cannot rate your own instructor performance.
+          </p>
+        ) : current.delivery?.instructorId ? (
           <>
             <p className="text-sm text-muted">
               Delivered instructor: {trainer?.name ?? "Assigned instructor"}

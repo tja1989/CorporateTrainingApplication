@@ -283,6 +283,16 @@ for (const theme of ["light", "dark"] as const)
     await expect(
       form.getByRole("radio", { name: "4 — Very good", exact: true }),
     ).toBeChecked();
+    await expect
+      .soft(form.getByRole("status"))
+      .toContainText("Unsaved changes");
+    await expect
+      .soft(form.getByRole("status"))
+      .toContainText("Last saved: 5/5");
+    for (const radio of await form.getByRole("radio").all()) {
+      const box = await radio.locator("..").boundingBox();
+      expect.soft(box!.height).toBeGreaterThanOrEqual(44);
+    }
     await page.keyboard.press("Tab");
     await expect(
       form.getByLabel("Comment or suggestion", { exact: true }),
@@ -302,6 +312,28 @@ for (const theme of ["light", "dark"] as const)
     ]);
     await signIn(page, f.trainer);
     await page.goto(`/feedback?kind=course&period=month&courseId=${f.course}`);
+    await expect(page.getByTestId("feedback-response-count")).toBeVisible();
+    await expect
+      .soft(page.getByLabel("Start date", { exact: true }))
+      .toBeHidden();
+    await expect
+      .soft(page.getByLabel("Through date", { exact: true }))
+      .toBeHidden();
+    if (info.project.name === "chromium-mobile") {
+      for (const metric of ["feedback-response-count", "feedback-average"]) {
+        const box = await page.getByTestId(metric).boundingBox();
+        expect
+          .soft(box!.y + box!.height)
+          .toBeLessThan(page.viewportSize()!.height - 64);
+      }
+    }
+    await page
+      .getByLabel("Reporting period", { exact: true })
+      .selectOption("custom");
+    await expect(page.getByLabel("Start date", { exact: true })).toBeVisible();
+    await expect(
+      page.getByLabel("Through date", { exact: true }),
+    ).toBeVisible();
     const table = page.getByRole("region", {
       name: "Feedback responses",
       exact: true,
@@ -318,3 +350,39 @@ for (const theme of ["light", "dark"] as const)
     await expectNoPageOverflow(page);
     await capture(page, info, `feedback-report-${theme}`);
   });
+
+test("@core Delivered instructors can give course feedback but cannot rate themselves", async ({
+  page,
+}) => {
+  const f = await feedbackReportFixture();
+  const completion = await withDb(async (db) => {
+    await db.query("UPDATE users SET role='INSTRUCTOR' WHERE id=$1", [
+      f.employee.id,
+    ]);
+    const row = (
+      await db.query(
+        "SELECT completion_record_id FROM course_feedback WHERE employee_id=$1 AND course_id=$2",
+        [f.employee.id, f.course],
+      )
+    ).rows[0];
+    await db.query(
+      "UPDATE course_deliveries SET instructor_id=$1 WHERE completed_record_id=$2",
+      [f.employee.id, row.completion_record_id],
+    );
+    return row.completion_record_id;
+  });
+  await signIn(page, { ...f.employee, role: "INSTRUCTOR" });
+  await page.goto(`/course/${f.course}/feedback?completionId=${completion}`);
+  await expect(
+    page.getByRole("region", { name: "Course feedback", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Instructor feedback", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText(
+      "You delivered this training. You can give course feedback, but cannot rate your own instructor performance.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+});

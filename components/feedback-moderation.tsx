@@ -44,7 +44,7 @@ export function FeedbackModeration({ items }: { items: ModerationItem[] }) {
               <input type="hidden" name="revision" value={item.revision} />
               <input type="hidden" name="requestId" value={id()} />
               <div className="mb-4 grid gap-2">
-                <label className="flex min-h-11 items-center gap-2">
+                <label className="touch-target flex items-center gap-2">
                   <input
                     type="checkbox"
                     name="hidden"
@@ -53,7 +53,7 @@ export function FeedbackModeration({ items }: { items: ModerationItem[] }) {
                   />
                   Hide comment from reports
                 </label>
-                <label className="flex min-h-11 items-center gap-2">
+                <label className="touch-target flex items-center gap-2">
                   <input
                     type="checkbox"
                     name="excluded"

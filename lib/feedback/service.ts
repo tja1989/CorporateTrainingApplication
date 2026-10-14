@@ -159,6 +159,8 @@ export async function saveFeedback(
       throw new Error(
         "The historical instructor is unknown for this learning cycle.",
       );
+    if (input.kind === "instructor" && delivery?.instructorId === actor.id)
+      throw new Error("You cannot rate your own instructor performance.");
     const table = feedbackTable(input.kind);
     const [existing] = await tx
       .select()
@@ -233,26 +235,24 @@ export async function saveFeedback(
         .values({ ...base, instructorId: delivery!.instructorId! })
         .returning();
     }
-    await tx
-      .insert(t.feedbackRevisions)
-      .values({
-        id: id(),
-        kind: input.kind,
-        responseId,
-        actorId: actor.id,
-        action: existing ? "edit" : "create",
-        revision,
-        oldRating: existing?.rating ?? null,
-        newRating: valid.rating,
-        oldComment: existing?.comment ?? null,
-        newComment: valid.comment,
-        oldHidden: existing?.commentHidden ?? null,
-        newHidden: row.commentHidden,
-        oldExcluded: existing?.excluded ?? null,
-        newExcluded: row.excluded,
-        requestId: input.requestId,
-        at: now,
-      });
+    await tx.insert(t.feedbackRevisions).values({
+      id: id(),
+      kind: input.kind,
+      responseId,
+      actorId: actor.id,
+      action: existing ? "edit" : "create",
+      revision,
+      oldRating: existing?.rating ?? null,
+      newRating: valid.rating,
+      oldComment: existing?.comment ?? null,
+      newComment: valid.comment,
+      oldHidden: existing?.commentHidden ?? null,
+      newHidden: row.commentHidden,
+      oldExcluded: existing?.excluded ?? null,
+      newExcluded: row.excluded,
+      requestId: input.requestId,
+      at: now,
+    });
     return savedFeedback(row);
   });
 }

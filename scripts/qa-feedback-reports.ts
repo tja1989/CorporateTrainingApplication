@@ -70,6 +70,20 @@ async function run() {
     const head = await feedbackReport(actor(f.head), filters);
     assert.equal(head.responses, 1);
     assert.ok(!feedbackCsv(head).includes(f.foreign.employeeId));
+    // A participant's home department is independent of the historical training owner.
+    await c.query("UPDATE users SET department_id=$2 WHERE id=$1", [
+      f.employee.id,
+      f.foreign.departmentId,
+    ]);
+    assert.equal(
+      (await feedbackReport(actor(f.head), filters)).responses,
+      1,
+      "A cross-department attendee stays in the snapshotted course department's feedback scope",
+    );
+    await c.query("UPDATE users SET department_id=$2 WHERE id=$1", [
+      f.employee.id,
+      f.employee.departmentId,
+    ]);
     const trainer = await feedbackReport(actor(f.trainer), filters);
     assert.equal(trainer.responses, 1);
     assert.ok(!feedbackCsv(trainer).includes(f.employee.employeeId));
