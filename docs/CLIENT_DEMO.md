@@ -2,11 +2,17 @@
 
 ## Client requirement update
 
-The five-role approval build is locally qualified in the isolated checkout. It is awaiting independent review/main integration and has not been deployed to Railway. Fresh fictional-seed logins and the approval walkthrough are in [CLIENT_ROLES_APPROVAL.md](qa/CLIENT_ROLES_APPROVAL.md). Existing hosted accounts are not automatically promoted to HR or Instructor.
+The five-role approval and course/instructor feedback implementation is now on main. The reviewed implementation is `2de96de`; hosted Railway remains the earlier demo release described below. Existing hosted accounts are not automatically promoted to HR or Instructor. Fresh fictional-seed logins and provisioning are in [CLIENT_ROLES_APPROVAL.md](qa/CLIENT_ROLES_APPROVAL.md); feedback qualification and scheduling boundaries are in [CLIENT_FEEDBACK.md](qa/CLIENT_FEEDBACK.md).
+
+Latest browser qualification: 60/60 across desktop/mobile Chromium, Firefox and WebKit, with zero retries/skips and intact traces. The approved chain covers authoring, Department Head rejection/correction/approval, HR publication/rollout, Employee completion/certificate, both feedback kinds, scoped reports/native CSV, moderation and in-app period summaries. Live email, installed production schedules, provider answers and HRMS synchronization remain open.
+
+For the client checklist, show the five-role chain first. After the Employee earns the certificate, open **Give course feedback**, save the course and instructor ratings, then revisit to edit them. HR → **Feedback reports** shows both types, period summaries and reasoned moderation. Department Head reports follow the training’s historical delivery department; Instructor reports omit employee account names. Feedback is optional, and instructors cannot rate themselves.
 
 ## Start here
 
-Redesigned local preview: http://127.0.0.1:3100/login
+Current client roles/feedback preview (32 fictional accounts): https://localhost:3445/login
+
+Earlier redesigned preview: http://127.0.0.1:3100/login
 
 Railway: https://corporatetrainingapplication-production.up.railway.app/login
 

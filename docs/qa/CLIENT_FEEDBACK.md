@@ -33,7 +33,7 @@ The command closes its database pool and exits. These production schedules have 
 
 ## Evidence to date
 
-- 274 unit tests, type check and production build pass; independent review and one correction pass are complete. The final four-profile browser run passes 60/60 with no retries/skips and 60 CRC-verified traces; main integration checks follow.
+- 274 unit tests, type check and production build pass; independent review and one correction pass are complete. The final four-profile browser run passes 60/60 with no retries/skips and 60 CRC-verified traces; integrated main also passes 274 units, type check, production build and 12 additional cross-role approval/moderation/report journeys across all four profiles.
 - Delivery/role migrations applied twice with unchanged hashes for seven pre-existing identity/learning tables; rating constraints tested in SQL.
 - Real assignment/completion/reassignment/renewal preserves the delivered instructor and old completion bytes; legacy unknown context is preserved.
 - Real service checks prove ownership, duplicate replay, ignored forged instructor, a single concurrent edit winner, one respondent and persistent revisions.
@@ -54,3 +54,7 @@ Real PostgreSQL regressions first failed on each privacy/business defect, then p
 Browser RED evidence measured rating targets at 40px and mobile metrics below the viewport, and showed unchanged green “Feedback saved” during edits. New assertions cover 44px targets, explicit unsaved/last-saved state, hidden non-custom date fields, immediate mobile metrics and the self-instructor explanation. Native CSV downloads and all prior save/conflict/access checks remain.
 
 One Minor finding is deferred: the submission disclosure should explicitly name historical assignment-department ownership instead of “the course’s Department Head.” Access remains correctly restricted by immutable delivery snapshots.
+
+Main contains reviewed implementation `2de96de`. The primary checkout was clean before integration; no Opus audit changes were present or discarded. The integrated main application was rebuilt and served for the 12 additional browser checks (12 intact traces). The initial primary-runner launch required copying the existing public loopback certificate into its ignored QA directory; this was a harness prerequisite, not an application change.
+
+The clean local preview uses a separately preserved 32-person fictional database, upgraded additively without reseeding. It runs at https://localhost:3445/login with providers disabled. Earlier preview ports and the Railway release are distinct runtimes. Remaining course/notification/profile/HRMS requirements remain active delivery work.
