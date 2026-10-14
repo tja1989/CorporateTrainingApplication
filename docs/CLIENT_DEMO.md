@@ -23,7 +23,7 @@ Sign in as Meera before the call and acknowledge the privacy notice if shown. Pr
 2. My Learning (Learning on mobile): open Food Safety Essentials. Show objectives, duration, the single Start/Continue action and the module outline.
 3. Open the hand-hygiene video. Show the focused lesson workspace, desktop contents sidebar or mobile drawer, and Overview / Transcript / Tutor tabs.
 4. Ask Tutor: **When should I wash my hands?** Show readable answer formatting and citations. Local answers are labeled offline demos. The bundled public video/transcript is illustrative, not reviewed client training content.
-5. Open **Cold chain: the quick rules**, choose **Mark complete**, and show confirmed progress and the next eligible lesson. The printable hygiene PDF is another quick example.
+5. Open **The cold chain**, choose **Mark complete**, and show confirmed progress and the next eligible lesson. The printable hygiene PDF is another quick example.
 
 ## 2. Oral assessment — 2 minutes
 
