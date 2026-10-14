@@ -1,3 +1,4 @@
+import { linkCompletionDelivery } from "@/lib/feedback/delivery";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { id, certificateSerial } from "@/lib/ids";
@@ -111,6 +112,11 @@ export async function checkCourseCompletion(userId: string, courseId: string, co
 }
 
 export async function completeCourse(userId: string, courseId: string, context?: LearningWriteContext): Promise<void> {
+  if(!context){
+    const afterCommit: LearningWriteContext["afterCommit"]=[];
+    await db.transaction(async connection=>{await lockLearningCourse(connection,userId,courseId);await completeCourse(userId,courseId,{connection,afterCommit})});
+    for(const effect of afterCommit)await effect();return;
+  }
   const connection = context?.connection ?? db;
   const enrollments = await connection
     .select()
@@ -123,7 +129,9 @@ export async function completeCourse(userId: string, courseId: string, context?:
   const [course] = await connection.select().from(t.courses).where(eq(t.courses.id, courseId)).limit(1);
 
   // Immutable completion record (append-only)
-  await connection.insert(t.completionRecords).values({ id: id(), userId, courseId, completedAt: now });
+  const completionId=id();
+  await connection.insert(t.completionRecords).values({ id: completionId, userId, courseId, completedAt: now });
+  await linkCompletionDelivery(context.connection, active.id, completionId);
 
   let certExpiresAt: Date | null = null;
   if (course?.certificateEnabled) {

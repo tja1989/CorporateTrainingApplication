@@ -67,6 +67,8 @@ export async function runDeployInit(): Promise<void> {
     const migration=readFileSync(resolve(process.cwd(), "migrations/20261014_client_roles_approval.sql"), "utf8");
     await client.query(migration);
     console.log("deploy-init: client role/approval migration complete");
+    await client.query(readFileSync(resolve(process.cwd(), "migrations/20261014_course_feedback.sql"), "utf8"));
+    console.log("deploy-init: feedback storage migration complete");
   } catch(error) {
     await client.query("ROLLBACK").catch(()=>{});
     throw error;

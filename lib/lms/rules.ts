@@ -8,6 +8,7 @@ import {
 } from "./learning-cycle";
 import { endOfDayInTz } from "@/lib/time";
 import type { DueRule, RuleCriteria } from "@/lib/db/schema";
+import { snapshotEnrollment } from "@/lib/feedback/delivery";
 import { isCourseAvailable } from "@/lib/courses/availability";
 import { lockAssessmentCurriculum } from "@/lib/courses/workflow";
 
@@ -227,6 +228,7 @@ export async function reevaluateUser(
         })
         .onConflictDoNothing()
         .returning();
+      for(const enrollment of inserted) await snapshotEnrollment(tx,enrollment.id);
       existing.push(...inserted);
       enrolled += inserted.length;
     }
@@ -310,8 +312,9 @@ export async function enrollUser(
         existing.some((e) => e.source === "recert" && e.sourceId === sourceId)
       )
         return false;
+      const enrollmentId = id();
       await tx.insert(t.enrollments).values({
-        id: id(),
+        id: enrollmentId,
         userId,
         courseId,
         source: target.type === "path" ? "path" : source,
@@ -320,6 +323,7 @@ export async function enrollUser(
         status: "NOT_STARTED",
         complianceStatus: "ON_TRACK",
       });
+      await snapshotEnrollment(tx,enrollmentId);
       if (source === "recert") {
         const lessons = await tx
           .select({ id: t.lessons.id })

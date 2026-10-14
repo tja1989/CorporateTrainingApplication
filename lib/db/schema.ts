@@ -304,6 +304,26 @@ export const certificates = pgTable("certificates", {
   recertTriggeredAt: timestamp("recert_triggered_at", { withTimezone: true }),
 });
 
+// Immutable assignment context, separate from current course ownership.
+export const courseDeliveries = pgTable("course_deliveries", {
+  id: text("id").primaryKey(), enrollmentId: text("enrollment_id").notNull(),
+  courseId: text("course_id").notNull(), departmentId: text("department_id"), instructorId: text("instructor_id"),
+  completedRecordId: text("completed_record_id"), createdAt: timestamp("created_at", {withTimezone:true}).notNull().defaultNow(),
+}, t => [uniqueIndex("course_delivery_enrollment_uniq").on(t.enrollmentId),uniqueIndex("course_delivery_completion_uniq").on(t.completedRecordId),index("course_delivery_instructor_idx").on(t.instructorId),index("course_delivery_department_idx").on(t.departmentId)]);
+function feedbackColumns(){return {
+  id:text("id").primaryKey(),employeeId:text("employee_id").notNull(),completionRecordId:text("completion_record_id").notNull(),courseId:text("course_id").notNull(),deliveryId:text("delivery_id"),departmentId:text("department_id"),
+  rating:integer("rating").notNull(),comment:text("comment").notNull().default(""),revision:integer("revision").notNull().default(1),
+  commentHidden:boolean("comment_hidden").notNull().default(false),excluded:boolean("excluded").notNull().default(false),moderationReason:text("moderation_reason").notNull().default(""),
+  createdAt:timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),updatedAt:timestamp("updated_at",{withTimezone:true}).notNull().defaultNow(),
+}}
+export const courseFeedback=pgTable("course_feedback",feedbackColumns(),t=>[uniqueIndex("course_feedback_employee_completion_uniq").on(t.employeeId,t.completionRecordId),index("course_feedback_scope_time_idx").on(t.departmentId,t.courseId,t.createdAt)]);
+export const instructorFeedback=pgTable("instructor_feedback",{...feedbackColumns(),instructorId:text("instructor_id").notNull()},t=>[uniqueIndex("instructor_feedback_employee_completion_uniq").on(t.employeeId,t.completionRecordId),index("instructor_feedback_scope_time_idx").on(t.departmentId,t.instructorId,t.createdAt)]);
+export const feedbackRevisions=pgTable("feedback_revisions",{
+ id:text("id").primaryKey(),kind:text("kind").$type<"course"|"instructor">().notNull(),responseId:text("response_id").notNull(),actorId:text("actor_id").notNull(),action:text("action").$type<"create"|"edit"|"moderate">().notNull(),revision:integer("revision").notNull(),
+ oldRating:integer("old_rating"),newRating:integer("new_rating").notNull(),oldComment:text("old_comment"),newComment:text("new_comment").notNull(),
+ oldHidden:boolean("old_hidden"),newHidden:boolean("new_hidden").notNull(),oldExcluded:boolean("old_excluded"),newExcluded:boolean("new_excluded").notNull(),reason:text("reason").notNull().default(""),requestId:text("request_id").notNull(),at:timestamp("at",{withTimezone:true}).notNull().defaultNow(),
+},t=>[uniqueIndex("feedback_revision_request_uniq").on(t.requestId),uniqueIndex("feedback_revision_number_uniq").on(t.kind,t.responseId,t.revision),index("feedback_revision_cutoff_idx").on(t.kind,t.responseId,t.at)]);
+
 // ---------------------------------------------------------------------------
 // Assessment
 // ---------------------------------------------------------------------------

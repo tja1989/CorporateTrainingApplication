@@ -26,9 +26,12 @@ async function run(){
     const before=await snapshot();
     const sql=readFileSync("migrations/20261014_client_roles_approval.sql","utf8");
     await client.query(sql);
+    const feedbackSql=readFileSync("migrations/20261014_course_feedback.sql","utf8");
+    await client.query(feedbackSql);
     assert.deepEqual(await snapshot(),before,"Migration must preserve identities and every existing learning field");
     const first=(await client.query("SELECT row_to_json(d) AS row FROM departments d ORDER BY id")).rows;
     await client.query(sql);
+    await client.query(feedbackSql);
     assert.deepEqual(await snapshot(),before,"Repeated migration must preserve history");
     assert.deepEqual((await client.query("SELECT row_to_json(d) AS row FROM departments d ORDER BY id")).rows,first,"Departments must remain stable");
     assert.equal((await client.query("SELECT count(*)::int AS n FROM users WHERE role='MANAGER'")).rows[0].n,0);
