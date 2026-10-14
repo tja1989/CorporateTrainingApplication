@@ -1,5 +1,7 @@
 # xprtn — voice demo script (10 minutes)
 
+For the redesigned client walkthrough and the current hosting status, use [CLIENT_DEMO.md](CLIENT_DEMO.md). Use Meera (`AE10024`) for direct Food Safety access: Farhan's ordered onboarding path can lock that course until its prerequisite is complete.
+
 Live site: https://corporatetrainingapplication-production.up.railway.app · password for every demo account: `demo1234`
 
 | Role | ID | Use it for |
