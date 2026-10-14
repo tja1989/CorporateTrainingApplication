@@ -4,6 +4,7 @@ import { db, t } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/guard";
 import { ownFeedback, feedbackContext } from "@/lib/feedback/service";
 import { id } from "@/lib/ids";
+import { DEFAULT_TZ } from "@/lib/time";
 import { CourseFeedbackForm } from "@/components/course-feedback-form";
 import { ButtonLink, PageTitle } from "@/components/ui";
 import { saveFeedbackAction } from "./actions";
@@ -37,9 +38,11 @@ export default async function FeedbackPage({
   const completionId = chosen ?? latest?.id;
   if (!completionId) notFound();
   let current: Awaited<ReturnType<typeof ownFeedback>>;
+  let completedAt: Date;
   try {
     const { completion } = await feedbackContext(user.id, completionId);
     if (completion.courseId !== courseId) notFound();
+    completedAt = completion.completedAt;
     current = await ownFeedback(user.id, completionId);
   } catch {
     notFound();
@@ -59,16 +62,16 @@ export default async function FeedbackPage({
   return (
     <div className="mx-auto max-w-4xl">
       <PageTitle
-        sub={`${course?.title ?? "Completed course"} · Feedback is optional and does not affect completion or certificates.`}
+        sub={`${course?.title ?? "Completed course"} · Training completed ${new Intl.DateTimeFormat("en", { timeZone: DEFAULT_TZ, dateStyle: "medium" }).format(completedAt)} · Feedback is optional and does not affect completion or certificates.`}
       >
         Course and instructor feedback
       </PageTitle>
       <p className="mb-6 max-w-3xl text-sm leading-relaxed text-muted">
         Feedback is attributed to your account. HR and Super Admin can read both
-        responses. Your Department Head can read attributed course comments and
-        aggregated instructor ratings. The delivered instructor can see ratings
-        and comments without account names; small groups and what you write may
-        still identify you.
+        responses. The course’s Department Head can read attributed course
+        comments and aggregated instructor ratings. The delivered instructor can
+        see ratings and comments without account names; small groups and what
+        you write may still identify you.
       </p>
       <div className="grid min-w-0 gap-6">
         <CourseFeedbackForm

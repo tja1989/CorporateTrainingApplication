@@ -40,6 +40,12 @@ test("@core Feedback pages and CSV preserve HR, department and delivered-instruc
         expect(csv).not.toContain(f.foreign.employeeId);
         if (person === f.head) expect(csv).not.toContain("Helpful examples");
       }
+      const download = page.waitForEvent("download");
+      await page
+        .getByRole("link", { name: "Download CSV", exact: true })
+        .click();
+      const downloaded = await download;
+      expect(downloaded.suggestedFilename()).toContain(`${kind}-feedback`);
       await expectNoPageOverflow(page);
     }
     await capture(page, info, `feedback-reports-${person.role}`);

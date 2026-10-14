@@ -8,7 +8,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { buildCourseOutline } from "@/lib/lms/course-outline";
 import { pathPrerequisite } from "@/lib/lms/path-access";
 import { CourseOutline } from "@/components/course-outline";
-import { ButtonLink, Chip, PageTitle, PillLink, complianceChip } from "@/components/ui";
+import { ButtonLink, ButtonAnchor, Chip, PageTitle, PillLink, complianceChip } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +47,7 @@ export default async function CoursePage({
         inArray(t.enrollments.status, ["NOT_STARTED", "IN_PROGRESS", "COMPLETED"]),
       ),
     )
+    .orderBy(desc(t.enrollments.createdAt),desc(t.enrollments.id))
     .limit(1);
   const [cert] = await db
     .select()
@@ -105,7 +106,7 @@ export default async function CoursePage({
                 {view.doneCount > 0 ? "Continue" : "Start course"}
               </ButtonLink>
             ) : null}
-            {completion ? <ButtonLink variant="secondary" href={`/course/${courseId}/feedback?completionId=${completion.id}`}>{contentFeedback.length||trainerFeedback.length?"Edit your feedback":"Give course feedback"}</ButtonLink> : null}
+            {completion ? <ButtonAnchor variant="secondary" href={`/course/${courseId}/feedback?completionId=${completion.id}`}>{enrollment?.status!=="COMPLETED"?(contentFeedback.length||trainerFeedback.length?"Edit feedback for earlier completion":"Give feedback for earlier completion"):(contentFeedback.length||trainerFeedback.length?"Edit your feedback":"Give course feedback")}</ButtonAnchor> : null}
             {cert ? (
               <ButtonLink variant="secondary" href={`/api/certificates/${cert.id}`}>Download certificate</ButtonLink>
             ) : null}

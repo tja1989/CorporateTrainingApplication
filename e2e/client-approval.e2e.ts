@@ -1,3 +1,6 @@
+import { feedbackPeriod } from "../lib/feedback/periods";
+import { runFeedbackDigests } from "../lib/feedback/digests";
+import { DEFAULT_TZ } from "../lib/time";
 import { randomUUID } from "node:crypto";
 import { test, expect, type Page } from "@playwright/test";
 import {
@@ -105,8 +108,14 @@ test("@core Instructor submits, Department Head rejects and approves, HR publish
       await page
         .getByLabel("Lesson type", { exact: true })
         .selectOption("TEXT");
-      const addForm=page.locator("details").filter({has:page.locator("summary",{hasText:"Add lesson to Foundations"})});
-      await addForm.getByLabel("Lesson title", { exact: true }).fill(lessonTitle);
+      const addForm = page.locator("details").filter({
+        has: page.locator("summary", {
+          hasText: "Add lesson to Foundations",
+        }),
+      });
+      await addForm
+        .getByLabel("Lesson title", { exact: true })
+        .fill(lessonTitle);
       await addForm.getByLabel("Lesson content", { exact: true }).fill(content);
       await page
         .getByRole("button", { name: "Add lesson", exact: true })
@@ -118,6 +127,17 @@ test("@core Instructor submits, Department Head rejects and approves, HR publish
       "Safety essentials",
       "Verify the equipment and follow the safety procedure before work.",
     );
+    await authorPage.goto(`/instructor/courses/${courseId}?view=settings`);
+    await authorPage
+      .getByLabel("Issue certificate on completion", { exact: true })
+      .check();
+    await Promise.all([
+      authorPage.waitForEvent("load"),
+      authorPage
+        .getByRole("button", { name: "Save settings", exact: true })
+        .click(),
+    ]);
+    await authorPage.goto(`/instructor/courses/${courseId}`);
     await authorPage
       .getByRole("region", { name: "Approval workflow" })
       .getByRole("button", { name: "Submit for approval", exact: true })
@@ -162,10 +182,32 @@ test("@core Instructor submits, Department Head rejects and approves, HR publish
     await authorPage.reload();
     await authorPage.getByText(/Decision history/).click();
     await expect(authorPage.getByText(reason, { exact: true })).toBeVisible();
-    const edit=authorPage.locator("details").filter({has:authorPage.locator("summary",{hasText:"Edit lesson content"})}).first();
-    await edit.locator("summary").click();await edit.getByLabel("Lesson content",{exact:true}).fill("Corrected: verify the guard and emergency stop before work.");
-    await edit.getByRole("button",{name:"Save lesson content",exact:true}).click();
-    await expect.poll(async()=>withDb(async db=>(await db.query("SELECT payload->>'body' body FROM lessons l JOIN modules m ON m.id=l.module_id WHERE m.course_id=$1 AND l.title='Safety essentials'",[courseId])).rows[0].body)).toBe("Corrected: verify the guard and emergency stop before work.");
+    const edit = authorPage
+      .locator("details")
+      .filter({
+        has: authorPage.locator("summary", { hasText: "Edit lesson content" }),
+      })
+      .first();
+    await edit.locator("summary").click();
+    await edit
+      .getByLabel("Lesson content", { exact: true })
+      .fill("Corrected: verify the guard and emergency stop before work.");
+    await edit
+      .getByRole("button", { name: "Save lesson content", exact: true })
+      .click();
+    await expect
+      .poll(async () =>
+        withDb(
+          async (db) =>
+            (
+              await db.query(
+                "SELECT payload->>'body' body FROM lessons l JOIN modules m ON m.id=l.module_id WHERE m.course_id=$1 AND l.title='Safety essentials'",
+                [courseId],
+              )
+            ).rows[0].body,
+        ),
+      )
+      .toBe("Corrected: verify the guard and emergency stop before work.");
     await addText(
       authorPage,
       "Practical safety checklist",
@@ -187,9 +229,12 @@ test("@core Instructor submits, Department Head rejects and approves, HR publish
       headPage.getByText("Approved for publication", { exact: true }),
     ).toBeVisible();
     await hrPage.goto(`/hr/courses/${courseId}`);
-    await hrPage
-      .getByRole("button", { name: "Publish course", exact: true })
-      .click();
+    await Promise.all([
+      hrPage.waitForEvent("load"),
+      hrPage
+        .getByRole("button", { name: "Publish course", exact: true })
+        .click(),
+    ]);
     await expect(
       hrPage.getByText("Published · approved", { exact: true }),
     ).toBeVisible();
@@ -317,14 +362,172 @@ test("@core Instructor submits, Department Head rejects and approves, HR publish
     await hrPage.getByText(/Decision history/).click();
     await expectNoPageOverflow(hrPage);
     await capture(hrPage, info, "approved-published-course");
-    await hrPage.getByRole("button",{name:"Archive course",exact:true}).click();
-    await expect.poll(async()=>withDb(async db=>(await db.query("SELECT status FROM courses WHERE id=$1",[courseId])).rows[0].status)).toBe("ARCHIVED");
-    await employeePage.goto(`/course/${courseId}`);await expect(employeePage.getByRole("heading",{name:"Page not found",exact:true})).toBeVisible();
-    expect(await withDb(async db=>(await db.query("SELECT count(*)::int n FROM enrollments WHERE user_id=$1 AND course_id=$2",[employee.id,courseId])).rows[0].n)).toBe(1);
-    await hrPage.getByRole("button",{name:"Restore and publish course",exact:true}).click();
-    await expect(hrPage.getByText("Published · approved",{exact:true})).toBeVisible();
-    await employeePage.goto(`/course/${courseId}`);await expect(employeePage.getByRole("heading",{name:title,exact:true})).toBeVisible();
-    expect(await withDb(async db=>(await db.query("SELECT action FROM course_workflow_events WHERE course_id=$1 ORDER BY at DESC LIMIT 1",[courseId])).rows[0].action)).toBe("publish");
+    await hrPage
+      .getByRole("button", { name: "Archive course", exact: true })
+      .click();
+    await expect
+      .poll(async () =>
+        withDb(
+          async (db) =>
+            (
+              await db.query("SELECT status FROM courses WHERE id=$1", [
+                courseId,
+              ])
+            ).rows[0].status,
+        ),
+      )
+      .toBe("ARCHIVED");
+    await employeePage.goto(`/course/${courseId}`);
+    await expect(
+      employeePage.getByRole("heading", {
+        name: "Page not found",
+        exact: true,
+      }),
+    ).toBeVisible();
+    expect(
+      await withDb(
+        async (db) =>
+          (
+            await db.query(
+              "SELECT count(*)::int n FROM enrollments WHERE user_id=$1 AND course_id=$2",
+              [employee.id, courseId],
+            )
+          ).rows[0].n,
+      ),
+    ).toBe(1);
+    await hrPage
+      .getByRole("button", { name: "Restore and publish course", exact: true })
+      .click();
+    await expect(
+      hrPage.getByText("Published · approved", { exact: true }),
+    ).toBeVisible();
+    await employeePage.goto(`/course/${courseId}`);
+    await expect(
+      employeePage.getByRole("heading", { name: title, exact: true }),
+    ).toBeVisible();
+    expect(
+      await withDb(
+        async (db) =>
+          (
+            await db.query(
+              "SELECT action FROM course_workflow_events WHERE course_id=$1 ORDER BY at DESC LIMIT 1",
+              [courseId],
+            )
+          ).rows[0].action,
+      ),
+    ).toBe("publish");
+
+    const lessons = await withDb(
+      async (db) =>
+        (
+          await db.query(
+            "SELECT l.id FROM lessons l JOIN modules m ON m.id=l.module_id WHERE m.course_id=$1 ORDER BY m.sort,l.sort",
+            [courseId],
+          )
+        ).rows,
+    );
+    for (const lesson of lessons) {
+      await employeePage.goto(`/lesson/${lesson.id}`);
+      await employeePage
+        .getByRole("button", { name: "Mark complete", exact: true })
+        .click();
+      await expect(
+        employeePage.getByText("Lesson complete", { exact: true }),
+      ).toBeVisible();
+    }
+    expect(
+      await withDb(
+        async (db) =>
+          (
+            await db.query(
+              "SELECT count(*)::int n FROM certificates WHERE user_id=$1 AND course_id=$2",
+              [employee.id, courseId],
+            )
+          ).rows[0].n,
+      ),
+    ).toBe(1);
+    await employeePage.goto(`/course/${courseId}`);
+    await employeePage
+      .getByRole("link", { name: "Give course feedback", exact: true })
+      .click();
+    await expect(employeePage.getByText(/Training completed/)).toBeVisible();
+    for (const [kind, rating, comment] of [
+      ["Course", 4, "Useful approval-chain training"],
+      ["Instructor", 5, "Clear teaching"],
+    ] as const) {
+      const form = employeePage.getByRole("region", {
+        name: `${kind} feedback`,
+        exact: true,
+      });
+      await form
+        .getByRole("radio", {
+          name: rating === 4 ? "4 — Very good" : "5 — Excellent",
+          exact: true,
+        })
+        .check();
+      await form
+        .getByLabel("Comment or suggestion", { exact: true })
+        .fill(comment);
+      await form
+        .getByRole("button", {
+          name: `Save ${kind.toLowerCase()} feedback`,
+          exact: true,
+        })
+        .click();
+      await expect(form.getByRole("status")).toContainText("Feedback saved");
+    }
+    for (const page of [authorPage, headPage, hrPage]) {
+      await page.goto(
+        `/feedback?kind=course&period=month&courseId=${courseId}`,
+      );
+      await expect(page.getByTestId("feedback-response-count")).toHaveText("1");
+      const csv = await page.request.get(
+        `/api/feedback/reports/csv?kind=course&period=month&courseId=${courseId}`,
+      );
+      expect(csv.status()).toBe(200);
+      expect(await csv.text()).toContain("Useful approval-chain training");
+    }
+    const futureTick = new Date(
+      feedbackPeriod("month", new Date(), DEFAULT_TZ).end.getTime() + 1,
+    );
+    await runFeedbackDigests("month", futureTick);
+    for (const [page, person, root] of [
+      [authorPage, trainer, "instructor"],
+      [headPage, head, "department"],
+      [hrPage, hr, "hr"],
+    ] as const) {
+      const notification = await withDb(
+        async (db) =>
+          (
+            await db.query(
+              "SELECT payload FROM notifications WHERE user_id=$1 AND kind='course_feedback_digest' AND payload->>'period'=$2 ORDER BY sent_at DESC LIMIT 1",
+              [
+                person.id,
+                feedbackPeriod("month", new Date(), DEFAULT_TZ).label,
+              ],
+            )
+          ).rows[0],
+      );
+      expect(notification).toBeTruthy();
+      if (person !== hr) expect(notification.payload.responses).toBe(1);
+      await page.goto(`/${root}/inbox`);
+      await expect(
+        page
+          .getByRole("heading", {
+            name: "Monthly course feedback",
+            exact: true,
+          })
+          .first(),
+      ).toBeVisible();
+      const link = page
+        .locator(`a[href='${notification.payload.href}']`)
+        .first();
+      await expect(link).toBeVisible();
+      await link.click();
+      await expect(
+        page.getByRole("heading", { name: "Feedback reports", exact: true }),
+      ).toBeVisible();
+    }
   } finally {
     await Promise.all(contexts.map((context) => context.close()));
   }

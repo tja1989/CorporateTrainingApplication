@@ -1,6 +1,6 @@
 import {
   Button,
-  ButtonLink,
+  ButtonAnchor,
   Field,
   Input,
   PageTitle,
@@ -93,12 +93,12 @@ export function FeedbackReports({
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit">Apply period</Button>
           {report ? (
-            <ButtonLink
+            <ButtonAnchor
               variant="secondary"
               href={`/api/feedback/reports/csv?${query}`}
             >
               Download CSV
-            </ButtonLink>
+            </ButtonAnchor>
           ) : null}
           <span className="text-sm text-muted">Timezone: {DEFAULT_TZ}</span>
         </div>

@@ -1,3 +1,5 @@
+import AxeBuilder from "@axe-core/playwright";
+import { feedbackReportFixture } from "./feedback-report-fixtures";
 import { randomUUID } from "node:crypto";
 import { test, expect } from "@playwright/test";
 import {
@@ -75,6 +77,7 @@ test("@core Completed employee submits and edits both feedback kinds; stale and 
       exact: true,
     }),
   ).toBeVisible();
+  await expect(page.getByText(/Training completed/)).toBeVisible();
   const content = page.getByRole("region", {
       name: "Course feedback",
       exact: true,
@@ -208,4 +211,110 @@ test("@core Completed employee submits and edits both feedback kinds; stale and 
   await expect(
     page.getByRole("link", { name: "Edit your feedback", exact: true }).first(),
   ).toBeVisible();
+  const certificate = await withDb(
+    async (db) =>
+      (
+        await db.query(
+          "SELECT id FROM certificates WHERE user_id=$1 AND course_id=$2",
+          [employee.id, course],
+        )
+      ).rows[0].id,
+  );
+  await enrollUser(
+    employee.id,
+    { type: "course", id: course },
+    "recert",
+    certificate,
+    new Date(Date.now() + 14 * 86400000),
+  );
+  await page.goto(`/course/${course}`);
+  await expect(
+    page.getByRole("link", {
+      name: "Edit feedback for earlier completion",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page
+    .getByRole("link", {
+      name: "Edit feedback for earlier completion",
+      exact: true,
+    })
+    .click();
+  await expect(page.getByText(/Training completed/)).toBeVisible();
+  await expect(
+    page
+      .getByRole("region", { name: "Course feedback", exact: true })
+      .getByRole("radio", { name: "3 — Good", exact: true }),
+  ).toBeChecked();
 });
+
+for (const theme of ["light", "dark"] as const)
+  test(`@core Feedback forms and report tables support keyboard and accessible ${theme} theme`, async ({
+    page,
+    context,
+    baseURL,
+  }, info) => {
+    await context.addCookies([
+      { name: "ll_theme", value: theme, url: baseURL! },
+    ]);
+    const f = await feedbackReportFixture();
+    const completion = await withDb(
+      async (db) =>
+        (
+          await db.query(
+            "SELECT completion_record_id FROM course_feedback WHERE employee_id=$1 AND course_id=$2",
+            [f.employee.id, f.course],
+          )
+        ).rows[0].completion_record_id,
+    );
+    await signIn(page, f.employee);
+    await page.goto(`/course/${f.course}/feedback?completionId=${completion}`);
+    const form = page.getByRole("region", {
+      name: "Course feedback",
+      exact: true,
+    });
+    await expect(
+      form.getByRole("button", { name: "Save course feedback", exact: true }),
+    ).toBeEnabled();
+    await form
+      .getByRole("radio", { name: "5 — Excellent", exact: true })
+      .focus();
+    await page.keyboard.press("ArrowLeft");
+    await expect(
+      form.getByRole("radio", { name: "4 — Very good", exact: true }),
+    ).toBeChecked();
+    await page.keyboard.press("Tab");
+    await expect(
+      form.getByLabel("Comment or suggestion", { exact: true }),
+    ).toBeFocused();
+    expect(
+      (
+        await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+          .analyze()
+      ).violations,
+    ).toEqual([]);
+    await expectNoPageOverflow(page);
+    await capture(page, info, `feedback-form-${theme}`);
+    await context.clearCookies();
+    await context.addCookies([
+      { name: "ll_theme", value: theme, url: baseURL! },
+    ]);
+    await signIn(page, f.trainer);
+    await page.goto(`/feedback?kind=course&period=month&courseId=${f.course}`);
+    const table = page.getByRole("region", {
+      name: "Feedback responses",
+      exact: true,
+    });
+    await table.focus();
+    await expect(table).toBeFocused();
+    expect(
+      (
+        await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+          .analyze()
+      ).violations,
+    ).toEqual([]);
+    await expectNoPageOverflow(page);
+    await capture(page, info, `feedback-report-${theme}`);
+  });
