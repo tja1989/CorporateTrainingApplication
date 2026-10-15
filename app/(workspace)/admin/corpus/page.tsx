@@ -7,6 +7,7 @@ import { requirePermission } from "@/lib/auth/guard";
 import { Card, StatusChip, PageTitle, DemoBanner, Button, Field, Input, Select, Textarea, Tile } from "@/components/ui";
 import { publishPolicyAction } from "./actions";
 import { formatDay } from "@/lib/format";
+import { statusLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +61,7 @@ export default async function CorpusPage({ searchParams }: { searchParams: Promi
                 <StatusChip status={doc.status} />
               </a>
             ))}
-          </nav><article className="min-w-0 rounded-card border border-border bg-surface p-4 sm:p-6">{(() => { const doc = docs.find(d => d.id === (docId ?? docs[0]?.id)); return doc ? <><h2 className="mb-2 text-lg font-semibold">{doc.title}</h2><p className="mb-4 text-sm text-muted">Version {doc.version} · {doc.status.toLowerCase()} · {doc.country} · {doc.audience}</p><Markdown text={doc.body} headingOffset={1} /></> : <p className="text-muted">Select a policy version to read its content, or publish your first policy.</p>; })()}</article></div>
+          </nav><article className="min-w-0 rounded-card border border-border bg-surface p-4 sm:p-6">{(() => { const doc = docs.find(d => d.id === (docId ?? docs[0]?.id)); return doc ? <><h2 className="mb-2 text-lg font-semibold">{doc.title}</h2><p className="mb-4 text-sm text-muted">Version {doc.version} · {statusLabel(doc.status).label} · {doc.country} · {doc.audience}</p><Markdown text={doc.body} headingOffset={1} /></> : <p className="text-muted">Select a policy version to read its content, or publish your first policy.</p>; })()}</article></div>
 
         </section> : null}
         {view === "quality" ? <section aria-label="Assistant quality">      <div className="mb-6 grid max-w-4xl gap-3 sm:grid-cols-4">

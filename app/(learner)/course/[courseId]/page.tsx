@@ -22,6 +22,7 @@ import {
   PillLink,
   complianceChip,
 } from "@/components/ui";
+import { languageName } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -190,7 +191,7 @@ export default async function CoursePage({
           <p className="mb-4 max-w-2xl text-muted">{course.description}</p>
           <div className="mb-4 flex flex-wrap gap-2">
             <span className="text-sm text-muted">
-              {course.estMinutes} min · {course.language.toUpperCase()}
+              {course.estMinutes} min · {languageName(course.language)}
             </span>
             {course.sequentialLock ? (
               <Chip variant="neutral">Complete in order</Chip>

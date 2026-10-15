@@ -19,6 +19,7 @@ import {
   DemoBanner,
 } from "@/components/ui";
 import { formatDay, formatDue } from "@/lib/format";
+import { lessonTypeLabel } from "@/components/lesson-icon";
 export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const user = await requireUser();
@@ -106,7 +107,7 @@ export default async function HomePage() {
               <p className="mb-2 text-sm text-muted">{resume.course.title}</p>
               <h3 className="mb-3 text-xl font-semibold">{next.title}</h3>
               <p className="mb-4 text-sm text-muted">
-                {next.type.toLowerCase()} lesson
+                {lessonTypeLabel(next.type)}
                 {next.minutes ? ` · about ${next.minutes} min` : ""}
               </p>
               <LearningProgress

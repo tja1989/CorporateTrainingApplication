@@ -47,6 +47,7 @@ import {
   moveLessonAction,
   moveModuleAction,
 } from "@/app/(workspace)/admin/courses/actions";
+import { lessonTypeLabel } from "./lesson-icon";
 export const dynamic = "force-dynamic";
 export async function CourseEditor({
   actor,
@@ -270,7 +271,7 @@ export async function CourseEditor({
                                 {lesson.title}
                               </p>
                               <p className="text-sm text-muted">
-                                {lesson.type.toLowerCase()}
+                                {lessonTypeLabel(lesson.type)}
                               </p>
                             </div>
                             <div

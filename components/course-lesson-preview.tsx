@@ -4,6 +4,7 @@ import { Markdown } from "@/lib/markdown";
 import { parseCoverUrl } from "@/lib/workspace-inputs";
 import { parseInterviewConfig } from "@/lib/live/interview";
 import { ButtonAnchor } from "./ui";
+import { plural } from "@/lib/format";
 export async function CourseLessonPreview({
   lesson,
 }: {
@@ -34,8 +35,8 @@ export async function CourseLessonPreview({
     const cfg = parseInterviewConfig(lesson.payload.interview);
     return (
       <p className="text-sm">
-        {cfg.questionCount} questions · {cfg.passPct}% to pass ·{" "}
-        {cfg.maxMinutes} minutes · {cfg.scope} content
+        {plural(cfg.questionCount, "question")}, {cfg.passPct}% to pass,{" "}
+        {plural(cfg.maxMinutes, "minute")}, covers {cfg.scope === "course" ? "the whole course" : cfg.scope === "previous" ? "the previous lesson" : "this module"}
         {cfg.focus ? ` · Focus: ${cfg.focus}` : ""}
       </p>
     );
@@ -104,13 +105,11 @@ export async function CourseLessonPreview({
   return (
     <div>
       <p className="mb-3 text-sm">
-        Pass mark {quiz.settings.passPct}% ·{" "}
-        {quiz.settings.feedbackMode.toLowerCase()} ·{" "}
-        {quiz.sections.reduce(
+        Pass mark {quiz.settings.passPct}%,{" "}
+        {plural(quiz.sections.reduce(
           (count, s) => count + (s.pickN ?? s.fixed?.length ?? 0),
           0,
-        )}{" "}
-        questions served
+        ), "question")} per attempt
       </p>
       <ol className="list-decimal space-y-3 ps-6">
         {questions.map((q) => (

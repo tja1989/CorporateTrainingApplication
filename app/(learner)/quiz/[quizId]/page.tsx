@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { canStart, currentQuizAttempts, windowState } from "@/lib/quiz/engine";
 import { Card, PageTitle, Chip, ButtonLink } from "@/components/ui";
 import { QuizRunner } from "./runner";
+import { plural } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -95,7 +96,7 @@ export default async function QuizPage({
         <Chip variant="neutral">
           {attemptsLeft === null
             ? "Unlimited attempts"
-            : `${attemptsLeft} attempt(s) left`}
+            : `${plural(attemptsLeft, "attempt")} left`}
         </Chip>
         {timeLimitSec ? (
           <Chip variant="neutral">

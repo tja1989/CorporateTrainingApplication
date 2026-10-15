@@ -21,7 +21,7 @@ test("@core @template All seven question types support accessible input and unan
   await page.getByRole("button", { name: "Use this order", exact: true }).click();
   await page.getByRole("button", { name: "Submit assessment", exact: true }).click();
   const confirmation = page.getByRole("dialog", { name: "Submit with unanswered questions?" });
-  await expect(confirmation).toContainText("1 question(s) are unanswered");
+  await expect(confirmation).toContainText("1 question is unanswered");
   await confirmation.getByRole("button", { name: "Keep answering" }).click();
   await page.getByRole("textbox", { name: "Explain safe service" }).fill("Welcome customers and wash hands before serving.");
   await expectNoPageOverflow(page);

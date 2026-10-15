@@ -150,7 +150,7 @@ describe("assistant live config (spec FR-14.3 v1.4)", () => {
         firstName: "Farhan",
         jobTitle: "Cashier",
         storeName: "Barsha Hypermarket",
-        status: { summary: "2 course(s) assigned: 1 overdue, 0 due soon, 1 completed.", courses: [{ title: "Food Safety Essentials", status: "in progress", compliance: "overdue", due: "2026-08-20", daysToDue: -13, pct: 40, reason: "Overdue — finish this first" }] },
+        status: { summary: "2 courses assigned: 1 overdue, 0 due soon, 1 completed.", courses: [{ title: "Food Safety Essentials", status: "in progress", compliance: "overdue", due: "2026-08-20", daysToDue: -13, pct: 40, reason: "Overdue — finish this first" }] },
       },
     });
     const sys = String(cfg.systemInstruction);

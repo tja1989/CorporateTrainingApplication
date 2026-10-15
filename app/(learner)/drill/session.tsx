@@ -9,6 +9,7 @@ import { AnimatedNumber, Button, Card, Chip, PillButton, Skeleton, cx } from "@/
 import { QuestionFields, type Served } from "@/components/question-input";
 import { isAnswered } from "@/lib/quiz/client-state";
 import type { Answer } from "@/lib/quiz/scoring";
+import { plural } from "@/lib/format";
 type Q = Served;
 type Feedback = { correct: boolean; explanation: string | null; correctAnswer: string | null };
 
@@ -56,7 +57,7 @@ export function DrillSession({ daysThisWeek, streakWeeks }: { daysThisWeek: numb
         <h2 className="display mb-1 text-2xl">
           <AnimatedNumber value={score} />/{questions.length} — nice work
         </h2>
-        <p className="mb-3 text-sm text-muted">+5 points · {Math.min(daysThisWeek + 1, 7)} active day(s) this week{streakWeeks > 0 ? ` · ${streakWeeks}-week streak` : ""}</p>
+        <p className="mb-3 text-sm text-muted">+5 points · {plural(Math.min(daysThisWeek + 1, 7), "active day")} this week{streakWeeks > 0 ? ` · ${streakWeeks}-week streak` : ""}</p>
         <p className="text-xs text-muted">Missed questions come back sooner — that&#39;s the point.</p>
       </Card>
     );

@@ -18,6 +18,7 @@ import {
 import { assignAction, nudgeAction, issueResetAction } from "../actions";
 import { interviewsForUser } from "@/lib/live/store";
 import { formatDay, formatDue } from "@/lib/format";
+import { assignmentSourceLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
@@ -105,7 +106,7 @@ export default async function TeamMemberPage({
                       {courseOf.get(e.courseId)?.title ?? e.courseId}
                     </p>
                     <p className="text-xs text-muted">
-                      {e.source}
+                      {assignmentSourceLabel(e.source)}
                       {e.dueAt
                         ? ` · ${formatDue(e.dueAt)}`
                         : ""}

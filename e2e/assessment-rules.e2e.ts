@@ -76,7 +76,7 @@ test("@core Assessment windows, cooldown, attempt limits and exam answer sealing
   await expect(page.getByText("Correct answers are revealed after the assessment window closes.")).toBeVisible();
   await expect(page.getByText("Clean hands protect customers.", { exact: true })).toHaveCount(0);
   await reviewAssessmentAttempts(page);
-  await expect(page.getByText("1 attempt(s) left", { exact: true })).toBeVisible();
+  await expect(page.getByText("1 attempt left", { exact: true })).toBeVisible();
   await expect(page.getByText(/Next attempt available at/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Start assessment", exact: true })).toHaveCount(0);
   // Advancing the fixture's prior submission and release condition prepares the next allowed attempt.
@@ -90,7 +90,7 @@ test("@core Assessment windows, cooldown, attempt limits and exam answer sealing
   await page.getByRole("button", { name: "Submit assessment", exact: true }).click();
   await expect(page.getByText("Clean hands protect customers.", { exact: true })).toBeVisible();
   await reviewAssessmentAttempts(page);
-  await expect(page.getByText("0 attempt(s) left", { exact: true })).toBeVisible();
+  await expect(page.getByText("0 attempts left", { exact: true })).toBeVisible();
   await expect(page.getByText("You have used all attempts for this assessment.", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Start assessment", exact: true })).toHaveCount(0);
 });

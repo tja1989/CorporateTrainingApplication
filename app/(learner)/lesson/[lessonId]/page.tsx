@@ -13,6 +13,7 @@ import {
 import { LessonContents } from "@/components/lesson-contents";
 import { VideoLesson } from "./video-lesson";
 import { InterviewLesson } from "./interview-lesson";
+import { lessonTypeLabel } from "@/components/lesson-icon";
 export const dynamic = "force-dynamic";
 export default async function LessonPage({
   params,
@@ -89,7 +90,7 @@ export default async function LessonPage({
         <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="mb-1 text-sm text-muted">
-              Lesson {index + 1} of {total} · {self.type.toLowerCase()}
+              Lesson {index + 1} of {total} · {lessonTypeLabel(self.type)}
               {self.minutes ? ` · ${self.minutes} min` : ""}
             </p>
             <h1 className="text-2xl font-semibold sm:text-[32px]">

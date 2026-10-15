@@ -99,8 +99,8 @@ export function WorkspaceReports({
             <Field
               label={
                 report === "cert_expiry"
-                  ? "Expiring within (days)"
-                  : "Activity in the last (days)"
+                  ? "Days until expiry"
+                  : "Days of activity"
               }
             >
               <Input

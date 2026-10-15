@@ -96,8 +96,8 @@ export async function CourseWorkflow({
         </Chip>
       </div>
       <p className="mt-2 mb-4 text-sm text-muted">
-        Revision {course.contentRevision} · {course.status.toLowerCase()} ·
-        Instructor submits → Department Head decides → HR publishes.
+        Version {course.contentRevision}. Instructor submits, Department Head
+        decides, HR publishes.
       </p>
       <div className="flex flex-wrap items-start gap-4">
         {author &&

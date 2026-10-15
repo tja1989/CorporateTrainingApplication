@@ -13,18 +13,19 @@ import {
   cx,
 } from "@/components/ui";
 import { WorkspaceLink } from "@/components/workspace-ui";
+import { noun, plural } from "@/lib/format";
 export const dynamic = "force-dynamic";
 const FILTERS = [
-  { key: "OVERDUE", label: "Overdue", unit: "assignments" },
-  { key: "DUE_SOON", label: "Due soon", unit: "assignments" },
-  { key: "IN_PROGRESS", label: "In progress", unit: "assignments" },
-  { key: "COMPLETED", label: "Completed", unit: "assignments" },
+  { key: "OVERDUE", label: "Overdue", unit: ["assignment", "assignments"] },
+  { key: "DUE_SOON", label: "Due soon", unit: ["assignment", "assignments"] },
+  { key: "IN_PROGRESS", label: "In progress", unit: ["assignment", "assignments"] },
+  { key: "COMPLETED", label: "Completed", unit: ["assignment", "assignments"] },
   {
     key: "COMPLETED_EXPIRING",
     label: "Expiring certificates",
-    unit: "assignments",
+    unit: ["assignment", "assignments"],
   },
-  { key: "INACTIVE", label: "Inactive for 30 days", unit: "people" },
+  { key: "INACTIVE", label: "Inactive for 30 days", unit: ["person", "people"] },
 ];
 export default async function TeamPage({
   searchParams,
@@ -150,7 +151,7 @@ export default async function TeamPage({
                 >
                   {countOf(f.key)}{" "}
                   <span className="text-sm font-normal text-muted">
-                    {f.unit}
+                    {noun(countOf(f.key), f.unit[0], f.unit[1])}
                   </span>
                 </span>
               </a>
@@ -229,7 +230,7 @@ export default async function TeamPage({
                         </p>
                       </td>
                       <td className={cell}>
-                        {items.length} assignments{" "}
+                        {plural(items.length, "assignment")}{" "}
                         <span className="text-muted">
                           ·{" "}
                           {items.filter((e) => e.status === "COMPLETED").length}{" "}

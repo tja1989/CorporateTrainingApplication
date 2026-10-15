@@ -7,6 +7,7 @@ import { AttemptSaveError, isAnswered, resultStatus, saveAttemptAnswers, submitS
 import { QuestionInput, type Served } from "@/components/question-input";
 import type { Answer } from "@/lib/quiz/scoring";
 import { Dialog } from "@/components/dialog";
+import { plural } from "@/lib/format";
 
 type Settings = { oneAtATime: boolean; noBacktrack: boolean; feedbackMode: string; integrityMode: boolean; passPct: number; graceSec: number };
 type Result = {
@@ -379,7 +380,7 @@ export function QuizRunner({
         )}
       </div>
       <Dialog open={confirmSubmit} onClose={() => setConfirmSubmit(false)} title="Submit with unanswered questions?">
-        <p className="mb-4 text-muted">{served.length - answeredCount} question(s) are unanswered or incomplete. You can review them before submitting.</p>
+        <p className="mb-4 text-muted">{plural(served.length - answeredCount, "question")} {served.length - answeredCount === 1 ? "is" : "are"} unanswered or incomplete. You can review them before submitting.</p>
         <div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={() => setConfirmSubmit(false)}>Keep answering</Button><Button disabled={busy} onClick={() => { setConfirmSubmit(false); void submit(); }}>Submit anyway</Button></div>
       </Dialog>
     </div>

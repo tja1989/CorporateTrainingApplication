@@ -4,6 +4,7 @@ import { myCourses, recommend, type CourseWithProgress } from "@/lib/lms/queries
 import { searchVideoChunks } from "@/lib/retrieval";
 import { daysUntil } from "@/lib/time";
 import type { LessonCitation } from "@/lib/db/schema";
+import { plural } from "@/lib/format";
 
 /**
  * Course-aware tools for the voice assistant (spec FR-14.3 v1.4): the
@@ -118,7 +119,7 @@ export async function trainingStatus(userId: string): Promise<TrainingStatus> {
   const dueSoon = courses.filter((c) => c.compliance === "due soon").length;
   const completed = courses.filter((c) => c.status === "completed").length;
   const summary =
-    courses.length === 0 ? "No courses are assigned yet." : `${courses.length} course(s) assigned: ${overdue} overdue, ${dueSoon} due soon, ${completed} completed.`;
+    courses.length === 0 ? "No courses are assigned yet." : `${plural(courses.length, "course")} assigned: ${overdue} overdue, ${dueSoon} due soon, ${completed} completed.`;
   return { summary, courses };
 }
 

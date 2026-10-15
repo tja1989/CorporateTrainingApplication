@@ -15,7 +15,7 @@ import {
 import { WorkspaceForm } from "@/components/workspace-form";
 import { WorkspaceSection, WorkspaceLink } from "@/components/workspace-ui";
 import { CourseCover } from "@/components/course-cover";
-import { languageName } from "@/lib/format";
+import { languageName, plural } from "@/lib/format";
 import { statusLabel } from "@/lib/status";
 import { createCourseAction } from "@/app/(workspace)/admin/courses/actions";
 export const dynamic = "force-dynamic";
@@ -91,7 +91,7 @@ export async function CourseCatalog({
       </form>
       <div className={author?"grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]":"min-w-0"}>
         <section aria-label="Course list" className="min-w-0">
-          <p className="mb-3 text-sm text-muted">{courses.length} courses</p>
+          <p className="mb-3 text-sm text-muted">{plural(courses.length, "course")}</p>
           <div className="divide-y divide-border rounded-card border border-border bg-surface">
             {courses.map((c) => (
               <a

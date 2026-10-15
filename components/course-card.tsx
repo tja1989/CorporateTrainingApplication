@@ -2,7 +2,7 @@ import { CourseCover } from "./course-cover";
 import { Card, Chip } from "./ui";
 import { courseHasOpened } from "@/lib/courses/planning";
 import type { CourseWithProgress } from "@/lib/lms/queries";
-import { formatDay } from "@/lib/format";
+import { formatDay, languageName, tagLabel } from "@/lib/format";
 
 type Course = CourseWithProgress["course"];
 export function LearningProgress({
@@ -58,7 +58,7 @@ export function CourseCard({
             ) : null}
             {course.tags.slice(0, 2).map((tag) => (
               <Chip key={tag} variant="neutral">
-                {tag}
+                {tagLabel(tag)}
               </Chip>
             ))}
           </div>
@@ -67,7 +67,7 @@ export function CourseCard({
             {course.description}
           </p>
           <p className="mb-3 text-sm text-muted">
-            {course.estMinutes} min · {course.language.toUpperCase()}
+            {course.estMinutes} min · {languageName(course.language)}
           </p>
           {progress ? (
             <LearningProgress

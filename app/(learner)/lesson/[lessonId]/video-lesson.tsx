@@ -6,6 +6,7 @@ import { Card } from "@/components/ui";
 import { VideoLessonClient } from "./video-client";
 import { allowedTutorSources, resolveTutorCitations } from "@/lib/ai/tutor-sources";
 import type { TutorCitation } from "@/lib/db/schema";
+import { statusLabel } from "@/lib/status";
 
 /** Video lesson: player + Tutor + transcript (spec FR-5.6..5.13, §11.5). */
 export async function VideoLesson({
@@ -33,7 +34,7 @@ export async function VideoLesson({
     return (
       <Card className="mb-6 max-w-3xl p-6">
         <p className="text-sm text-muted">
-          This video is still being prepared ({video.ingestionStatus.toLowerCase()}
+          This video is still being prepared ({statusLabel(video.ingestionStatus).label.toLowerCase()}
           {video.failureReason ? ` — ${video.failureReason}` : ""}). Check back shortly.
         </p>
       </Card>

@@ -23,6 +23,7 @@ import {
   PageTitle,
   EmptyState,
 } from "@/components/ui";
+import { languageName } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 export default async function LearnPage({
@@ -197,7 +198,7 @@ export default async function LearnPage({
                   <option value="">All languages</option>
                   {languages.map((lang) => (
                     <option key={lang} value={lang}>
-                      {lang.toUpperCase()}
+                      {languageName(lang)}
                     </option>
                   ))}
                 </Select>

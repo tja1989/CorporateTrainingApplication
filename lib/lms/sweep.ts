@@ -10,6 +10,7 @@ import { isCourseAvailable } from "@/lib/courses/availability";
 import { lockAssessmentCurriculum } from "@/lib/courses/workflow";
 import { trainingScope } from "@/lib/auth/scope";
 import { enrollmentDeadline } from "@/lib/courses/planning";
+import { noun } from "@/lib/format";
 
 /**
  * Nightly sweep (spec FR-3.3/3.4/3.5, FR-13.3): compliance recompute, reminder
@@ -261,7 +262,7 @@ export async function runWeeklyDigest(now = new Date()): Promise<number> {
         problem.some((p) => p.userId === u.id),
     );
     const summary =
-      `${overdue} overdue and ${dueSoon} due-soon item(s) on your team. ` +
+      `${overdue} overdue and ${dueSoon} due-soon ${noun(overdue + dueSoon, "item")} on your team. ` +
       (unreached.length > 0
         ? `Not reached directly (no email, inactive 7d) — nudge in person: ${unreached.map((u) => u.name).join(", ")}.`
         : "Everyone with open items has been reached in-app.");

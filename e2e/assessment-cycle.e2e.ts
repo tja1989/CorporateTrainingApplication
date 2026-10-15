@@ -12,7 +12,7 @@ test("@core A fresh same-page no-backtrack sitting resets navigation and answers
   await page.getByRole("button", { name: "Submit assessment", exact: true }).click();
   await expect(page.getByText("Final result: not passed", { exact: true })).toBeVisible();
   await reviewAssessmentAttempts(page);
-  await expect(page.getByText("2 attempt(s) left", { exact: true })).toBeVisible();
+  await expect(page.getByText("2 attempts left", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Start assessment", exact: true }).click();
   await expect(page.getByRole("button", { name: "Question 1, unanswered", exact: true })).toHaveAttribute("aria-current", "step");
   await expect(page.getByRole("radio", { name: "Wash hands", exact: true })).not.toBeChecked();
@@ -99,7 +99,7 @@ test("@core Voiding a certified pass preserves issued history and grants a fresh
   const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: info.project.use.ignoreHTTPSErrors });
   try { const adminPage = await context.newPage(); await signIn(adminPage, admin); await adminPage.goto(`/admin/integrity/${attempt}`); await adminPage.getByLabel("Void reason (required)").fill("QA human decision; issued completion remains valid under the existing policy"); await adminPage.getByRole("button", { name: "Void — grant fresh attempt", exact: true }).click(); await expect(adminPage.getByText(/Voided: QA human decision/)).toBeVisible(); } finally { await context.close(); }
   expect(await history()).toEqual(before);
-  await page.reload(); await expect(page.getByText("1 attempt(s) left", { exact: true })).toBeVisible(); await page.getByRole("button", { name: "Start assessment", exact: true }).click();
+  await page.reload(); await expect(page.getByText("1 attempt left", { exact: true })).toBeVisible(); await page.getByRole("button", { name: "Start assessment", exact: true }).click();
   await expect(page.getByRole("radio", { name: "Wash hands", exact: true })).not.toBeChecked();
   const rows = await withDb(async db => (await db.query("SELECT id,state,passed FROM attempts WHERE user_id=$1 AND quiz_id=$2 ORDER BY started_at", [learner.id, fixture.quiz])).rows);
   expect(rows).toHaveLength(2); expect(rows[0]).toEqual({ id: attempt, state: "VOIDED", passed: true }); expect(rows[1].state).toBe("IN_PROGRESS");

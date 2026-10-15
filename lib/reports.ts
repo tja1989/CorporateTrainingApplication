@@ -2,6 +2,7 @@ import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
 import {canonicalRole,ROLE_LABELS} from "@/lib/auth/roles";
 import { db, t } from "@/lib/db/client";
 import { aiAvailable, structuredCall } from "@/lib/ai/gateway";
+import { plural } from "@/lib/format";
 
 /**
  * Reporting engine (spec FR-10.2/10.3): every report real-time and filterable;
@@ -491,11 +492,11 @@ export function narrate(result: ReportResult, plan: QueryPlan): string {
     plan.report === "compliance" &&
     plan.filters.complianceStatus === "OVERDUE"
   ) {
-    return `${n} enrollment(s) are overdue${plan.filters.courseTitle ? ` on “${plan.filters.courseTitle}”` : ""}${plan.filters.storeName ? ` in ${plan.filters.storeName}` : ""}.`;
+    return `${plural(n, "enrollment")} ${n === 1 ? "is" : "are"} overdue${plan.filters.courseTitle ? ` on “${plan.filters.courseTitle}”` : ""}${plan.filters.storeName ? ` in ${plan.filters.storeName}` : ""}.`;
   }
   if (plan.report === "cert_expiry")
-    return `${n} certificate(s) expire within ${plan.filters.daysWindow ?? 90} days. Renewal training is auto-assigned by the recert loop.`;
+    return `${plural(n, "certificate")} ${n === 1 ? "expires" : "expire"} within ${plan.filters.daysWindow ?? 90} days. Renewal training is auto-assigned by the recert loop.`;
   if (plan.report === "engagement")
     return `${n} people in scope; ${result.rows.filter((r) => r[5] === "INACTIVE").length} have no activity in the window.`;
-  return `${n} row(s) returned. ${plan.explanation}`;
+  return `${plural(n, "row")} returned. ${plan.explanation}`;
 }

@@ -2,6 +2,8 @@ import { and, eq, gte } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { id } from "@/lib/ids";
 import type { LearningWriteContext } from "@/lib/lms/learning-cycle";
+import { plural } from "@/lib/format";
+import { statusLabel } from "@/lib/status";
 
 /**
  * Fixed notification catalog (spec FR-9.1). In-app always; email when the user
@@ -24,18 +26,18 @@ export type NotificationKind =
   | "course_submitted" | "course_approved" | "course_rejected" | "course_published" | "course_workflow_updated";
 
 const TEMPLATES: Record<NotificationKind, (p: Record<string, unknown>) => { title: string; body: string }> = {
-  course_feedback_digest:p=>({title:`${p.intervalKind==="week"?"Weekly":"Monthly"} course feedback`,body:`${p.period}: ${p.responses} response(s). ${p.average==null?"No responses.":`Average rating ${p.average} / 5.`}`}),
-  instructor_feedback_digest:p=>({title:`${p.intervalKind==="week"?"Weekly":"Monthly"} instructor feedback`,body:`${p.period}: ${p.responses} response(s). ${p.average==null?"No responses.":`Average rating ${p.average} / 5.`}`}),
+  course_feedback_digest:p=>({title:`${p.intervalKind==="week"?"Weekly":"Monthly"} course feedback`,body:`${p.period}: ${plural(Number(p.responses), "response")}. ${p.average==null?"No responses.":`Average rating ${p.average} / 5.`}`}),
+  instructor_feedback_digest:p=>({title:`${p.intervalKind==="week"?"Weekly":"Monthly"} instructor feedback`,body:`${p.period}: ${plural(Number(p.responses), "response")}. ${p.average==null?"No responses.":`Average rating ${p.average} / 5.`}`}),
   course_submitted:p=>({title:"Course awaiting approval",body:`“${p.courseTitle}” is ready for Department Head review.`}),
   course_approved:p=>({title:"Course approved",body:`“${p.courseTitle}” is approved and ready for HR publication.`}),
   course_rejected:p=>({title:"Course needs changes",body:`“${p.courseTitle}” was rejected. ${p.comment ?? ""}`}),
   course_published:p=>({title:"Course published",body:`“${p.courseTitle}” is available for rollout.`}),
-  course_workflow_updated:p=>({title:"Course workflow updated",body:`“${p.courseTitle}” is now ${String(p.state).toLowerCase().replaceAll("_"," ")}. ${p.comment ?? ""}`}),
+  course_workflow_updated:p=>({title:"Course workflow updated",body:`“${p.courseTitle}” is now ${statusLabel(String(p.state)).label.toLowerCase()}. ${p.comment ?? ""}`}),
   enrolled: (p) => ({ title: "New training assigned", body: `You've been enrolled in “${p.courseTitle}”.` }),
-  due_soon: (p) => ({ title: "Training due soon", body: `“${p.courseTitle}” is due in ${p.days} day(s).` }),
+  due_soon: (p) => ({ title: "Training due soon", body: `“${p.courseTitle}” is due in ${plural(Number(p.days), "day")}.` }),
   due_today: (p) => ({ title: "Training due today", body: `“${p.courseTitle}” is due today.` }),
   overdue: (p) => ({ title: "Training overdue", body: `“${p.courseTitle}” is overdue. Please complete it as soon as you can.` }),
-  cert_expiring: (p) => ({ title: "Certificate expiring", body: `Your “${p.courseTitle}” certificate expires in ${p.days} day(s). Renewal training has been assigned.` }),
+  cert_expiring: (p) => ({ title: "Certificate expiring", body: `Your “${p.courseTitle}” certificate expires in ${plural(Number(p.days), "day")}. Renewal training has been assigned.` }),
   quiz_graded: (p) => ({ title: "Quiz result ready", body: `Your result for “${p.quizTitle}” is ${p.state === "FINAL" ? "final" : "provisional"}: ${p.outcome}.` }),
   hr_ticket_updated: (p) => ({ title: "HR ticket updated", body: `Your HR ticket “${p.subject}” has an update.` }),
   manager_digest: (p) => ({ title: "Weekly team digest", body: String(p.summary ?? "") }),

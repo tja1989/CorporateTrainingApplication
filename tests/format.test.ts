@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { renderNotification } from "../lib/notify";
 import { calendarDaysBetween, formatDateTime, formatDay, formatDue, formatRelative, languageName, noun, plural, tagLabel, zoneLabel } from "../lib/format";
 
 const now = new Date("2026-10-14T06:00:00Z"); // Wed 14 Oct, 10:00 Dubai
@@ -53,5 +54,12 @@ describe("words", () => {
     expect(tagLabel("POS")).toBe("POS");
     expect(zoneLabel("Asia/Dubai")).toBe("Dubai time");
     expect(zoneLabel("America/New_York")).toBe("New York time");
+  });
+});
+
+describe("notification copy", () => {
+  it("words notification counts naturally", () => {
+    expect(renderNotification("due_soon", { courseTitle: "Food Safety", days: 1 }).body).toBe("“Food Safety” is due in 1 day.");
+    expect(renderNotification("due_soon", { courseTitle: "Food Safety", days: 3 }).body).toBe("“Food Safety” is due in 3 days.");
   });
 });

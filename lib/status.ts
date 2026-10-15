@@ -22,3 +22,12 @@ export function statusLabel(status: string): { label: string; tone: StatusTone }
   const words = status.toLowerCase().replaceAll("_", " ");
   return { label: words.charAt(0).toUpperCase() + words.slice(1), tone: "neutral" };
 }
+
+const SOURCES: Record<string, string> = {
+  manual: "Assigned by a manager", rule: "Assigned automatically", path: "Part of a learning path", recert: "Renewal", self: "Self-enrolled",
+};
+
+/** How an enrollment came about, in words a manager understands. */
+export function assignmentSourceLabel(source: string): string {
+  return SOURCES[source] ?? statusLabel(source.toUpperCase()).label;
+}
