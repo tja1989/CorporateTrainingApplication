@@ -8,7 +8,7 @@ export async function seedAssessments(opts: {
   const { db, t } = await import("../lib/db/client");
   const { id } = await import("../lib/ids");
   const { eq } = await import("drizzle-orm");
-  const { DEFAULT_SETTINGS, startAttempt, submitAttempt } = await import("../lib/quiz/engine");
+  const { DEFAULT_SETTINGS } = await import("../lib/quiz/engine");
 
   type QSeed = {
     type: "mcq_single" | "mcq_multi" | "truefalse" | "fill_blank" | "matching" | "ordering" | "free_text";
@@ -235,10 +235,18 @@ export async function seedAssessments(opts: {
   ]);
   await makeQuizLesson(opts.courseIds.pos, "Till discipline check", { ...DEFAULT_SETTINGS, passPct: 75 }, pos.questionIds);
 
-  // ---- Staged attempt: Meera submits the CS scenario → lands in the human review queue
+  console.log("Assessments seeded: 4 banks, 4 quizzes.");
+}
+
+/** Staged attempt: Meera submits the CS scenario → lands in the human review queue.
+ * Runs after publication, because attempts require a published, approved course. */
+export async function seedStagedReview(learnerIds: { meera: string }): Promise<void> {
+  const { db, t } = await import("../lib/db/client");
+  const { eq } = await import("drizzle-orm");
+  const { startAttempt, submitAttempt } = await import("../lib/quiz/engine");
   const [csQuiz] = await db.select().from(t.quizzes).where(eq(t.quizzes.title, "Service standard check")).limit(1);
   if (csQuiz) {
-    const attempt = await startAttempt(csQuiz, { id: opts.learnerIds.meera, timeMultiplier: 1 });
+    const attempt = await startAttempt(csQuiz, { id: learnerIds.meera, timeMultiplier: 1 });
     const answers: Record<string, unknown> = {};
     for (const served of attempt.servedItems) {
       const [q] = await db.select().from(t.questions).where(eq(t.questions.id, served.questionId)).limit(1);
@@ -268,5 +276,5 @@ export async function seedAssessments(opts: {
     await submitAttempt(attempt.id);
   }
 
-  console.log("Assessments seeded: 4 banks, 4 quizzes, staged AI-graded attempt in review queue.");
+  console.log("Staged AI-graded attempt in the review queue.");
 }
