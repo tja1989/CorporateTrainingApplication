@@ -306,7 +306,8 @@ dialog[open] { opacity: 1; transform: none; transition: opacity var(--duration-b
 @starting-style { dialog[open] { opacity: 0; transform: translateY(8px) scale(0.98); } }
 dialog[open]::backdrop { transition: background-color var(--duration-base) var(--ease-out); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } .pressable:active, .card-interactive:hover { transform: none; } }
-.course-cover { aspect-ratio: 16 / 9; width: 100%; overflow: hidden; background: var(--surface-2); }
+/* Layered so size utilities passed to CourseCover (w-16 thumbnails) win over the default width. */
+@layer components { .course-cover { aspect-ratio: 16 / 9; width: 100%; overflow: hidden; background: var(--surface-2); } }
 .course-cover-fallback { height: 100%; min-height: 140px; }
 .course-cover-art { display: block; width: 100%; height: 100%; }
 .cover-field-1 { background: var(--cover-1); } .cover-field-2 { background: var(--cover-2); } .cover-field-3 { background: var(--cover-3); }

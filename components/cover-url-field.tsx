@@ -15,7 +15,7 @@ export function CoverUrlField({ defaultValue, title, tags }: { defaultValue: str
       </Field>
       <div>
         <p className="mb-1 text-sm font-medium text-foreground">Preview</p>
-        <CourseCover key={previewable ? url : "generated"} title={title} tags={tags} coverUrl={previewable ? url : null} className="rounded-input border border-border" />
+        <CourseCover key={previewable ? url : "generated"} title={title} tags={tags} coverUrl={previewable ? url : null} className="course-cover-compact rounded-input border border-border" />
       </div>
     </div>
   );

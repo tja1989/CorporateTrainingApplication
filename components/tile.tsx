@@ -10,7 +10,7 @@ const tones = {
   default: { card: "border-border bg-surface", value: "text-foreground", dot: null },
   muted: { card: "border-transparent bg-surface-2", value: "text-muted", dot: null },
   success: { card: "border-border bg-surface", value: "text-foreground", dot: "bg-success" },
-  warning: { card: "border-transparent bg-warning-tint", value: "text-foreground", dot: "bg-warning" },
+  warning: { card: "border-border bg-surface", value: "text-foreground", dot: "bg-warning" },
   destructive: { card: "border-border bg-surface", value: "text-destructive-text", dot: "bg-destructive" },
   ai: { card: "border-transparent bg-ai-tint", value: "text-ai-fg", dot: null },
 } as const;
