@@ -7,6 +7,7 @@ import { requirePermission } from "@/lib/auth/guard";
 import { AiSurface, Button, Card, Chip, PageTitle, EmptyState, Input, Field } from "@/components/ui";
 import { approveDraftAction, discardDraftAction, confirmGradeAction, adjustGradeAction, markInterviewReviewedAction, overturnInterviewAction } from "./actions";
 import { pendingInterviewReviews } from "@/lib/live/store";
+import { formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -136,7 +137,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                   </span>
                 </div>
                 <p className="mb-2 text-xs text-muted">
-                  {r.lessonTitle} · {r.courseTitle} · {r.completedAt?.toISOString().slice(0, 16).replace("T", " ") ?? ""}
+                  {r.lessonTitle} · {r.courseTitle} · {r.completedAt ? formatDateTime(r.completedAt) : ""}
                 </p>
                 {r.evaluation ? (
                   <AiSurface variant="block" label="AI evaluation" mock={r.evaluationSource === "mock"} className="mb-2 block max-w-full">

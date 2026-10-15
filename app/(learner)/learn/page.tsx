@@ -234,8 +234,7 @@ export default async function LearnPage({
           <CourseFolders courses={folderScope} query={query} />
           {query.view === "upcoming" ? (
             <p className="mb-4 text-sm text-muted">
-              Assigned training that opens later, ordered by start date. Dates
-              use Asia/Dubai.
+              Assigned training that opens later, in start-date order.
             </p>
           ) : null}
           <h2 className="mb-4 text-lg font-semibold">

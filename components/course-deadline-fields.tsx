@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Field, Input } from "./ui";
+import { zoneLabel } from "@/lib/format";
 export function CourseDeadlineFields() {
   const [useDates, setUseDates] = useState(false);
   return (
@@ -16,7 +17,7 @@ export function CourseDeadlineFields() {
         Use course end dates
       </label>
       <p className="mb-3 text-sm text-muted">
-        Course dates use Asia/Dubai. A course without an end date has no
+        Course dates use {zoneLabel()}. A course without an end date has no
         deadline when this option is selected. Existing assignments keep their
         deadlines.
       </p>

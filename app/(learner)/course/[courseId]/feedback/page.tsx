@@ -4,10 +4,10 @@ import { db, t } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/guard";
 import { ownFeedback, feedbackContext } from "@/lib/feedback/service";
 import { id } from "@/lib/ids";
-import { DEFAULT_TZ } from "@/lib/time";
 import { CourseFeedbackForm } from "@/components/course-feedback-form";
 import { ButtonLink, PageTitle } from "@/components/ui";
 import { saveFeedbackAction } from "./actions";
+import { formatDay } from "@/lib/format";
 export const dynamic = "force-dynamic";
 export default async function FeedbackPage({
   params,
@@ -62,7 +62,7 @@ export default async function FeedbackPage({
   return (
     <div className="mx-auto max-w-4xl">
       <PageTitle
-        sub={`${course?.title ?? "Completed course"} · Training completed ${new Intl.DateTimeFormat("en", { timeZone: DEFAULT_TZ, dateStyle: "medium" }).format(completedAt)} · Feedback is optional and does not affect completion or certificates.`}
+        sub={`${course?.title ?? "Completed course"}, completed ${formatDay(completedAt)}. Feedback is optional and does not change completion or certificates.`}
       >
         Course and instructor feedback
       </PageTitle>

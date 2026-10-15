@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Button, Field, Input, Select } from "./ui";
+import { zoneLabel } from "@/lib/format";
 
 export type PrerequisiteChoice = {
   id: string;
@@ -30,7 +31,7 @@ export function CoursePlanningFields({
       <legend className="font-semibold">Schedule and organization</legend>
       <input type="hidden" name="planningFields" value="1" />
       <p className="mb-4 text-sm text-muted">
-        Dates use Asia/Dubai. Training opens on the start date; the end date is
+        Dates use {zoneLabel()}. Training opens on the start date; the end date is
         a completion target. Employees can still finish overdue training.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">

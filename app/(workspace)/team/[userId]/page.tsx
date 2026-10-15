@@ -17,6 +17,7 @@ import {
 } from "@/components/ui";
 import { assignAction, nudgeAction, issueResetAction } from "../actions";
 import { interviewsForUser } from "@/lib/live/store";
+import { formatDay, formatDue } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -106,7 +107,7 @@ export default async function TeamMemberPage({
                     <p className="text-xs text-muted">
                       {e.source}
                       {e.dueAt
-                        ? ` · due ${e.dueAt.toISOString().slice(0, 10)}`
+                        ? ` · ${formatDue(e.dueAt)}`
                         : ""}
                     </p>
                   </div>
@@ -202,7 +203,7 @@ export default async function TeamMemberPage({
               >
                 <span>{courseOf.get(r.courseId)?.title ?? r.courseId}</span>
                 <span className="text-muted">
-                  {r.completedAt.toISOString().slice(0, 10)}
+                  {formatDay(r.completedAt)}
                 </span>
               </li>
             ))}
@@ -225,7 +226,7 @@ export default async function TeamMemberPage({
                     </p>
                     <p className="text-xs text-muted">
                       {c.courseTitle} ·{" "}
-                      {c.completedAt?.toISOString().slice(0, 10)}
+                      {c.completedAt ? formatDay(c.completedAt) : ""}
                     </p>
                   </div>
                   <Chip variant={c.outcome === "PASS" ? "success" : "warning"}>

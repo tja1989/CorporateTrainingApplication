@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { Markdown, slugify } from "@/lib/markdown";
 import { Card, Chip, PageTitle } from "@/components/ui";
 import { ScrollToSection } from "./scroll";
+import { formatDay } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export default async function PolicyPage({
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <PageTitle>{doc.title}</PageTitle>
         <Chip variant={doc.status === "ACTIVE" ? "success" : "destructive"}>
-          {doc.status === "ACTIVE" ? `v${doc.version} · effective ${doc.effectiveDate.toISOString().slice(0, 10)}` : "Superseded"}
+          {doc.status === "ACTIVE" ? `Version ${doc.version}, effective ${formatDay(doc.effectiveDate)}` : "Superseded"}
         </Chip>
         {doc.isDemo ? <Chip variant="warning">DEMO — fictional handbook</Chip> : null}
       </div>

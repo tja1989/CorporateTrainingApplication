@@ -3,7 +3,7 @@ import { alias } from "drizzle-orm/pg-core";
 import { db, t } from "@/lib/db/client";
 import { isCourseAvailable } from "@/lib/courses/availability";
 import { courseHasOpened } from "@/lib/courses/planning";
-import { DEFAULT_TZ } from "@/lib/time";
+import { formatDateTime } from "@/lib/format";
 import type { LearningDatabase } from "./learning-cycle";
 
 export type PlanningCourse = Pick<
@@ -44,7 +44,7 @@ export function evaluateCoursePlanningAccess(
       blocked: true,
       reason: "scheduled",
       startsAt: course.startsAt!,
-      message: `This course opens ${new Intl.DateTimeFormat("en", { timeZone: DEFAULT_TZ, dateStyle: "medium", timeStyle: "short" }).format(course.startsAt!)} (${DEFAULT_TZ}).`,
+      message: `This course opens ${formatDateTime(course.startsAt!, { now })}.`,
     };
   const missing = required.filter((row) => !completed.has(row.id));
   if (missing.length)

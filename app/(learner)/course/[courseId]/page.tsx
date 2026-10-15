@@ -192,11 +192,6 @@ export default async function CoursePage({
             <span className="text-sm text-muted">
               {course.estMinutes} min · {course.language.toUpperCase()}
             </span>
-            {enrollment?.dueAt ? (
-              <Chip variant="neutral">
-                Due {enrollment.dueAt.toISOString().slice(0, 10)}
-              </Chip>
-            ) : null}
             {course.sequentialLock ? (
               <Chip variant="neutral">Complete in order</Chip>
             ) : null}

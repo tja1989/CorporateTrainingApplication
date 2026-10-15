@@ -1,16 +1,11 @@
-import { DEFAULT_TZ } from "@/lib/time";
 import type {
   CoursePlanningAccess,
   RequiredCourse,
 } from "@/lib/lms/planning-access";
 import { ButtonAnchor } from "./ui";
+import { formatDay } from "@/lib/format";
 
-function day(date: Date) {
-  return new Intl.DateTimeFormat("en", {
-    timeZone: DEFAULT_TZ,
-    dateStyle: "medium",
-  }).format(date);
-}
+const day = (date: Date) => formatDay(date);
 export function CoursePlanningSummary({
   course,
   enrollment,
@@ -80,8 +75,7 @@ export function CoursePlanningSummary({
         ) : null}
       </dl>
       <p className="mt-3 text-sm text-muted">
-        Dates use {DEFAULT_TZ}. The end date is a target; overdue training can
-        still be completed.
+        The end date is a target; overdue training can still be completed.
       </p>
       {course.folderPath ? (
         <p className="mt-3 text-sm">

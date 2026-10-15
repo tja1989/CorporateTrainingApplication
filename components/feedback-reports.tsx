@@ -4,7 +4,7 @@ import type { FeedbackReportParams } from "@/lib/feedback/report-options";
 import type { Actor } from "@/lib/auth/roles";
 import { FeedbackPeriodFields } from "./feedback-period-fields";
 import { FeedbackModeration } from "./feedback-moderation";
-import { DEFAULT_TZ } from "@/lib/time";
+import { formatDateTime } from "@/lib/format";
 export function FeedbackReports({
   actor,
   params,
@@ -109,7 +109,6 @@ export function FeedbackReports({
               Download CSV
             </ButtonAnchor>
           ) : null}
-          <span className="text-sm text-muted">Timezone: {DEFAULT_TZ}</span>
         </div>
       </form>
       {error ? (
@@ -182,11 +181,7 @@ export function FeedbackReports({
                         >
                           <span className="whitespace-pre-wrap break-words">
                             {report.columns[column] === "Submitted"
-                              ? new Intl.DateTimeFormat("en", {
-                                  timeZone: DEFAULT_TZ,
-                                  dateStyle: "medium",
-                                  timeStyle: "short",
-                                }).format(new Date(String(cell)))
+                              ? formatDateTime(new Date(String(cell)))
                               : cell}
                           </span>
                         </td>

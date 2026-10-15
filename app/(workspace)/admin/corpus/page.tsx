@@ -6,6 +6,7 @@ import { db, t } from "@/lib/db/client";
 import { requirePermission } from "@/lib/auth/guard";
 import { Card, StatusChip, PageTitle, DemoBanner, Button, Field, Input, Select, Textarea, Tile } from "@/components/ui";
 import { publishPolicyAction } from "./actions";
+import { formatDay } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export default async function CorpusPage({ searchParams }: { searchParams: Promi
                 <div className="min-w-0">
                   <p className="break-words font-medium text-link">{doc.title}</p>
                   <p className="text-xs text-muted">
-                    {doc.country} · v{doc.version} · effective {doc.effectiveDate.toISOString().slice(0, 10)} · {doc.audience}
+                    {doc.country} · v{doc.version} · effective {formatDay(doc.effectiveDate)} · {doc.audience}
                     {doc.owner ? ` · owner: ${doc.owner}` : ""}
                   </p>
                 </div>

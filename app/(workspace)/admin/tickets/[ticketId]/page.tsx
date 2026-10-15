@@ -6,6 +6,7 @@ import { db, t } from "@/lib/db/client";
 import { requirePermission } from "@/lib/auth/guard";
 import { Button, Card, Chip, PageTitle, Textarea, Field, cx } from "@/components/ui";
 import { adminReplyAction, resolveTicketAction } from "./actions";
+import { formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ export default async function AdminTicketPage({ params }: { params: Promise<{ ti
       <div className="mb-4 flex flex-col gap-2">
         {messages.map((m) => (
           <Card key={m.id} className={cx("p-3 text-sm", m.authorId !== ticket.userId && "bg-ai-tint")}>
-            <p className="mb-2 text-sm font-medium text-muted">{nameOf.get(m.authorId) ?? "—"} · {m.createdAt.toISOString().slice(0,16).replace("T", " ")}</p>
+            <p className="mb-2 text-sm font-medium text-muted">{nameOf.get(m.authorId) ?? "—"} · {formatDateTime(m.createdAt)}</p>
             <p className="whitespace-pre-wrap break-words">{m.body}</p>
           </Card>
         ))}

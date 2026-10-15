@@ -11,6 +11,7 @@ import { LiveControls } from "@/components/live-controls";
 import { VoiceConsent } from "@/components/voice-consent";
 import { ConfirmDialog } from "@/components/dialog";
 import { AiSurface, AnimatedNumber, Button, ButtonLink, Card, Chip } from "@/components/ui";
+import { formatDateTime } from "@/lib/format";
 
 export type OralResult = {
   state?: string | null;
@@ -191,7 +192,7 @@ export function ResultCard({ title, result, passPct, gating }: { title: string; 
           </ol>
         </AiSurface>
       ) : null}
-      {result.completedAt ? <p className="mt-2 text-xs text-muted">{new Date(result.completedAt).toLocaleString()}</p> : null}
+      {result.completedAt ? <p className="mt-2 text-xs text-muted">{formatDateTime(new Date(result.completedAt))}</p> : null}
     </Card>
   );
 }

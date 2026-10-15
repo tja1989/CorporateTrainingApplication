@@ -12,6 +12,7 @@ import {
   Button,
   ButtonAnchor,
 } from "@/components/ui";
+import { formatRelative } from "@/lib/format";
 
 export async function InboxList({
   userId,
@@ -84,7 +85,7 @@ export async function InboxList({
                     {n.readAt ? "Read" : "Unread"}
                   </Chip>
                   <span className="shrink-0 text-xs text-muted">
-                    {n.sentAt.toISOString().slice(0, 10)}
+                    {formatRelative(n.sentAt)}
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-muted">{body}</p>

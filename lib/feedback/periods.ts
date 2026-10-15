@@ -1,4 +1,5 @@
 import { isoWeekStart, localDate, zonedTimeToUtc } from "@/lib/time";
+import { formatDay } from "@/lib/format";
 export type FeedbackPeriod = { start: Date; end: Date; label: string };
 function day(value: string): Date {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value))
@@ -42,11 +43,12 @@ export function feedbackPeriod(
         "Choose a period of 1 to 366 days, with the start before the through date.",
       );
     end = new Date(through.getTime() + 86400000);
-    label = `${custom.start} through ${custom.end}`;
+    // Calendar dates here are UTC-midnight markers, so word them in UTC.
+    label = `${formatDay(start, { tz: "UTC", now })} to ${formatDay(through, { tz: "UTC", now })}`;
   } else if (kind === "week") {
     start = day(isoWeekStart(now, tz));
     end = new Date(start.getTime() + 7 * 86400000);
-    label = `Week of ${start.toISOString().slice(0, 10)}`;
+    label = `Week of ${formatDay(start, { tz: "UTC", now })}`;
   } else if (kind === "month") {
     const local = day(localDate(now, tz));
     start = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), 1));
@@ -62,6 +64,6 @@ export function feedbackPeriod(
   return {
     start: midnight(start, tz),
     end: midnight(end, tz),
-    label: `${label} · ${tz}`,
+    label,
   };
 }

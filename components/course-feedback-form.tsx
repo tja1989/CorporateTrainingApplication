@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button, Field, Textarea } from "./ui";
 import type { FeedbackKind, SavedFeedback } from "@/lib/feedback/types";
 import type { FeedbackActionResult } from "@/app/(learner)/course/[courseId]/feedback/actions";
+import { formatDateTime } from "@/lib/format";
 const scores = [
   [1, "Poor"],
   [2, "Fair"],
@@ -162,11 +163,7 @@ export function CourseFeedbackForm({
                 {" "}
                 · {dirty ? "Last saved: " : ""}
                 {saved.rating}/5 ·{" "}
-                {new Date(saved.updatedAt)
-                  .toISOString()
-                  .slice(0, 16)
-                  .replace("T", " ")}{" "}
-                UTC
+                {formatDateTime(new Date(saved.updatedAt))}
               </>
             ) : null}
           </p>

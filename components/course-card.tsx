@@ -1,8 +1,8 @@
 import { CourseCover } from "./course-cover";
 import { Card, Chip } from "./ui";
 import { courseHasOpened } from "@/lib/courses/planning";
-import { DEFAULT_TZ } from "@/lib/time";
 import type { CourseWithProgress } from "@/lib/lms/queries";
+import { formatDay } from "@/lib/format";
 
 type Course = CourseWithProgress["course"];
 export function LearningProgress({
@@ -53,10 +53,7 @@ export function CourseCard({
             {!courseHasOpened(course.startsAt) ? (
               <Chip variant="neutral">
                 Opens{" "}
-                {new Intl.DateTimeFormat("en", {
-                  timeZone: DEFAULT_TZ,
-                  dateStyle: "medium",
-                }).format(course.startsAt!)}
+                {formatDay(course.startsAt!)}
               </Chip>
             ) : null}
             {course.tags.slice(0, 2).map((tag) => (

@@ -7,6 +7,7 @@ import { workflowAction } from "@/app/(workspace)/admin/courses/actions";
 import { WorkspaceForm } from "./workspace-form";
 import { Button, Chip, Field, Select, Textarea } from "./ui";
 import { statusLabel } from "@/lib/status";
+import { formatDateTime } from "@/lib/format";
 const labels = {
   DRAFT: "Draft",
   SUBMITTED: "Awaiting Department Head approval",
@@ -200,7 +201,7 @@ export async function CourseWorkflow({
                   {nameOf.get(event.actorId) ?? "Former user"}
                 </p>
                 <p className="mt-1 text-muted">
-                  {event.at.toLocaleString("en-GB", { timeZone: "Asia/Dubai" })}{" "}
+                  {formatDateTime(event.at)}{" "}
                   · {statusLabel(event.toState).label},{" "}
                   {statusLabel(event.toPublication).label.toLowerCase()}
                 </p>

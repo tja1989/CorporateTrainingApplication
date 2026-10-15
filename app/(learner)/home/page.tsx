@@ -5,7 +5,6 @@ import { requireUser } from "@/lib/auth/guard";
 import { myCourses, recommend } from "@/lib/lms/queries";
 import { buildCourseOutline } from "@/lib/lms/course-outline";
 import { coursePlanningAccess } from "@/lib/lms/planning-access";
-import { DEFAULT_TZ } from "@/lib/time";
 import { pathPrerequisite } from "@/lib/lms/path-access";
 import { flatLessons } from "@/lib/lms/outline";
 import { CourseCover } from "@/components/course-cover";
@@ -19,6 +18,7 @@ import {
   EmptyState,
   DemoBanner,
 } from "@/components/ui";
+import { formatDay, formatDue } from "@/lib/format";
 export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const user = await requireUser();
@@ -132,7 +132,7 @@ export default async function HomePage() {
           }
           body={
             upcoming.length
-              ? `Your next course opens ${new Intl.DateTimeFormat("en", { timeZone: DEFAULT_TZ, dateStyle: "medium" }).format(upcoming[0].course.startsAt!)} (${DEFAULT_TZ}). You can review the schedule now.`
+              ? `Your next course opens ${formatDay(upcoming[0].course.startsAt!)}. You can review the schedule now.`
               : allAssignedDone
                 ? "Explore more courses or revisit completed training in My Learning."
                 : mine.length
@@ -168,7 +168,7 @@ export default async function HomePage() {
                     <h3 className="font-medium">{c.course.title}</h3>
                     <p className="text-sm text-muted">
                       {c.enrollment?.dueAt
-                        ? `Due ${c.enrollment.dueAt.toISOString().slice(0, 10)}`
+                        ? formatDue(c.enrollment.dueAt)
                         : "Assigned training"}
                     </p>
                   </div>

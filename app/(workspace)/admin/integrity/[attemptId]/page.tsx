@@ -6,6 +6,7 @@ import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
 import { Button, Card, Chip, Field, Input, PageTitle, cx } from "@/components/ui";
 import { clearAttemptAction, voidAttemptAction } from "./actions";
+import { formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,7 @@ export default async function IntegrityDetailPage({ params }: { params: Promise<
     <div className="animate-slide-up mx-auto max-w-2xl">
       <WorkspaceLink href="/admin/integrity" className="mb-4">← Integrity review</WorkspaceLink>
       <PageTitle
-        sub={`${user?.name ?? "—"} (${user?.employeeId ?? "—"}) · started ${attempt.startedAt.toISOString().slice(0, 16).replace("T", " ")} · ${attempt.state}${attempt.maxScore ? ` · ${Math.round(((attempt.score ?? 0) / attempt.maxScore) * 100)}%` : ""}`}
+        sub={`${user?.name ?? "—"} (${user?.employeeId ?? "—"}) · started ${formatDateTime(attempt.startedAt)} · ${attempt.state}${attempt.maxScore ? ` · ${Math.round(((attempt.score ?? 0) / attempt.maxScore) * 100)}%` : ""}`}
       >
         {quiz?.title ?? "Attempt"}
       </PageTitle>
