@@ -22,7 +22,7 @@ export default async function AskHrPage() {
   // The conversation flows in the page (no inner scroll region — spec §10.7
   // v1.2); the composer sticks to the bottom of the viewport.
   return (
-    <HrHistoryBoundary userId={user.id} loginId={user.session.loginId!} sessionOnly={!historyAvailable} expiresAt={historyAvailable ? hrHistoryExpiresAt(user.session) : (user.session.exp ?? 0) * 1000}><div className="animate-slide-up mx-auto max-w-2xl">
+    <HrHistoryBoundary userId={user.id} loginId={user.session.loginId!} sessionOnly={!historyAvailable} expiresAt={historyAvailable ? hrHistoryExpiresAt(user.session) : (user.session.exp ?? 0) * 1000}><div className="mx-auto max-w-2xl">
       <PageTitle sub="Ask about company policies, with sources you can read.">HR Help</PageTitle>
       {!historyAvailable ? <HrHistoryUnlock newConversationBelow /> : null}
       {tickets.length > 0 ? (

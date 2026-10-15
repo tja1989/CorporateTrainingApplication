@@ -297,7 +297,7 @@ export function QuizRunner({
   /* ---------------- results ---------------- */
   if (phase === "result" && result) {
     return (
-      <div className="animate-enter">
+      <div>
         <Card className="mb-4 p-6">
           <p className="display mb-1 text-xl">
             <AnimatedNumber value={result.scorePct} suffix="%" />

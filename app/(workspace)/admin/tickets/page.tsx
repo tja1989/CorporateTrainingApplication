@@ -16,7 +16,7 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
   const nameOf = new Map(users.map((u) => [u.id, u.name]));
 
   return (
-    <div className="animate-slide-up">
+    <div>
       <PageTitle sub="Escalations from the HR assistant. Employees consented to sharing their transcript.">HR tickets</PageTitle>
       <form action="/admin/tickets" method="get" className="mb-4 grid items-end gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]"><Field label="Search tickets"><Input name="q" defaultValue={q} placeholder="Ticket subject" /></Field><Field label="Ticket status"><Select name="state" defaultValue={state}><option value="">All statuses</option><option value="OPEN">Open</option><option value="IN_PROGRESS">In progress</option><option value="RESOLVED">Resolved</option></Select></Field><Button type="submit" className="mb-4">Apply filters</Button></form><p className="mb-3 text-sm text-muted">{tickets.length} tickets · unresolved requests first</p>
       {tickets.length === 0 ? (

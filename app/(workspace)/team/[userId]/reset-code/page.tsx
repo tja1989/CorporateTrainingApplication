@@ -34,7 +34,7 @@ export default async function ResetCodePage({
     notFound();
 
   return (
-    <div className="animate-slide-up mx-auto max-w-md">
+    <div className="mx-auto max-w-md">
       <PageTitle
         sub={`One-time activation code for ${member.name} (${member.employeeId}). Shown once — write it down or tell them now.`}
       >

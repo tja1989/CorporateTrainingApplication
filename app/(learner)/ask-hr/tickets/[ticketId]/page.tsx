@@ -29,7 +29,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
   const nameOf = new Map(authors.map((a) => [a.id, a.role === "ADMIN" ? "HR team" : a.name]));
 
   return (
-    <HrHistoryBoundary userId={user.id} loginId={user.session.loginId!} conversationId={ticket.conversationId} expiresAt={user.session.activeHrConversationId === ticket.conversationId ? (user.session.exp ?? 0) * 1000 : hrHistoryExpiresAt(user.session)}><div className="animate-slide-up mx-auto max-w-2xl">
+    <HrHistoryBoundary userId={user.id} loginId={user.session.loginId!} conversationId={ticket.conversationId} expiresAt={user.session.activeHrConversationId === ticket.conversationId ? (user.session.exp ?? 0) * 1000 : hrHistoryExpiresAt(user.session)}><div className="mx-auto max-w-2xl">
       <div className="mb-3"><ButtonLink variant="ghost" href="/ask-hr">Back to HR Help</ButtonLink></div>
       <PageTitle sub={`Ticket · ${ticket.state.toLowerCase().replace("_", " ")}`}>{ticket.subject}</PageTitle>
       {sent === "1" ? <p role="status" className="mb-4 text-sm text-success-fg">Your reply was sent to HR.</p> : null}

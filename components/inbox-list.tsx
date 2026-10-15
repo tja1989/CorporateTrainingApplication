@@ -58,7 +58,7 @@ export async function InboxList({
   const unread = counts.unread;
 
   return (
-    <div className="animate-slide-up">
+    <div>
       <PageTitle
         sub={`${unread} unread · Updates about your learning and HR requests.`}
       >

@@ -81,7 +81,7 @@ export default async function PeoplePage({
       : paths.find((p) => p.id === r.targetId)?.title;
 
   return (
-    <div className="animate-slide-up">
+    <div>
       <PageHeader
         title="People"
         sub="Manage employees, import new starters, and keep required learning aligned with their roles."

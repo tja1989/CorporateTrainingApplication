@@ -252,6 +252,12 @@ export default async function LearnPage({
                 />
               ))}
             </div>
+          ) : query.view === "upcoming" &&
+            !(query.q || query.tag || query.language || query.duration || query.status || query.folder) ? (
+            <EmptyState
+              title="No upcoming training"
+              body="Training scheduled to open later will appear here."
+            />
           ) : (
             <EmptyState
               title="No courses match these filters"

@@ -27,7 +27,7 @@ export default async function IntegrityPage() {
   const quizOf = new Map(quizzes.map((q) => [q.id, q]));
 
   return (
-    <div className="animate-slide-up">
+    <div>
       <PageTitle sub="Monitored attempts with their event flags. A person decides — never the flags alone.">Integrity review</PageTitle>
       {attempts.length === 0 ? (
         <EmptyState icon="shield" title="No monitored attempts yet" />

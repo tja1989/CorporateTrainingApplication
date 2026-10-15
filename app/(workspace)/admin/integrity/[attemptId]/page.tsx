@@ -33,7 +33,7 @@ export default async function IntegrityDetailPage({ params }: { params: Promise<
   const open = attempt.state !== "CLEARED" && attempt.state !== "VOIDED";
 
   return (
-    <div className="animate-slide-up mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl">
       <WorkspaceLink href="/admin/integrity" className="mb-4">← Integrity review</WorkspaceLink>
       <PageTitle
         sub={`${user?.name ?? "—"} (${user?.employeeId ?? "—"}) · started ${formatDateTime(attempt.startedAt)} · ${attempt.state}${attempt.maxScore ? ` · ${Math.round(((attempt.score ?? 0) / attempt.maxScore) * 100)}%` : ""}`}

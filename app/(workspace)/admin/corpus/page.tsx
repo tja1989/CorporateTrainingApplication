@@ -40,7 +40,7 @@ export default async function CorpusPage({ searchParams }: { searchParams: Promi
     .limit(10);
 
   return (
-    <div className="animate-slide-up">
+    <div>
       <DemoBanner />
       <PageTitle sub="Policy documents, versions, and assistant quality.">HR corpus</PageTitle>
 

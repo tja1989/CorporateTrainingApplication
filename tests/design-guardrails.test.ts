@@ -35,6 +35,23 @@ describe("xprtn design contract", () => {
     for (const [name, curve] of [["out", EASE_OUT], ["in-out", EASE_IN_OUT]] as const) expect(css.match(new RegExp(`--ease-${name}:\\s*cubic-bezier\\(([^)]+)\\)`))?.[1].split(",").map(Number)).toEqual(curve);
     expect(css).not.toMatch(/@keyframes ll-(enter|slide-up|pop|float|wave)/);
   });
+  it("prefers the platform UI font before Arial", () => {
+    const stack = css.match(/--font-sans:([^;]+);/)![1];
+    expect(stack.indexOf("system-ui")).toBeGreaterThan(-1);
+    expect(stack.indexOf("Roboto")).toBeGreaterThan(-1);
+    expect(stack.indexOf("Roboto")).toBeLessThan(stack.indexOf("Arial"));
+  });
+  it("ships no dead animation or undefined helper classes", () => {
+    expect(files.filter(f => /\banimate-(enter|slide-up|pop|stagger|float|wave)\b|className=\{?["'`][^"'`]*\bnudge\b/.test(readFileSync(f, "utf8")))).toEqual([]);
+    expect(css).not.toMatch(/\.animate-(enter|slide-up|pop|stagger|float|wave)\b/);
+  });
+  it("sizes course covers for full rows and compact thumbnails", () => {
+    expect(css).toMatch(/\.course-cover-fill\s*\{[^}]*aspect-ratio:\s*auto/);
+    expect(css).toMatch(/\.course-cover-compact \.course-cover-fallback\s*\{[^}]*min-height:\s*0/);
+    const uses = (name: string) => files.filter(f => readFileSync(f, "utf8").includes(name)).map(f => f.split("/app/").pop()?.split("/components/").pop());
+    expect(uses("course-cover-fill")).toEqual(["(learner)/path/[pathId]/page.tsx"]);
+    expect(uses("course-cover-compact")).toEqual(["course-catalog.tsx"]);
+  });
   it("has no stale product brand in shipped source", () => {
     expect(files.filter(file => /LuLu Learn|welearn/i.test(readFileSync(file, "utf8")))).toEqual([]);
   });

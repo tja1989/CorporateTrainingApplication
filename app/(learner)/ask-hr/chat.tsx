@@ -249,7 +249,7 @@ export function HrChat({ userId, loginId, loadHistory = true, activeConversation
         {escalateOffer && !ticketSent ? (
           <div>
             <PillButton onClick={() => setConfirmOpen(true)}>
-              Ask the HR team directly <Icon name="arrow-right" size={12} className="nudge" />
+              Ask the HR team directly <Icon name="arrow-right" size={12} />
             </PillButton>
           </div>
         ) : null}

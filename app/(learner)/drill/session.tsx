@@ -42,8 +42,8 @@ export function DrillSession({ daysThisWeek, streakWeeks }: { daysThisWeek: numb
 
   if (questions.length === 0) {
     return (
-      <Card className="animate-enter mx-auto max-w-md p-6 text-center">
-        <IconDisc name="check" tone="success" size={56} className="animate-pop mb-3" />
+      <Card className="mx-auto max-w-md p-6 text-center">
+        <IconDisc name="check" tone="success" size={56} className="mb-3" />
         <h2 className="display mb-1 text-lg">{error ? "Practice unavailable" : "Nothing due right now"}</h2>
         <p className="text-sm text-muted">{error ?? "You are ahead of the scheduler. Come back tomorrow for more practice."}</p>
       </Card>
@@ -52,8 +52,8 @@ export function DrillSession({ daysThisWeek, streakWeeks }: { daysThisWeek: numb
 
   if (finished) {
     return (
-      <Card className="animate-enter mx-auto max-w-md p-6 text-center">
-        <IconDisc name="flame" tone="accent" size={56} className="animate-pop mb-3" />
+      <Card className="mx-auto max-w-md p-6 text-center">
+        <IconDisc name="flame" tone="accent" size={56} className="mb-3" />
         <h2 className="display mb-1 text-2xl">
           <AnimatedNumber value={score} />/{questions.length} — nice work
         </h2>
@@ -137,7 +137,7 @@ export function DrillSession({ daysThisWeek, streakWeeks }: { daysThisWeek: numb
                 <Button className="mt-4 w-full" disabled={busy || !isAnswered(q, response)} onClick={() => response && void answer(response)}>{busy ? "Checking…" : "Check answer"}</Button>
               </>
             ) : (
-              <div className="animate-enter">
+              <div>
                 <Chip variant={feedback.correct ? "success" : "destructive"}>{feedback.correct ? "Correct" : "Not quite"}</Chip>
                 {!feedback.correct && feedback.correctAnswer ? (
                   <p className="mt-2 text-sm">

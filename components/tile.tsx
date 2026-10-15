@@ -56,7 +56,7 @@ export function Tile({
       {ring !== undefined ? (
         <ProgressRing pct={ring} size={48} />
       ) : href && !disabled ? (
-        <span className="nudge flex size-6 shrink-0 items-center justify-center rounded-control bg-surface-2 text-foreground" aria-hidden>
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-control bg-surface-2 text-foreground" aria-hidden>
           <Icon name="arrow-right" size={14} />
         </span>
       ) : null}

@@ -73,7 +73,7 @@ export default async function QuizPage({
     : false;
 
   return (
-    <div className="animate-slide-up mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl">
       <PageTitle
         sub={
           quiz.settings.feedbackMode === "EXAM"

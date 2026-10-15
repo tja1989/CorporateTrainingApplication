@@ -53,7 +53,7 @@ export default async function InterviewPage({ params }: { params: Promise<{ less
     );
   }
   return (
-    <div className="animate-slide-up">
+    <div>
       <PageHeader
         title="Oral check"
         sub={`${loaded.lesson.title} · ${loaded.course.title}`}

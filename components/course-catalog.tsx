@@ -101,6 +101,7 @@ export async function CourseCatalog({
               >
                 <div className="hidden w-[120px] max-w-full shrink-0 overflow-hidden rounded-input sm:block">
                   <CourseCover
+                    className="course-cover-compact"
                     title={c.title}
                     tags={c.tags}
                     coverUrl={c.coverUrl}

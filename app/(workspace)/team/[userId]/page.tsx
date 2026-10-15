@@ -79,7 +79,7 @@ export default async function TeamMemberPage({
     lastNudge && Date.now() - lastNudge.sentAt.getTime() < 48 * 3600_000;
 
   return (
-    <div className="animate-slide-up mx-auto max-w-5xl">
+    <div className="mx-auto max-w-5xl">
       <WorkspaceLink href={manager.role==="HR_HEAD"?"/hr/people":"/team"} className="mb-4">
         ← {manager.role==="HR_HEAD"?"Employees":"My team"}
       </WorkspaceLink>

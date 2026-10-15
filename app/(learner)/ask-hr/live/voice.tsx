@@ -29,7 +29,7 @@ export function HrVoice({ configured, sharedDevice, demoMode, firstName }: { con
   if (locked) {
     return (
       <Card className="flex flex-col items-center justify-center gap-3 p-6 text-center">
-        <IconDisc name="sparkle" tone="ai" size={56} className="animate-pop" />
+        <IconDisc name="sparkle" tone="ai" size={56} />
         <h2 className="display text-lg">Your HR conversations are private</h2>
         <p className="max-w-sm text-sm text-muted">You can start a new conversation on this shared device. Opening stored HR history requires password verification in HR Help.</p>
         <Button onClick={() => setLocked(false)}>Continue to voice</Button>

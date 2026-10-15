@@ -180,7 +180,10 @@ export default async function LessonPage({
                 )}
               </Card>
             ) : null}
-            <LessonCompletion lessonId={lesson.id} />
+            {/* The oral check reads in a narrower column; its footer matches it. */}
+            <div className={lesson.type === "INTERVIEW" ? "max-w-3xl" : undefined}>
+              <LessonCompletion lessonId={lesson.id} />
+            </div>
             <nav
               className="flex flex-wrap justify-between gap-3"
               aria-label="Lesson navigation"

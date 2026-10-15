@@ -64,7 +64,7 @@ export function AskReports({ scope }: { scope?: "team" } = {}) {
       {loading ? <Skeleton delayed className="mt-3 h-[64px] w-full" /> : null}
 
       {result ? (
-        <div className="animate-enter mt-3">
+        <div className="mt-3">
           <AiSurface variant="block" className="mb-3" mock={result.mock}>
             {result.narration}
           </AiSurface>

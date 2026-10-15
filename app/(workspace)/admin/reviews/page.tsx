@@ -40,7 +40,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   const selectedOral = oralReviews.some(r => r.id === item) ? item : oralReviews[0]?.id;
 
   return (
-    <div className="animate-slide-up">
+    <div>
       <PageTitle sub="Human judgement gates: AI-graded answers and AI-drafted questions.">Review queues</PageTitle>
 
       <WorkspaceTabs label="Review queue" items={[{ href: "/admin/reviews?view=grades", label: `Grades (${pendingGrades.length})`, active: view === "grades" }, { href: "/admin/reviews?view=drafts", label: `Question drafts (${drafts.length})`, active: view === "drafts" }, { href: "/admin/reviews?view=oral", label: `Oral checks (${oralReviews.length})`, active: view === "oral" }]} />

@@ -26,7 +26,7 @@ export default async function AdminTicketPage({ params }: { params: Promise<{ ti
   const nameOf = new Map(authors.map((a) => [a.id, a.name]));
 
   return (
-    <div className="animate-slide-up mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl">
       <WorkspaceLink href="/admin/tickets" className="mb-4">← HR tickets</WorkspaceLink>
       <div className="mb-3"><Chip variant={ticket.state === "RESOLVED" ? "success" : "warning"}>{ticket.state.toLowerCase().replaceAll("_", " ")}</Chip></div>
       <PageTitle sub={`${requester?.name ?? "Employee"} · ${requester?.jobTitle ?? ""} · ${requester?.employeeId ?? ""}`}>

@@ -108,6 +108,7 @@ export default async function PathPage({
             <li key={s.course.id}>
               <Card className="overflow-hidden sm:grid sm:grid-cols-[180px_minmax(0,1fr)]">
                 <CourseCover
+                  className="course-cover-fill"
                   title={s.course.title}
                   coverUrl={s.course.coverUrl}
                   tags={s.course.tags}
