@@ -86,7 +86,7 @@ export function VoiceConsent({
         ) : null}
       </ul>
       {!configured ? (
-        <p className="mb-3 text-xs text-muted">Demo mode: type your answers. Grading works the same way.</p>
+        <p className="mb-3 text-xs text-muted">{kind === "hr" ? "Demo mode: type your questions. Answers still come from the policy library." : "Demo mode: type your answers. Grading works the same way."}</p>
       ) : !micOk ? (
         <p className="mb-3 text-xs text-muted">No microphone access in this browser (voice needs HTTPS and a mic) — you&#39;ll type instead.</p>
       ) : null}

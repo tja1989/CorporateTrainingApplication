@@ -84,7 +84,7 @@ export function AskReports({ scope }: { scope?: "team" } = {}) {
                 {result.rows.slice(0, 15).map((row, i) => (
                   <tr key={i} className="border-b border-border last:border-0">
                     {row.map((cell, j) => (
-                      <td key={j} className="px-3 py-1">{isKnownStatus(cell) ? <StatusChip status={cell} /> : cell}</td>
+                      <td key={j} className="px-3 py-1">{/status/i.test(result.columns[j] ?? "") && isKnownStatus(cell) ? <StatusChip status={cell} /> : cell}</td>
                     ))}
                   </tr>
                 ))}

@@ -99,7 +99,7 @@ export function DataTable({
               <tr key={i} className="border-t border-border hover:bg-surface-2">
                 {row.map((cell, j) => (
                   <td key={j} className="px-4 py-3">
-                    {isKnownStatus(cell) ? <StatusChip status={cell} /> : cell}
+                    {/status/i.test(columns[j] ?? "") && isKnownStatus(cell) ? <StatusChip status={cell} /> : cell}
                   </td>
                 ))}
               </tr>
