@@ -7,6 +7,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: { default: "xprtn", template: "%s · xprtn" },
   description: "Workplace learning, practice, and support",
+  applicationName: "xprtn",
 };
 
 export const viewport: Viewport = {
