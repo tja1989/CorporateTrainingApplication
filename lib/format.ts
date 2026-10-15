@@ -1,7 +1,7 @@
 /** Display formatting. Scheduling stays in lib/time.ts; this file only words values for people. */
 import { DEFAULT_TZ, localDate } from "./time";
 
-type DateOpts = { tz?: string; now?: Date };
+type DateOpts = { tz?: string; now?: Date; withYear?: boolean };
 const DAY_MS = 86_400_000;
 const pluralRules = new Intl.PluralRules("en");
 
@@ -22,9 +22,9 @@ function parts(date: Date, tz: string, withTime: boolean) {
   return Object.fromEntries(fmt.formatToParts(date).map(p => [p.type, p.value]));
 }
 
-export function formatDay(date: Date, { tz = DEFAULT_TZ, now = new Date() }: DateOpts = {}): string {
+export function formatDay(date: Date, { tz = DEFAULT_TZ, now = new Date(), withYear = false }: DateOpts = {}): string {
   const p = parts(date, tz, false);
-  const sameYear = localDate(date, tz).slice(0, 4) === localDate(now, tz).slice(0, 4);
+  const sameYear = !withYear && localDate(date, tz).slice(0, 4) === localDate(now, tz).slice(0, 4);
   return `${p.weekday} ${p.day} ${p.month}${sameYear ? "" : ` ${p.year}`}`;
 }
 
@@ -33,7 +33,9 @@ export function formatDateTime(date: Date, opts: DateOpts = {}): string {
   return `${formatDay(date, opts)}, ${p.hour}:${p.minute}`;
 }
 
-export function formatDue(due: Date, { tz = DEFAULT_TZ, now = new Date() }: DateOpts = {}): string {
+/** `done` training shows its due date plainly; finished work is never "overdue". */
+export function formatDue(due: Date, { tz = DEFAULT_TZ, now = new Date(), done = false }: DateOpts & { done?: boolean } = {}): string {
+  if (done) return `Due ${formatDay(due, { tz, now })}`;
   const days = calendarDaysBetween(now, due, tz);
   if (days < 0) return `Overdue by ${plural(-days, "day")}`;
   if (days === 0) return "Due today";

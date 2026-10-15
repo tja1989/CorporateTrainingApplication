@@ -108,7 +108,7 @@ export default async function TeamMemberPage({
                     <p className="text-xs text-muted">
                       {assignmentSourceLabel(e.source)}
                       {e.dueAt
-                        ? ` · ${formatDue(e.dueAt)}`
+                        ? ` · ${formatDue(e.dueAt, { done: e.status === "COMPLETED" })}`
                         : ""}
                     </p>
                   </div>

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AiSurface, Button, Card, Chip, Input, Skeleton, Field } from "@/components/ui";
+import { AiSurface, Button, Card, Chip, Input, Skeleton, Field, StatusChip } from "@/components/ui";
+import { plural } from "@/lib/format";
+import { isKnownStatus } from "@/lib/status";
 
 type AskResult = {
   plan: { report: string; filters: Record<string, unknown>; explanation: string };
@@ -68,7 +70,7 @@ export function AskReports({ scope }: { scope?: "team" } = {}) {
           <AiSurface variant="block" className="mb-3" mock={result.mock}>
             {result.narration}
           </AiSurface>
-          <p className="mb-2 text-sm text-muted">{result.rows.length} results · showing the first {Math.min(result.rows.length, 15)}</p>
+          <p className="mb-2 text-sm text-muted">{plural(result.rows.length, "result")}{result.rows.length > 15 ? ", showing the first 15" : ""}</p>
           <div role="region" aria-label="Ask Reports table" tabIndex={0} className="mb-2 overflow-x-auto rounded-control border border-border">
             <table className="w-full text-sm [overflow-wrap:normal]">
               <thead>
@@ -82,7 +84,7 @@ export function AskReports({ scope }: { scope?: "team" } = {}) {
                 {result.rows.slice(0, 15).map((row, i) => (
                   <tr key={i} className="border-b border-border last:border-0">
                     {row.map((cell, j) => (
-                      <td key={j} className="px-3 py-1">{cell}</td>
+                      <td key={j} className="px-3 py-1">{isKnownStatus(cell) ? <StatusChip status={cell} /> : cell}</td>
                     ))}
                   </tr>
                 ))}

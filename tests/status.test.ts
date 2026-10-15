@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assignmentSourceLabel, isKnownStatus, statusLabel } from "../lib/status";
+import { assignmentSourceLabel, attemptStateLabel, isKnownStatus, statusLabel } from "../lib/status";
 
 describe("status vocabulary", () => {
   it.each([
@@ -23,4 +23,8 @@ describe("status vocabulary", () => {
 
 describe("assignment sources", () => {
   it.each([["manual", "Assigned by a manager"], ["rule", "Assigned automatically"], ["path", "Part of a learning path"], ["recert", "Renewal"], ["self", "Self-enrolled"], ["import", "Import"]])("%s reads %s", (source, label) => expect(assignmentSourceLabel(source)).toBe(label));
+});
+
+describe("quiz attempt states", () => {
+  it.each([["IN_PROGRESS", "In progress"], ["SUBMITTED", "Submitted"], ["GRADED", "Graded"], ["CLEARED", "Cleared"], ["VOIDED", "Voided"]])("%s reads %s, not course-approval wording", (state, label) => expect(attemptStateLabel(state)).toBe(label));
 });

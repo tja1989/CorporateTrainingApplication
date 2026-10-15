@@ -3,7 +3,7 @@ import { db, t } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/guard";
 import { Card, Chip, PageTitle, EmptyState } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
-import { statusLabel } from "@/lib/status";
+import { attemptStateLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +44,7 @@ export default async function IntegrityPage() {
                   <div className="min-w-0">
                     <p className="break-words font-medium text-link">{quizOf.get(a.quizId)?.title ?? "Quiz"} — {user?.name ?? "—"}</p>
                     <p className="text-xs text-muted">
-                      {formatDateTime(a.startedAt)} · {statusLabel(a.state).label}
+                      {formatDateTime(a.startedAt)} · {attemptStateLabel(a.state)}
                       {a.maxScore ? ` · ${Math.round(((a.score ?? 0) / a.maxScore) * 100)}%` : ""}
                     </p>
                   </div>

@@ -31,3 +31,12 @@ const SOURCES: Record<string, string> = {
 export function assignmentSourceLabel(source: string): string {
   return SOURCES[source] ?? statusLabel(source.toUpperCase()).label;
 }
+
+const ATTEMPT_STATES: Record<string, string> = {
+  IN_PROGRESS: "In progress", SUBMITTED: "Submitted", GRADED: "Graded", CLEARED: "Cleared", VOIDED: "Voided",
+};
+
+/** Quiz attempts share SUBMITTED with course approval but mean something else. */
+export function attemptStateLabel(state: string): string {
+  return ATTEMPT_STATES[state] ?? statusLabel(state).label;
+}

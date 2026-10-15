@@ -129,12 +129,14 @@ export function WorkspaceReports({
           <h2 className="text-lg font-semibold">{result.title}</h2>
           <p className="text-sm text-muted">{plural(result.rows.length, "result")}</p>
         </div>
-        <WorkspaceLink
-          title="Exports every filtered result"
-          href={`/api/reports/${report}/csv?${tail}${base === "/team/reports" ? "&scope=team" : ""}`}
-        >
-          Export CSV
-        </WorkspaceLink>
+        <div className="flex flex-col items-end gap-1">
+          <WorkspaceLink
+            href={`/api/reports/${report}/csv?${tail}${base === "/team/reports" ? "&scope=team" : ""}`}
+          >
+            Export CSV
+          </WorkspaceLink>
+          <p className="text-xs text-muted">CSV includes all filtered results.</p>
+        </div>
       </div>
       {pages > 1 ? <nav
         aria-label="Report pages"

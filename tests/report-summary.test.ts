@@ -15,6 +15,7 @@ describe("report summary", () => {
     expect(html).not.toContain("CSV uses these same filters");
     expect(html).not.toContain("Showing");
   });
+  it("keeps the CSV note visible", () => expect(render(3)).toContain("CSV includes all filtered results"));
   it("words a single result", () => expect(render(1)).toContain("1 result<"));
   it("shows pagination only when there is more than one page", () => {
     expect(render(18)).not.toContain("Page 1 of 1");

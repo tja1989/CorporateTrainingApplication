@@ -44,11 +44,11 @@ export function feedbackPeriod(
       );
     end = new Date(through.getTime() + 86400000);
     // Calendar dates here are UTC-midnight markers, so word them in UTC.
-    label = `${formatDay(start, { tz: "UTC", now })} to ${formatDay(through, { tz: "UTC", now })}`;
+    label = `${formatDay(start, { tz: "UTC", withYear: true })} to ${formatDay(through, { tz: "UTC", withYear: true })}`;
   } else if (kind === "week") {
     start = day(isoWeekStart(now, tz));
     end = new Date(start.getTime() + 7 * 86400000);
-    label = `Week of ${formatDay(start, { tz: "UTC", now })}`;
+    label = `Week of ${formatDay(start, { tz: "UTC", withYear: true })}`;
   } else if (kind === "month") {
     const local = day(localDate(now, tz));
     start = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), 1));

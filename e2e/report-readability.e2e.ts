@@ -5,6 +5,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { test, expect } from "./native-zoom-test";
 import { capture, createPerson, expectNoPageOverflow, signIn, withDb } from "./support";
 import { textCourse } from "./qualification-fixtures";
+import { isKnownStatus, statusLabel } from "../lib/status";
 
 async function readableTable(page: Page, region: Locator, precedingControl: Locator, info: TestInfo, label: string, identifiers: string[]) {
   await expect(region).toBeVisible();
@@ -114,7 +115,7 @@ for (const theme of ["light", "dark"] as const) {
       expect(visible.map(row => row[1]).sort()).toEqual(expected.map(person => person.employeeId).sort());
       const download = page.waitForEvent("download"); await page.getByRole("link", { name: "Export CSV", exact: true }).click();
       const csv = readFileSync((await (await download).path())!, "utf8").replace(/^\uFEFF/, "");
-      const csvValues = csv.trim().split(/\r?\n/).slice(1).map(line => line.split(",").map((cell, i) => i === 4 ? cell.replaceAll("_", " ") : cell));
+      const csvValues = csv.trim().split(/\r?\n/).slice(1).map(line => line.split(",").map(cell => isKnownStatus(cell) ? statusLabel(cell).label : cell));
       expect(csvValues).toEqual(visible);
       await info.attach(`${actor.role}-${theme}-report.csv`, { body: csv, contentType: "text/csv" });
       await readableTable(page, table, page.getByRole("link", { name: "Export CSV", exact: true }), info, `${actor.role}-${theme}-report`, expected.map(person => person.employeeId));

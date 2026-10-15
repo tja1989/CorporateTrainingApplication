@@ -9,6 +9,7 @@ describe("dates", () => {
     expect(formatDay(new Date("2026-10-17T05:30:00Z"), { now })).toBe("Sat 17 Oct");
     expect(formatDay(new Date("2027-01-01T05:30:00Z"), { now })).toBe("Fri 1 Jan 2027");
     expect(formatDay(new Date("2026-10-17T20:30:00Z"), { now })).toBe("Sun 18 Oct"); // 00:30 Dubai next day
+    expect(formatDay(new Date("2026-10-17T05:30:00Z"), { now, withYear: true })).toBe("Sat 17 Oct 2026");
   });
   it("formats date-times on a 24-hour clock", () => {
     expect(formatDateTime(new Date("2026-10-17T05:30:00Z"), { now })).toBe("Sat 17 Oct, 09:30");
@@ -24,6 +25,7 @@ describe("dates", () => {
     expect(formatDue(new Date("2026-10-13T12:00:00Z"), { now })).toBe("Overdue by 1 day");
     expect(formatDue(new Date("2026-10-09T12:00:00Z"), { now })).toBe("Overdue by 5 days");
     expect(formatDue(new Date("2026-10-17T19:30:00Z"), { now: new Date("2026-10-17T19:30:00Z") })).toBe("Due today"); // 23:30 Dubai
+    expect(formatDue(new Date("2026-10-09T12:00:00Z"), { now, done: true })).toBe("Due Fri 9 Oct"); // finished training is never "overdue"
   });
   it("phrases relative times", () => {
     expect(formatRelative(new Date(now.getTime() - 20_000), { now })).toBe("Just now");

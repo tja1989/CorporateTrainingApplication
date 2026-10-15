@@ -4,6 +4,7 @@ import { test, expect } from "@playwright/test";
 import { createPerson, signIn, withDb, expectNoPageOverflow } from "./support";
 import { textCourse, smallQuiz } from "./qualification-fixtures";
 import { REPORTS } from "../lib/report-options";
+import { isKnownStatus, statusLabel } from "../lib/status";
 
 function csvRows(text: string) {
   const rows: string[][] = []; let row: string[] = [], cell = "", quoted = false;
@@ -120,7 +121,8 @@ for (const role of ["MANAGER", "ADMIN"] as const) {
       const visible = await table.locator("tr").evaluateAll(rows => rows.map(row => Array.from(row.querySelectorAll("th,td"), cell => cell.textContent!.trim())));
       const download = page.waitForEvent("download"); await page.getByRole("link", { name: "Export CSV", exact: true }).click();
       const file = await download, csv = readFileSync((await file.path())!, "utf8").replace(/^\uFEFF/, "");
-      expect(csvRows(csv)).toEqual(visible);
+      // CSV keeps machine-readable codes; the screen words them through the shared vocabulary.
+      expect(csvRows(csv).map(row => row.map(cell => isKnownStatus(cell) ? statusLabel(cell).label : cell))).toEqual(visible);
       await info.attach(`${role}-${report.id}.csv`, { body: csv, contentType: "text/csv" });
       await page.reload(); await expect(page.getByLabel("Employee ID", { exact: true })).toHaveValue(learner.employeeId);
       await expectNoPageOverflow(page);
@@ -143,7 +145,7 @@ for (const role of ["MANAGER", "ADMIN"] as const) {
     await expect(interpreted).toContainText(learner.employeeId);
     if (role === "MANAGER") await expect(interpreted).not.toContainText(outsider.employeeId);
     else await expect(interpreted).toContainText(outsider.employeeId);
-    await page.getByText(/View interpreted report and filters/).click();
+    await page.getByText(/View the report and filters used/).click();
     await expect(page.locator("pre")).toContainText('"report": "engagement"');
     await expect(page.locator("pre")).toContainText('"daysWindow": 45');
     await info.attach("report-prerequisites", { body: JSON.stringify({ role, actor: actor.id, learner: learner.id, outsider: outsider.id, course: f.course, quiz: q.quiz }), contentType: "application/json" });

@@ -451,7 +451,7 @@ test("@core Instructor submits, Department Head rejects and approves, HR publish
     await employeePage
       .getByRole("link", { name: "Give course feedback", exact: true })
       .click();
-    await expect(employeePage.getByText(/Training completed/)).toBeVisible();
+    await expect(employeePage.getByText(/, completed /)).toBeVisible();
     for (const [kind, rating, comment] of [
       ["Course", 4, "Useful approval-chain training"],
       ["Instructor", 5, "Clear teaching"],

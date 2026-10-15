@@ -18,11 +18,11 @@ async function saveBulkRuleAndReload(page: Page, button: Locator, info: TestInfo
 }
 const reports = ["completion", "compliance", "transcript", "cert_expiry", "engagement", "quiz_results"];
 async function recordedPublish(page:Page){
-  await page.getByText("Super Admin intervention",{exact:true}).click();
+  await page.getByText("Override as Super Admin",{exact:true}).click();
   await page.getByLabel("Approval state",{exact:true}).selectOption("APPROVED");
   await page.getByLabel("Publication state",{exact:true}).selectOption("PUBLISHED");
   await page.getByLabel("Intervention reason",{exact:true}).fill("QA historical journey: recorded Super Admin intervention.");
-  await saveAndReload(page,page.getByRole("button",{name:"Apply recorded intervention",exact:true}));
+  await saveAndReload(page,page.getByRole("button",{name:"Record override",exact:true}));
 }
 async function freshSignIn(page: Page, person: Awaited<ReturnType<typeof createPerson>>) { await page.context().clearCookies(); await signIn(page, person); }
 
@@ -139,7 +139,7 @@ test("@core Empty-manager reports, CSV and Ask Reports never include outside use
   await page.getByRole("textbox", { name: "Ask reports" }).fill("Show inactive people");
   await page.getByRole("button", { name: "Ask", exact: true }).click();
   await expect(page.getByText("No matching rows", { exact: true })).toBeVisible();
-  await page.getByText(/View interpreted report and filters/).click();
+  await page.getByText(/View the report and filters used/).click();
   await expect(page.locator("pre")).toContainText('"report": "engagement"');
 });
 
@@ -527,7 +527,7 @@ test("@core @template Failed video ingestion recovers with a replacement transcr
   await saveAndReload(page, page.getByRole("button", { name: "Add lesson", exact: true }));
   await expect(page.getByText("Video failed", { exact: true })).toBeVisible();
   const videoId = await withDb(async db => (await db.query("SELECT payload->>'videoId' id FROM lessons WHERE module_id=$1", [mod])).rows[0].id);
-  await page.getByText("Retry video ingestion", { exact: true }).click();
+  await page.getByText("Retry video processing", { exact: true }).click();
   await page.getByLabel("Replacement transcript (SRT or VTT)").fill("Still invalid");
   await page.getByRole("button", { name: "Retry processing", exact: true }).click();
   await expect(page.locator("main").getByRole("alert")).toContainText("SRT or VTT");
@@ -539,7 +539,7 @@ test("@core @template Failed video ingestion recovers with a replacement transcr
   expect(await withDb(async db => (await db.query("SELECT count(*)::int n FROM video_chunks WHERE video_id=$1", [videoId])).rows[0].n)).toBeGreaterThan(0);
   // A later service outage must reuse the saved transcript instead of losing it on retry.
   await withDb(async db => db.query("UPDATE videos SET ingestion_status='FAILED',failure_reason='QA transient embedding outage' WHERE id=$1", [videoId]));
-  await page.reload(); await page.getByText("Retry video ingestion", { exact: true }).click();
+  await page.reload(); await page.getByText("Retry video processing", { exact: true }).click();
   await saveAndReload(page, page.getByRole("button", { name: "Retry processing", exact: true }));
   await expect(page.getByText("Video ready", { exact: true })).toBeVisible();
   expect(await withDb(async db => (await db.query("SELECT ingestion_status,failure_reason FROM videos WHERE id=$1", [videoId])).rows[0])).toEqual({ ingestion_status: "READY", failure_reason: null });

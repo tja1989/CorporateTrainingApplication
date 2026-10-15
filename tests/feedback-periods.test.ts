@@ -40,3 +40,7 @@ it("custom dates include the through-date and reject invalid, reversed or oversi
       feedbackPeriod("custom", new Date(), "Asia/Dubai", range),
     ).toThrow();
 });
+it("labels periods with their year, so exported summaries stay unambiguous", () => {
+  expect(feedbackPeriod("week", new Date("2026-10-14T06:00:00Z"), "Asia/Dubai").label).toBe("Week of Mon 12 Oct 2026");
+  expect(feedbackPeriod("custom", new Date("2026-10-14T06:00:00Z"), "Asia/Dubai", { start: "2026-10-01", end: "2026-10-07" }).label).toBe("Thu 1 Oct 2026 to Wed 7 Oct 2026");
+});

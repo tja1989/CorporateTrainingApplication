@@ -77,7 +77,7 @@ test("@core Completed employee submits and edits both feedback kinds; stale and 
       exact: true,
     }),
   ).toBeVisible();
-  await expect(page.getByText(/Training completed/)).toBeVisible();
+  await expect(page.getByText(/, completed /)).toBeVisible();
   const content = page.getByRole("region", {
       name: "Course feedback",
       exact: true,
@@ -240,7 +240,7 @@ test("@core Completed employee submits and edits both feedback kinds; stale and 
       exact: true,
     })
     .click();
-  await expect(page.getByText(/Training completed/)).toBeVisible();
+  await expect(page.getByText(/, completed /)).toBeVisible();
   await expect(
     page
       .getByRole("region", { name: "Course feedback", exact: true })
