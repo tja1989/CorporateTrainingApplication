@@ -14,3 +14,16 @@ describe("feedback form emphasis", () => {
     }
   });
 });
+
+describe("star rating", () => {
+  it("draws five stars over native radios that keep their names", () => {
+    const html = renderToStaticMarkup(createElement(CourseFeedbackForm, { kind: "course", initial: null, requestId: "r1", action: async () => ({ ok: true }) as never }));
+    expect(html.match(/type="radio"/g)).toHaveLength(5);
+    for (const name of ["1 — Poor", "2 — Fair", "3 — Good", "4 — Very good", "5 — Excellent"]) expect(html).toContain(`<span class="sr-only">${name}</span>`);
+    expect(html.match(/data-star="/g)).toHaveLength(5);
+  });
+  it("fills the stars up to the saved rating", () => {
+    const html = renderToStaticMarkup(createElement(CourseFeedbackForm, { kind: "course", initial: { rating: 4, comment: "", revision: 1, updatedAt: new Date().toISOString() } as never, requestId: "r1", action: async () => ({ ok: true }) as never }));
+    expect(html.match(/data-star="filled"/g)).toHaveLength(4);
+  });
+});
