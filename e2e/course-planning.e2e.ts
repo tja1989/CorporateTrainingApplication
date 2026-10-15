@@ -472,6 +472,28 @@ test("@core Planning gates protect real video, quiz and oral HTTP writes and ret
       })
     ).status(),
   ).toBe(403);
+  expect(
+    (
+      await request.post("/api/tutor", {
+        data: {
+          lessonId: videoLesson,
+          message: "Explain the procedure",
+          scope: "course",
+        },
+      })
+    ).status(),
+  ).toBe(403);
+  expect(
+    await withDb(
+      async (db) =>
+        (
+          await db.query(
+            "SELECT count(*)::int n FROM tutor_threads WHERE user_id=$1",
+            [employee.id],
+          )
+        ).rows[0].n,
+    ),
+  ).toBe(0);
   expect((await request.post(`/api/quiz/${quiz}/start`)).status()).toBe(403);
   expect(
     (

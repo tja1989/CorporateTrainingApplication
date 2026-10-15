@@ -73,3 +73,29 @@ These decisions preserve the approved role/approval and feedback contracts. Rema
 ## Deferred minors
 
 - Final: minor (deferred): Feedback disclosure says “the course’s Department Head” rather than explicitly naming the historical delivery department; access still uses the immutable assignment snapshot.
+
+
+# Course planning —15October2026
+
+The approved scheduling phase is implemented, independently reviewed, corrected and integrated. These decisions apply to scheduling; broader client delivery remains open.
+
+- Ruling: Treat the user's explicit instruction to approve scheduling and continue implementation as authorization to execute the already presented design, carrying the chosen direct execution method — the spec/plan record that authorized scope without another repetitive permission cycle — cost if wrong: any requested scope correction must be applied before merge; tests/review remain mandatory.
+- Ruling: Represent organizational folders as normalized nested course paths and derive catalog branches/breadcrumbs — provides the approved folder organization without inventing folder access grants — cost if wrong: standalone empty folders and bulk folder rename would require a separate management workflow.
+- Ruling: Keep the existing preview build at .next-client while new development builds use a separate directory — rebuilding must not remove assets from the live preview — cost if wrong: another build directory uses local disk space.
+- Ruling: Extract targeted certificate renewal from the daily sweep into its production helper — verifies and retries one affected certificate without sweeping unrelated test people — cost if wrong: callers must retain the same idempotent trigger/notification contract; the existing sweep consumes this helper.
+- Ruling: Keep unpublished prerequisite names generic in learner access decisions — dependency IDs do not grant draft-title visibility — cost if wrong: a training administrator must explain an unavailable dependency rather than showing its current private draft name.
+- Ruling: Capture voluntary published-course participation as source self on the first real credited learning write — existing catalog learning has no enrollment gate, so completion must create truthful immutable prerequisite evidence without impersonating HR rollout — cost if wrong: voluntary courses now appear in My courses and gain their own delivery/completion/certificate history; prior assigned/completed/withdrawn rows are preserved, no historical backfill.
+- Ruling: Validate each ordered path and each person’s assigned path combination together with explicit prerequisites — prevents direct, indirect and cross-path deadlocks without globally combining unrelated organizational paths — cost if wrong: conflicting plans must be reordered or their requirements changed before that combination can be assigned; no path editing workflow was invented.
+- Ruling: Keep current human review pending when planning blocks it, and commit the decision, rewards and credit together after eligibility — prevents losing its retry action or awarding partial results — cost if wrong: a reviewer must wait for eligibility before finalizing that pending decision.
+- Final: Ruling: Live providers, SMTP and installed production schedules remain outside this scheduling qualification — provider-free gates and actual sweep behavior are covered — cost if wrong: hosted integrations still require independent release checks.
+- Final: Ruling: Empty folders and bulk folder renaming remain outside the approved derived-path design — folders exist through their courses — cost if wrong: standalone folder administration needs later work.
+- Final: Ruling: Wider notifications, HRMS and profile/dashboard/marksheet requirements remain subsequent active client scope — this goal is the approved scheduling phase — cost if wrong: the full client checklist is still incomplete after this phase.
+- Final: Ruling: Independent pre-existing simultaneous submission/scoring races were not newly qualified or redesigned — the correction covers planning-related transaction failures — cost if wrong: unrelated concurrency defects can remain.
+- Final: Ruling: Direct SQL hard deletion is outside supported author workflows — no application deletion path exists; normal unavailable dependencies remain blocked — cost if wrong: out-of-application database deletions can remove dependency edges through cascade.
+- Final: Ruling: A separate historical quiz/oral-results viewer is outside this phase — preserved completion records, certificates and own feedback are the specified historical surfaces — cost if wrong: current course gating still limits entry to old assessment screens.
+
+- Ruling: Reuse the existing full-course query and generic CatalogFilters wrapper rather than edit their implementation files — the query already returns all schema columns and the wrapper accepts the new folder control — cost if wrong: later query projections must retain planning metadata; integrated type/browser checks currently prove these interfaces.
+
+Deferred minor:
+
+- Final: minor (deferred): Course cards show a Dubai opening date without a nearby timezone label; course detail has the explicit timezone. No minor polish entered the correction pass.

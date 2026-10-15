@@ -2,15 +2,19 @@
 
 ## Client requirement update
 
-The five-role approval and course/instructor feedback implementation is now on main. The reviewed implementation is `2de96de`; hosted Railway remains the earlier demo release described below. Existing hosted accounts are not automatically promoted to HR or Instructor. Fresh fictional-seed logins and provisioning are in [CLIENT_ROLES_APPROVAL.md](qa/CLIENT_ROLES_APPROVAL.md); feedback qualification and scheduling boundaries are in [CLIENT_FEEDBACK.md](qa/CLIENT_FEEDBACK.md).
+The five-role approval, course/instructor feedback and approved course-planning implementation are now on main. The reviewed application implementation is `d44a48c`; the local preview runs that main build. Hosted Railway remains the earlier demo release described below. Existing hosted accounts are not automatically promoted to HR or Instructor. Fresh fictional-seed logins and provisioning are in [CLIENT_ROLES_APPROVAL.md](qa/CLIENT_ROLES_APPROVAL.md); feedback qualification and scheduling boundaries are in [CLIENT_FEEDBACK.md](qa/CLIENT_FEEDBACK.md).
 
-Latest browser qualification: 60/60 across desktop/mobile Chromium, Firefox and WebKit, with zero retries/skips and intact traces. The approved chain covers authoring, Department Head rejection/correction/approval, HR publication/rollout, Employee completion/certificate, both feedback kinds, scoped reports/native CSV, moderation and in-app period summaries. Live email, installed production schedules, provider answers and HRMS synchronization remain open.
+Planning qualification:297unit tests, type check/build,54/54planning browser cases across desktop/mobile Chromium, Firefox and WebKit, nine affected regressions and three final author/path rechecks. The earlier feedback qualification passed60/60. All runs use fictional local data and zero retries/skips. The approved chain covers authoring, Department Head rejection/correction/approval, HR publication/rollout, Employee completion/certificate, both feedback kinds, scoped reports/native CSV, moderation and in-app period summaries. Live email, installed production schedules, provider answers and HRMS synchronization remain open.
 
 For the client checklist, show the five-role chain first. After the Employee earns the certificate, open **Give course feedback**, save the course and instructor ratings, then revisit to edit them. HR → **Feedback reports** shows both types, period summaries and reasoned moderation. Department Head reports follow the training’s historical delivery department; Instructor reports omit employee account names. Feedback is optional, and instructors cannot rate themselves.
 
+Planning demo: Instructor → course Settings shows start/end dates, prerequisite choices and a nested folder path. Edits follow the same Department Head approval and HR publication chain. HR rollout can use course end dates; employees see future assignments under **Upcoming**, with actual enrollment and due dates on course detail. Course end dates permit overdue completion. Unassigned published prerequisites create voluntary participation on the first credited learning action, preserving their real completion evidence. See [planning qualification](qa/CLIENT_COURSE_PLANNING.md).
+
+All five existing demo password sign-ins were verified on the refreshed preview. Super Admin and HR still require the user's authenticator setup; no test authenticator was installed on those accounts. Department Head, Instructor and Employee sign-ins reach their workspaces.
+
 ## Start here
 
-Current client roles/feedback preview (32 fictional accounts): https://localhost:3445/login
+Current client roles/feedback/planning preview (32 fictional accounts): https://localhost:3445/login
 
 Earlier redesigned preview: http://127.0.0.1:3100/login
 
