@@ -13,7 +13,7 @@ async function main() {
   const { makePdf } = await import("../lib/pdf");
   const { reevaluateAllUsers } = await import("../lib/lms/rules");
   const { runDailySweep } = await import("../lib/lms/sweep");
-  const { seedAssessments } = await import("./seed-assessments");
+  const { seedAssessments, seedStagedReview } = await import("./seed-assessments");
   const { seedHrCorpus } = await import("./seed-hr");
   const { seedVideos } = await import("./seed-videos");
 
@@ -603,38 +603,6 @@ async function main() {
     .update(t.courses)
     .set({ instructorId: trainer.id, departmentId: departmentRows[0].id });
 
-  // manual enrollments: onboarding path for Farhan & Saeed; Food Safety for Meera (due soon)
-  const { enrollUser } = await import("../lib/lms/rules");
-  await enrollUser(
-    farhan.id,
-    { type: "path", id: onboarding.id },
-    "manual",
-    null,
-    new Date(Date.now() + 10 * 24 * 3600_000),
-  );
-  await enrollUser(
-    saeed.id,
-    { type: "path", id: onboarding.id },
-    "manual",
-    null,
-    new Date(Date.now() + 20 * 24 * 3600_000),
-  );
-  await enrollUser(
-    meera.id,
-    { type: "course", id: fs_.id },
-    "manual",
-    null,
-    new Date(Date.now() + 3 * 24 * 3600_000),
-  );
-  // one overdue learner for the manager dashboard
-  await enrollUser(
-    extras[0].id,
-    { type: "course", id: fire.id },
-    "manual",
-    null,
-    new Date(Date.now() - 5 * 24 * 3600_000),
-  );
-
   // ---- staged expiring certificate (recert loop demo): Priya completed Food Safety ~11 months ago
   const { certificateSerial } = await import("../lib/ids");
   const completedAt = daysAgo(340);
@@ -680,7 +648,43 @@ async function main() {
   await ensureDemoContentLessons();
   await ensureDemoInterviewLessons();
   // Fictional seed content is fully built before its historical demo publication.
+  // Content (videos, quizzes, lessons) can only change while courses are drafts;
+  // learner activity below can only target published, approved courses.
   await db.update(t.courses).set({status:"PUBLISHED",approvalState:"LEGACY_PUBLISHED"});
+
+  // manual enrollments: onboarding path for Farhan & Saeed; Food Safety for Meera (due soon)
+  const { enrollUser } = await import("../lib/lms/rules");
+  await enrollUser(
+    farhan.id,
+    { type: "path", id: onboarding.id },
+    "manual",
+    null,
+    new Date(Date.now() + 10 * 24 * 3600_000),
+  );
+  await enrollUser(
+    saeed.id,
+    { type: "path", id: onboarding.id },
+    "manual",
+    null,
+    new Date(Date.now() + 20 * 24 * 3600_000),
+  );
+  await enrollUser(
+    meera.id,
+    { type: "course", id: fs_.id },
+    "manual",
+    null,
+    new Date(Date.now() + 3 * 24 * 3600_000),
+  );
+  // one overdue learner for the manager dashboard
+  await enrollUser(
+    extras[0].id,
+    { type: "course", id: fire.id },
+    "manual",
+    null,
+    new Date(Date.now() - 5 * 24 * 3600_000),
+  );
+
+  await seedStagedReview({ meera: meera.id });
   await reevaluateAllUsers();
   const sweepStats = await runDailySweep();
 
