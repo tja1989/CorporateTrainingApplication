@@ -193,7 +193,7 @@ export function FeedbackReports({
             </div>
           ) : (
             <p className="rounded-card border border-border bg-surface p-5 text-muted">
-              No responses for this period and your permitted training scope.
+              No responses in this period.
             </p>
           )}
           <FeedbackModeration items={report.moderationItems} />

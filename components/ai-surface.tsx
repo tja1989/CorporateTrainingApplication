@@ -35,7 +35,7 @@ export function AiSurface({
         <span>{label}</span>
       </span>
       {children}
-      {mock ? <span className="mt-1 block text-xs text-muted">offline demo mode</span> : null}
+      {mock ? <span className="mt-1 block text-xs text-muted">Demo answer. Live AI is off.</span> : null}
     </div>
   );
 }

@@ -155,7 +155,7 @@ test("@core Offline oral-check demo has consent, typed fallback, confirmed resul
   await signIn(page, person);
   await page.goto(`/lesson/${f.interview}`);
   await expect(page.getByRole("heading", { name: "Before the oral check" })).toBeVisible();
-  await expect(page.getByText(/Offline demo mode — no Gemini key/)).toBeVisible();
+  await expect(page.getByText("Demo mode: type your answers. Grading works the same way.")).toBeVisible();
   await page.getByRole("button", { name: "Start the oral check", exact: true }).click();
   const input = page.getByRole("textbox", { name: "Type a message" });
   await expect(input).toBeVisible();
@@ -217,7 +217,7 @@ test("@core Offline HR voice starts typing without waiting for microphone permis
   });
   await signIn(page, person);
   await page.goto("/ask-hr/live");
-  await expect(page.getByText(/Offline demo mode — no Gemini key/)).toBeVisible();
+  await expect(page.getByText("Demo mode: type your answers. Grading works the same way.")).toBeVisible();
   await page.getByRole("button", { name: "Start talking", exact: true }).click();
   const input = page.getByRole("textbox", { name: "Type a message" });
   await expect(input).toBeEnabled();

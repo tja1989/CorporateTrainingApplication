@@ -176,8 +176,7 @@ export function CourseFeedbackForm({
         ) : null}
         {saved?.excluded ? (
           <p className="mt-3 text-sm text-muted">
-            This response is excluded from rating summaries by an audited
-            moderation decision.
+            HR has left this response out of rating summaries.
           </p>
         ) : null}
         <noscript>

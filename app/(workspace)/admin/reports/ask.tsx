@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AiSurface, Button, Card, Input, Skeleton, Field } from "@/components/ui";
+import { AiSurface, Button, Card, Chip, Input, Skeleton, Field } from "@/components/ui";
 
 type AskResult = {
   plan: { report: string; filters: Record<string, unknown>; explanation: string };
@@ -94,7 +94,7 @@ export function AskReports({ scope }: { scope?: "team" } = {}) {
           </div>
           {/* Structured-query disclosure (trust + debuggability, spec FR-10.3) */}
           <details className="text-xs text-muted">
-            <summary className="touch-target flex cursor-pointer items-center">View interpreted report and filters {result.mock ? "· offline planner" : ""}</summary>
+            <summary className="touch-target flex cursor-pointer items-center">View the report and filters used{result.mock ? <Chip className="ms-2">Demo</Chip> : null}</summary>
             <pre className="mt-1 overflow-x-auto rounded-control bg-surface-2 p-2">{JSON.stringify(result.plan, null, 2)}</pre>
           </details>
         </div>

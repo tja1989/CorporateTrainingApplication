@@ -216,9 +216,9 @@ export function SectionTitle({ children, className }: { children: ReactNode; cla
 export function DemoBanner() {
   if (process.env.DEMO_MODE !== "true") return null;
   return (
-    <div className="mb-4 flex items-center gap-2 rounded-input bg-warning-tint px-3 py-2 text-xs font-medium text-warning-fg">
+    <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-muted">
       <Icon name="warning" size={14} className="shrink-0" />
-      DEMO environment — fictional Demo Retail Co. data. Replace with reviewed content before production use.
-    </div>
+      Demo data: fictional company, people and policies
+    </p>
   );
 }

@@ -137,7 +137,7 @@ export async function CourseWorkflow({
       {actor.role === "ADMIN" ? (
         <details className="mt-5 border-t border-border pt-3">
           <summary className="touch-target flex items-center font-medium text-link">
-            Super Admin intervention
+            Override as Super Admin
           </summary>
           <p className="my-3 text-sm text-muted">
             Record why this course needs an exceptional change. The reason and
@@ -182,7 +182,7 @@ export async function CourseWorkflow({
               <Textarea name="comment" rows={3} maxLength={2000} required />
             </Field>
             <Button type="submit" variant="secondary">
-              Apply recorded intervention
+              Record override
             </Button>
           </WorkspaceForm>
         </details>
@@ -196,8 +196,8 @@ export async function CourseWorkflow({
             {events.map((event) => (
               <li key={event.id} className="py-3 text-sm">
                 <p className="font-medium">
-                  {event.action[0].toUpperCase() + event.action.slice(1)} ·
-                  revision {event.revision} ·{" "}
+                  {event.action[0].toUpperCase() + event.action.slice(1)} version{" "}
+                  {event.revision}, by{" "}
                   {nameOf.get(event.actorId) ?? "Former user"}
                 </p>
                 <p className="mt-1 text-muted">

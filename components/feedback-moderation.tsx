@@ -27,7 +27,7 @@ export function FeedbackModeration({ items }: { items: ModerationItem[] }) {
               {item.course} · {item.employeeName} · {item.rating}/5
             </summary>
             <p className="mt-3 text-xs font-medium text-muted">
-              Original comment · restricted to HR and Super Admin · revision{" "}
+              Original comment, visible only to HR and Super Admin, version{" "}
               {item.revision}
             </p>
             <p className="my-3 whitespace-pre-wrap break-words rounded-control bg-surface-2 p-3 text-sm">

@@ -343,7 +343,7 @@ export async function CourseEditor({
                               {video.ingestionStatus !== "READY" && editable ? (
                                 <details className="mt-2">
                                   <summary className="touch-target flex items-center text-sm text-link">
-                                    Retry video ingestion
+                                    Retry video processing
                                   </summary>
                                   <p className="my-3 text-sm text-muted">
                                     The transcript could not be prepared.
@@ -375,7 +375,7 @@ export async function CourseEditor({
                                       <Textarea name="transcript" rows={5} />
                                     </Field>
                                     <SubmitButton variant="secondary">
-                                      Retry ingestion
+                                      Retry processing
                                     </SubmitButton>
                                   </WorkspaceForm>
                                 </details>

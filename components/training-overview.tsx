@@ -10,6 +10,7 @@ import { canReadCourse, courseWorkspacePath } from "@/lib/courses/ownership";
 import { defaultWorkspace, workspaceHome } from "@/lib/auth/roles";
 import { ButtonAnchor, Chip, StatusChip, PageHeader, EmptyState } from "./ui";
 import { WorkspaceLink } from "./workspace-ui";
+import { plural } from "@/lib/format";
 export async function TrainingOverview({
   actor,
   approvalsOnly = false,
@@ -89,8 +90,8 @@ export async function TrainingOverview({
                     {course.title}
                   </WorkspaceLink>
                   <p className="mt-1 text-sm text-muted">
-                    Revision {course.contentRevision} · {course.estMinutes}{" "}
-                    minutes
+                    Version {course.contentRevision},{" "}
+                    {plural(course.estMinutes, "minute")}
                   </p>
                 </div>
                 <StatusChip status={course.approvalState} />

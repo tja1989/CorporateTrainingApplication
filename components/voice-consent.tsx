@@ -86,7 +86,7 @@ export function VoiceConsent({
         ) : null}
       </ul>
       {!configured ? (
-        <p className="mb-3 text-xs text-muted">Offline demo mode — no Gemini key is configured, so this runs typed, with the same policy tools and grading.</p>
+        <p className="mb-3 text-xs text-muted">Demo mode: type your answers. Grading works the same way.</p>
       ) : !micOk ? (
         <p className="mb-3 text-xs text-muted">No microphone access in this browser (voice needs HTTPS and a mic) — you&#39;ll type instead.</p>
       ) : null}

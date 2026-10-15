@@ -88,7 +88,7 @@ export default async function FeedbackPage({
         ) : current.delivery?.instructorId ? (
           <>
             <p className="text-sm text-muted">
-              Delivered instructor: {trainer?.name ?? "Assigned instructor"}
+              Instructor: {trainer?.name ?? "Your instructor"}
             </p>
             <CourseFeedbackForm
               kind="instructor"
@@ -99,8 +99,7 @@ export default async function FeedbackPage({
           </>
         ) : (
           <p className="rounded-control bg-surface-2 p-4 text-sm text-muted">
-            The historical instructor is unknown for this cycle. You can still
-            give course feedback.
+            We don't know who taught this session, so only course feedback is available.
           </p>
         )}
       </div>

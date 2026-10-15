@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button, Chip, Input, PillButton } from "@/components/ui";
 import type { VoiceStatus } from "@/lib/live/client/use-live-voice";
+import { plural } from "@/lib/format";
 
 function mmss(sec: number): string {
   const m = Math.floor(sec / 60);
@@ -95,8 +96,8 @@ export function LiveControls({
         <span className="text-xs tabular-nums text-muted" aria-label="Elapsed time">
           {mmss(elapsedSec)}
         </span>
-        <Chip variant="ai">{mock ? "offline demo" : (model ?? "…")}</Chip>
-        {expiresIn !== null && !mock ? <span className="text-xs text-muted">session token · {expiresIn} min left</span> : null}
+        <Chip variant="ai">{mock ? "Demo" : "Live"}</Chip>
+        {expiresIn !== null && !mock ? <span className="text-xs text-muted">Session ends in {plural(expiresIn, "minute")}</span> : null}
         <div className="flex-1" />
         <Button type="button" variant="destructive" onClick={onEnd} disabled={!live && status !== "connecting" && status !== "reconnecting" && status !== "mic"}>
           {endLabel}

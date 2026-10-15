@@ -15,5 +15,6 @@ describe("display guard", () => {
   it("shows no raw ISO dates", () => expect(hits(/toISOString\(\)\s*\.slice\(/)).toEqual([]));
   it("shows no ad-hoc date formatting", () => expect(hits(/new Intl\.DateTimeFormat|toLocaleString\(|toLocaleDateString\(/)).toEqual([]));
   it("shows no raw lower- or upper-cased enum values", () => expect(hits(/\b(type|status|language|approvalState|ingestionStatus|feedbackMode|toState|toPublication)\.to(Lower|Upper)Case\(\)/)).toEqual([]));
+  it("speaks in plain words, not configuration or process jargon", () => expect(hits(/DEMO environment|Gemini key|session token|offline planner|offline demo mode|Super Admin intervention|recorded intervention|audited\s+moderation|permitted training scope|historical instructor|Delivered instructor|video ingestion|Revision \{/)).toEqual([]));
   it("does not print the IANA zone to people", () => expect(hits(/Asia\/Dubai|\{DEFAULT_TZ\}|\(\$\{DEFAULT_TZ\}\)/)).toEqual([]));
 });

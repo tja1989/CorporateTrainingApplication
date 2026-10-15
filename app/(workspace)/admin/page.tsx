@@ -19,7 +19,7 @@ export default async function AdminOverviewPage() {
     { label: "Open HR tickets", n: tickets?.n ?? 0, body: "Read consented escalations, reply to employees and resolve requests.", href: "/admin/tickets" },
     { label: "Integrity flags to decide", n: flagged?.n ?? 0, body: "Review the event timeline before clearing or voiding an attempt.", href: "/admin/integrity" },
     { label: "AI question drafts", n: drafts?.n ?? 0, body: "Review source content and answers before approving questions.", href: "/admin/reviews?view=drafts" },
-    { label: "Failed video ingestions", n: failedIngest?.n ?? 0, body: "Open a course to inspect failed videos and retry ingestion.", href: "/admin/courses" },
+    { label: "Videos that failed to process", n: failedIngest?.n ?? 0, body: "Open a course to inspect failed videos and retry processing.", href: "/admin/courses" },
   ];
   return <div><DemoBanner /><PageHeader title="Overview" sub="Manage learning and focus on the decisions that need a person." actions={<WorkspaceLink href="/admin/courses#new-course">Create a course</WorkspaceLink>} />
     <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"><section aria-label="Work queues"><h2 className="mb-3 text-lg font-semibold">Needs attention</h2><div className="divide-y divide-border rounded-card border border-border bg-surface">{queues.map(q => <a key={q.label} href={q.href} className="flex items-start gap-4 p-4 hover:bg-surface-2"><div className="min-w-0 flex-1"><h3 className="font-semibold text-link">{q.label}</h3><p className="mt-1 text-sm text-muted">{q.body}</p></div><Chip variant={q.n ? "warning" : "neutral"}>{q.n}</Chip></a>)}</div></section>
