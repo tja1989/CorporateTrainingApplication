@@ -11,12 +11,11 @@ import { CourseCover } from "@/components/course-cover";
 import { CourseCard, LearningProgress } from "@/components/course-card";
 import {
   Card,
-  Chip,
-  PageHeader,
-  complianceChip,
   ButtonLink,
   EmptyState,
   DemoBanner,
+  SectionTitle,
+  StatusChip,
 } from "@/components/ui";
 import { formatDay, formatDue } from "@/lib/format";
 import { lessonTypeLabel } from "@/components/lesson-icon";
@@ -83,127 +82,155 @@ export default async function HomePage() {
   const myPaths = paths.filter((p) =>
     links.some((l) => l.pathId === p.id && ids.has(l.courseId)),
   );
+  const firstName = user.name.split(" ")[0];
+  const pathProgress = (pathId: string) => {
+    const courseIds = links.filter((l) => l.pathId === pathId).map((l) => l.courseId);
+    const done = courseIds.filter((id) => mine.find((c) => c.course.id === id)?.pct === 100).length;
+    return { done, total: courseIds.length };
+  };
   return (
     <div>
       <DemoBanner />
-      <PageHeader
-        title={`Welcome back, ${user.name.split(" ")[0]}`}
-        sub="Your next step in learning."
-      />
+      <header className="mb-8">
+        <h1 className="type-display">Welcome back, {firstName}</h1>
+        <p className="mt-2 max-w-[60ch] text-base text-muted">
+          {resume && outline
+            ? `You're ${outline.doneCount} of ${outline.total} lessons into ${resume.course.title}.`
+            : "Your next step in learning."}
+        </p>
+      </header>
       {resume && next ? (
-        <section aria-labelledby="continue-heading" className="mb-8">
-          <h2 id="continue-heading" className="mb-3 text-xl font-semibold">
+        <section aria-labelledby="continue-heading" className="mb-10">
+          <h2 id="continue-heading" className="sr-only">
             Continue learning
           </h2>
-          <Card className="overflow-hidden md:grid md:grid-cols-[minmax(240px,1fr)_2fr]">
+          <Card className="overflow-hidden shadow-[var(--shadow-resting)] md:grid md:grid-cols-[minmax(260px,5fr)_7fr]">
             <CourseCover
               title={resume.course.title}
               coverUrl={resume.course.coverUrl}
               tags={resume.course.tags}
               priority
-              className="h-full"
+              className="course-cover-fill"
             />
-            <div className="p-5 sm:p-6">
-              <p className="mb-2 text-sm text-muted">{resume.course.title}</p>
-              <h3 className="mb-3 text-xl font-semibold">{next.title}</h3>
-              <p className="mb-4 text-sm text-muted">
-                {lessonTypeLabel(next.type)}
-                {next.minutes ? ` · about ${next.minutes} min` : ""}
+            <div className="flex flex-col gap-4 p-6 sm:p-8">
+              <p className="text-sm font-medium text-muted">{resume.course.title}</p>
+              <h3 className="type-title">{next.title}</h3>
+              <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
+                <span>
+                  {lessonTypeLabel(next.type)}
+                  {next.minutes ? `, about ${next.minutes} min` : ""}
+                </span>
+                {resume.enrollment?.dueAt && resume.enrollment.status !== "COMPLETED" ? (
+                  <span className="font-medium text-warning-fg">{formatDue(resume.enrollment.dueAt)}</span>
+                ) : null}
               </p>
               <LearningProgress
                 pct={outline.pct}
                 label={`${outline.doneCount} of ${outline.total} lessons complete`}
               />
-              <div className="mt-5">
-                <ButtonLink href={next.href}>Continue lesson</ButtonLink>
+              <div className="mt-1">
+                <ButtonLink href={next.href} className="min-h-12 px-6 text-base">
+                  Continue lesson
+                </ButtonLink>
               </div>
             </div>
           </Card>
         </section>
       ) : (
-        <EmptyState
-          title={
-            upcoming.length
-              ? "Your training is scheduled"
-              : allAssignedDone
-                ? "Your assigned learning is complete"
-                : mine.length
-                  ? "Your next lesson is not available yet"
-                  : "Your learning starts here"
-          }
-          body={
-            upcoming.length
-              ? `Your next course opens ${formatDay(upcoming[0].course.startsAt!)}. You can review the schedule now.`
-              : allAssignedDone
-                ? "Explore more courses or revisit completed training in My Learning."
-                : mine.length
-                  ? "Check your learning paths for prerequisites, or contact your training team if a course is still being prepared."
-                  : "Assigned training will appear here. You can explore published courses now."
-          }
-          action={
-            upcoming.length ? (
-              <ButtonLink href="/learn?view=upcoming">
-                View upcoming training
-              </ButtonLink>
-            ) : (
-              <ButtonLink href="/learn?view=browse">Browse courses</ButtonLink>
-            )
-          }
-        />
+        <div className="mb-10">
+          <EmptyState
+            title={
+              upcoming.length
+                ? "Your training is scheduled"
+                : allAssignedDone
+                  ? "Your assigned learning is complete"
+                  : mine.length
+                    ? "Your next lesson is not available yet"
+                    : "Your learning starts here"
+            }
+            body={
+              upcoming.length
+                ? `Your next course opens ${formatDay(upcoming[0].course.startsAt!)}. You can review the schedule now.`
+                : allAssignedDone
+                  ? "Explore more courses or revisit completed training in My Learning."
+                  : mine.length
+                    ? "Check your learning paths for prerequisites, or contact your training team if a course is still being prepared."
+                    : "Assigned training will appear here. You can explore published courses now."
+            }
+            action={
+              upcoming.length ? (
+                <ButtonLink href="/learn?view=upcoming">
+                  View upcoming training
+                </ButtonLink>
+              ) : (
+                <ButtonLink href="/learn?view=browse">Browse courses</ButtonLink>
+              )
+            }
+          />
+        </div>
       )}
       {due.length ? (
-        <section className="mb-8" aria-labelledby="required-heading">
-          <h2 id="required-heading" className="mb-3 text-xl font-semibold">
-            Required training due soon
-          </h2>
-          <div className="divide-y divide-border rounded-card border border-border bg-surface">
-            {due.map((c) => {
-              const chip = complianceChip(c.enrollment!.complianceStatus);
-              return (
+        <section className="mb-10" aria-labelledby="required-heading">
+          <SectionTitle className="mb-2">
+            <span id="required-heading">Required training</span>
+          </SectionTitle>
+          <ul className="divide-y divide-border border-y border-border">
+            {due.map((c) => (
+              <li key={c.course.id}>
                 <Link
-                  key={c.course.id}
                   href={`/course/${c.course.id}`}
-                  className="flex flex-wrap items-center justify-between gap-3 p-4 hover:bg-surface-2"
+                  className="-mx-2 flex items-center gap-4 rounded-control px-2 py-3 hover:bg-surface-2"
                 >
-                  <div>
-                    <h3 className="font-medium">{c.course.title}</h3>
+                  <CourseCover
+                    title={c.course.title}
+                    coverUrl={c.course.coverUrl}
+                    tags={c.course.tags}
+                    className="course-cover-compact w-16 shrink-0 rounded-input"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-medium text-foreground">{c.course.title}</h3>
                     <p className="text-sm text-muted">
-                      {c.enrollment?.dueAt
-                        ? formatDue(c.enrollment.dueAt)
-                        : "Assigned training"}
+                      {c.enrollment?.dueAt ? formatDue(c.enrollment.dueAt) : "Assigned training"}
                     </p>
                   </div>
-                  <Chip variant={chip.variant}>{chip.label}</Chip>
+                  <StatusChip status={c.enrollment!.complianceStatus} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {myPaths.length ? (
+        <section className="mb-10" aria-labelledby="paths-heading">
+          <SectionTitle>
+            <span id="paths-heading">Your learning paths</span>
+          </SectionTitle>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {myPaths.map((p) => {
+              const { done, total } = pathProgress(p.id);
+              return (
+                <Link key={p.id} href={`/path/${p.id}`} className="block rounded-card">
+                  <Card interactive className="flex h-full flex-col gap-3 p-5">
+                    <h3 className="type-section text-lg">{p.title}</h3>
+                    {p.description ? <p className="text-sm text-muted">{p.description}</p> : null}
+                    <div className="mt-auto">
+                      <LearningProgress
+                        pct={total ? Math.round((done / total) * 100) : 0}
+                        label={`${done} of ${total} courses complete`}
+                      />
+                    </div>
+                  </Card>
                 </Link>
               );
             })}
           </div>
         </section>
       ) : null}
-      {myPaths.length ? (
-        <section className="mb-8" aria-labelledby="paths-heading">
-          <h2 id="paths-heading" className="mb-3 text-xl font-semibold">
-            Your learning paths
-          </h2>
-          <div className="divide-y divide-border rounded-card border border-border bg-surface">
-            {myPaths.map((p) => (
-              <Link
-                key={p.id}
-                href={`/path/${p.id}`}
-                className="block p-4 hover:bg-surface-2"
-              >
-                <h3 className="font-medium">{p.title}</h3>
-                <p className="text-sm text-muted">{p.description}</p>
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
       {recs.length ? (
         <section className="mb-8" aria-labelledby="recommended-heading">
-          <h2 id="recommended-heading" className="mb-3 text-xl font-semibold">
-            Recommended for you
-          </h2>
+          <SectionTitle>
+            <span id="recommended-heading">Recommended for you</span>
+          </SectionTitle>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {recs.map((r) => (
               <CourseCard
@@ -220,7 +247,7 @@ export default async function HomePage() {
         aria-label="Optional practice"
       >
         <div>
-          <h2 className="text-lg font-semibold">Keep your knowledge fresh</h2>
+          <h2 className="type-section text-lg">Keep your knowledge fresh</h2>
           <p className="text-sm text-muted">
             Optional daily practice unlocks after your first completed lesson.
           </p>

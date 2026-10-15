@@ -312,3 +312,10 @@ dialog[open]::backdrop { transition: background-color var(--duration-base) var(-
 @media (min-width: 640px) { .course-cover.course-cover-fill { aspect-ratio: auto; align-self: stretch; } }
 /* List thumbnails: drop the full-size minimum height. */
 .course-cover-compact .course-cover-fallback { min-height: 0; }
+/* Learning path: numbered markers joined by a line; done steps turn the line primary. */
+.path-step { position: relative; }
+.path-step:not(:last-child)::before { content: ""; position: absolute; inset-inline-start: 19px; inset-block: 44px -16px; width: 2px; background: var(--border); }
+.path-step[data-state="done"]:not(:last-child)::before { background: var(--primary); }
+.path-marker { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin-block-start: 8px; border-radius: 999px; border: 2px solid var(--border); background: var(--surface); color: var(--muted-foreground); font: 600 15px/1 var(--font-display); font-variant-numeric: tabular-nums; position: relative; z-index: 1; }
+.path-step[data-state="done"] .path-marker { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); }
+.path-step[data-state="current"] .path-marker { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 0 4px var(--accent-tint); }

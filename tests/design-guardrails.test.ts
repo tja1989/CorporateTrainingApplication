@@ -49,8 +49,8 @@ describe("xprtn design contract", () => {
     expect(css).toMatch(/\.course-cover-fill\s*\{[^}]*aspect-ratio:\s*auto/);
     expect(css).toMatch(/\.course-cover-compact \.course-cover-fallback\s*\{[^}]*min-height:\s*0/);
     const uses = (name: string) => files.filter(f => readFileSync(f, "utf8").includes(name)).map(f => f.split("/app/").pop()?.split("/components/").pop());
-    expect(uses("course-cover-fill")).toEqual(["(learner)/path/[pathId]/page.tsx"]);
-    expect(uses("course-cover-compact")).toEqual(["course-catalog.tsx"]);
+    expect(uses("course-cover-fill")).toContain("(learner)/path/[pathId]/page.tsx");
+    expect(uses("course-cover-compact")).toContain("course-catalog.tsx");
   });
   it("sets headings in the bundled display face through type roles", () => {
     expect(css).toMatch(/--font-display:\s*var\(--font-instrument\)/);

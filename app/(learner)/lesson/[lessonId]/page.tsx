@@ -4,7 +4,9 @@ import { requireUser } from "@/lib/auth/guard";
 import { learnerLesson } from "@/lib/lms/lesson-access";
 import { lessonNeighbours } from "@/lib/lms/outline";
 import { Markdown } from "@/lib/markdown";
-import { Card, PageTitle, ButtonLink } from "@/components/ui";
+import { Card, Icon, PageTitle, ButtonLink } from "@/components/ui";
+import { eq } from "drizzle-orm";
+import { db, t } from "@/lib/db/client";
 import {
   LessonProgressProvider,
   LiveCourseOutline,
@@ -30,6 +32,10 @@ export default async function LessonPage({
   const access = await learnerLesson(user.id, lessonId);
   if (!access) notFound();
   const { lesson, mod, course, view, self } = access;
+  const quizSettings =
+    lesson.type === "QUIZ" && lesson.payload.quizId
+      ? (await db.select({ settings: t.quizzes.settings }).from(t.quizzes).where(eq(t.quizzes.id, lesson.payload.quizId)).limit(1))[0]?.settings ?? null
+      : null;
   if (access.pathLock)
     return (
       <div>
@@ -167,8 +173,22 @@ export default async function LessonPage({
                     <p className="mb-4 text-muted">
                       {self.done
                         ? "You have passed this assessment. You can review your result or try again if attempts are available."
-                        : "Review the time limit, attempt allowance and consent information before you begin."}
+                        : "Check the rules below. Opening the assessment shows its consent information before you start."}
                     </p>
+                    {quizSettings ? (
+                      <dl className="mb-5 grid max-w-lg grid-cols-3 gap-3">
+                        {[
+                          ["Time limit", quizSettings.timeLimitSec ? `${Math.round(quizSettings.timeLimitSec / 60)} min` : "None"],
+                          ["Attempts", quizSettings.attemptsLimit ? String(quizSettings.attemptsLimit) : "Unlimited"],
+                          ["Pass mark", `${quizSettings.passPct}%`],
+                        ].map(([term, value]) => (
+                          <div key={term} className="rounded-control bg-surface-2 p-3">
+                            <dt className="text-xs text-muted">{term}</dt>
+                            <dd className="type-number mt-1 text-lg text-foreground">{value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    ) : null}
                     <ButtonLink href={`/quiz/${lesson.payload.quizId}`}>
                       {self.done ? "Review assessment" : "Open assessment"}
                     </ButtonLink>
@@ -190,18 +210,20 @@ export default async function LessonPage({
             >
               {prev && !prev.locked ? (
                 <ButtonLink variant="ghost" href={prev.href}>
+                  <Icon name="arrow-left" size={16} />
                   Previous lesson
                 </ButtonLink>
               ) : (
                 <span />
               )}
               <ButtonLink variant="ghost" href={`/course/${course.id}`}>
+                <Icon name="book" size={16} />
                 Course overview
               </ButtonLink>
             </nav>
           </div>
           <aside className="lesson-contents-panel sticky top-20 max-h-[calc(100dvh-112px)] min-w-0 self-start overflow-y-auto rounded-card border border-border bg-surface p-4">
-            <h2 className="mb-3 text-lg font-semibold">Course contents</h2>
+            <h2 className="type-section mb-3 text-lg">Course contents</h2>
             <LiveCourseOutline view={view} variant="rail" />
           </aside>
         </div>

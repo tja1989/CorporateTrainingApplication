@@ -180,7 +180,7 @@ export default async function CoursePage({
 
   return (
     <div>
-      <div className="mb-8 grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(240px,1fr)]">
+      <div className="mb-10 grid items-start gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(280px,2fr)]">
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <h1 className="type-title">
@@ -188,18 +188,17 @@ export default async function CoursePage({
             </h1>
             {chip ? <Chip variant={chip.variant}>{chip.label}</Chip> : null}
           </div>
-          <p className="mb-4 max-w-2xl text-muted">{course.description}</p>
-          <div className="mb-4 flex flex-wrap gap-2">
-            <span className="text-sm text-muted">
-              {course.estMinutes} min · {languageName(course.language)}
-            </span>
+          <p className="mb-4 max-w-2xl text-base text-muted">{course.description}</p>
+          <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted">
+            <span className="inline-flex items-center gap-1"><Icon name="clock" size={16} />{course.estMinutes} min</span>
+            <span>{languageName(course.language)}</span>
             {course.sequentialLock ? (
               <Chip variant="neutral">Complete in order</Chip>
             ) : null}
           </div>
           {course.objectives.length > 0 ? (
             <section className="mb-6 max-w-2xl">
-              <h2 className="mb-3 text-lg font-semibold">You will learn to</h2>
+              <h2 className="type-section mb-3 text-lg">You will learn to</h2>
               <ul className="flex flex-col gap-1 text-sm">
                 {course.objectives.map((o) => (
                   <li key={o} className="flex gap-2">
@@ -214,25 +213,22 @@ export default async function CoursePage({
               </ul>
             </section>
           ) : null}
+          {view.total > 0 ? (
+            <div className="mb-5 max-w-md">
+              <LearningProgress
+                pct={view.pct}
+                label={`${view.doneCount} of ${view.total} lessons complete${view.minutesLeft ? `, about ${view.minutesLeft} min${view.minutesLeftPartial ? "+" : ""} left` : ""}`}
+              />
+            </div>
+          ) : (
+            <p className="mb-4 text-sm text-muted">
+              Lessons are being prepared. Check back soon.
+            </p>
+          )}
           <div className="flex flex-wrap items-center gap-4">
-            {view.total > 0 ? (
-              <div className="flex items-center gap-3">
-                <div>
-                  <span className="block text-sm font-medium">
-                    {view.doneCount} of {view.total} lessons
-                  </span>
-                  {view.minutesLeft ? (
-                    <span className="block text-xs text-muted">
-                      {view.minutesLeft} min{view.minutesLeftPartial ? "+" : ""}{" "}
-                      left
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
             <div className="flex flex-wrap gap-2">
               {view.nextLessonId ? (
-                <ButtonLink href={`/lesson/${view.nextLessonId}`}>
+                <ButtonLink href={`/lesson/${view.nextLessonId}`} className="min-h-12 px-6 text-base">
                   {view.doneCount > 0 ? "Continue" : "Start course"}
                 </ButtonLink>
               ) : null}
@@ -260,18 +256,6 @@ export default async function CoursePage({
               ) : null}
             </div>
           </div>
-          {view.total > 0 ? (
-            <div className="mt-5 max-w-md">
-              <LearningProgress
-                pct={view.pct}
-                label={`${view.pct}% complete`}
-              />
-            </div>
-          ) : (
-            <p className="mt-4 text-sm text-muted">
-              Lessons are being prepared. Check back soon.
-            </p>
-          )}
           {!enrollment ? (
             <p className="mt-3 text-sm text-muted">
               Available to explore. This course is not currently assigned to
@@ -284,7 +268,7 @@ export default async function CoursePage({
           coverUrl={course.coverUrl}
           tags={course.tags}
           priority
-          className="rounded-card"
+          className="rounded-card shadow-[var(--shadow-resting)]"
         />
       </div>
 
@@ -294,7 +278,7 @@ export default async function CoursePage({
         prerequisites={prerequisites}
       />
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold">Course contents</h2>
+        <h2 className="type-section">Course contents</h2>
         {showExpandToggle ? (
           <PillLink
             href={

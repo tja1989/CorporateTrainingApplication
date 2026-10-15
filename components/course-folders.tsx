@@ -4,7 +4,7 @@ import {
   type CatalogCourse,
   type CatalogQuery,
 } from "@/lib/lms/catalog";
-import { ButtonAnchor } from "./ui";
+import { ButtonAnchor, Icon } from "./ui";
 export function CourseFolders({
   courses,
   query,
@@ -60,6 +60,7 @@ export function CourseFolders({
                 className="max-w-full whitespace-normal break-words text-left"
                 href={catalogHref(query, { folder: folder.path, page: 1 })}
               >
+                <Icon name="book" size={16} className="shrink-0 text-muted" />
                 {folder.name} · {folder.count} course
                 {folder.count === 1 ? "" : "s"}
               </ButtonAnchor>
