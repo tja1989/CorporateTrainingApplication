@@ -1,5 +1,5 @@
 import { CourseCover } from "./course-cover";
-import { Card, Chip } from "./ui";
+import { Card, Chip, Progress } from "./ui";
 import { courseHasOpened } from "@/lib/courses/planning";
 import type { CourseWithProgress } from "@/lib/lms/queries";
 import { formatDay, languageName, tagLabel } from "@/lib/format";
@@ -15,16 +15,7 @@ export function LearningProgress({
   return (
     <div>
       <div className="mb-2 text-sm text-muted">{label}</div>
-      <div
-        role="progressbar"
-        aria-label={label}
-        aria-valuenow={pct}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        className="h-2 overflow-hidden rounded-control bg-surface-2"
-      >
-        <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
-      </div>
+      <Progress value={pct} label={label} />
     </div>
   );
 }
@@ -42,7 +33,7 @@ export function CourseCard({
       href={`/course/${course.id}`}
       className="block rounded-card focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
     >
-      <Card className="h-full overflow-hidden hover:bg-surface-2">
+      <Card interactive className="h-full overflow-hidden">
         <CourseCover
           title={course.title}
           coverUrl={course.coverUrl}

@@ -1,17 +1,11 @@
 import type { ComponentProps, ReactNode } from "react";
-import { cx, StatusChip } from "./ui";
+import { buttonClass, cx, StatusChip } from "./ui";
 import { isKnownStatus } from "@/lib/status";
 
 /** Full document navigation keeps workspace lists, filters and history reliable. */
 export function WorkspaceLink({ className, ...props }: ComponentProps<"a">) {
   return (
-    <a
-      className={cx(
-        "touch-target inline-flex items-center justify-center rounded-control border border-border bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-2",
-        className,
-      )}
-      {...props}
-    />
+    <a className={cx(buttonClass("secondary"), className)} {...props} />
   );
 }
 export function WorkspaceTabs({

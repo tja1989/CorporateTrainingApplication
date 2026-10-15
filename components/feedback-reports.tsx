@@ -1,4 +1,5 @@
-import { Button, ButtonAnchor, PageTitle, PillLink } from "./ui";
+import { Button, ButtonAnchor, PageTitle } from "./ui";
+import { WorkspaceTabs } from "./workspace-ui";
 import type { FeedbackReport } from "@/lib/feedback/reports";
 import type { FeedbackReportParams } from "@/lib/feedback/report-options";
 import type { Actor } from "@/lib/auth/roles";
@@ -45,14 +46,13 @@ export function FeedbackReports({
       >
         Feedback reports
       </PageTitle>
-      <nav aria-label="Feedback type" className="mb-5 flex flex-wrap gap-2">
-        <PillLink href={tab("course")} active={kind === "course"}>
-          Course
-        </PillLink>
-        <PillLink href={tab("instructor")} active={kind === "instructor"}>
-          Instructor
-        </PillLink>
-      </nav>
+      <WorkspaceTabs
+        label="Feedback type"
+        items={[
+          { href: tab("course"), label: "Course", active: kind === "course" },
+          { href: tab("instructor"), label: "Instructor", active: kind === "instructor" },
+        ]}
+      />
       {report ? (
         <>
           <p className="mb-4 text-sm text-muted">

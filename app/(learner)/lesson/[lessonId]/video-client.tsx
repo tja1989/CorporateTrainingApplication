@@ -2,7 +2,7 @@
 
 import { Icon } from "@/components/icons";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AiSurface, Button, Card, Chip, Input, PillButton, Skeleton, cx } from "@/components/ui";
+import { AiSurface, Button, Card, Chip, Input, PillButton, Progress, Skeleton, cx } from "@/components/ui";
 import { useLessonProgress } from "@/components/lesson-progress";
 import { Tabs } from "@/components/tabs";
 import type { TutorCitation } from "@/lib/db/schema";
@@ -183,9 +183,7 @@ export function VideoLessonClient({
             <Chip variant="success">Watched</Chip>
           ) : (
             <>
-              <div className="h-1 w-meter overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuenow={coverage} aria-valuemin={0} aria-valuemax={100} aria-label="Watch coverage">
-                <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${coverage}%` }} />
-              </div>
+              <Progress value={coverage} label="Watch coverage" size="sm" className="w-meter" />
               <span>{coverage}% watched · completes at 90%</span>
             </>
           )}
