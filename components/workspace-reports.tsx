@@ -118,7 +118,7 @@ export function WorkspaceReports({
           ) : null}
         </div>
         <div className="flex gap-2">
-          <Button type="submit">Apply filters</Button>
+          <Button type="submit" variant="secondary">Apply filters</Button>
           <WorkspaceLink href={`${base}?report=${report}`}>
             Reset filters
           </WorkspaceLink>

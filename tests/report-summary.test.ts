@@ -16,6 +16,11 @@ describe("report summary", () => {
     expect(html).not.toContain("Showing");
   });
   it("keeps the CSV note visible", () => expect(render(3)).toContain("CSV includes all filtered results"));
+  it("keeps Apply filters secondary, leaving Ask Reports the page's one primary", () => {
+    const button = render(3).match(/<button[^>]*type="submit"[^>]*>Apply filters<\/button>/)?.[0] ?? "";
+    expect(button).toContain("bg-surface");
+    expect(button).not.toContain("bg-primary");
+  });
   it("words a single result", () => expect(render(1)).toContain("1 result<"));
   it("shows pagination only when there is more than one page", () => {
     expect(render(18)).not.toContain("Page 1 of 1");
