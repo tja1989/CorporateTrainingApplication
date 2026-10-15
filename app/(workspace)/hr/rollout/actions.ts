@@ -21,7 +21,10 @@ export async function rolloutAction(form: FormData): Promise<ActionResult> {
         type: audienceType as "employee" | "department" | "group",
         id: audienceId,
       },
-      dueDays: Number(form.get("dueDays")),
+      dueDays:
+        form.get("useCourseEndDates") === "on"
+          ? null
+          : Number(form.get("dueDays")),
     });
     revalidatePath("/hr/rollout");
     revalidatePath("/department/rollout");

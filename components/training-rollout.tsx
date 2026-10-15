@@ -5,6 +5,7 @@ import { availableTraining } from "@/lib/courses/rollout";
 import { rolloutAction } from "@/app/(workspace)/hr/rollout/actions";
 import { Button, Field, Input, PageHeader, Select, EmptyState } from "./ui";
 import { WorkspaceForm } from "./workspace-form";
+import { CourseDeadlineFields } from "./course-deadline-fields";
 export async function TrainingRollout({ actor }: { actor: CurrentUser }) {
   const courses = (
     await db.select().from(t.courses).where(eq(t.courses.status, "PUBLISHED"))
@@ -123,19 +124,7 @@ export async function TrainingRollout({ actor }: { actor: CurrentUser }) {
                 </optgroup>
               </Select>
             </Field>
-            <Field
-              label="Due in days"
-              hint="Calculated at the employee’s store timezone. Existing assignments keep their due date."
-            >
-              <Input
-                name="dueDays"
-                type="number"
-                min={1}
-                max={3650}
-                defaultValue={14}
-                required
-              />
-            </Field>
+            <CourseDeadlineFields />
             <Button type="submit">Assign training</Button>
           </WorkspaceForm>
         </section>

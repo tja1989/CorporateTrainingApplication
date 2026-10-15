@@ -8,6 +8,9 @@ import {
   courseWorkspacePath,
 } from "@/lib/courses/ownership";
 import { CourseWorkflow } from "@/components/course-workflow";
+import { CoursePlanningFields } from "@/components/course-planning-fields";
+import { isCourseAvailable } from "@/lib/courses/availability";
+import { localDate } from "@/lib/time";
 import { CourseLessonPreview } from "@/components/course-lesson-preview";
 import {
   Button,
@@ -67,6 +70,23 @@ export async function CourseEditor({
     course.status === "DRAFT" &&
     course.approvalState !== "SUBMITTED";
   const departments = await db.select().from(t.departments);
+  const selectedPrerequisites = await db
+    .select()
+    .from(t.coursePrerequisites)
+    .where(eq(t.coursePrerequisites.courseId, course.id));
+  const selectedIds = selectedPrerequisites.map((row) => row.requiredCourseId);
+  const prerequisiteChoices = (await db.select().from(t.courses))
+    .filter(
+      (row) =>
+        row.id !== course.id &&
+        (isCourseAvailable(row) || selectedIds.includes(row.id)),
+    )
+    .map((row) => ({
+      id: row.id,
+      title: isCourseAvailable(row) ? row.title : "Unavailable prerequisite",
+      available: isCourseAvailable(row),
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title));
   const instructors = (
     await db
       .select({
@@ -400,12 +420,51 @@ export async function CourseEditor({
                           ) : null}
                           {editable && ["TEXT", "PDF"].includes(lesson.type) ? (
                             <details className="mt-3">
-                              <summary className="touch-target flex items-center text-sm text-link">Edit lesson content</summary>
-                              <WorkspaceForm action={updateContentLessonAction.bind(null, course.id, lesson.id)}>
-                                <input type="hidden" name="revision" value={course.contentRevision} />
-                                <Field label="Lesson title"><Input name="title" defaultValue={lesson.title} required /></Field>
-                                {lesson.type === "TEXT" ? <Field label="Lesson content"><Textarea name="body" defaultValue={lesson.payload.body ?? ""} rows={8} required /></Field> : <Field label="PDF file URL"><Input name="fileUrl" defaultValue={lesson.payload.fileUrl ?? ""} required /></Field>}
-                                <Button type="submit" variant="secondary">Save lesson content</Button>
+                              <summary className="touch-target flex items-center text-sm text-link">
+                                Edit lesson content
+                              </summary>
+                              <WorkspaceForm
+                                action={updateContentLessonAction.bind(
+                                  null,
+                                  course.id,
+                                  lesson.id,
+                                )}
+                              >
+                                <input
+                                  type="hidden"
+                                  name="revision"
+                                  value={course.contentRevision}
+                                />
+                                <Field label="Lesson title">
+                                  <Input
+                                    name="title"
+                                    defaultValue={lesson.title}
+                                    required
+                                  />
+                                </Field>
+                                {lesson.type === "TEXT" ? (
+                                  <Field label="Lesson content">
+                                    <Textarea
+                                      name="body"
+                                      defaultValue={lesson.payload.body ?? ""}
+                                      rows={8}
+                                      required
+                                    />
+                                  </Field>
+                                ) : (
+                                  <Field label="PDF file URL">
+                                    <Input
+                                      name="fileUrl"
+                                      defaultValue={
+                                        lesson.payload.fileUrl ?? ""
+                                      }
+                                      required
+                                    />
+                                  </Field>
+                                )}
+                                <Button type="submit" variant="secondary">
+                                  Save lesson content
+                                </Button>
                               </WorkspaceForm>
                             </details>
                           ) : null}
@@ -513,6 +572,14 @@ export async function CourseEditor({
                 <Field label="Tags" hint="Separate topics with commas.">
                   <Input name="tags" defaultValue={course.tags.join(", ")} />
                 </Field>
+                <CoursePlanningFields
+                  key={`${course.id}:${course.contentRevision}`}
+                  startDate={course.startsAt ? localDate(course.startsAt) : ""}
+                  endDate={course.endsAt ? localDate(course.endsAt) : ""}
+                  folderPath={course.folderPath}
+                  choices={prerequisiteChoices}
+                  initialIds={selectedIds}
+                />
                 <fieldset className="mb-4 border-t border-border pt-4">
                   <legend className="font-semibold">
                     Completion and certificates

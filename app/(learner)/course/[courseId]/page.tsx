@@ -7,8 +7,21 @@ import { db, t } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/guard";
 import { buildCourseOutline } from "@/lib/lms/course-outline";
 import { pathPrerequisite } from "@/lib/lms/path-access";
+import { coursePlanningAccess } from "@/lib/lms/planning-access";
+import {
+  CoursePlanningSummary,
+  CoursePlanningGate,
+} from "@/components/course-planning-summary";
+import { isCourseAvailable } from "@/lib/courses/availability";
 import { CourseOutline } from "@/components/course-outline";
-import { ButtonLink, ButtonAnchor, Chip, PageTitle, PillLink, complianceChip } from "@/components/ui";
+import {
+  ButtonLink,
+  ButtonAnchor,
+  Chip,
+  PageTitle,
+  PillLink,
+  complianceChip,
+} from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -24,11 +37,39 @@ export default async function CoursePage({
   const { outline } = await searchParams;
   const expandAll = outline === "all";
 
-  const [course] = await db.select().from(t.courses).where(eq(t.courses.id, courseId)).limit(1);
+  const [course] = await db
+    .select()
+    .from(t.courses)
+    .where(eq(t.courses.id, courseId))
+    .limit(1);
   if (!course || course.status !== "PUBLISHED") notFound();
 
   const pathLock = await pathPrerequisite(user.id, courseId);
-  if (pathLock) return <div><PageTitle sub={`Complete the earlier courses in “${pathLock.title}” to unlock this course.`}>{course.title}</PageTitle><ButtonLink href={`/path/${pathLock.pathId}`}>View learning path</ButtonLink></div>;
+  const planning = await coursePlanningAccess(user.id, courseId);
+  const dependencyRows = await db
+    .select({ requiredId: t.coursePrerequisites.requiredCourseId })
+    .from(t.coursePrerequisites)
+    .where(eq(t.coursePrerequisites.courseId, courseId));
+  const dependencyCourses = dependencyRows.length
+    ? await db
+        .select()
+        .from(t.courses)
+        .where(
+          inArray(
+            t.courses.id,
+            dependencyRows.map((row) => row.requiredId),
+          ),
+        )
+    : [];
+  const prerequisites = dependencyRows.map((row) => {
+    const required = dependencyCourses.find((c) => c.id === row.requiredId);
+    const available = !!required && isCourseAvailable(required);
+    return {
+      id: row.requiredId,
+      title: available ? required!.title : "Unavailable prerequisite",
+      available,
+    };
+  });
 
   const view = await buildCourseOutline({
     courseId,
@@ -44,84 +85,229 @@ export default async function CoursePage({
       and(
         eq(t.enrollments.userId, user.id),
         eq(t.enrollments.courseId, courseId),
-        inArray(t.enrollments.status, ["NOT_STARTED", "IN_PROGRESS", "COMPLETED"]),
+        inArray(t.enrollments.status, [
+          "NOT_STARTED",
+          "IN_PROGRESS",
+          "COMPLETED",
+        ]),
       ),
     )
-    .orderBy(desc(t.enrollments.createdAt),desc(t.enrollments.id))
+    .orderBy(desc(t.enrollments.createdAt), desc(t.enrollments.id))
     .limit(1);
   const [cert] = await db
     .select()
     .from(t.certificates)
-    .where(and(eq(t.certificates.userId, user.id), eq(t.certificates.courseId, courseId)))
+    .where(
+      and(
+        eq(t.certificates.userId, user.id),
+        eq(t.certificates.courseId, courseId),
+      ),
+    )
     .limit(1);
 
-  const [completion] = await db.select().from(t.completionRecords).where(and(eq(t.completionRecords.userId,user.id),eq(t.completionRecords.courseId,courseId))).orderBy(desc(t.completionRecords.completedAt),desc(t.completionRecords.id)).limit(1);
-  const [contentFeedback,trainerFeedback]=completion?await Promise.all([db.select({id:t.courseFeedback.id}).from(t.courseFeedback).where(and(eq(t.courseFeedback.employeeId,user.id),eq(t.courseFeedback.completionRecordId,completion.id))).limit(1),db.select({id:t.instructorFeedback.id}).from(t.instructorFeedback).where(and(eq(t.instructorFeedback.employeeId,user.id),eq(t.instructorFeedback.completionRecordId,completion.id))).limit(1)]):[[],[]];
+  const [completion] = await db
+    .select()
+    .from(t.completionRecords)
+    .where(
+      and(
+        eq(t.completionRecords.userId, user.id),
+        eq(t.completionRecords.courseId, courseId),
+      ),
+    )
+    .orderBy(
+      desc(t.completionRecords.completedAt),
+      desc(t.completionRecords.id),
+    )
+    .limit(1);
+  const [contentFeedback, trainerFeedback] = completion
+    ? await Promise.all([
+        db
+          .select({ id: t.courseFeedback.id })
+          .from(t.courseFeedback)
+          .where(
+            and(
+              eq(t.courseFeedback.employeeId, user.id),
+              eq(t.courseFeedback.completionRecordId, completion.id),
+            ),
+          )
+          .limit(1),
+        db
+          .select({ id: t.instructorFeedback.id })
+          .from(t.instructorFeedback)
+          .where(
+            and(
+              eq(t.instructorFeedback.employeeId, user.id),
+              eq(t.instructorFeedback.completionRecordId, completion.id),
+            ),
+          )
+          .limit(1),
+      ])
+    : [[], []];
   const chip = enrollment ? complianceChip(enrollment.complianceStatus) : null;
+  if (planning.blocked || pathLock)
+    return (
+      <div>
+        <PageTitle sub={course.description}>{course.title}</PageTitle>
+        <CoursePlanningSummary
+          course={course}
+          enrollment={enrollment ?? null}
+          prerequisites={prerequisites}
+        />
+        <CoursePlanningGate access={planning} path={pathLock} />
+        <div className="flex flex-wrap gap-3">
+          {completion ? (
+            <ButtonAnchor
+              variant="secondary"
+              href={`/course/${courseId}/feedback?completionId=${completion.id}`}
+            >
+              Feedback for earlier completion
+            </ButtonAnchor>
+          ) : null}
+          {cert ? (
+            <ButtonAnchor
+              variant="secondary"
+              href={`/api/certificates/${cert.id}`}
+            >
+              Download certificate
+            </ButtonAnchor>
+          ) : null}
+        </div>
+      </div>
+    );
   // The toggle only means something once a section has folded itself away.
   const showExpandToggle = expandAll || view.modules.some((m) => m.complete);
 
   return (
     <div>
       <div className="mb-8 grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(240px,1fr)]">
-      <div>
-        <div className="mb-2 flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold sm:text-[32px]">{course.title}</h1>
-          {chip ? <Chip variant={chip.variant}>{chip.label}</Chip> : null}
-        </div>
-        <p className="mb-4 max-w-2xl text-muted">{course.description}</p>
-        <div className="mb-4 flex flex-wrap gap-2">
-          <span className="text-sm text-muted">{course.estMinutes} min · {course.language.toUpperCase()}</span>
-          {enrollment?.dueAt ? <Chip variant="neutral">Due {enrollment.dueAt.toISOString().slice(0, 10)}</Chip> : null}
-          {course.sequentialLock ? <Chip variant="neutral">Complete in order</Chip> : null}
-        </div>
-        {course.objectives.length > 0 ? (
-          <section className="mb-6 max-w-2xl">
-            <h2 className="mb-3 text-lg font-semibold">You will learn to</h2>
-            <ul className="flex flex-col gap-1 text-sm">
-              {course.objectives.map((o) => (
-                <li key={o} className="flex gap-2"><Icon name="check" size={16} className="mt-1 shrink-0 text-success-fg" />{o}</li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-        <div className="flex flex-wrap items-center gap-4">
-          {view.total > 0 ? (
-            <div className="flex items-center gap-3">
-              <div>
-                <span className="block text-sm font-medium">
-                  {view.doneCount} of {view.total} lessons
-                </span>
-                {view.minutesLeft ? (
-                  <span className="block text-xs text-muted">
-                    {view.minutesLeft} min{view.minutesLeftPartial ? "+" : ""} left
-                  </span>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
-          <div className="flex flex-wrap gap-2">
-            {view.nextLessonId ? (
-              <ButtonLink href={`/lesson/${view.nextLessonId}`}>
-                {view.doneCount > 0 ? "Continue" : "Start course"}
-              </ButtonLink>
+        <div>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold sm:text-[32px]">
+              {course.title}
+            </h1>
+            {chip ? <Chip variant={chip.variant}>{chip.label}</Chip> : null}
+          </div>
+          <p className="mb-4 max-w-2xl text-muted">{course.description}</p>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <span className="text-sm text-muted">
+              {course.estMinutes} min · {course.language.toUpperCase()}
+            </span>
+            {enrollment?.dueAt ? (
+              <Chip variant="neutral">
+                Due {enrollment.dueAt.toISOString().slice(0, 10)}
+              </Chip>
             ) : null}
-            {completion ? <ButtonAnchor variant="secondary" href={`/course/${courseId}/feedback?completionId=${completion.id}`}>{enrollment?.status!=="COMPLETED"?(contentFeedback.length||trainerFeedback.length?"Edit feedback for earlier completion":"Give feedback for earlier completion"):(contentFeedback.length||trainerFeedback.length?"Edit your feedback":"Give course feedback")}</ButtonAnchor> : null}
-            {cert ? (
-              <ButtonLink variant="secondary" href={`/api/certificates/${cert.id}`}>Download certificate</ButtonLink>
+            {course.sequentialLock ? (
+              <Chip variant="neutral">Complete in order</Chip>
             ) : null}
           </div>
+          {course.objectives.length > 0 ? (
+            <section className="mb-6 max-w-2xl">
+              <h2 className="mb-3 text-lg font-semibold">You will learn to</h2>
+              <ul className="flex flex-col gap-1 text-sm">
+                {course.objectives.map((o) => (
+                  <li key={o} className="flex gap-2">
+                    <Icon
+                      name="check"
+                      size={16}
+                      className="mt-1 shrink-0 text-success-fg"
+                    />
+                    {o}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+          <div className="flex flex-wrap items-center gap-4">
+            {view.total > 0 ? (
+              <div className="flex items-center gap-3">
+                <div>
+                  <span className="block text-sm font-medium">
+                    {view.doneCount} of {view.total} lessons
+                  </span>
+                  {view.minutesLeft ? (
+                    <span className="block text-xs text-muted">
+                      {view.minutesLeft} min{view.minutesLeftPartial ? "+" : ""}{" "}
+                      left
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              {view.nextLessonId ? (
+                <ButtonLink href={`/lesson/${view.nextLessonId}`}>
+                  {view.doneCount > 0 ? "Continue" : "Start course"}
+                </ButtonLink>
+              ) : null}
+              {completion ? (
+                <ButtonAnchor
+                  variant="secondary"
+                  href={`/course/${courseId}/feedback?completionId=${completion.id}`}
+                >
+                  {enrollment?.status !== "COMPLETED"
+                    ? contentFeedback.length || trainerFeedback.length
+                      ? "Edit feedback for earlier completion"
+                      : "Give feedback for earlier completion"
+                    : contentFeedback.length || trainerFeedback.length
+                      ? "Edit your feedback"
+                      : "Give course feedback"}
+                </ButtonAnchor>
+              ) : null}
+              {cert ? (
+                <ButtonLink
+                  variant="secondary"
+                  href={`/api/certificates/${cert.id}`}
+                >
+                  Download certificate
+                </ButtonLink>
+              ) : null}
+            </div>
+          </div>
+          {view.total > 0 ? (
+            <div className="mt-5 max-w-md">
+              <LearningProgress
+                pct={view.pct}
+                label={`${view.pct}% complete`}
+              />
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-muted">
+              Lessons are being prepared. Check back soon.
+            </p>
+          )}
+          {!enrollment ? (
+            <p className="mt-3 text-sm text-muted">
+              Available to explore. This course is not currently assigned to
+              you.
+            </p>
+          ) : null}
         </div>
-        {view.total > 0 ? <div className="mt-5 max-w-md"><LearningProgress pct={view.pct} label={`${view.pct}% complete`} /></div> : <p className="mt-4 text-sm text-muted">Lessons are being prepared. Check back soon.</p>}
-        {!enrollment ? <p className="mt-3 text-sm text-muted">Available to explore. This course is not currently assigned to you.</p> : null}
-      </div>
-      <CourseCover title={course.title} coverUrl={course.coverUrl} tags={course.tags} priority className="rounded-card" />
+        <CourseCover
+          title={course.title}
+          coverUrl={course.coverUrl}
+          tags={course.tags}
+          priority
+          className="rounded-card"
+        />
       </div>
 
+      <CoursePlanningSummary
+        course={course}
+        enrollment={enrollment ?? null}
+        prerequisites={prerequisites}
+      />
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-xl font-semibold">Course contents</h2>
         {showExpandToggle ? (
-          <PillLink href={expandAll ? `/course/${courseId}` : `/course/${courseId}?outline=all`} active={expandAll}>
+          <PillLink
+            href={
+              expandAll
+                ? `/course/${courseId}`
+                : `/course/${courseId}?outline=all`
+            }
+            active={expandAll}
+          >
             {expandAll ? "Collapse finished" : "Expand all"}
           </PillLink>
         ) : null}
