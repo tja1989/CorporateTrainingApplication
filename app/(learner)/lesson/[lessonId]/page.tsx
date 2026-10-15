@@ -54,7 +54,11 @@ export default async function LessonPage({
         >
           {lesson.title}
         </PageTitle>
-        {view.nextLessonId ? (
+        {access.planning.blocked ? (
+          <ButtonLink href={`/course/${course.id}`}>
+            View course availability
+          </ButtonLink>
+        ) : view.nextLessonId ? (
           <ButtonLink href={`/lesson/${view.nextLessonId}`}>
             Open the next available lesson
           </ButtonLink>

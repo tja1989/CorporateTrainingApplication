@@ -3,10 +3,7 @@ import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { id } from "@/lib/ids";
 import { notify } from "@/lib/notify";
-import {
-  markLessonComplete,
-  markLessonCompleteInTransaction,
-} from "@/lib/lms/completion";
+import { markLessonCompleteInTransaction } from "@/lib/lms/completion";
 import {
   cycleStartsByCourse,
   lockLearningCourse,
@@ -339,29 +336,55 @@ export async function overturnInterview(
 ): Promise<void> {
   const row = await getInterview(interviewId);
   if (!row || row.state !== "COMPLETED") return;
-  await db
-    .update(t.liveInterviews)
-    .set({ outcome: "PASS", reviewedBy: reviewerId, reviewedAt: new Date() })
-    .where(eq(t.liveInterviews.id, interviewId));
-  const [lesson] = await db
-    .select()
-    .from(t.lessons)
-    .where(eq(t.lessons.id, row.lessonId))
-    .limit(1);
-  if (lesson?.type === "INTERVIEW")
-    await markLessonComplete(row.userId, row.lessonId, row.startedAt);
-  await notify(
-    row.userId,
-    "oral_check_result",
-    {
-      lessonTitle: lesson?.title ?? "lesson",
-      scorePct: row.scorePct ?? 0,
-      outcome: "PASS",
-      overturned: true,
-      interviewId,
-    },
-    `oral-overturn:${interviewId}`,
-  );
+  const afterCommit: LearningWriteContext["afterCommit"] = [];
+  await db.transaction(async (connection) => {
+    await lockLearningCourse(connection, row.userId, row.courseId);
+    await assertCoursePlanningAccess(row.userId, row.courseId, connection);
+    const [current] = await connection
+      .select()
+      .from(t.liveInterviews)
+      .where(eq(t.liveInterviews.id, interviewId))
+      .limit(1)
+      .for("update");
+    if (
+      !current ||
+      current.state !== "COMPLETED" ||
+      (current.reviewedAt && current.outcome === "PASS")
+    )
+      return;
+    const [lesson] = await connection
+      .select()
+      .from(t.lessons)
+      .where(eq(t.lessons.id, row.lessonId))
+      .limit(1);
+    await connection
+      .update(t.liveInterviews)
+      .set({ outcome: "PASS", reviewedBy: reviewerId, reviewedAt: new Date() })
+      .where(eq(t.liveInterviews.id, interviewId));
+    if (lesson?.type === "INTERVIEW")
+      await markLessonCompleteInTransaction(
+        { connection, afterCommit },
+        row.userId,
+        row.lessonId,
+        row.courseId,
+        row.startedAt,
+      );
+    await notify(
+      row.userId,
+      "oral_check_result",
+      {
+        lessonTitle: lesson?.title ?? "lesson",
+        scorePct: row.scorePct ?? 0,
+        outcome: "PASS",
+        overturned: true,
+        interviewId,
+      },
+      `oral-overturn:${interviewId}`,
+      undefined,
+      { connection, afterCommit },
+    );
+  });
+  for (const effect of afterCommit) await effect();
 }
 
 /** Latest interview per lesson for a learner (completed rows win over abandoned ones). */

@@ -12,6 +12,7 @@ import { snapshotEnrollment } from "@/lib/feedback/delivery";
 import { isCourseAvailable } from "@/lib/courses/availability";
 import { lockAssessmentCurriculum } from "@/lib/courses/workflow";
 import { enrollmentDeadline } from "@/lib/courses/planning";
+import { assertOrderedPathCompatibility } from "@/lib/courses/planning-service";
 import { computeComplianceStatus } from "./compliance";
 
 type User = typeof t.users.$inferSelect;
@@ -164,6 +165,7 @@ export async function matchingRulePathIds(
 export async function reevaluateUser(
   userId: string,
   transaction?: LearningTransaction,
+  now = new Date(),
 ): Promise<{ enrolled: number; withdrawn: number }> {
   const evaluate = async (tx: LearningTransaction) => {
     await lockAssessmentCurriculum(tx);
@@ -183,6 +185,7 @@ export async function reevaluateUser(
     const targets = new Map<string, Rule>();
     const assignable = new Map<string, Rule>();
     const deadlines = new Map<string, Date | null>();
+    const candidatePaths: string[] = [];
     for (const rule of rules.filter((r) =>
       userMatchesRule(user, r.criteria, ancestry),
     )) {
@@ -204,7 +207,15 @@ export async function reevaluateUser(
         continue;
       const candidateDeadlines = new Map<string, Date | null>();
       try {
-        const explicit = computeDueDate(rule.dueRule, user, tz);
+        if (rule.targetType === "path")
+          await assertOrderedPathCompatibility(
+            tx,
+            undefined,
+            [...candidatePaths, rule.targetId],
+            undefined,
+            userId,
+          );
+        const explicit = computeDueDate(rule.dueRule, user, tz, now);
         for (const course of courses)
           candidateDeadlines.set(
             course.id,
@@ -213,6 +224,7 @@ export async function reevaluateUser(
       } catch {
         continue;
       }
+      if (rule.targetType === "path") candidatePaths.push(rule.targetId);
       for (const courseId of courseIds)
         if (!assignable.has(courseId)) {
           assignable.set(courseId, rule);
@@ -257,6 +269,7 @@ export async function reevaluateUser(
             status: "NOT_STARTED",
             dueAt: deadlines.get(courseId) ?? null,
             certificateExpiresAt: null,
+            now,
           }),
         })
         .onConflictDoNothing()
@@ -318,6 +331,14 @@ export async function enrollUser(
             .sort((a, b) => a.sort - b.sort)
             .map((row) => row.courseId);
     if (!courseIds.length) return 0;
+    if (target.type === "path")
+      await assertOrderedPathCompatibility(
+        tx,
+        undefined,
+        [target.id],
+        undefined,
+        userId,
+      );
     const courses = await tx
       .select()
       .from(t.courses)

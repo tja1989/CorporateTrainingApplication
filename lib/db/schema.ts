@@ -35,7 +35,9 @@ export const groups = pgTable("groups", {
 export const departments = pgTable("departments", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export const users = pgTable(
@@ -55,17 +57,30 @@ export const users = pgTable(
     email: text("email"),
     authVersion: integer("auth_version").notNull().default(0),
     passwordHash: text("password_hash"),
-    passwordState: text("password_state").$type<"INVITED" | "ACTIVE">().notNull().default("INVITED"),
+    passwordState: text("password_state")
+      .$type<"INVITED" | "ACTIVE">()
+      .notNull()
+      .default("INVITED"),
     inviteCodeHash: text("invite_code_hash"),
     inviteExpiresAt: timestamp("invite_expires_at", { withTimezone: true }),
     timeMultiplier: real("time_multiplier").notNull().default(1.0),
-    quietHours: jsonb("quiet_hours").$type<{ start: string; end: string } | null>(),
+    quietHours: jsonb("quiet_hours").$type<{
+      start: string;
+      end: string;
+    } | null>(),
     totpSecret: text("totp_secret"),
-    privacyNoticeVersion: integer("privacy_notice_version").notNull().default(0),
+    privacyNoticeVersion: integer("privacy_notice_version")
+      .notNull()
+      .default(0),
     erasedAt: timestamp("erased_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
-  (t) => [uniqueIndex("users_employee_id_uniq").on(t.employeeId), index("users_department_idx").on(t.departmentId)],
+  (t) => [
+    uniqueIndex("users_employee_id_uniq").on(t.employeeId),
+    index("users_department_idx").on(t.departmentId),
+  ],
 );
 
 export const loginAttempts = pgTable("login_attempts", {
@@ -78,7 +93,9 @@ export const loginAttempts = pgTable("login_attempts", {
 export const consents = pgTable("consents", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
-  kind: text("kind").$type<"privacy_notice" | "integrity" | "escalation" | "voice">().notNull(),
+  kind: text("kind")
+    .$type<"privacy_notice" | "integrity" | "escalation" | "voice">()
+    .notNull(),
   version: text("version").notNull(),
   at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -87,62 +104,103 @@ export const consents = pgTable("consents", {
 // Content
 // ---------------------------------------------------------------------------
 
-export const courses = pgTable("courses", {
-  id: text("id").primaryKey(),
-  title: text("title").notNull(),
-  description: text("description").notNull().default(""),
-  coverUrl: text("cover_url"),
-  status: text("status").$type<"DRAFT" | "PUBLISHED" | "ARCHIVED">().notNull().default("DRAFT"),
-  language: text("language").notNull().default("en"),
-  estMinutes: integer("est_minutes").notNull().default(15),
-  tags: jsonb("tags").$type<string[]>().notNull().default([]),
-  objectives: jsonb("objectives").$type<string[]>().notNull().default([]),
-  startsAt: timestamp("starts_at", { withTimezone: true }),
-  endsAt: timestamp("ends_at", { withTimezone: true }),
-  folderPath: text("folder_path").notNull().default(""),
-  sequentialLock: boolean("sequential_lock").notNull().default(false),
-  certificateEnabled: boolean("certificate_enabled").notNull().default(false),
-  certificateValidityDays: integer("certificate_validity_days"),
-  recertLeadDays: integer("recert_lead_days").notNull().default(30),
-  createdBy: text("created_by"),
-  departmentId: text("department_id"),
-  instructorId: text("instructor_id"),
-  approvalState: text("approval_state").$type<"DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED" | "LEGACY_PUBLISHED">().notNull().default("DRAFT"),
-  contentRevision: integer("content_revision").notNull().default(1),
-  submittedRevision: integer("submitted_revision"),
-  approvedRevision: integer("approved_revision"),
-  submittedBy: text("submitted_by"),
-  approvedBy: text("approved_by"),
-  publishedAt: timestamp("published_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [index("courses_department_idx").on(t.departmentId), index("courses_instructor_idx").on(t.instructorId),
-  check("courses_planning_date_order", sql`${t.startsAt} IS NULL OR ${t.endsAt} IS NULL OR ${t.endsAt} >= ${t.startsAt}`),
-  check("courses_folder_path_length", sql`char_length(${t.folderPath}) <= 640`),
-]);
+export const courses = pgTable(
+  "courses",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    coverUrl: text("cover_url"),
+    status: text("status")
+      .$type<"DRAFT" | "PUBLISHED" | "ARCHIVED">()
+      .notNull()
+      .default("DRAFT"),
+    language: text("language").notNull().default("en"),
+    estMinutes: integer("est_minutes").notNull().default(15),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
+    objectives: jsonb("objectives").$type<string[]>().notNull().default([]),
+    startsAt: timestamp("starts_at", { withTimezone: true }),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    folderPath: text("folder_path").notNull().default(""),
+    sequentialLock: boolean("sequential_lock").notNull().default(false),
+    certificateEnabled: boolean("certificate_enabled").notNull().default(false),
+    certificateValidityDays: integer("certificate_validity_days"),
+    recertLeadDays: integer("recert_lead_days").notNull().default(30),
+    createdBy: text("created_by"),
+    departmentId: text("department_id"),
+    instructorId: text("instructor_id"),
+    approvalState: text("approval_state")
+      .$type<
+        "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED" | "LEGACY_PUBLISHED"
+      >()
+      .notNull()
+      .default("DRAFT"),
+    contentRevision: integer("content_revision").notNull().default(1),
+    submittedRevision: integer("submitted_revision"),
+    approvedRevision: integer("approved_revision"),
+    submittedBy: text("submitted_by"),
+    approvedBy: text("approved_by"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("courses_department_idx").on(t.departmentId),
+    index("courses_instructor_idx").on(t.instructorId),
+    check(
+      "courses_planning_date_order",
+      sql`${t.startsAt} IS NULL OR ${t.endsAt} IS NULL OR ${t.endsAt} >= ${t.startsAt}`,
+    ),
+    check(
+      "courses_folder_path_length",
+      sql`char_length(${t.folderPath}) <= 640`,
+    ),
+  ],
+);
 
-export const coursePrerequisites = pgTable("course_prerequisites", {
-  courseId: text("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
-  requiredCourseId: text("required_course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
-}, table => [primaryKey({ columns: [table.courseId, table.requiredCourseId] }),
-  check("course_prerequisites_not_self", sql`${table.courseId} <> ${table.requiredCourseId}`),
-  index("course_prerequisites_required_idx").on(table.requiredCourseId),
-]);
+export const coursePrerequisites = pgTable(
+  "course_prerequisites",
+  {
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    requiredCourseId: text("required_course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.courseId, table.requiredCourseId] }),
+    check(
+      "course_prerequisites_not_self",
+      sql`${table.courseId} <> ${table.requiredCourseId}`,
+    ),
+    index("course_prerequisites_required_idx").on(table.requiredCourseId),
+  ],
+);
 
-export const courseWorkflowEvents = pgTable("course_workflow_events", {
-  id: text("id").primaryKey(),
-  courseId: text("course_id").notNull(),
-  actorId: text("actor_id").notNull(),
-  actorRole: text("actor_role").notNull(),
-  action: text("action").notNull(),
-  revision: integer("revision").notNull(),
-  fromState: text("from_state").notNull(),
-  toState: text("to_state").notNull(),
-  fromPublication: text("from_publication").notNull(),
-  toPublication: text("to_publication").notNull(),
-  comment: text("comment").notNull().default(""),
-  requestId: text("request_id").notNull(),
-  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [uniqueIndex("course_workflow_request_uniq").on(t.requestId), index("course_workflow_course_time_idx").on(t.courseId, t.at)]);
+export const courseWorkflowEvents = pgTable(
+  "course_workflow_events",
+  {
+    id: text("id").primaryKey(),
+    courseId: text("course_id").notNull(),
+    actorId: text("actor_id").notNull(),
+    actorRole: text("actor_role").notNull(),
+    action: text("action").notNull(),
+    revision: integer("revision").notNull(),
+    fromState: text("from_state").notNull(),
+    toState: text("to_state").notNull(),
+    fromPublication: text("from_publication").notNull(),
+    toPublication: text("to_publication").notNull(),
+    comment: text("comment").notNull().default(""),
+    requestId: text("request_id").notNull(),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("course_workflow_request_uniq").on(t.requestId),
+    index("course_workflow_course_time_idx").on(t.courseId, t.at),
+  ],
+);
 
 export const modules = pgTable("modules", {
   id: text("id").primaryKey(),
@@ -172,7 +230,9 @@ export type LessonPayload = {
 export const lessons = pgTable("lessons", {
   id: text("id").primaryKey(),
   moduleId: text("module_id").notNull(),
-  type: text("type").$type<"VIDEO" | "TEXT" | "PDF" | "QUIZ" | "INTERVIEW">().notNull(),
+  type: text("type")
+    .$type<"VIDEO" | "TEXT" | "PDF" | "QUIZ" | "INTERVIEW">()
+    .notNull(),
   title: text("title").notNull(),
   sort: integer("sort").notNull().default(0),
   payload: jsonb("payload").$type<LessonPayload>().notNull().default({}),
@@ -191,12 +251,16 @@ export const videos = pgTable("videos", {
     .default("manual"),
   isGenerated: boolean("is_generated").notNull().default(false),
   ingestionStatus: text("ingestion_status")
-    .$type<"PENDING" | "FETCHING" | "CHUNKING" | "EMBEDDING" | "READY" | "FAILED">()
+    .$type<
+      "PENDING" | "FETCHING" | "CHUNKING" | "EMBEDDING" | "READY" | "FAILED"
+    >()
     .notNull()
     .default("PENDING"),
   failureReason: text("failure_reason"),
   lastHealthCheckAt: timestamp("last_health_check_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export const videoChunks = pgTable(
@@ -252,7 +316,9 @@ export const enrollmentRules = pgTable("enrollment_rules", {
   targetId: text("target_id").notNull(),
   dueRule: jsonb("due_rule").$type<DueRule | null>(),
   active: boolean("active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export type ComplianceStatus =
@@ -270,17 +336,24 @@ export const enrollments = pgTable(
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
     courseId: text("course_id").notNull(),
-    source: text("source").$type<"manual" | "rule" | "path" | "recert">().notNull(),
+    source: text("source")
+      .$type<"manual" | "rule" | "path" | "recert" | "self">()
+      .notNull(),
     sourceId: text("source_id"),
     dueAt: timestamp("due_at", { withTimezone: true }),
     status: text("status")
       .$type<"NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "WITHDRAWN">()
       .notNull()
       .default("NOT_STARTED"),
-    complianceStatus: text("compliance_status").$type<ComplianceStatus>().notNull().default("ON_TRACK"),
+    complianceStatus: text("compliance_status")
+      .$type<ComplianceStatus>()
+      .notNull()
+      .default("ON_TRACK"),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     withdrawnAt: timestamp("withdrawn_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     index("enrollments_user_idx").on(t.userId),
@@ -294,10 +367,15 @@ export const lessonProgress = pgTable(
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
     lessonId: text("lesson_id").notNull(),
-    status: text("status").$type<"NOT_STARTED" | "IN_PROGRESS" | "COMPLETED">().notNull().default("NOT_STARTED"),
+    status: text("status")
+      .$type<"NOT_STARTED" | "IN_PROGRESS" | "COMPLETED">()
+      .notNull()
+      .default("NOT_STARTED"),
     watchedBuckets: jsonb("watched_buckets").$type<number[]>(), // 5s bucket indices
     lastPositionSec: real("last_position_sec"), // resume only; never used as watched coverage
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [uniqueIndex("lesson_progress_uniq").on(t.userId, t.lessonId)],
 );
@@ -306,7 +384,9 @@ export const completionRecords = pgTable("completion_records", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
   courseId: text("course_id").notNull(),
-  completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp("completed_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
   score: real("score"),
 });
 
@@ -314,36 +394,145 @@ export const certificates = pgTable("certificates", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
   courseId: text("course_id").notNull(),
-  kind: text("kind").$type<"internal" | "external_tracked">().notNull().default("internal"),
-  issuedAt: timestamp("issued_at", { withTimezone: true }).notNull().defaultNow(),
+  kind: text("kind")
+    .$type<"internal" | "external_tracked">()
+    .notNull()
+    .default("internal"),
+  issuedAt: timestamp("issued_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
   expiresAt: timestamp("expires_at", { withTimezone: true }),
   serial: text("serial").notNull().unique(),
   recertTriggeredAt: timestamp("recert_triggered_at", { withTimezone: true }),
 });
 
 // Immutable assignment context, separate from current course ownership.
-export const courseDeliveries = pgTable("course_deliveries", {
-  id: text("id").primaryKey(), enrollmentId: text("enrollment_id").notNull(),
-  courseId: text("course_id").notNull(), departmentId: text("department_id"), instructorId: text("instructor_id"),
-  completedRecordId: text("completed_record_id"), createdAt: timestamp("created_at", {withTimezone:true}).notNull().defaultNow(),
-}, t => [uniqueIndex("course_delivery_enrollment_uniq").on(t.enrollmentId),uniqueIndex("course_delivery_completion_uniq").on(t.completedRecordId),index("course_delivery_instructor_idx").on(t.instructorId),index("course_delivery_department_idx").on(t.departmentId)]);
-function feedbackColumns(){return {
-  id:text("id").primaryKey(),employeeId:text("employee_id").notNull(),completionRecordId:text("completion_record_id").notNull(),courseId:text("course_id").notNull(),deliveryId:text("delivery_id"),departmentId:text("department_id"),
-  rating:integer("rating").notNull(),comment:text("comment").notNull().default(""),revision:integer("revision").notNull().default(1),
-  commentHidden:boolean("comment_hidden").notNull().default(false),excluded:boolean("excluded").notNull().default(false),moderationReason:text("moderation_reason").notNull().default(""),
-  createdAt:timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),updatedAt:timestamp("updated_at",{withTimezone:true}).notNull().defaultNow(),
-}}
-export const courseFeedback=pgTable("course_feedback",feedbackColumns(),t=>[uniqueIndex("course_feedback_employee_completion_uniq").on(t.employeeId,t.completionRecordId),index("course_feedback_scope_time_idx").on(t.departmentId,t.courseId,t.createdAt)]);
-export const instructorFeedback=pgTable("instructor_feedback",{...feedbackColumns(),instructorId:text("instructor_id").notNull()},t=>[uniqueIndex("instructor_feedback_employee_completion_uniq").on(t.employeeId,t.completionRecordId),index("instructor_feedback_scope_time_idx").on(t.departmentId,t.instructorId,t.createdAt)]);
-export const feedbackRevisions=pgTable("feedback_revisions",{
- id:text("id").primaryKey(),kind:text("kind").$type<"course"|"instructor">().notNull(),responseId:text("response_id").notNull(),actorId:text("actor_id").notNull(),action:text("action").$type<"create"|"edit"|"moderate">().notNull(),revision:integer("revision").notNull(),
- oldRating:integer("old_rating"),newRating:integer("new_rating").notNull(),oldComment:text("old_comment"),newComment:text("new_comment").notNull(),
- oldHidden:boolean("old_hidden"),newHidden:boolean("new_hidden").notNull(),oldExcluded:boolean("old_excluded"),newExcluded:boolean("new_excluded").notNull(),reason:text("reason").notNull().default(""),requestId:text("request_id").notNull(),at:timestamp("at",{withTimezone:true}).notNull().defaultNow(),
-},t=>[uniqueIndex("feedback_revision_request_uniq").on(t.requestId),uniqueIndex("feedback_revision_number_uniq").on(t.kind,t.responseId,t.revision),index("feedback_revision_cutoff_idx").on(t.kind,t.responseId,t.at)]);
+export const courseDeliveries = pgTable(
+  "course_deliveries",
+  {
+    id: text("id").primaryKey(),
+    enrollmentId: text("enrollment_id").notNull(),
+    courseId: text("course_id").notNull(),
+    departmentId: text("department_id"),
+    instructorId: text("instructor_id"),
+    completedRecordId: text("completed_record_id"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("course_delivery_enrollment_uniq").on(t.enrollmentId),
+    uniqueIndex("course_delivery_completion_uniq").on(t.completedRecordId),
+    index("course_delivery_instructor_idx").on(t.instructorId),
+    index("course_delivery_department_idx").on(t.departmentId),
+  ],
+);
+function feedbackColumns() {
+  return {
+    id: text("id").primaryKey(),
+    employeeId: text("employee_id").notNull(),
+    completionRecordId: text("completion_record_id").notNull(),
+    courseId: text("course_id").notNull(),
+    deliveryId: text("delivery_id"),
+    departmentId: text("department_id"),
+    rating: integer("rating").notNull(),
+    comment: text("comment").notNull().default(""),
+    revision: integer("revision").notNull().default(1),
+    commentHidden: boolean("comment_hidden").notNull().default(false),
+    excluded: boolean("excluded").notNull().default(false),
+    moderationReason: text("moderation_reason").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  };
+}
+export const courseFeedback = pgTable(
+  "course_feedback",
+  feedbackColumns(),
+  (t) => [
+    uniqueIndex("course_feedback_employee_completion_uniq").on(
+      t.employeeId,
+      t.completionRecordId,
+    ),
+    index("course_feedback_scope_time_idx").on(
+      t.departmentId,
+      t.courseId,
+      t.createdAt,
+    ),
+  ],
+);
+export const instructorFeedback = pgTable(
+  "instructor_feedback",
+  { ...feedbackColumns(), instructorId: text("instructor_id").notNull() },
+  (t) => [
+    uniqueIndex("instructor_feedback_employee_completion_uniq").on(
+      t.employeeId,
+      t.completionRecordId,
+    ),
+    index("instructor_feedback_scope_time_idx").on(
+      t.departmentId,
+      t.instructorId,
+      t.createdAt,
+    ),
+  ],
+);
+export const feedbackRevisions = pgTable(
+  "feedback_revisions",
+  {
+    id: text("id").primaryKey(),
+    kind: text("kind").$type<"course" | "instructor">().notNull(),
+    responseId: text("response_id").notNull(),
+    actorId: text("actor_id").notNull(),
+    action: text("action").$type<"create" | "edit" | "moderate">().notNull(),
+    revision: integer("revision").notNull(),
+    oldRating: integer("old_rating"),
+    newRating: integer("new_rating").notNull(),
+    oldComment: text("old_comment"),
+    newComment: text("new_comment").notNull(),
+    oldHidden: boolean("old_hidden"),
+    newHidden: boolean("new_hidden").notNull(),
+    oldExcluded: boolean("old_excluded"),
+    newExcluded: boolean("new_excluded").notNull(),
+    reason: text("reason").notNull().default(""),
+    requestId: text("request_id").notNull(),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("feedback_revision_request_uniq").on(t.requestId),
+    uniqueIndex("feedback_revision_number_uniq").on(
+      t.kind,
+      t.responseId,
+      t.revision,
+    ),
+    index("feedback_revision_cutoff_idx").on(t.kind, t.responseId, t.at),
+  ],
+);
 
-export const feedbackDigestRuns=pgTable("feedback_digest_runs",{
- id:text("id").primaryKey(),recipientId:text("recipient_id").notNull(),intervalKind:text("interval_kind").$type<"week"|"month">().notNull(),kind:text("kind").$type<"course"|"instructor">().notNull(),periodStart:timestamp("period_start",{withTimezone:true}).notNull(),periodEnd:timestamp("period_end",{withTimezone:true}).notNull(),completedAt:timestamp("completed_at",{withTimezone:true}).notNull().defaultNow(),
-},t=>[uniqueIndex("feedback_digest_period_uniq").on(t.recipientId,t.intervalKind,t.kind,t.periodStart)]);
+export const feedbackDigestRuns = pgTable(
+  "feedback_digest_runs",
+  {
+    id: text("id").primaryKey(),
+    recipientId: text("recipient_id").notNull(),
+    intervalKind: text("interval_kind").$type<"week" | "month">().notNull(),
+    kind: text("kind").$type<"course" | "instructor">().notNull(),
+    periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
+    periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("feedback_digest_period_uniq").on(
+      t.recipientId,
+      t.intervalKind,
+      t.kind,
+      t.periodStart,
+    ),
+  ],
+);
 
 // ---------------------------------------------------------------------------
 // Assessment
@@ -368,22 +557,44 @@ export type QuestionBody = {
   explanation?: string;
   sourceStartSec?: number;
 };
-export type Rubric = { criteria: { name: string; points: number }[]; modelAnswer: string };
+export type Rubric = {
+  criteria: { name: string; points: number }[];
+  modelAnswer: string;
+};
 
 export const questions = pgTable("questions", {
   id: text("id").primaryKey(),
   bankId: text("bank_id").notNull(),
   type: text("type")
-    .$type<"mcq_single" | "mcq_multi" | "truefalse" | "fill_blank" | "matching" | "ordering" | "free_text">()
+    .$type<
+      | "mcq_single"
+      | "mcq_multi"
+      | "truefalse"
+      | "fill_blank"
+      | "matching"
+      | "ordering"
+      | "free_text"
+    >()
     .notNull(),
-  status: text("status").$type<"DRAFT" | "APPROVED" | "RETIRED">().notNull().default("DRAFT"),
+  status: text("status")
+    .$type<"DRAFT" | "APPROVED" | "RETIRED">()
+    .notNull()
+    .default("DRAFT"),
   points: integer("points").notNull().default(1),
   body: jsonb("body").$type<QuestionBody>().notNull(),
   rubric: jsonb("rubric").$type<Rubric | null>(),
-  source: jsonb("source").$type<{ videoId?: string; startSec?: number } | null>(),
-  createdBy: text("created_by").$type<"human" | "ai">().notNull().default("human"),
+  source: jsonb("source").$type<{
+    videoId?: string;
+    startSec?: number;
+  } | null>(),
+  createdBy: text("created_by")
+    .$type<"human" | "ai">()
+    .notNull()
+    .default("human"),
   version: integer("version").notNull().default(1),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export type QuizSettings = {
@@ -425,16 +636,24 @@ export const attempts = pgTable(
     id: text("id").primaryKey(),
     quizId: text("quiz_id").notNull(),
     userId: text("user_id").notNull(),
-    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     deadlineAt: timestamp("deadline_at", { withTimezone: true }),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     servedItems: jsonb("served_items").$type<ServedItem[]>().notNull(),
-    answers: jsonb("answers").$type<Record<string, unknown>>().notNull().default({}),
+    answers: jsonb("answers")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
     navigationIndex: integer("navigation_index").notNull().default(0),
     score: real("score"),
     maxScore: real("max_score"),
     passed: boolean("passed"),
-    gradingState: text("grading_state").$type<"PROVISIONAL" | "FINAL">().notNull().default("FINAL"),
+    gradingState: text("grading_state")
+      .$type<"PROVISIONAL" | "FINAL">()
+      .notNull()
+      .default("FINAL"),
     state: text("state")
       .$type<"IN_PROGRESS" | "SUBMITTED" | "GRADED" | "CLEARED" | "VOIDED">()
       .notNull()
@@ -449,16 +668,29 @@ export const gradingReviews = pgTable("grading_reviews", {
   id: text("id").primaryKey(),
   attemptId: text("attempt_id").notNull(),
   questionId: text("question_id").notNull(),
-  aiScores: jsonb("ai_scores").$type<{ criterion: string; points: number; max: number }[]>(),
+  aiScores:
+    jsonb("ai_scores").$type<
+      { criterion: string; points: number; max: number }[]
+    >(),
   aiRationale: text("ai_rationale"),
   aiConfidence: real("ai_confidence"),
-  reason: text("reason").$type<"ai_fail" | "low_conf" | "borderline" | "appeal">().notNull(),
-  state: text("state").$type<"PENDING" | "CONFIRMED" | "ADJUSTED">().notNull().default("PENDING"),
+  reason: text("reason")
+    .$type<"ai_fail" | "low_conf" | "borderline" | "appeal">()
+    .notNull(),
+  state: text("state")
+    .$type<"PENDING" | "CONFIRMED" | "ADJUSTED">()
+    .notNull()
+    .default("PENDING"),
   reviewerId: text("reviewer_id"),
-  finalScores: jsonb("final_scores").$type<{ criterion: string; points: number; max: number }[]>(),
+  finalScores:
+    jsonb("final_scores").$type<
+      { criterion: string; points: number; max: number }[]
+    >(),
   modelVersion: text("model_version"),
   promptVersion: text("prompt_version"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export const integrityEvents = pgTable(
@@ -468,8 +700,14 @@ export const integrityEvents = pgTable(
     attemptId: text("attempt_id").notNull(),
     ts: timestamp("ts", { withTimezone: true }).notNull().defaultNow(),
     kind: text("kind").notNull(),
-    detail: jsonb("detail").$type<Record<string, unknown>>().notNull().default({}),
-    severity: text("severity").$type<"red" | "orange" | "info">().notNull().default("info"),
+    detail: jsonb("detail")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    severity: text("severity")
+      .$type<"red" | "orange" | "info">()
+      .notNull()
+      .default("info"),
   },
   (t) => [index("integrity_events_attempt_idx").on(t.attemptId)],
 );
@@ -510,7 +748,10 @@ export const policyDocs = pgTable("policy_docs", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
   country: text("country").notNull().default("AE"),
-  audience: text("audience").$type<"all" | "managers">().notNull().default("all"),
+  audience: text("audience")
+    .$type<"all" | "managers">()
+    .notNull()
+    .default("all"),
   language: text("language").notNull().default("en"),
   version: integer("version").notNull().default(1),
   effectiveDate: timestamp("effective_date", { withTimezone: true }).notNull(),
@@ -518,9 +759,14 @@ export const policyDocs = pgTable("policy_docs", {
   owner: text("owner").notNull().default(""),
   reviewDue: timestamp("review_due", { withTimezone: true }),
   body: text("body").notNull(), // markdown source
-  status: text("status").$type<"ACTIVE" | "SUPERSEDED">().notNull().default("ACTIVE"),
+  status: text("status")
+    .$type<"ACTIVE" | "SUPERSEDED">()
+    .notNull()
+    .default("ACTIVE"),
   isDemo: boolean("is_demo").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export const policyChunks = pgTable(
@@ -542,12 +788,26 @@ export const hrConversations = pgTable("hr_conversations", {
   userId: text("user_id").notNull(),
   language: text("language").notNull().default("en"),
   mode: text("mode").$type<"text" | "voice">().notNull().default("text"),
-  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  startedAt: timestamp("started_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
-export type HrCitation = { docId: string; title: string; sectionPath: string; version: number; effectiveDate: string };
+export type HrCitation = {
+  docId: string;
+  title: string;
+  sectionPath: string;
+  version: number;
+  effectiveDate: string;
+};
 /** A citation into the learner's own course content (voice assistant, spec FR-14.3 v1.4). */
-export type LessonCitation = { kind: "lesson"; title: string; lessonId: string; courseTitle: string; href: string };
+export type LessonCitation = {
+  kind: "lesson";
+  title: string;
+  lessonId: string;
+  courseTitle: string;
+  href: string;
+};
 /** What the voice assistant cites: policy sections (default kind) or lessons. */
 export type LiveCitation = (HrCitation & { kind?: "policy" }) | LessonCitation;
 
@@ -560,7 +820,9 @@ export const hrMessages = pgTable(
     content: text("content").notNull(),
     citations: jsonb("citations").$type<LiveCitation[]>(),
     feedback: text("feedback").$type<"up" | "down" | null>(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [index("hr_messages_conv_idx").on(t.conversationId)],
 );
@@ -588,9 +850,14 @@ export const hrTickets = pgTable("hr_tickets", {
   conversationId: text("conversation_id").notNull(),
   userId: text("user_id").notNull(),
   subject: text("subject").notNull(),
-  state: text("state").$type<"OPEN" | "IN_PROGRESS" | "RESOLVED">().notNull().default("OPEN"),
+  state: text("state")
+    .$type<"OPEN" | "IN_PROGRESS" | "RESOLVED">()
+    .notNull()
+    .default("OPEN"),
   assigneeId: text("assignee_id"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export const hrTicketMessages = pgTable("hr_ticket_messages", {
@@ -598,7 +865,9 @@ export const hrTicketMessages = pgTable("hr_ticket_messages", {
   ticketId: text("ticket_id").notNull(),
   authorId: text("author_id").notNull(),
   body: text("body").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 // ---------------------------------------------------------------------------
@@ -610,10 +879,19 @@ export const tutorThreads = pgTable("tutor_threads", {
   userId: text("user_id").notNull(),
   courseId: text("course_id").notNull(),
   lessonId: text("lesson_id"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
-export type TutorCitation = { startSec: number; endSec: number; quote: string; videoId?: string; lessonId?: string; lessonTitle?: string };
+export type TutorCitation = {
+  startSec: number;
+  endSec: number;
+  quote: string;
+  videoId?: string;
+  lessonId?: string;
+  lessonTitle?: string;
+};
 
 export const tutorMessages = pgTable(
   "tutor_messages",
@@ -624,7 +902,9 @@ export const tutorMessages = pgTable(
     content: text("content").notNull(),
     citations: jsonb("citations").$type<TutorCitation[]>(),
     feedback: text("feedback").$type<"up" | "down" | null>(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [index("tutor_messages_thread_idx").on(t.threadId)],
 );
@@ -633,9 +913,20 @@ export const tutorMessages = pgTable(
 // Live voice (spec FR-14): oral checks. HR voice conversations reuse hr_* tables.
 // ---------------------------------------------------------------------------
 
-export type LiveTurn = { role: "user" | "assistant"; text: string; at?: string; citations?: LiveCitation[]; mock?: boolean };
+export type LiveTurn = {
+  role: "user" | "assistant";
+  text: string;
+  at?: string;
+  citations?: LiveCitation[];
+  mock?: boolean;
+};
 export type LiveEvaluation = {
-  questions: Array<{ question: string; answer_summary: string; score: number; feedback: string }>;
+  questions: Array<{
+    question: string;
+    answer_summary: string;
+    score: number;
+    feedback: string;
+  }>;
   overall_summary: string;
   language?: string;
 };
@@ -647,7 +938,10 @@ export const liveInterviews = pgTable(
     userId: text("user_id").notNull(),
     lessonId: text("lesson_id").notNull(),
     courseId: text("course_id").notNull(),
-    state: text("state").$type<"IN_PROGRESS" | "COMPLETED" | "ABANDONED">().notNull().default("IN_PROGRESS"),
+    state: text("state")
+      .$type<"IN_PROGRESS" | "COMPLETED" | "ABANDONED">()
+      .notNull()
+      .default("IN_PROGRESS"),
     model: text("model").notNull(),
     mock: boolean("mock").notNull().default(false),
     questionCount: integer("question_count").notNull().default(3),
@@ -655,12 +949,16 @@ export const liveInterviews = pgTable(
     passPct: integer("pass_pct").notNull().default(67),
     transcript: jsonb("transcript").$type<LiveTurn[]>().notNull().default([]),
     evaluation: jsonb("evaluation").$type<LiveEvaluation>(),
-    evaluationSource: text("evaluation_source").$type<"model" | "fallback" | "mock">(),
+    evaluationSource: text("evaluation_source").$type<
+      "model" | "fallback" | "mock"
+    >(),
     scorePct: integer("score_pct"),
     outcome: text("outcome").$type<"PASS" | "FAIL">(),
     reviewedBy: text("reviewed_by"),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
-    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
   },
   (t) => [index("live_interviews_user_lesson_idx").on(t.userId, t.lessonId)],
@@ -687,7 +985,10 @@ export const uiEvents = pgTable("ui_events", {
   userId: text("user_id").notNull(),
   ts: timestamp("ts", { withTimezone: true }).notNull().defaultNow(),
   kind: text("kind").notNull(), // citation_click | tutor_open | ...
-  payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+  payload: jsonb("payload")
+    .$type<Record<string, unknown>>()
+    .notNull()
+    .default({}),
 });
 
 export const pointsLedger = pgTable("points_ledger", {
@@ -704,8 +1005,14 @@ export const badges = pgTable(
   {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
-    badge: text("badge").$type<"first_course" | "five_courses" | "four_week_streak" | "perfect_quiz">().notNull(),
-    awardedAt: timestamp("awarded_at", { withTimezone: true }).notNull().defaultNow(),
+    badge: text("badge")
+      .$type<
+        "first_course" | "five_courses" | "four_week_streak" | "perfect_quiz"
+      >()
+      .notNull(),
+    awardedAt: timestamp("awarded_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [uniqueIndex("badges_uniq").on(t.userId, t.badge)],
 );
@@ -716,7 +1023,10 @@ export const notifications = pgTable(
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
     kind: text("kind").notNull(),
-    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+    payload: jsonb("payload")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
     channels: jsonb("channels").$type<string[]>().notNull().default(["inapp"]),
     readAt: timestamp("read_at", { withTimezone: true }),
     sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
@@ -730,11 +1040,21 @@ export const jobs = pgTable(
   {
     id: text("id").primaryKey(),
     kind: text("kind").notNull(),
-    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
-    state: text("state").$type<"queued" | "running" | "done" | "failed">().notNull().default("queued"),
+    payload: jsonb("payload")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    state: text("state")
+      .$type<"queued" | "running" | "done" | "failed">()
+      .notNull()
+      .default("queued"),
     error: text("error"),
-    runAfter: timestamp("run_after", { withTimezone: true }).notNull().defaultNow(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    runAfter: timestamp("run_after", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
   },
   (t) => [index("jobs_state_idx").on(t.state, t.runAfter)],
@@ -744,6 +1064,9 @@ export const reportViews = pgTable("report_views", {
   id: text("id").primaryKey(),
   ownerId: text("owner_id").notNull(),
   report: text("report").notNull(),
-  filters: jsonb("filters").$type<Record<string, unknown>>().notNull().default({}),
+  filters: jsonb("filters")
+    .$type<Record<string, unknown>>()
+    .notNull()
+    .default({}),
   name: text("name").notNull(),
 });

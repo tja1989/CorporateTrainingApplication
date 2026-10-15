@@ -35,7 +35,7 @@ export function CoursePlanningSummary({
                 {day(course.startsAt)}
               </time>
             ) : (
-              "Available now"
+              "No start date set"
             )}
           </dd>
         </div>

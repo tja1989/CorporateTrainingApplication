@@ -5,6 +5,7 @@ vi.mock("../lib/db/client", async () => ({
   db: {},
 }));
 import { validateCurriculum } from "../lib/courses/workflow";
+import * as schema from "../lib/db/schema";
 import type { courses } from "../lib/db/schema";
 const course: typeof courses.$inferSelect = {
   id: "c",
@@ -36,12 +37,20 @@ const course: typeof courses.$inferSelect = {
   createdAt: new Date("2026-10-15T00:00Z"),
 };
 function transaction(): any {
-  const responses = [[course], [], ...state.responses];
+  const responses = [...state.responses];
   return {
     select: () => {
-      const rows = responses.shift() ?? [];
+      let rows: unknown[] = [];
       const q: any = {
-        from: () => q,
+        from: (table: unknown) => {
+          rows =
+            table === schema.courses
+              ? [course]
+              : table === schema.coursePrerequisites || table === schema.paths
+                ? []
+                : (responses.shift() ?? []);
+          return q;
+        },
         innerJoin: () => q,
         where: () => q,
         limit: async () => rows,

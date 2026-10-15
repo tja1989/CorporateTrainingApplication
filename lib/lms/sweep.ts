@@ -2,7 +2,7 @@ import { and, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { id } from "@/lib/ids";
 import { computeComplianceStatus } from "./compliance";
-import { enrollUser } from "./rules";
+import { enrollUser, reevaluateUser } from "./rules";
 import { notify } from "@/lib/notify";
 import { daysUntil, localDate } from "@/lib/time";
 import { canonicalRole } from "@/lib/auth/roles";
@@ -24,8 +24,20 @@ export async function runDailySweep(
     recerts: 0,
     recomputed: 0,
     purged: 0,
+    ruleAssignments: 0,
   };
   const today = localDate(now);
+
+  // A relative deadline may become valid just by time passing. Retry every active
+  // person through the same idempotent, whole-target rule transaction.
+  const people = await db
+    .select({ id: t.users.id })
+    .from(t.users)
+    .where(isNull(t.users.erasedAt));
+  for (const person of people)
+    stats.ruleAssignments += (
+      await reevaluateUser(person.id, undefined, now)
+    ).enrolled;
 
   // ---- 1) Recompute compliance status on all non-terminal enrollments
   const open = await db

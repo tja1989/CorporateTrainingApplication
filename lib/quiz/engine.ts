@@ -10,7 +10,6 @@ import {
 } from "./scoring";
 import { gradeFreeText, gradeRouting } from "./grading";
 import {
-  markLessonComplete,
   markLessonCompleteInTransaction,
   awardPoints,
   awardBadge,
@@ -378,20 +377,21 @@ export function unmapAnswer(
 
 async function quizGatesRequiredCompletion(
   quiz: Quiz,
+  connection: LearningDatabase = db,
 ): Promise<{
   lessonId: string | null;
   courseId: string | null;
   required: boolean;
 }> {
-  const lessonId = await attachedLessonId(quiz);
+  const lessonId = await attachedLessonId(quiz, connection);
   if (!lessonId) return { lessonId: null, courseId: null, required: false };
-  const [lesson] = await db
+  const [lesson] = await connection
     .select()
     .from(t.lessons)
     .where(eq(t.lessons.id, lessonId))
     .limit(1);
   if (!lesson) return { lessonId: null, courseId: null, required: false };
-  const [mod] = await db
+  const [mod] = await connection
     .select()
     .from(t.modules)
     .where(eq(t.modules.id, lesson.moduleId))
@@ -451,6 +451,7 @@ export async function submitAttempt(
   let needsHuman = false;
   let minConfidence = 1;
   const freeTextEarned = new Map<string, number>();
+  const stagedReviews: Array<typeof t.gradingReviews.$inferInsert> = [];
   for (const item of items) {
     if (item.q.type !== "free_text") continue;
     const q = byId.get(item.questionId)!;
@@ -467,7 +468,7 @@ export async function submitAttempt(
     });
     freeTextEarned.set(item.questionId, grade.earned);
     minConfidence = Math.min(minConfidence, grade.confidence);
-    await db.insert(t.gradingReviews).values({
+    stagedReviews.push({
       id: id(),
       attemptId: attempt.id,
       questionId: item.questionId,
@@ -501,26 +502,11 @@ export async function submitAttempt(
     if (!routing.finalize) {
       needsHuman = true;
       gradingState = "PROVISIONAL";
-      await db
-        .update(t.gradingReviews)
-        .set({ reason: routing.reason ?? "low_conf" })
-        .where(
-          and(
-            eq(t.gradingReviews.attemptId, attempt.id),
-            eq(t.gradingReviews.state, "PENDING"),
-          ),
-        );
+      for (const review of stagedReviews)
+        review.reason = routing.reason ?? "low_conf";
     } else {
       // confident clear pass → auto-finalize the reviews as confirmed-by-AI
-      await db
-        .update(t.gradingReviews)
-        .set({ state: "CONFIRMED" })
-        .where(
-          and(
-            eq(t.gradingReviews.attemptId, attempt.id),
-            eq(t.gradingReviews.state, "PENDING"),
-          ),
-        );
+      for (const review of stagedReviews) review.state = "CONFIRMED";
     }
   }
 
@@ -528,6 +514,8 @@ export async function submitAttempt(
   await db.transaction(async (connection) => {
     await lockLearningCurriculum(connection);
     await assertQuizPlanning(quiz, attempt.userId, connection, true);
+    if (stagedReviews.length)
+      await connection.insert(t.gradingReviews).values(stagedReviews);
     await connection
       .update(t.attempts)
       .set({
@@ -585,107 +573,141 @@ export async function finalizeReview(
   reviewerId: string,
   finalScores: Array<{ criterion: string; points: number; max: number }> | null,
 ): Promise<void> {
-  const [review] = await db
+  const [sourceReview] = await db
     .select()
     .from(t.gradingReviews)
     .where(eq(t.gradingReviews.id, reviewId))
     .limit(1);
-  if (!review || review.state !== "PENDING") return;
-  await db
-    .update(t.gradingReviews)
-    .set({
-      state: finalScores ? "ADJUSTED" : "CONFIRMED",
-      reviewerId,
-      finalScores: finalScores ?? review.aiScores,
-    })
-    .where(eq(t.gradingReviews.id, reviewId));
-
-  // If no pending reviews remain on the attempt, finalize it.
-  const pending = await db
-    .select()
-    .from(t.gradingReviews)
-    .where(
-      and(
-        eq(t.gradingReviews.attemptId, review.attemptId),
-        eq(t.gradingReviews.state, "PENDING"),
-      ),
-    );
-  if (pending.length > 0) return;
-
-  const [attempt] = await db
+  if (!sourceReview || sourceReview.state !== "PENDING") return;
+  const [sourceAttempt] = await db
     .select()
     .from(t.attempts)
-    .where(eq(t.attempts.id, review.attemptId))
+    .where(eq(t.attempts.id, sourceReview.attemptId))
     .limit(1);
-  if (!attempt) return;
-  const [quiz] = await db
-    .select()
-    .from(t.quizzes)
-    .where(eq(t.quizzes.id, attempt.quizId))
-    .limit(1);
-  if (!quiz) return;
-  const questionRows = await db
-    .select()
-    .from(t.questions)
-    .where(
-      inArray(
-        t.questions.id,
-        attempt.servedItems.map((s) => s.questionId),
-      ),
-    );
-  const byId = new Map(questionRows.map((q) => [q.id, q]));
-  // An appeal appends a new decision; the latest review for each question is
-  // authoritative while all earlier decisions stay available for audit.
-  const reviews = await db
-    .select()
-    .from(t.gradingReviews)
-    .where(eq(t.gradingReviews.attemptId, attempt.id))
-    .orderBy(desc(t.gradingReviews.createdAt));
+  if (!sourceAttempt) return;
+  const afterCommit: LearningWriteContext["afterCommit"] = [];
+  await db.transaction(async (connection) => {
+    await lockLearningCurriculum(connection);
+    const [quiz] = await connection
+      .select()
+      .from(t.quizzes)
+      .where(eq(t.quizzes.id, sourceAttempt.quizId))
+      .limit(1);
+    if (!quiz) throw new Error("Quiz not found");
+    await assertQuizPlanning(quiz, sourceAttempt.userId, connection, true);
+    const [attempt] = await connection
+      .select()
+      .from(t.attempts)
+      .where(eq(t.attempts.id, sourceAttempt.id))
+      .limit(1)
+      .for("update");
+    const [review] = await connection
+      .select()
+      .from(t.gradingReviews)
+      .where(eq(t.gradingReviews.id, reviewId))
+      .limit(1)
+      .for("update");
+    if (!attempt || !review || review.state !== "PENDING") return;
+    await connection
+      .update(t.gradingReviews)
+      .set({
+        state: finalScores ? "ADJUSTED" : "CONFIRMED",
+        reviewerId,
+        finalScores: finalScores ?? review.aiScores,
+      })
+      .where(eq(t.gradingReviews.id, reviewId));
 
-  const items = attempt.servedItems.map((served) => {
-    const q = byId.get(served.questionId)!;
-    const rawAnswer = (attempt.answers as Record<string, Answer>)[
-      served.questionId
-    ];
-    let freeTextEarned: number | null = null;
-    if (q.type === "free_text") {
-      const r = reviews.find((rv) => rv.questionId === q.id);
-      const scores = r?.finalScores ?? r?.aiScores ?? [];
-      const rubricMax =
-        (q.rubric?.criteria ?? []).reduce((s, c) => s + c.points, 0) || 1;
-      freeTextEarned =
-        (scores.reduce((s, c) => s + c.points, 0) / rubricMax) * q.points;
+    // If no pending reviews remain on the attempt, finalize it.
+    const pending = await connection
+      .select()
+      .from(t.gradingReviews)
+      .where(
+        and(
+          eq(t.gradingReviews.attemptId, review.attemptId),
+          eq(t.gradingReviews.state, "PENDING"),
+        ),
+      );
+    if (pending.length > 0) return;
+
+    const questionRows = await connection
+      .select()
+      .from(t.questions)
+      .where(
+        inArray(
+          t.questions.id,
+          attempt.servedItems.map((s) => s.questionId),
+        ),
+      );
+    const byId = new Map(questionRows.map((q) => [q.id, q]));
+    // An appeal appends a new decision; the latest review for each question is
+    // authoritative while all earlier decisions stay available for audit.
+    const reviews = await connection
+      .select()
+      .from(t.gradingReviews)
+      .where(eq(t.gradingReviews.attemptId, attempt.id))
+      .orderBy(desc(t.gradingReviews.createdAt));
+
+    const items = attempt.servedItems.map((served) => {
+      const q = byId.get(served.questionId)!;
+      const rawAnswer = (attempt.answers as Record<string, Answer>)[
+        served.questionId
+      ];
+      let freeTextEarned: number | null = null;
+      if (q.type === "free_text") {
+        const r = reviews.find((rv) => rv.questionId === q.id);
+        const scores = r?.finalScores ?? r?.aiScores ?? [];
+        const rubricMax =
+          (q.rubric?.criteria ?? []).reduce((s, c) => s + c.points, 0) || 1;
+        freeTextEarned =
+          (scores.reduce((s, c) => s + c.points, 0) / rubricMax) * q.points;
+      }
+      return {
+        questionId: served.questionId,
+        q: { type: q.type, points: q.points, body: q.body },
+        answer: unmapAnswer(q, served, rawAnswer),
+        freeTextEarned,
+      };
+    });
+    const score = scoreQuiz(items);
+    const passed = score.pct >= quiz.settings.passPct;
+    await connection
+      .update(t.attempts)
+      .set({
+        score: score.earned,
+        maxScore: score.possible,
+        passed,
+        gradingState: "FINAL",
+        state: "GRADED",
+      })
+      .where(eq(t.attempts.id, attempt.id));
+
+    const gate = await quizGatesRequiredCompletion(quiz, connection);
+    if (passed && gate.lessonId) {
+      await awardPoints(attempt.userId, "quiz_pass", quiz.id, 20, connection);
+      if (score.pct === 100)
+        await awardBadge(attempt.userId, "perfect_quiz", connection);
+      if (gate.courseId)
+        await markLessonCompleteInTransaction(
+          { connection, afterCommit },
+          attempt.userId,
+          gate.lessonId,
+          gate.courseId,
+          attempt.startedAt,
+        );
     }
-    return {
-      questionId: served.questionId,
-      q: { type: q.type, points: q.points, body: q.body },
-      answer: unmapAnswer(q, served, rawAnswer),
-      freeTextEarned,
-    };
+    await notify(
+      attempt.userId,
+      "quiz_graded",
+      {
+        quizId: quiz.id,
+        quizTitle: quiz.title,
+        state: "FINAL",
+        outcome: `${Math.round(score.pct)}%${passed ? " — passed" : " — not passed"}`,
+      },
+      undefined,
+      undefined,
+      { connection, afterCommit },
+    );
   });
-  const score = scoreQuiz(items);
-  const passed = score.pct >= quiz.settings.passPct;
-  await db
-    .update(t.attempts)
-    .set({
-      score: score.earned,
-      maxScore: score.possible,
-      passed,
-      gradingState: "FINAL",
-      state: "GRADED",
-    })
-    .where(eq(t.attempts.id, attempt.id));
-
-  const gate = await quizGatesRequiredCompletion(quiz);
-  if (passed && gate.lessonId) {
-    await awardPoints(attempt.userId, "quiz_pass", quiz.id, 20);
-    if (score.pct === 100) await awardBadge(attempt.userId, "perfect_quiz");
-    await markLessonComplete(attempt.userId, gate.lessonId, attempt.startedAt);
-  }
-  await notify(attempt.userId, "quiz_graded", {
-    quizId: quiz.id,
-    quizTitle: quiz.title,
-    state: "FINAL",
-    outcome: `${Math.round(score.pct)}%${passed ? " — passed" : " — not passed"}`,
-  });
+  for (const effect of afterCommit) await effect();
 }

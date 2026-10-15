@@ -218,13 +218,7 @@ test("@core Author planning survives approval, future rollout, prerequisite unlo
     await expect(
       employeePage.getByText(/Complete the required prerequisite/),
     ).toBeVisible();
-    await enrollUser(
-      employee.id,
-      { type: "course", id: required.id },
-      "manual",
-      null,
-      null,
-    );
+    // The target alone was assigned. Follow its prerequisite through normal learning.
     await employeePage.goto(`/lesson/${required.lesson}`);
     await employeePage
       .getByRole("button", { name: "Mark complete", exact: true })
@@ -642,4 +636,138 @@ test("@core An overdue course-end assignment still completes and awards its cert
   ).toBe(1);
   await expectNoPageOverflow(page);
   await capture(page, info, "overdue-planning-completed");
+});
+
+for (const ordered of [true, false]) {
+  test(`@core Planning-aware ${ordered ? "ordered" : "unordered"} path continuation`, async ({
+    page,
+  }) => {
+    const employee = await createPerson("LEARNER"),
+      instructor = await createPerson("INSTRUCTOR");
+    const future = await courseFixture(
+      instructor.id,
+      null,
+      `Future path ${randomUUID().slice(0, 8)}`,
+      "PUBLISHED",
+      "",
+      "2031-10-20",
+      "2031-10-22",
+    );
+    const ready = await courseFixture(
+      instructor.id,
+      null,
+      `Ready path ${randomUUID().slice(0, 8)}`,
+    );
+    const path = randomUUID();
+    await withDb(async (db) => {
+      await db.query(
+        "INSERT INTO paths(id,title,complete_in_order) VALUES($1,'Planning-aware path',$2)",
+        [path, ordered],
+      );
+      for (const [index, course] of [future, ready].entries())
+        await db.query(
+          "INSERT INTO path_courses(id,path_id,course_id,sort) VALUES($1,$2,$3,$4)",
+          [randomUUID(), path, course.id, index],
+        );
+    });
+    await enrollUser(
+      employee.id,
+      { type: "path", id: path },
+      "manual",
+      null,
+      null,
+    );
+    await signIn(page, employee);
+    await page.goto(`/path/${path}`);
+    if (ordered) {
+      await expect(
+        page.getByRole("link", { name: "Continue path", exact: true }),
+      ).toHaveCount(0);
+      await expect(page.getByText("Scheduled", { exact: true })).toBeVisible();
+    } else
+      await expect(
+        page.getByRole("link", { name: "Continue path", exact: true }),
+      ).toHaveAttribute("href", `/lesson/${ready.lesson}`);
+    await expectNoPageOverflow(page);
+  });
+}
+
+test("@core Course-wide lesson gate offers availability instead of a self-link", async ({
+  page,
+}) => {
+  const employee = await createPerson("LEARNER"),
+    instructor = await createPerson("INSTRUCTOR");
+  const future = await courseFixture(
+    instructor.id,
+    null,
+    `Future lesson ${randomUUID().slice(0, 8)}`,
+    "PUBLISHED",
+    "",
+    "2031-10-20",
+    "2031-10-22",
+  );
+  await signIn(page, employee);
+  await page.goto(`/lesson/${future.lesson}`);
+  await expect(
+    page.getByRole("link", { name: "View course availability", exact: true }),
+  ).toHaveAttribute("href", `/course/${future.id}`);
+  await expect(
+    page.locator(`main a[href='/lesson/${future.lesson}']`),
+  ).toHaveCount(0);
+});
+
+test("@core Availability explanation fits the first viewport before metadata", async ({
+  page,
+}, info) => {
+  const employee = await createPerson("LEARNER"),
+    instructor = await createPerson("INSTRUCTOR");
+  const future = await courseFixture(
+    instructor.id,
+    null,
+    `Scheduled course ${randomUUID().slice(0, 8)}`,
+    "PUBLISHED",
+    "Operations/Safety/Food",
+    "2031-10-20",
+    "2031-10-22",
+  );
+  await enrollUser(
+    employee.id,
+    { type: "course", id: future.id },
+    "manual",
+    null,
+    null,
+  );
+  await signIn(page, employee);
+  await page.goto(`/course/${future.id}`);
+  const gate = page.getByRole("region", {
+    name: "Training availability",
+    exact: true,
+  });
+  const box = await gate.boundingBox(),
+    summary = await page
+      .getByRole("region", { name: "Course schedule", exact: true })
+      .boundingBox();
+  expect(box!.y).toBeLessThan(summary!.y);
+  expect(box!.y + box!.height).toBeLessThan(
+    (await page.evaluate(() => innerHeight)) - 80,
+  );
+  await capture(page, info, "availability-first-viewport");
+});
+
+test("@core Undated course metadata does not promise availability", async ({
+  page,
+}) => {
+  const employee = await createPerson("LEARNER"),
+    instructor = await createPerson("INSTRUCTOR");
+  const course = await courseFixture(
+    instructor.id,
+    null,
+    `Undated course ${randomUUID().slice(0, 8)}`,
+  );
+  await signIn(page, employee);
+  await page.goto(`/course/${course.id}`);
+  await expect(page.getByText("Available now", { exact: true })).toHaveCount(0);
+  await expect(
+    page.getByText("No start date set", { exact: true }),
+  ).toBeVisible();
 });

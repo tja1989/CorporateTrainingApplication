@@ -148,12 +148,12 @@ export default async function CoursePage({
     return (
       <div>
         <PageTitle sub={course.description}>{course.title}</PageTitle>
+        <CoursePlanningGate access={planning} path={pathLock} />
         <CoursePlanningSummary
           course={course}
           enrollment={enrollment ?? null}
           prerequisites={prerequisites}
         />
-        <CoursePlanningGate access={planning} path={pathLock} />
         <div className="flex flex-wrap gap-3">
           {completion ? (
             <ButtonAnchor

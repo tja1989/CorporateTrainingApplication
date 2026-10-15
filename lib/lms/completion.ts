@@ -1,4 +1,7 @@
-import { linkCompletionDelivery } from "@/lib/feedback/delivery";
+import {
+  snapshotEnrollment,
+  linkCompletionDelivery,
+} from "@/lib/feedback/delivery";
 import { assertCoursePlanningAccess } from "./planning-access";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
@@ -113,6 +116,43 @@ export async function markLessonCompleteInTransaction(
   await assertCoursePlanningAccess(userId, courseId, connection);
   const cycle = await currentCycleStart(userId, courseId, connection);
   if (evidenceStartedAt && cycle && evidenceStartedAt < cycle) return false;
+  // Published catalog learning remains open. Capture voluntary participation
+  // prospectively, with its own provenance, so prerequisite evidence is real.
+  const participation = await connection
+    .select({ id: t.enrollments.id })
+    .from(t.enrollments)
+    .where(
+      and(
+        eq(t.enrollments.userId, userId),
+        eq(t.enrollments.courseId, courseId),
+      ),
+    )
+    .limit(1);
+  if (!participation.length) {
+    const [course] = await connection
+      .select()
+      .from(t.courses)
+      .where(eq(t.courses.id, courseId))
+      .limit(1);
+    if (!course) throw new Error("Course not found");
+    const enrollmentId = id();
+    await connection
+      .insert(t.enrollments)
+      .values({
+        id: enrollmentId,
+        userId,
+        courseId,
+        source: "self",
+        dueAt: course.endsAt,
+        status: "IN_PROGRESS",
+        complianceStatus: computeComplianceStatus({
+          status: "IN_PROGRESS",
+          dueAt: course.endsAt,
+          certificateExpiresAt: null,
+        }),
+      });
+    await snapshotEnrollment(connection, enrollmentId);
+  }
   await connection
     .insert(t.lessonProgress)
     .values({ id: id(), userId, lessonId, status: "COMPLETED" })
