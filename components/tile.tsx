@@ -44,7 +44,7 @@ export function Tile({
   const body = (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0 flex-1">
-        <p className={cx("truncate", numeric ? "stat text-2xl" : "display text-lg", t.value)}>
+        <p className={cx("truncate", numeric ? "type-number text-3xl" : "display text-lg", t.value)}>
           {numeric ? <AnimatedNumber value={value} suffix={suffix} /> : value}
         </p>
         <p className="mt-1 text-sm flex items-start gap-2 text-muted">

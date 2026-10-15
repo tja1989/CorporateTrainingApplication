@@ -67,6 +67,7 @@ export async function nudgeAction(userId: string): Promise<void> {
   );
   await setFlash(`Nudge sent to ${member.name}.`);
   revalidatePath(`/team/${userId}`);
+  revalidatePath("/team");
 }
 export async function issueResetAction(userId: string): Promise<string> {
   return issueResetCode(userId);

@@ -53,10 +53,10 @@ export function WorkspaceReports({
       <form
         action={base}
         method="get"
-        className="mb-6 rounded-card border border-border bg-surface p-4"
+        className="mb-6 rounded-card bg-surface-2 p-4"
       >
         <input type="hidden" name="report" value={report} />
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {report !== "engagement" ? (
             <Field label="Course title">
               <Input
@@ -126,7 +126,7 @@ export function WorkspaceReports({
       </form>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">{result.title}</h2>
+          <h2 className="type-section">{result.title}</h2>
           <p className="text-sm text-muted">{plural(result.rows.length, "result")}</p>
         </div>
         <div className="flex flex-col items-end gap-1">
