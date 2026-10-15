@@ -319,3 +319,22 @@ dialog[open]::backdrop { transition: background-color var(--duration-base) var(-
 .path-marker { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin-block-start: 8px; border-radius: 999px; border: 2px solid var(--border); background: var(--surface); color: var(--muted-foreground); font: 600 15px/1 var(--font-display); font-variant-numeric: tabular-nums; position: relative; z-index: 1; }
 .path-step[data-state="done"] .path-marker { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); }
 .path-step[data-state="current"] .path-marker { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 0 4px var(--accent-tint); }
+/* Approval stepper: Draft → Department review → HR publishes → Live. */
+.workflow-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.workflow-step { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; font-size: 14px; color: var(--muted-foreground); }
+.workflow-step:not(:last-child)::after { content: ""; position: absolute; inset-block-start: 13px; inset-inline-start: 36px; inset-inline-end: -2px; height: 2px; background: var(--border); }
+.workflow-step[data-state="done"]::after { background: var(--primary); }
+.workflow-dot { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; border: 2px solid var(--border); background: var(--surface); font: 600 13px/1 var(--font-display); }
+.workflow-step[data-state="done"] .workflow-dot { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); }
+.workflow-step[data-state="current"] { color: var(--foreground); font-weight: 600; }
+.workflow-step[data-state="current"] .workflow-dot { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 0 4px var(--accent-tint); }
+.workflow-step[data-attention="true"] .workflow-dot { border-color: var(--warning); color: var(--warning-fg); box-shadow: 0 0 0 4px var(--warning-tint); }
+@media (max-width: 639px) {
+  .workflow-steps { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .workflow-step { flex-direction: row; align-items: center; }
+  .workflow-step:not(:last-child)::after { inset-block-start: 28px; inset-block-end: -12px; inset-inline-start: 13px; inset-inline-end: auto; width: 2px; height: auto; }
+}
+/* Decision history as a timeline. */
+.decision-timeline > li { position: relative; padding-block: 12px; padding-inline-start: 24px; }
+.decision-timeline > li::before { content: ""; position: absolute; inset-inline-start: 4px; inset-block-start: 19px; width: 10px; height: 10px; border-radius: 999px; background: var(--primary); }
+.decision-timeline > li:not(:last-child)::after { content: ""; position: absolute; inset-inline-start: 8px; inset-block: 31px -7px; width: 2px; background: var(--border); }

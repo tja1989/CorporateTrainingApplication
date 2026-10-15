@@ -15,7 +15,6 @@ import { CourseLessonPreview } from "@/components/course-lesson-preview";
 import {
   Button,
   Chip,
-  StatusChip,
   Field,
   Input,
   Select,
@@ -48,6 +47,8 @@ import {
   moveModuleAction,
 } from "@/app/(workspace)/admin/courses/actions";
 import { lessonTypeLabel } from "./lesson-icon";
+import { CoverUrlField } from "./cover-url-field";
+import { languageName } from "@/lib/format";
 export const dynamic = "force-dynamic";
 export async function CourseEditor({
   actor,
@@ -73,6 +74,7 @@ export async function CourseEditor({
     course.status === "DRAFT" &&
     course.approvalState !== "SUBMITTED";
   const departments = await db.select().from(t.departments);
+  const folderOptions = [...new Set((await db.select({ folderPath: t.courses.folderPath }).from(t.courses)).map((row) => row.folderPath).filter(Boolean))].sort();
   const selectedPrerequisites = await db
     .select()
     .from(t.coursePrerequisites)
@@ -144,14 +146,11 @@ export async function CourseEditor({
         title={course.title}
         sub={`${mods.length} module${mods.length === 1 ? "" : "s"} · ${lessons.length} lesson${lessons.length === 1 ? "" : "s"} · ${course.estMinutes} min`}
         actions={
-          <>
-            <StatusChip status={course.status} />
-            {course.status === "PUBLISHED" ? (
-              <WorkspaceLink href={`/course/${course.id}`}>
-                View learner course
-              </WorkspaceLink>
-            ) : null}
-          </>
+          course.status === "PUBLISHED" ? (
+            <WorkspaceLink href={`/course/${course.id}`}>
+              View learner course
+            </WorkspaceLink>
+          ) : null
         }
       />
       <CourseWorkflow actor={actor} course={course} />
@@ -266,13 +265,11 @@ export async function CourseEditor({
                         <li key={lesson.id} className="min-w-0 py-3">
                           <div className="flex min-w-0 flex-wrap items-center gap-2">
                             <LessonIcon type={lesson.type as LessonType} />
-                            <div className="min-w-0 flex-1">
+                            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                               <p className="break-words font-medium">
                                 {lesson.title}
                               </p>
-                              <p className="text-sm text-muted">
-                                {lessonTypeLabel(lesson.type)}
-                              </p>
+                              <Chip>{lessonTypeLabel(lesson.type)}</Chip>
                             </div>
                             <div
                               className={
@@ -525,6 +522,16 @@ export async function CourseEditor({
         ) : (
           <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <WorkspaceSection title="Course settings">
+              {!editable ? (
+                <p role="status" className="mb-4 flex items-start gap-2 rounded-control bg-surface-2 p-3 text-sm text-foreground">
+                  <Icon name="warning" size={16} className="mt-1 shrink-0 text-muted" />
+                  {course.status === "PUBLISHED"
+                    ? "Published. Revise this course to make changes."
+                    : course.approvalState === "SUBMITTED"
+                      ? "Waiting for Department Head review. Withdraw the submission to make changes."
+                      : "Only the course's instructor can change these settings."}
+                </p>
+              ) : null}
               <WorkspaceForm action={updateCourseAction.bind(null, course.id)}>
                 <input
                   type="hidden"
@@ -541,12 +548,7 @@ export async function CourseEditor({
                     defaultValue={course.description}
                   />
                 </Field>
-                <Field
-                  label="Cover image URL"
-                  hint="An HTTPS image URL or a local / path. Leave blank to use the subject illustration."
-                >
-                  <Input name="coverUrl" defaultValue={course.coverUrl ?? ""} />
-                </Field>
+                <CoverUrlField defaultValue={course.coverUrl ?? ""} title={course.title} tags={course.tags} />
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="Estimated minutes">
                     <Input
@@ -557,15 +559,14 @@ export async function CourseEditor({
                       required
                     />
                   </Field>
-                  <Field
-                    label="Language code"
-                    hint="For example en, ar, hi or ml"
-                  >
-                    <Input
-                      name="language"
-                      defaultValue={course.language}
-                      required
-                    />
+                  <Field label="Language">
+                    <Select name="language" defaultValue={course.language} required>
+                      {[...new Set(["en", "ar", "hi", "ml", course.language])].map((code) => (
+                        <option key={code} value={code}>
+                          {languageName(code)}
+                        </option>
+                      ))}
+                    </Select>
                   </Field>
                 </div>
                 <Field label="Tags" hint="Separate topics with commas.">
@@ -578,6 +579,7 @@ export async function CourseEditor({
                   folderPath={course.folderPath}
                   choices={prerequisiteChoices}
                   initialIds={selectedIds}
+                  folderOptions={folderOptions}
                 />
                 <fieldset className="mb-4 border-t border-border pt-4">
                   <legend className="font-semibold">
