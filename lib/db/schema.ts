@@ -9,7 +9,10 @@ import {
   vector,
   index,
   uniqueIndex,
+  primaryKey,
+  check,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import type { StoredRole } from "@/lib/auth/roles";
 
 // ---------------------------------------------------------------------------
@@ -94,6 +97,9 @@ export const courses = pgTable("courses", {
   estMinutes: integer("est_minutes").notNull().default(15),
   tags: jsonb("tags").$type<string[]>().notNull().default([]),
   objectives: jsonb("objectives").$type<string[]>().notNull().default([]),
+  startsAt: timestamp("starts_at", { withTimezone: true }),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
+  folderPath: text("folder_path").notNull().default(""),
   sequentialLock: boolean("sequential_lock").notNull().default(false),
   certificateEnabled: boolean("certificate_enabled").notNull().default(false),
   certificateValidityDays: integer("certificate_validity_days"),
@@ -109,7 +115,18 @@ export const courses = pgTable("courses", {
   approvedBy: text("approved_by"),
   publishedAt: timestamp("published_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [index("courses_department_idx").on(t.departmentId), index("courses_instructor_idx").on(t.instructorId)]);
+}, (t) => [index("courses_department_idx").on(t.departmentId), index("courses_instructor_idx").on(t.instructorId),
+  check("courses_planning_date_order", sql`${t.startsAt} IS NULL OR ${t.endsAt} IS NULL OR ${t.endsAt} >= ${t.startsAt}`),
+  check("courses_folder_path_length", sql`char_length(${t.folderPath}) <= 640`),
+]);
+
+export const coursePrerequisites = pgTable("course_prerequisites", {
+  courseId: text("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  requiredCourseId: text("required_course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+}, table => [primaryKey({ columns: [table.courseId, table.requiredCourseId] }),
+  check("course_prerequisites_not_self", sql`${table.courseId} <> ${table.requiredCourseId}`),
+  index("course_prerequisites_required_idx").on(table.requiredCourseId),
+]);
 
 export const courseWorkflowEvents = pgTable("course_workflow_events", {
   id: text("id").primaryKey(),
