@@ -3,10 +3,10 @@ import { resolve } from "path";
 
 export default defineConfig({
   resolve: {
-    alias: { "@": resolve(__dirname, ".") },
+    alias: { "@": resolve(import.meta.dirname, ".") },
   },
   // Render components the way Next compiles them, without a global React.
-  esbuild: { jsx: "automatic" },
+  oxc: { jsx: { runtime: "automatic" } },
   test: {
     include: ["tests/**/*.test.ts"],
     environment: "node",
