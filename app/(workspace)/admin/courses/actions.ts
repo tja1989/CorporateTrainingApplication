@@ -622,13 +622,13 @@ export async function retryIngestAction(
     if (video?.ingestionStatus === "FAILED")
       return {
         error:
-          "Ingestion failed. Check the transcript or retry when the transcript service is available.",
+          "Video processing failed. Check the transcript or retry when the transcript service is available.",
       };
     return {
       success:
         video?.ingestionStatus === "READY"
           ? "Video transcript is ready."
-          : "Video ingestion queued. Refresh to check progress.",
+          : "Video queued for processing. Refresh to check progress.",
     };
   } catch (error) {
     return errorResult(error);

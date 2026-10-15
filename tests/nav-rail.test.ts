@@ -58,6 +58,10 @@ describe("sidebar consistency", () => {
   it("gives every item in a role's sidebar its own icon", () => {
     for (const nav of [ADMIN_NAV, HR_NAV, DEPARTMENT_NAV, INSTRUCTOR_NAV]) expect(new Set(nav.map(i => i.icon)).size).toBe(nav.length);
   });
+  it("keeps HR's Employees item active on an employee's record", () => {
+    expect(activeNavHref("/team/user-1", HR_NAV)).toBe("/hr/people");
+    expect(activeNavHref("/team/user-1", DEPARTMENT_NAV)).toBe("/team");
+  });
   it("labels sidebar items with their page titles", () => {
     expect(DEPARTMENT_NAV.find(i => i.href === "/team")?.label).toBe("My team");
     expect(ADMIN_NAV.find(i => i.href === "/admin/people")?.label).toBe("People");

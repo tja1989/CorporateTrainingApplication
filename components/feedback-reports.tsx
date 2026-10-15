@@ -1,4 +1,5 @@
-import { Button, ButtonAnchor, PageTitle, PillLink } from "./ui";
+import { Button, ButtonAnchor, EmptyState, PageTitle } from "./ui";
+import { WorkspaceTabs } from "./workspace-ui";
 import type { FeedbackReport } from "@/lib/feedback/reports";
 import type { FeedbackReportParams } from "@/lib/feedback/report-options";
 import type { Actor } from "@/lib/auth/roles";
@@ -45,47 +46,16 @@ export function FeedbackReports({
       >
         Feedback reports
       </PageTitle>
-      <nav aria-label="Feedback type" className="mb-5 flex flex-wrap gap-2">
-        <PillLink href={tab("course")} active={kind === "course"}>
-          Course
-        </PillLink>
-        <PillLink href={tab("instructor")} active={kind === "instructor"}>
-          Instructor
-        </PillLink>
-      </nav>
-      {report ? (
-        <>
-          <p className="mb-4 text-sm text-muted">
-            {report.periodLabel} · Based on original submission date and the
-            latest revision before this period ends.
-          </p>
-          <dl className="mb-5 grid grid-cols-2 gap-3">
-            <div className="rounded-card border border-border bg-surface p-4">
-              <dt className="text-sm text-muted">Responses</dt>
-              <dd
-                data-testid="feedback-response-count"
-                className="mt-1 text-3xl font-semibold"
-              >
-                {report.responses}
-              </dd>
-            </div>
-            <div className="rounded-card border border-border bg-surface p-4">
-              <dt className="text-sm text-muted">Average rating</dt>
-              <dd
-                data-testid="feedback-average"
-                className="mt-1 text-3xl font-semibold"
-              >
-                {report.average === null
-                  ? "No responses"
-                  : `${report.average} / 5`}
-              </dd>
-            </div>
-          </dl>
-        </>
-      ) : null}
+      <WorkspaceTabs
+        label="Feedback type"
+        items={[
+          { href: tab("course"), label: "Course", active: kind === "course" },
+          { href: tab("instructor"), label: "Instructor", active: kind === "instructor" },
+        ]}
+      />
       <form
         method="get"
-        className="mb-6 rounded-card border border-border bg-surface p-4 sm:p-5"
+        className="mb-8 rounded-card bg-surface-2 p-4 sm:p-5"
       >
         <input type="hidden" name="kind" value={kind} />
         {params.courseId ? (
@@ -121,11 +91,32 @@ export function FeedbackReports({
       ) : null}
       {report ? (
         <>
+          <p className="mb-3 text-sm text-muted">
+            <span className="font-medium text-foreground">{report.periodLabel}</span>. Counted by original submission date.
+          </p>
+          <dl className="mb-6 grid grid-cols-2 gap-3">
+            <div className="rounded-card border border-border bg-surface p-4 shadow-[var(--shadow-resting)]">
+              <dt className="text-sm text-muted">Responses</dt>
+              <dd data-testid="feedback-response-count" className="type-number mt-1 text-3xl">
+                {report.responses}
+              </dd>
+            </div>
+            <div className="rounded-card border border-border bg-surface p-4 shadow-[var(--shadow-resting)]">
+              <dt className="text-sm text-muted">Average rating</dt>
+              <dd
+                data-testid="feedback-average"
+                className={report.average === null ? "mt-2 text-lg font-medium text-muted" : "type-number mt-1 text-3xl"}
+              >
+                {report.average === null ? "No responses" : `${report.average} / 5`}
+              </dd>
+            </div>
+          </dl>
+          {report.responses ? (
           <section
             aria-label="Rating distribution"
             className="mb-6 rounded-card border border-border bg-surface p-5"
           >
-            <h2 className="mb-3 font-semibold">Rating distribution</h2>
+            <h2 className="type-section mb-3 text-lg">Rating distribution</h2>
             <div className="grid gap-2">
               {report.distribution.map((count, index) => (
                 <div key={index} className="flex items-center gap-3 text-sm">
@@ -147,6 +138,7 @@ export function FeedbackReports({
               ))}
             </div>
           </section>
+          ) : null}
           {report.rows.length ? (
             <div
               role="region"
@@ -158,7 +150,7 @@ export function FeedbackReports({
                 <caption className="sr-only">
                   {kind} feedback · {report.periodLabel}
                 </caption>
-                <thead>
+                <thead className="bg-surface-2">
                   <tr>
                     {report.columns.map((column) => (
                       <th
@@ -192,9 +184,9 @@ export function FeedbackReports({
               </table>
             </div>
           ) : (
-            <p className="rounded-card border border-border bg-surface p-5 text-muted">
-              No responses in this period.
-            </p>
+            <div className="mb-6">
+              <EmptyState icon="star" title="No responses in this period" body="Feedback appears here after people complete training and rate it. Try a longer period." />
+            </div>
           )}
           <FeedbackModeration items={report.moderationItems} />
         </>

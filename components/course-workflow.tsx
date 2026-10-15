@@ -5,16 +5,10 @@ import { id } from "@/lib/ids";
 import { canAuthorCourse } from "@/lib/courses/ownership";
 import { workflowAction } from "@/app/(workspace)/admin/courses/actions";
 import { WorkspaceForm } from "./workspace-form";
-import { Button, Chip, Field, Select, Textarea } from "./ui";
+import { Button, Chip, Field, Icon, Select, Textarea } from "./ui";
+import { APPROVAL_LABELS as labels, workflowLabel, workflowSteps } from "@/lib/courses/workflow-steps";
 import { statusLabel } from "@/lib/status";
 import { formatDateTime } from "@/lib/format";
-const labels = {
-  DRAFT: "Draft",
-  SUBMITTED: "Awaiting Department Head approval",
-  APPROVED: "Approved for publication",
-  REJECTED: "Changes requested",
-  LEGACY_PUBLISHED: "Published before approvals",
-};
 export async function CourseWorkflow({
   actor,
   course,
@@ -80,25 +74,38 @@ export async function CourseWorkflow({
       className="mb-6 rounded-card border border-border bg-surface p-4 sm:p-6"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="text-lg font-semibold">Approval and publication</h2>
+        <h2 className="type-section">Approval and publication</h2>
         <Chip
           variant={
-            course.approvalState === "APPROVED"
-              ? "success"
-              : course.approvalState === "REJECTED"
-                ? "destructive"
-                : "neutral"
+            course.status === "ARCHIVED"
+              ? "neutral"
+              : course.approvalState === "APPROVED"
+                ? "success"
+                : course.approvalState === "REJECTED"
+                  ? "destructive"
+                  : "neutral"
           }
         >
-          {course.status === "PUBLISHED" && course.approvalState === "APPROVED"
-            ? "Published · approved"
-            : labels[course.approvalState]}
+          {workflowLabel(course)}
         </Chip>
       </div>
-      <p className="mt-2 mb-4 text-sm text-muted">
-        Version {course.contentRevision}. Instructor submits, Department Head
-        decides, HR publishes.
-      </p>
+      <ol className="workflow-steps mt-5 mb-4" aria-label="Approval steps">
+        {workflowSteps(course).map((step, i) => (
+          <li
+            key={step.key}
+            className="workflow-step"
+            data-state={step.state}
+            data-attention={step.note ? "true" : undefined}
+            aria-current={step.state === "current" ? "step" : undefined}
+          >
+            <span className="workflow-dot" aria-hidden="true">
+              {step.state === "done" ? <Icon name="check" size={14} /> : i + 1}
+            </span>
+            <span>{step.label}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="mb-4 text-sm text-muted">Version {course.contentRevision}</p>
       <div className="flex flex-wrap items-start gap-4">
         {author &&
         draft &&
@@ -192,9 +199,9 @@ export async function CourseWorkflow({
           Decision history ({events.length})
         </summary>
         {events.length ? (
-          <ol className="mt-3 divide-y divide-border">
+          <ol className="decision-timeline mt-3">
             {events.map((event) => (
-              <li key={event.id} className="py-3 text-sm">
+              <li key={event.id} className="text-sm">
                 <p className="font-medium">
                   {event.action[0].toUpperCase() + event.action.slice(1)} version{" "}
                   {event.revision}, by{" "}

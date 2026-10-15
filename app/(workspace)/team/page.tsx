@@ -1,4 +1,4 @@
-import { and, inArray, sql } from "drizzle-orm";
+import { and, gte, inArray, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { trainingScope } from "@/lib/auth/scope";
 import { requireRole, teamOf } from "@/lib/auth/guard";
@@ -14,6 +14,9 @@ import {
 } from "@/components/ui";
 import { WorkspaceLink } from "@/components/workspace-ui";
 import { noun, plural } from "@/lib/format";
+import { nudgeAction } from "./actions";
+import { WorkspaceForm } from "@/components/workspace-form";
+import { NUDGE_WINDOW_MS, nudgeKey } from "@/lib/nudge";
 export const dynamic = "force-dynamic";
 const FILTERS = [
   { key: "OVERDUE", label: "Overdue", unit: ["assignment", "assignments"] },
@@ -66,6 +69,20 @@ export default async function TeamPage({
         )
     : [];
   const active = new Set(recent.map((e) => e.userId));
+  const nudged = new Set(
+    (ids.length
+      ? await db
+          .select({ userId: t.notifications.userId })
+          .from(t.notifications)
+          .where(
+            and(
+              inArray(t.notifications.dedupeKey, ids.map(nudgeKey)),
+              gte(t.notifications.sentAt, new Date(Date.now() - NUDGE_WINDOW_MS)),
+            ),
+          )
+      : []
+    ).map((n) => n.userId),
+  );
   const itemsOf = (id: string) =>
     enrollments.filter((e) => e.userId === id && e.status !== "WITHDRAWN");
   const matches = (id: string, status: string) =>
@@ -114,9 +131,9 @@ export default async function TeamPage({
     <div>
       <PageHeader
         title="My team"
-        sub={`${team.length} department employee${team.length === 1 ? "" : "s"}. Start with the people whose training needs attention.`}
+        sub={`${plural(team.length, "department employee")}. Start with the people whose training needs attention.`}
         actions={
-          <WorkspaceLink href="/team/reports">View team reports</WorkspaceLink>
+          <WorkspaceLink href={manager.role === "DEPARTMENT_HEAD" ? "/department/reports" : "/team/reports"}>View team reports</WorkspaceLink>
         }
       />
       {!team.length ? (
@@ -137,16 +154,15 @@ export default async function TeamPage({
                 aria-current={filter === f.key ? "page" : undefined}
                 className={cx(
                   "touch-target border-b border-border p-4 hover:bg-surface-2",
-                  filter === f.key && "bg-accent-tint",
+                  filter === f.key && "bg-surface-2 shadow-[inset_0_-3px_0_var(--primary)]",
                 )}
               >
                 <span className="block text-sm text-muted">{f.label}</span>
                 <span
                   className={cx(
-                    "mt-1 block text-xl font-semibold",
-                    f.key === "OVERDUE" &&
-                      countOf(f.key) > 0 &&
-                      "text-destructive-text",
+                    "type-number mt-1 block text-2xl",
+                    f.key === "OVERDUE" && countOf(f.key) > 0 && "text-destructive-text",
+                    f.key === "DUE_SOON" && countOf(f.key) > 0 && "text-warning-fg",
                   )}
                 >
                   {countOf(f.key)}{" "}
@@ -180,14 +196,14 @@ export default async function TeamPage({
               </Select>
             </Field>
             <div className="mb-4 flex gap-2">
-              <Button type="submit">Apply</Button>
+              <Button type="submit" variant="secondary">Apply</Button>
               {q || filter ? (
                 <WorkspaceLink href="/team">Reset</WorkspaceLink>
               ) : null}
             </div>
           </form>
           <p className="mb-3 text-sm text-muted">
-            {filtered.length} of {team.length} people · overdue training first
+            {filtered.length} of {plural(team.length, "person", "people")}, overdue training first
           </p>
           <div className="rounded-card border border-border bg-surface">
             <table role="table" className="block w-full table-fixed md:table">
@@ -199,7 +215,7 @@ export default async function TeamPage({
                   <th className="w-[35%] px-4 py-3 text-start">Team member</th>
                   <th className="px-4 py-3 text-start">Learning</th>
                   <th className="px-4 py-3 text-start">Due training</th>
-                  <th className="px-4 py-3 text-start">Contact</th>
+                  <th className="px-4 py-3 text-start"><span className="sr-only">Action</span></th>
                 </tr>
               </thead>
               <tbody className="block md:table-row-group">
@@ -212,29 +228,34 @@ export default async function TeamPage({
                     (e) => e.complianceStatus === "DUE_SOON",
                   ).length;
                   const cell =
-                    "block min-w-0 text-sm md:table-cell md:px-4 md:py-4";
+                    "block min-w-0 text-sm md:table-cell md:px-4 md:py-3 md:align-middle";
                   return (
                     <tr
                       key={member.id}
                       className="grid gap-3 border-b border-border p-4 last:border-0 hover:bg-surface-2 md:table-row md:p-0"
                     >
                       <td className={cell}>
-                        <a
-                          href={`/team/${member.id}`}
-                          className="touch-target inline-flex items-center break-words font-semibold text-link underline"
-                        >
-                          {member.name}
-                        </a>
-                        <p className="break-words text-sm text-muted">
-                          {member.employeeId} · {member.jobTitle ?? "Employee"}
-                        </p>
+                        <div className="flex items-center gap-3">
+                          <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-sm font-semibold text-foreground">
+                            {member.name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}
+                          </span>
+                          <div className="min-w-0">
+                            <a
+                              href={`/team/${member.id}`}
+                              className="touch-target -my-2 inline-flex items-center break-words font-medium text-foreground hover:underline"
+                            >
+                              {member.name}
+                            </a>
+                            <p className="break-words text-sm text-muted">
+                              {member.jobTitle ?? "Employee"}, {member.employeeId}
+                            </p>
+                          </div>
+                        </div>
                       </td>
                       <td className={cell}>
-                        {plural(items.length, "assignment")}{" "}
+                        {plural(items.length, "assignment")}
                         <span className="text-muted">
-                          ·{" "}
-                          {items.filter((e) => e.status === "COMPLETED").length}{" "}
-                          completed
+                          , {items.filter((e) => e.status === "COMPLETED").length} completed
                         </span>
                       </td>
                       <td className={cell}>
@@ -246,18 +267,23 @@ export default async function TeamPage({
                             <Chip variant="warning">{soon} due soon</Chip>
                           ) : null}
                           {!overdue && !soon ? (
-                            <Chip variant="success">On track</Chip>
+                            <Chip variant="neutral">On track</Chip>
                           ) : null}
                         </div>
                       </td>
-                      <td className={cell}>
-                        <span className="text-muted">
-                          {!member.email && !active.has(member.id)
-                            ? "Nudge in person"
-                            : member.email
-                              ? "Email and in-app"
-                              : "In-app"}
-                        </span>
+                      <td className={cx(cell, "md:text-end")}>
+                        {overdue || soon ? (
+                          <WorkspaceForm action={nudgeAction.bind(null, member.id)}>
+                            <div className="inline-flex flex-col items-start gap-1 md:items-end">
+                              <Button type="submit" variant="secondary" disabled={nudged.has(member.id)}>
+                                {nudged.has(member.id) ? "Reminded in the last 48h" : "Send reminder"}
+                              </Button>
+                              <span className="text-xs text-muted">
+                                {member.email ? "Email and in-app" : active.has(member.id) ? "In-app" : "In-app; mention it in person too"}
+                              </span>
+                            </div>
+                          </WorkspaceForm>
+                        ) : null}
                       </td>
                     </tr>
                   );

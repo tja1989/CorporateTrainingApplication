@@ -14,12 +14,14 @@ export function CoursePlanningFields({
   folderPath,
   choices,
   initialIds,
+  folderOptions = [],
 }: {
   startDate: string;
   endDate: string;
   folderPath: string;
   choices: PrerequisiteChoice[];
   initialIds: string[];
+  folderOptions?: string[];
 }) {
   const [selected, setSelected] = useState(initialIds),
     [candidate, setCandidate] = useState("");
@@ -44,10 +46,15 @@ export function CoursePlanningFields({
       </div>
       <Field
         label="Course folder"
-        hint="For example Operations/Safety/Food handling. Use up to 8 levels; leave blank for the catalog root."
+        hint="Pick an existing folder or type a new path such as Operations/Safety/Food handling. Leave blank for the catalog root."
       >
-        <Input name="folderPath" defaultValue={folderPath} maxLength={640} />
+        <Input name="folderPath" defaultValue={folderPath} maxLength={640} list="course-folder-options" />
       </Field>
+      <datalist id="course-folder-options">
+        {folderOptions.map((folder) => (
+          <option key={folder} value={folder} />
+        ))}
+      </datalist>
       <fieldset className="min-w-0">
         <legend className="mb-2 text-sm font-medium">
           Prerequisite courses

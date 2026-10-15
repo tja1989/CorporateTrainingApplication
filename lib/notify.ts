@@ -25,6 +25,16 @@ export type NotificationKind =
   | "oral_check_review"
   | "course_submitted" | "course_approved" | "course_rejected" | "course_published" | "course_workflow_updated";
 
+// Workflow updates read as a sentence about the course, not a status code.
+const WORKFLOW_PHRASES: Record<string, string> = {
+  DRAFT: "is back in draft",
+  SUBMITTED: "is waiting for Department Head review",
+  APPROVED: "is approved and ready to publish",
+  REJECTED: "needs changes",
+  LEGACY_PUBLISHED: "is published",
+  PUBLISHED: "is published",
+};
+
 const TEMPLATES: Record<NotificationKind, (p: Record<string, unknown>) => { title: string; body: string }> = {
   course_feedback_digest:p=>({title:`${p.intervalKind==="week"?"Weekly":"Monthly"} course feedback`,body:`${p.period}: ${plural(Number(p.responses), "response")}. ${p.average==null?"No responses.":`Average rating ${p.average} / 5.`}`}),
   instructor_feedback_digest:p=>({title:`${p.intervalKind==="week"?"Weekly":"Monthly"} instructor feedback`,body:`${p.period}: ${plural(Number(p.responses), "response")}. ${p.average==null?"No responses.":`Average rating ${p.average} / 5.`}`}),
@@ -32,7 +42,7 @@ const TEMPLATES: Record<NotificationKind, (p: Record<string, unknown>) => { titl
   course_approved:p=>({title:"Course approved",body:`“${p.courseTitle}” is approved and ready for HR publication.`}),
   course_rejected:p=>({title:"Course needs changes",body:`“${p.courseTitle}” was rejected. ${p.comment ?? ""}`}),
   course_published:p=>({title:"Course published",body:`“${p.courseTitle}” is available for rollout.`}),
-  course_workflow_updated:p=>({title:"Course workflow updated",body:`“${p.courseTitle}” is now ${statusLabel(String(p.state)).label.toLowerCase()}. ${p.comment ?? ""}`}),
+  course_workflow_updated:p=>({title:"Course workflow updated",body:`“${p.courseTitle}” ${WORKFLOW_PHRASES[String(p.state)] ?? `is now ${statusLabel(String(p.state)).label.toLowerCase()}`}. ${p.comment ?? ""}`}),
   enrolled: (p) => ({ title: "New training assigned", body: `You've been enrolled in “${p.courseTitle}”.` }),
   due_soon: (p) => ({ title: "Training due soon", body: `“${p.courseTitle}” is due in ${plural(Number(p.days), "day")}.` }),
   due_today: (p) => ({ title: "Training due today", body: `“${p.courseTitle}” is due today.` }),
@@ -58,7 +68,7 @@ export async function notify(
   dedupeKey?: string,
   dedupeWithinMs?: number,
   transaction?: LearningWriteContext,
-): Promise<void> {
+): Promise<boolean> {
   const connection = transaction?.connection ?? db;
   if (dedupeKey) {
     const dup = await connection
@@ -66,7 +76,7 @@ export async function notify(
       .from(t.notifications)
       .where(and(eq(t.notifications.userId, userId), eq(t.notifications.dedupeKey, dedupeKey), dedupeWithinMs !== undefined ? gte(t.notifications.sentAt, new Date(Date.now() - dedupeWithinMs)) : undefined))
       .limit(1);
-    if (dup.length > 0) return;
+    if (dup.length > 0) return false;
   }
   const channels = ["inapp"];
   const [user] = await connection.select().from(t.users).where(eq(t.users.id, userId)).limit(1);
@@ -80,6 +90,7 @@ export async function notify(
     if (transaction) transaction.afterCommit.push(deliver);
     else await deliver();
   }
+  return true;
 }
 
 export function renderNotification(kind: string, payload: Record<string, unknown>): { title: string; body: string } {

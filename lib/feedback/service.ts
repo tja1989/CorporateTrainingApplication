@@ -157,7 +157,7 @@ export async function saveFeedback(
     );
     if (input.kind === "instructor" && !delivery?.instructorId)
       throw new Error(
-        "The historical instructor is unknown for this learning cycle.",
+        "We don't know who taught this session, so only course feedback is available.",
       );
     if (input.kind === "instructor" && delivery?.instructorId === actor.id)
       throw new Error("You cannot rate your own instructor performance.");

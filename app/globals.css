@@ -27,15 +27,24 @@
   --destructive-fg: #FFFFFF;
   --destructive-text: #A01E2E;
   --destructive-tint: #FFF0F1;
-  --ai: #1559C9;
-  --ai-fg: #194E9E;
-  --ai-tint: #EFF5FF;
+  --ai: #6545D6;
+  --ai-fg: #5534C2;
+  --ai-tint: #F3EFFE;
   --link: #1559C9;
+  /* Generated course cover fields; white illustrations keep at least 3:1. */
+  --cover-1: #0F5C63;
+  --cover-2: #3A3F8F;
+  --cover-3: #7A3E62;
+  --cover-4: #8A5A12;
+  --cover-5: #2F6B45;
+  --cover-6: #3E4C63;
   --duration-fast: 150ms;
   --duration-base: 200ms;
   --duration-slow: 250ms;
 }
 .dark {
+  --shadow-resting: 0 1px 2px rgb(0 0 0 / 0.30), 0 2px 8px rgb(0 0 0 / 0.25);
+  --shadow-raised: 0 2px 4px rgb(0 0 0 / 0.35), 0 12px 28px rgb(0 0 0 / 0.45);
   color-scheme: dark;
   --background: #101A2A;
   --surface: #17253A;
@@ -60,10 +69,16 @@
   --destructive-fg: #481521;
   --destructive-text: #FFB8C1;
   --destructive-tint: #432637;
-  --ai: #9BC2FF;
-  --ai-fg: #B5D4FF;
-  --ai-tint: #1C304D;
+  --ai: #BBA8FF;
+  --ai-fg: #CDBFFF;
+  --ai-tint: #2B2452;
   --link: #A9CCFF;
+  --cover-1: #13707A;
+  --cover-2: #4A50A8;
+  --cover-3: #8E4B74;
+  --cover-4: #956319;
+  --cover-5: #3A7D53;
+  --cover-6: #4C5B75;
 }
 
 @theme inline {
@@ -117,8 +132,10 @@
   --shadow-*: initial;
   --shadow-card: 0 2px 6px rgb(23 43 77 / 0.08);
   --shadow-overlay: 0 12px 32px rgb(12 24 44 / 0.18);
+  --shadow-resting: 0 1px 2px rgb(23 43 77 / 0.05), 0 2px 8px rgb(23 43 77 / 0.06);
+  --shadow-raised: 0 2px 4px rgb(23 43 77 / 0.06), 0 12px 28px rgb(23 43 77 / 0.10);
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, "Noto Sans Arabic", "Noto Sans Devanagari", "Noto Sans Malayalam", sans-serif;
-  --font-display: var(--font-sans);
+  --font-display: var(--font-instrument), var(--font-sans);
   --font-weight-*: initial;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
@@ -154,12 +171,25 @@ button:disabled { cursor: not-allowed; }
 input, select, textarea { min-width: 0; }
 :focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
 ::selection { background: var(--primary); color: var(--primary-fg); }
+h1, h2, h3, .display { font-family: var(--font-display); }
 .display { font-weight: 600; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+/* Type roles: one scale for every screen. Body is 16px; support text is 14px. */
+.type-display { font-family: var(--font-display); font-size: clamp(2.125rem, 1.55rem + 2.4vw, 3rem); line-height: 1.08; font-weight: 600; letter-spacing: -0.025em; text-wrap: balance; overflow-wrap: anywhere; }
+.type-title { font-family: var(--font-display); font-size: clamp(1.625rem, 1.3rem + 1.3vw, 2.125rem); line-height: 1.15; font-weight: 600; letter-spacing: -0.02em; text-wrap: balance; overflow-wrap: anywhere; }
+.type-section { font-family: var(--font-display); font-size: 1.3125rem; line-height: 1.3; font-weight: 600; letter-spacing: -0.012em; text-wrap: balance; }
+.type-number { font-family: var(--font-display); font-variant-numeric: tabular-nums; font-weight: 600; letter-spacing: -0.01em; }
 .stat { font-weight: 600; font-variant-numeric: tabular-nums; }
 .eyebrow { font-size: var(--text-sm); line-height: var(--text-sm--line-height); font-weight: 600; }
-.brand { font-size: 28px; font-weight: 700; letter-spacing: -0.04em; color: var(--primary); }
+.brand { font-family: var(--font-display); font-size: 26px; font-weight: 700; letter-spacing: -0.035em; color: var(--foreground); }
 .pressable, .lift { transition: background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out); }
 @media (hover: hover) { .lift:hover { border-color: var(--primary); box-shadow: var(--shadow-card); } }
+.pressable { transition-property: background-color, border-color, color, box-shadow, transform; }
+.pressable:active { transform: scale(0.98); }
+/* Cards you can open: a resting shadow, lifted on hover. */
+.card-interactive { box-shadow: var(--shadow-resting); transition: box-shadow var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out), border-color var(--duration-base) var(--ease-out); }
+@media (hover: hover) { .card-interactive:hover { box-shadow: var(--shadow-raised); transform: translateY(-2px); } }
+/* The poster fills a clipped frame, so draw its focus ring inside. */
+.video-poster:focus-visible { outline-color: #fff; outline-offset: -6px; }
 .link { color: var(--link); text-decoration: underline; text-underline-offset: 3px; }
 .link:hover { text-decoration-thickness: 2px; }
 .touch-target, .hit-area { min-width: 44px; min-height: 44px; }
@@ -179,7 +209,9 @@ input, select, textarea { min-width: 0; }
 .desktop-learner-nav { display: flex; align-self: stretch; align-items: center; gap: 4px; }
 .header-nav-link { display: flex; align-items: center; min-height: 44px; padding: 8px 12px; white-space: nowrap; font-size: 14px; color: var(--muted-foreground); border-radius: 8px; }
 .header-nav-link:hover { background: var(--surface-2); color: var(--foreground); }
-.header-nav-link[aria-current] { color: var(--primary); font-weight: 600; background: var(--accent-tint); }
+.header-nav-link { position: relative; }
+.header-nav-link[aria-current] { color: var(--foreground); font-weight: 600; background: var(--surface-2); }
+.header-nav-link[aria-current]::after { content: ""; position: absolute; inset-inline: 12px; inset-block-end: 4px; height: 3px; border-radius: 2px; background: var(--primary); }
 .header-controls { display: flex; align-items: center; gap: 8px; margin-inline-start: auto; }
 .header-control { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; border-radius: 8px; }
 .header-control:hover { background: var(--surface-2); }
@@ -196,7 +228,10 @@ input, select, textarea { min-width: 0; }
 .workspace-sidebar nav { position: sticky; inset-block-start: 100px; }
 .workspace-nav-link { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 10px 12px; border-radius: 8px; font-size: 14px; color: var(--muted-foreground); }
 .workspace-nav-link:hover { background: var(--surface-2); color: var(--foreground); }
-.workspace-nav-link[aria-current] { background: var(--accent-tint); color: var(--primary); font-weight: 600; }
+.workspace-nav-link { position: relative; }
+.workspace-nav-link[aria-current] { background: var(--surface-2); color: var(--foreground); font-weight: 600; }
+.workspace-nav-link[aria-current]::before { content: ""; position: absolute; inset-block: 10px; inset-inline-start: 0; width: 3px; border-radius: 2px; background: var(--primary); }
+.workspace-nav-link[aria-current] svg { color: var(--primary); }
 .workspace-group { margin-block: 24px 8px; padding-inline: 12px; font-size: 14px; font-weight: 600; color: var(--foreground); }
 .workspace-main { min-width: 0; flex: 1; padding: 32px; }
 .workspace-mobile-trigger { display: none; }
@@ -217,7 +252,9 @@ input, select, textarea { min-width: 0; }
   .header-controls { gap: 4px; }
   .mobile-tabs { position: fixed; inset-inline: 0; inset-block-end: 0; display: flex; z-index: 40; background: var(--surface); border-block-start: 1px solid var(--border); padding-block-end: env(safe-area-inset-bottom, 0px); }
   .mobile-tab { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 64px; min-width: 0; padding: 8px 0; color: var(--muted-foreground); font-size: 12px; }
-  .mobile-tab[aria-current] { color: var(--primary); font-weight: 600; background: var(--accent-tint); }
+  .mobile-tab { position: relative; }
+  .mobile-tab[aria-current] { color: var(--primary); font-weight: 600; }
+  .mobile-tab[aria-current]::before { content: ""; position: absolute; inset-block-start: 0; inset-inline: 28%; height: 3px; border-radius: 0 0 3px 3px; background: var(--primary); }
   .learner-main { padding: 24px 16px calc(88px + env(safe-area-inset-bottom, 0px)); }
   .workspace-sidebar { display: none; }
   .workspace-mobile-trigger { display: inline-flex; }
@@ -233,7 +270,10 @@ input, select, textarea { min-width: 0; }
 .auth-topbar { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
 .auth-content { max-width: 960px; margin: 64px auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: 80px; align-items: start; }
 .auth-intro { padding-block-start: 32px; }
-.auth-form { padding: 32px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.auth-form { padding: 32px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-raised); }
+.auth-collage { display: grid; grid-template-columns: 1.3fr 1fr; grid-template-rows: repeat(2, 104px); gap: 12px; max-width: 420px; }
+.auth-collage .course-cover { aspect-ratio: auto; height: 100%; }
+.auth-collage .course-cover-fallback { min-height: 0; }
 .auth-hero { background: var(--background); }
 @media (max-width: 767px) { .auth-page { padding: 24px 16px; } .auth-content { display: block; margin: 32px auto; max-width: 440px; } .auth-intro { display: none; } .auth-form { padding: 24px; } }
 
@@ -265,16 +305,44 @@ input, select, textarea { min-width: 0; }
    its mobile bottom inset in the compact lesson shell. */
 .tutor-messages :is(button, a) { scroll-margin-block-end: calc(208px + env(safe-area-inset-bottom, 0px)); }
 @media (min-width: 768px) { .tutor-messages :is(button, a) { scroll-margin-block-end: 144px; } }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
-.course-cover { aspect-ratio: 16 / 9; width: 100%; overflow: hidden; background: var(--accent-tint); }
-.course-cover-fallback { position: relative; height: 100%; min-height: 140px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; color: var(--primary); }
-.course-cover-symbol { display: flex; align-items: center; justify-content: center; width: 104px; height: 88px; border: 1px solid currentColor; border-radius: 12px; background: var(--surface); }
-.course-cover-line { width: 96px; height: 4px; border-radius: 2px; background: currentColor; opacity: .35; }
-.course-cover-line-short { width: 64px; }
+/* Dialogs fade and settle in when opened. */
+dialog[open] { opacity: 1; transform: none; transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out); }
+@starting-style { dialog[open] { opacity: 0; transform: translateY(8px) scale(0.98); } }
+dialog[open]::backdrop { transition: background-color var(--duration-base) var(--ease-out); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } .pressable:active, .card-interactive:hover { transform: none; } }
+/* Layered so size utilities passed to CourseCover (w-16 thumbnails) win over the default width. */
+@layer components { .course-cover { aspect-ratio: 16 / 9; width: 100%; overflow: hidden; background: var(--surface-2); } }
+.course-cover-fallback { height: 100%; min-height: 140px; }
+.course-cover-art { display: block; width: 100%; height: 100%; }
+.cover-field-1 { background: var(--cover-1); } .cover-field-2 { background: var(--cover-2); } .cover-field-3 { background: var(--cover-3); }
+.cover-field-4 { background: var(--cover-4); } .cover-field-5 { background: var(--cover-5); } .cover-field-6 { background: var(--cover-6); }
 /* Grid rows: aspect-ratio would stop the cover stretching, leaving a band under it. */
 @media (min-width: 640px) { .course-cover.course-cover-fill { aspect-ratio: auto; align-self: stretch; } }
-/* List thumbnails: the full-size fallback would be clipped at this height. */
-.course-cover-compact .course-cover-fallback { min-height: 0; gap: 0; }
-.course-cover-compact .course-cover-symbol { width: 48px; height: 40px; border-radius: 8px; }
-.course-cover-compact .course-cover-symbol svg { width: 24px; height: 24px; }
-.course-cover-compact .course-cover-line { display: none; }
+/* List thumbnails: drop the full-size minimum height. */
+.course-cover-compact .course-cover-fallback { min-height: 0; }
+/* Learning path: numbered markers joined by a line; done steps turn the line primary. */
+.path-step { position: relative; }
+.path-step:not(:last-child)::before { content: ""; position: absolute; inset-inline-start: 19px; inset-block: 44px -16px; width: 2px; background: var(--border); }
+.path-step[data-state="done"]:not(:last-child)::before { background: var(--primary); }
+.path-marker { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin-block-start: 8px; border-radius: 999px; border: 2px solid var(--border); background: var(--surface); color: var(--muted-foreground); font: 600 15px/1 var(--font-display); font-variant-numeric: tabular-nums; position: relative; z-index: 1; }
+.path-step[data-state="done"] .path-marker { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); }
+.path-step[data-state="current"] .path-marker { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 0 4px var(--accent-tint); }
+/* Approval stepper: Draft → Department review → HR publishes → Live. */
+.workflow-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.workflow-step { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; font-size: 14px; color: var(--muted-foreground); }
+.workflow-step:not(:last-child)::after { content: ""; position: absolute; inset-block-start: 13px; inset-inline-start: 36px; inset-inline-end: -2px; height: 2px; background: var(--border); }
+.workflow-step[data-state="done"]::after { background: var(--primary); }
+.workflow-dot { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; border: 2px solid var(--border); background: var(--surface); font: 600 13px/1 var(--font-display); }
+.workflow-step[data-state="done"] .workflow-dot { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); }
+.workflow-step[data-state="current"] { color: var(--foreground); font-weight: 600; }
+.workflow-step[data-state="current"] .workflow-dot { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 0 4px var(--accent-tint); }
+.workflow-step[data-attention="true"] .workflow-dot { border-color: var(--warning); color: var(--warning-fg); box-shadow: 0 0 0 4px var(--warning-tint); }
+@media (max-width: 639px) {
+  .workflow-steps { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .workflow-step { flex-direction: row; align-items: center; }
+  .workflow-step:not(:last-child)::after { inset-block-start: 28px; inset-block-end: -12px; inset-inline-start: 13px; inset-inline-end: auto; width: 2px; height: auto; }
+}
+/* Decision history as a timeline. */
+.decision-timeline > li { position: relative; padding-block: 12px; padding-inline-start: 24px; }
+.decision-timeline > li::before { content: ""; position: absolute; inset-inline-start: 4px; inset-block-start: 19px; width: 10px; height: 10px; border-radius: 999px; background: var(--primary); }
+.decision-timeline > li:not(:last-child)::after { content: ""; position: absolute; inset-inline-start: 8px; inset-block: 31px -7px; width: 2px; background: var(--border); }

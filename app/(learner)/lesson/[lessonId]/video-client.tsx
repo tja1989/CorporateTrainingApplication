@@ -2,11 +2,12 @@
 
 import { Icon } from "@/components/icons";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AiSurface, Button, Card, Chip, Input, PillButton, Skeleton, cx } from "@/components/ui";
+import { AiSurface, Button, Card, Chip, Input, PillButton, Progress, Skeleton, cx } from "@/components/ui";
 import { useLessonProgress } from "@/components/lesson-progress";
 import { Tabs } from "@/components/tabs";
 import type { TutorCitation } from "@/lib/db/schema";
 import { Markdown } from "@/lib/markdown";
+import { courseArt } from "@/lib/course-art";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
@@ -32,6 +33,9 @@ function reducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+/** YouTube states that put the video on screen: 1 playing, 3 buffering. A resume seek can start playback on its own. */
+export const hidesPoster = (state: number) => state === 1 || state === 3;
+
 export function VideoLessonClient({
   lessonId,
   youtubeId,
@@ -43,6 +47,9 @@ export function VideoLessonClient({
   initialPositionSec,
   initialCoverage,
   durationSec,
+  title,
+  courseTitle,
+  courseTags = [],
 }: {
   lessonId: string;
   youtubeId: string;
@@ -54,6 +61,9 @@ export function VideoLessonClient({
   initialPositionSec: number;
   initialCoverage: number;
   durationSec: number;
+  title?: string;
+  courseTitle?: string;
+  courseTags?: string[];
 }) {
   const progress = useLessonProgress();
   const confirmRef = useRef(progress?.confirm);
@@ -71,6 +81,16 @@ export function VideoLessonClient({
   const positionRef = useRef(initialPositionSec);
   // A server progress refresh must never restart a player that is already running.
   const resumePositionRef = useRef(initialPositionSec);
+  // A branded poster covers the loaded player until the learner presses play.
+  const [poster, setPoster] = useState(true);
+  const readyRef = useRef(false);
+  const pendingPlayRef = useRef(false);
+  const art = courseArt(courseTitle ?? title ?? "", courseTags);
+  function play() {
+    setPoster(false);
+    if (readyRef.current) playerRef.current?.playVideo?.();
+    else pendingPlayRef.current = true;
+  }
 
   // ---- YouTube IFrame API (spec FR-5.6)
   useEffect(() => {
@@ -82,7 +102,12 @@ export function VideoLessonClient({
         playerVars: { enablejsapi: 1, origin: window.location.origin, rel: 0 },
         events: {
           onReady: () => {
+            readyRef.current = true;
             if (resumePositionRef.current > 0) playerRef.current?.seekTo?.(resumePositionRef.current, true);
+            if (pendingPlayRef.current) playerRef.current?.playVideo?.();
+          },
+          onStateChange: (e: { data: number }) => {
+            if (hidesPoster(e.data)) setPoster(false);
           },
           onError: (e: { data: number }) => {
             if (e.data === 101 || e.data === 150) setPlayerError("The video owner has disabled embedding for this video.");
@@ -143,6 +168,7 @@ export function VideoLessonClient({
 
   const seekTo = useCallback(
     (sec: number) => {
+      setPoster(false);
       playerRef.current?.seekTo?.(sec, true);
       playerRef.current?.playVideo?.();
       // On narrow screens the player is not sticky — bring it back into view.
@@ -172,10 +198,26 @@ export function VideoLessonClient({
             </div>
           </Card>
         ) : (
-          <div className="overflow-hidden rounded-card border border-border bg-black">
+          <div className="relative overflow-hidden rounded-card border border-border bg-black">
             <div className="aspect-video w-full">
-              <div ref={playerHostRef} className="h-full w-full" />
+              <div ref={playerHostRef} data-player-host="true" className="h-full w-full" />
             </div>
+            {poster ? (
+              <button
+                type="button"
+                onClick={play}
+                aria-label={`Play video${title ? `: ${title}` : ""}`}
+                className={cx("video-poster absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center text-white", `cover-field-${art.field}`)}
+              >
+                <span className="pressable flex size-16 items-center justify-center rounded-full bg-surface text-foreground shadow-[var(--shadow-raised)]">
+                  <Icon name="play" size={28} />
+                </span>
+                {title ? <span className="type-section max-w-[32ch] text-lg">{title}</span> : null}
+                <span className="text-sm">
+                  {resumePositionRef.current > 0 ? `Resume from ${fmtTime(resumePositionRef.current)}` : fmtTime(durationSec)}
+                </span>
+              </button>
+            ) : null}
           </div>
         )}
         <div className="mt-2 flex items-center gap-2 text-xs text-muted">
@@ -183,9 +225,7 @@ export function VideoLessonClient({
             <Chip variant="success">Watched</Chip>
           ) : (
             <>
-              <div className="h-1 w-meter overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuenow={coverage} aria-valuemin={0} aria-valuemax={100} aria-label="Watch coverage">
-                <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${coverage}%` }} />
-              </div>
+              <Progress value={coverage} label="Watch coverage" size="sm" className="w-meter" />
               <span>{coverage}% watched · completes at 90%</span>
             </>
           )}
@@ -451,3 +491,4 @@ function TutorPanel({
     </section>
   );
 }
+

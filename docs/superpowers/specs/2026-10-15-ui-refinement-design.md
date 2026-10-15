@@ -49,6 +49,16 @@ Planned as a separate implementation plan once Phase 1 lands, so each plan ships
 
 Display typeface for headings and the wordmark (bundled, no network dependency), logomark with favicon/app icon/share image, a commissioned course-cover set, a branded video poster, and a refined home hero and sign-in page. The three decisions are listed in the audit.
 
+## Decisions applied for Phases 2 and 3 (15 October)
+
+The user authorized completing Phase 2 and the remaining work in one pass, applying the audit's recommendations:
+
+- **Heading typeface:** Instrument Sans (OFL), bundled from `@fontsource-variable/instrument-sans` through `next/font/local`, so nothing loads from a font host at run time. Body text stays on the system stack with the Arabic, Devanagari and Malayalam fallbacks.
+- **Course imagery:** an in-house SVG illustration set (one colour field and subject illustration per course, derived from the course title and tags). A commissioned set can replace it per course through the existing cover URL field.
+- **Logomark:** a simple monogram in ink, used for the favicon, home-screen icon, link-preview image and wordmark.
+- **Feedback privacy wording:** a shorter proposal is written for sign-off in `docs/qa/PRIVACY_WORDING_PROPOSAL.md`; the shipped text does not change.
+- **Not in this pass:** a segmented audience control for training rollout and a per-lesson action menu in the course editor. Both sit on controls the browser suites drive by label, for little visual gain.
+
 ## Verification
 
 Each phase runs the unit suite, type check and production build, then a screenshot pass of the affected routes at 1440px and 390px in light and dark on the local preview. Phase 1 adds unit tests for every formatter, plural and status mapping, plus a source guard that fails on new `toISOString().slice` display sites and raw status rendering.

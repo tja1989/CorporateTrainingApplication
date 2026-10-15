@@ -8,7 +8,8 @@ import { courseProgress } from "@/lib/lms/queries";
 import { buildCourseOutline } from "@/lib/lms/course-outline";
 import { CourseCover } from "@/components/course-cover";
 import { LearningProgress } from "@/components/course-card";
-import { Card, Chip, PageTitle, ButtonLink, EmptyState } from "@/components/ui";
+import { Card, Chip, Icon, PageTitle, ButtonLink, EmptyState } from "@/components/ui";
+import { plural } from "@/lib/format";
 export const dynamic = "force-dynamic";
 export default async function PathPage({
   params,
@@ -103,10 +104,17 @@ export default async function PathPage({
         ) : null}
       </div>
       {steps.length ? (
-        <ol className="flex flex-col gap-4">
+        <ol className="path-steps flex flex-col gap-4" aria-label="Courses in this path">
           {steps.map((s, i) => (
-            <li key={s.course.id}>
-              <Card className="overflow-hidden sm:grid sm:grid-cols-[180px_minmax(0,1fr)]">
+            <li
+              key={s.course.id}
+              className="path-step grid grid-cols-[40px_minmax(0,1fr)] gap-3 sm:gap-4"
+              data-state={s.complete ? "done" : s === current ? "current" : s.locked || s.planning.blocked ? "locked" : "open"}
+            >
+              <span className="path-marker" aria-hidden="true">
+                {s.complete ? <Icon name="check" size={18} /> : i + 1}
+              </span>
+              <Card interactive={!s.locked && s.course.status === "PUBLISHED"} className="overflow-hidden sm:grid sm:grid-cols-[180px_minmax(0,1fr)]">
                 <CourseCover
                   className="course-cover-fill"
                   title={s.course.title}
@@ -118,7 +126,7 @@ export default async function PathPage({
                     Course {i + 1} of {steps.length}
                   </p>
                   <div className="mb-2 flex flex-wrap items-center gap-3">
-                    <h2 className="text-lg font-semibold">
+                    <h2 className="type-section text-lg">
                       {s.locked || s.course.status !== "PUBLISHED" ? (
                         s.course.title
                       ) : (
@@ -153,7 +161,7 @@ export default async function PathPage({
                     </Chip>
                   </div>
                   <p className="text-sm text-muted">
-                    {s.done}/{s.total} lessons · {s.course.estMinutes} min
+                    {s.done} of {plural(s.total, "lesson")} done, {s.course.estMinutes} min
                   </p>
                   {s.locked ? (
                     <p className="mt-2 text-sm text-muted">

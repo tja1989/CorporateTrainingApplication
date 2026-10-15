@@ -30,6 +30,11 @@ const buttonVariants = {
   destructive: "bg-destructive text-destructive-fg hover:opacity-90",
 } as const;
 
+/** Class list for a button-styled element, for links and forms that render their own tag. */
+export function buttonClass(variant: keyof typeof buttonVariants = "primary"): string {
+  return cx(buttonBase, buttonVariants[variant]);
+}
+
 export function Button({
   variant = "primary",
   className,
@@ -75,9 +80,22 @@ export function PillAnchor({ active, className, ...props }: ComponentProps<"a"> 
 
 /* ------------------------------ Cards ------------------------------ */
 
-/** Elevation L1: surface + hairline. A shadow only appears under a hovered `.lift` card. */
-export function Card({ className, ...props }: ComponentProps<"div">) {
-  return <div className={cx("rounded-card border border-border bg-surface", className)} {...props} />;
+/** Elevation L1: surface + hairline. `interactive` cards (ones you open) rest on a shadow and lift on hover. */
+export function Card({ className, interactive, ...props }: ComponentProps<"div"> & { interactive?: boolean }) {
+  return <div className={cx("rounded-card border border-border bg-surface", interactive && "card-interactive", className)} {...props} />;
+}
+
+/** The one progress bar: rounded track, primary fill, optional percentage. */
+export function Progress({ value, label, showValue = false, size = "md", className }: { value: number; label: string; showValue?: boolean; size?: "sm" | "md"; className?: string }) {
+  const pct = Math.max(0, Math.min(100, Math.round(value)));
+  return (
+    <div className={cx("flex items-center gap-3", className)}>
+      <div role="progressbar" aria-label={label} aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} className={cx("min-w-0 flex-1 overflow-hidden rounded-full bg-surface-2", size === "sm" ? "h-1" : "h-2")}>
+        <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${pct}%` }} />
+      </div>
+      {showValue ? <span className="type-number text-sm text-muted">{pct}%</span> : null}
+    </div>
+  );
 }
 
 /* ------------------------------ Chips ------------------------------ */
@@ -194,8 +212,8 @@ export function PageHeader({ title, sub, actions, children }: { title: ReactNode
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
-        <h1 className="display text-xl md:text-3xl">{title}</h1>
-        {sub ? <p className="mt-1 text-sm text-muted">{sub}</p> : null}
+        <h1 className="type-title">{title}</h1>
+        {sub ? <p className="mt-2 max-w-[68ch] text-base text-muted">{sub}</p> : null}
         {children}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
@@ -210,7 +228,7 @@ export function PageTitle({ children, sub }: { children: ReactNode; sub?: string
 
 /** Section heading with clear hierarchy below the page title. */
 export function SectionTitle({ children, className }: { children: ReactNode; className?: string }) {
-  return <h2 className={cx("mb-3 text-lg font-semibold text-foreground", className)}>{children}</h2>;
+  return <h2 className={cx("type-section mb-3 text-foreground", className)}>{children}</h2>;
 }
 
 export function DemoBanner() {

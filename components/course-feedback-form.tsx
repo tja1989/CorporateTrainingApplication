@@ -91,24 +91,42 @@ export function CourseFeedbackForm({
           <input type="hidden" name="requestId" value={requestId} />
           <fieldset className="mb-5">
             <legend className="mb-2 text-sm font-medium">Rating</legend>
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
-              {scores.map(([value, text]) => (
-                <label
-                  key={value}
-                  className="touch-target flex cursor-pointer items-center gap-2 rounded-control border border-border px-3 py-2 text-sm"
-                >
-                  <input
-                    type="radio"
-                    name="rating"
-                    value={value}
-                    checked={rating === value}
-                    onChange={() => setRating(value)}
-                    required
-                    className="accent-primary"
-                  />
-                  {value} — {text}
-                </label>
-              ))}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex">
+                {scores.map(([value, text]) => (
+                  <label
+                    key={value}
+                    className="touch-target flex cursor-pointer items-center justify-center rounded-control text-warning has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary"
+                  >
+                    <input
+                      type="radio"
+                      name="rating"
+                      value={value}
+                      checked={rating === value}
+                      onChange={() => setRating(value)}
+                      required
+                      className="sr-only"
+                    />
+                    <svg
+                      data-star={value <= rating ? "filled" : "empty"}
+                      width="30"
+                      height="30"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      fill={value <= rating ? "currentColor" : "none"}
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinejoin="round"
+                    >
+                      <path d="m12 3.2 2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-2.9-5.4 2.9 1.1-6-4.5-4.2 6.1-.8z" />
+                    </svg>
+                    <span className="sr-only">{`${value} — ${text}`}</span>
+                  </label>
+                ))}
+              </div>
+              <span className="text-sm text-muted" aria-hidden="true">
+                {rating ? scores[rating - 1][1] : "Choose a rating"}
+              </span>
             </div>
           </fieldset>
           <Field

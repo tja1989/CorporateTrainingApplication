@@ -10,7 +10,7 @@ const tones = {
   default: { card: "border-border bg-surface", value: "text-foreground", dot: null },
   muted: { card: "border-transparent bg-surface-2", value: "text-muted", dot: null },
   success: { card: "border-border bg-surface", value: "text-foreground", dot: "bg-success" },
-  warning: { card: "border-transparent bg-warning-tint", value: "text-foreground", dot: "bg-warning" },
+  warning: { card: "border-border bg-surface", value: "text-foreground", dot: "bg-warning" },
   destructive: { card: "border-border bg-surface", value: "text-destructive-text", dot: "bg-destructive" },
   ai: { card: "border-transparent bg-ai-tint", value: "text-ai-fg", dot: null },
 } as const;
@@ -44,7 +44,7 @@ export function Tile({
   const body = (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0 flex-1">
-        <p className={cx("truncate", numeric ? "stat text-2xl" : "display text-lg", t.value)}>
+        <p className={cx("truncate", numeric ? "type-number text-3xl" : "display text-lg", t.value)}>
           {numeric ? <AnimatedNumber value={value} suffix={suffix} /> : value}
         </p>
         <p className="mt-1 text-sm flex items-start gap-2 text-muted">

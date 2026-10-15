@@ -24,6 +24,7 @@ import {
   EmptyState,
 } from "@/components/ui";
 import { languageName } from "@/lib/format";
+import { WorkspaceTabs } from "@/components/workspace-ui";
 
 export const dynamic = "force-dynamic";
 export default async function LearnPage({
@@ -49,16 +50,6 @@ export default async function LearnPage({
     { ...query, folder: "", page: 1 },
     Math.max(1, catalog.length),
   ).items;
-  const folderOptions = [
-    ...new Set(
-      folderScope.flatMap((course) =>
-        course.folderPath
-          .split("/")
-          .filter(Boolean)
-          .map((_, index, segments) => segments.slice(0, index + 1).join("/")),
-      ),
-    ),
-  ].sort();
   const tags = [...new Set(catalog.flatMap((c) => c.tags))].sort();
   const languages = [...new Set(catalog.map((c) => c.language))].sort();
   const myPaths = paths.filter((p) =>
@@ -70,28 +61,17 @@ export default async function LearnPage({
       <PageTitle sub="Pick up your training or find your next course.">
         My Learning
       </PageTitle>
-      <nav
-        className="mb-6 flex flex-wrap gap-2 border-b border-border pb-3"
-        aria-label="Learning views"
-      >
-        {(
+      <WorkspaceTabs
+        label="Learning views"
+        items={(
           [
             ["mine", "My courses"],
             ["upcoming", "Upcoming"],
             ["paths", "Learning paths"],
             ["browse", "Browse courses"],
           ] as const
-        ).map(([view, label]) => (
-          <ButtonAnchor
-            key={view}
-            variant={query.view === view ? "primary" : "ghost"}
-            aria-current={query.view === view ? "page" : undefined}
-            href={`/learn?view=${view}`}
-          >
-            {label}
-          </ButtonAnchor>
-        ))}
-      </nav>
+        ).map(([view, label]) => ({ href: `/learn?view=${view}`, label, active: query.view === view }))}
+      />
       {query.view === "paths" ? (
         <section aria-label="Learning paths">
           {myPaths.length ? (
@@ -139,13 +119,14 @@ export default async function LearnPage({
         <>
           <form
             key={catalogHref(query)}
-            className="mb-6 rounded-card border border-border bg-surface p-4"
+            className="mb-6 rounded-card bg-surface-2 p-4"
             action="/learn"
             method="get"
             role="search"
             aria-label="Filter courses"
           >
             <input type="hidden" name="view" value={query.view} />
+            {query.folder ? <input type="hidden" name="folder" value={query.folder} /> : null}
             <div className="flex flex-wrap items-end gap-3">
               <div className="w-full min-w-0 md:w-auto md:flex-1">
                 <Field label="Search courses">
@@ -168,23 +149,9 @@ export default async function LearnPage({
                   query.language,
                   query.duration,
                   query.status,
-                  query.folder,
                 ].filter(Boolean).length
               }
             >
-              <Field label="Folder">
-                <Select name="folder" defaultValue={query.folder}>
-                  <option value="">All folders</option>
-                  {query.folder && !folderOptions.includes(query.folder) ? (
-                    <option value={query.folder}>{query.folder}</option>
-                  ) : null}
-                  {folderOptions.map((folder) => (
-                    <option key={folder} value={folder}>
-                      {folder}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
               <Field label="Topic">
                 <Select name="tag" defaultValue={query.tag}>
                   <option value="">All topics</option>

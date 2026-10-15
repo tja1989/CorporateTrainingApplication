@@ -1,10 +1,14 @@
 import Link from "next/link";
+import { quizIntroFigures } from "@/lib/quiz/intro-figures";
+import { currentQuizAttempts } from "@/lib/quiz/engine";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth/guard";
 import { learnerLesson } from "@/lib/lms/lesson-access";
 import { lessonNeighbours } from "@/lib/lms/outline";
 import { Markdown } from "@/lib/markdown";
-import { Card, PageTitle, ButtonLink } from "@/components/ui";
+import { Card, Icon, PageTitle, ButtonLink } from "@/components/ui";
+import { eq } from "drizzle-orm";
+import { db, t } from "@/lib/db/client";
 import {
   LessonProgressProvider,
   LiveCourseOutline,
@@ -68,6 +72,13 @@ export default async function LessonPage({
         )}
       </div>
     );
+  const quiz =
+    lesson.type === "QUIZ" && lesson.payload.quizId
+      ? (await db.select({ id: t.quizzes.id, lessonId: t.quizzes.lessonId, settings: t.quizzes.settings }).from(t.quizzes).where(eq(t.quizzes.id, lesson.payload.quizId)).limit(1))[0]
+      : undefined;
+  const quizFigures = quiz
+    ? quizIntroFigures(quiz.settings, user.timeMultiplier, (await currentQuizAttempts(quiz, user.id)).filter((a) => a.state !== "VOIDED").length)
+    : null;
   const { prev, index, total } = lessonNeighbours(view, lesson.id);
   return (
     <LessonProgressProvider key={lesson.id} initialView={view}>
@@ -93,7 +104,7 @@ export default async function LessonPage({
               Lesson {index + 1} of {total} · {lessonTypeLabel(self.type)}
               {self.minutes ? ` · ${self.minutes} min` : ""}
             </p>
-            <h1 className="text-2xl font-semibold sm:text-[32px]">
+            <h1 className="type-title">
               {lesson.title}
             </h1>
           </div>
@@ -167,8 +178,18 @@ export default async function LessonPage({
                     <p className="mb-4 text-muted">
                       {self.done
                         ? "You have passed this assessment. You can review your result or try again if attempts are available."
-                        : "Review the time limit, attempt allowance and consent information before you begin."}
+                        : "Check the rules below. Opening the assessment shows its consent information before you start."}
                     </p>
+                    {quizFigures ? (
+                      <dl className="mb-5 grid max-w-lg grid-cols-3 gap-3">
+                        {quizFigures.map(([term, value]) => (
+                          <div key={term} className="rounded-control bg-surface-2 p-3">
+                            <dt className="text-xs text-muted">{term}</dt>
+                            <dd className="type-number mt-1 text-lg text-foreground">{value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    ) : null}
                     <ButtonLink href={`/quiz/${lesson.payload.quizId}`}>
                       {self.done ? "Review assessment" : "Open assessment"}
                     </ButtonLink>
@@ -190,18 +211,20 @@ export default async function LessonPage({
             >
               {prev && !prev.locked ? (
                 <ButtonLink variant="ghost" href={prev.href}>
+                  <Icon name="arrow-left" size={16} />
                   Previous lesson
                 </ButtonLink>
               ) : (
                 <span />
               )}
               <ButtonLink variant="ghost" href={`/course/${course.id}`}>
+                <Icon name="book" size={16} />
                 Course overview
               </ButtonLink>
             </nav>
           </div>
           <aside className="lesson-contents-panel sticky top-20 max-h-[calc(100dvh-112px)] min-w-0 self-start overflow-y-auto rounded-card border border-border bg-surface p-4">
-            <h2 className="mb-3 text-lg font-semibold">Course contents</h2>
+            <h2 className="type-section mb-3 text-lg">Course contents</h2>
             <LiveCourseOutline view={view} variant="rail" />
           </aside>
         </div>

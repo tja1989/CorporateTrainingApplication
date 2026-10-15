@@ -284,7 +284,7 @@ export async function feedbackReport(
       employeeCode: r.erasedAt ? "" : (r.employeeCode ?? ""),
       instructorName:
         names.get(r.delivery?.instructorId ?? "") ??
-        "Unknown historical instructor",
+        "Instructor not recorded",
       revisions: revisions.filter((v) => v.responseId === r.response.id),
     })),
   );

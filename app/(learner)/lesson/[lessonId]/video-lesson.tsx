@@ -23,6 +23,7 @@ export async function VideoLesson({
   const user = await currentUser();
   const videoId = lesson.payload.videoId;
   const [video] = videoId ? await db.select().from(t.videos).where(eq(t.videos.id, videoId)).limit(1) : [];
+  const [course] = await db.select({ title: t.courses.title, tags: t.courses.tags }).from(t.courses).where(eq(t.courses.id, courseId)).limit(1);
   if (!video) {
     return (
       <Card className="mb-6 max-w-3xl p-6">
@@ -84,6 +85,9 @@ export async function VideoLesson({
       initialCompleted={isDone}
       initialPositionSec={clampVideoPosition(requestedPosition ?? progress?.lastPositionSec ?? 0, video.durationSec) ?? 0}
       durationSec={video.durationSec}
+      title={lesson.title}
+      courseTitle={course?.title}
+      courseTags={course?.tags}
       initialCoverage={videoCoverage(progress?.watchedBuckets ?? [], video.durationSec)}
     />
   );

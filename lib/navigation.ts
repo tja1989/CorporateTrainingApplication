@@ -124,7 +124,10 @@ export function activeNavHref(
     items.some((item) => item.href === "/learn") &&
     /^\/(course|path|lesson|quiz)\//.test(pathname)
       ? "/learn"
-      : pathname;
+      : // HR reaches employee records through the shared /team/[id] page.
+        items.some((item) => item.href === "/hr/people") && /^\/team\/[^/]+/.test(pathname)
+        ? "/hr/people"
+        : pathname;
   return items
     .filter((item) => path === item.href || path.startsWith(`${item.href}/`))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;

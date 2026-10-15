@@ -1,5 +1,13 @@
 # xprtn rework progress
 
+## UI refinement Phase 2–3 — 15 October 2026
+
+Branch `ui-refinement-phase-2` (from main `8f2882f`) implements [the Phase 2–3 plan](../superpowers/plans/2026-10-15-ui-refinement-phase-2-3.md) from the [UI refinement design](../superpowers/specs/2026-10-15-ui-refinement-design.md): a self-hosted display face and type roles, ink brand with a logomark and app icons, violet for AI help, two elevation levels and press feedback, generated subject covers, one progress bar and tab strip, a single "continue" hero on Home, a path timeline, a video poster, role overviews with attention figures, an approval stepper, a star rating, a refined sign-in page and the Phase 1 deferred minors. The shorter feedback privacy wording is a [proposal for sign-off](PRIVACY_WORDING_PROPOSAL.md); the shipped text is unchanged. Not merged or deployed.
+
+Evidence: 418 unit tests, type check and production build pass. A screenshot pass of 84 screens (Employee, Department Head and Instructor at 1440px and 390px, light and dark) plus the video poster, quiz intro, star rating and course settings in both themes, on the branch build against a private copy of the fictional seed database, found three layout bugs (full-width list covers, a louder due-soon tile, a cropped cover preview), now fixed; no phone page overflows. A fresh whole-branch review found no Critical issue and six Important ones (poster over a playing video, poster focus ring, quiz figures, reminder limit, archived status, dark-mode card edges); all are fixed with tests and checked in the browser. E2e suites were not run (they need the QA stack); run client-feedback, workspaces, learner and tutor-qualification before release.
+
+Open: feedback privacy wording awaits client sign-off; deferred minors are listed in [CLIENT_DELIVERY_DECISIONS.md](CLIENT_DELIVERY_DECISIONS.md).
+
 ## UI refinement Phase 1 — 15 October 2026
 
 Branch `ui-refinement-phase-1` (from main `f3ee763`) implements [the Phase 1 plan](../superpowers/plans/2026-10-15-ui-refinement-phase-1.md) from the [UI refinement design](../superpowers/specs/2026-10-15-ui-refinement-design.md): one display-formatting module (Dubai-time dates, plurals, language/tag names), one status vocabulary with `StatusChip`, plain demo/offline labels (still visible), jargon removed, contiguous sidebars with distinct icons, one primary action per view, cover sizing fixes and removal of dead animation classes. Not merged or deployed.
