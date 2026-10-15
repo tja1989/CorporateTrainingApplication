@@ -15,6 +15,7 @@ import {
   Select,
   complianceChip,
 } from "@/components/ui";
+import { nudgeKey, nudgedRecently as recentNudge } from "@/lib/nudge";
 import { assignAction, nudgeAction, issueResetAction } from "../actions";
 import { interviewsForUser } from "@/lib/live/store";
 import { formatDay, formatDue } from "@/lib/format";
@@ -70,13 +71,12 @@ export default async function TeamMemberPage({
       and(
         eq(t.notifications.userId, member.id),
         eq(t.notifications.kind, "overdue"),
-        eq(t.notifications.dedupeKey, `nudge:${member.id}`),
+        eq(t.notifications.dedupeKey, nudgeKey(member.id)),
       ),
     )
     .orderBy(desc(t.notifications.sentAt))
     .limit(1);
-  const nudgedRecently =
-    lastNudge && Date.now() - lastNudge.sentAt.getTime() < 48 * 3600_000;
+  const nudgedRecently = recentNudge(lastNudge?.sentAt);
 
   return (
     <div className="mx-auto max-w-5xl">

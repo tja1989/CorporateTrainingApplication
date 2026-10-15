@@ -43,6 +43,8 @@
   --duration-slow: 250ms;
 }
 .dark {
+  --shadow-resting: 0 1px 2px rgb(0 0 0 / 0.30), 0 2px 8px rgb(0 0 0 / 0.25);
+  --shadow-raised: 0 2px 4px rgb(0 0 0 / 0.35), 0 12px 28px rgb(0 0 0 / 0.45);
   color-scheme: dark;
   --background: #101A2A;
   --surface: #17253A;
@@ -185,7 +187,9 @@ h1, h2, h3, .display { font-family: var(--font-display); }
 .pressable:active { transform: scale(0.98); }
 /* Cards you can open: a resting shadow, lifted on hover. */
 .card-interactive { box-shadow: var(--shadow-resting); transition: box-shadow var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out), border-color var(--duration-base) var(--ease-out); }
-@media (hover: hover) { .card-interactive:hover { box-shadow: var(--shadow-raised); transform: translateY(-2px); border-color: transparent; } }
+@media (hover: hover) { .card-interactive:hover { box-shadow: var(--shadow-raised); transform: translateY(-2px); } }
+/* The poster fills a clipped frame, so draw its focus ring inside. */
+.video-poster:focus-visible { outline-color: #fff; outline-offset: -6px; }
 .link { color: var(--link); text-decoration: underline; text-underline-offset: 3px; }
 .link:hover { text-decoration-thickness: 2px; }
 .touch-target, .hit-area { min-width: 44px; min-height: 44px; }

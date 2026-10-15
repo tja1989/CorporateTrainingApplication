@@ -33,6 +33,9 @@ function reducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+/** YouTube states that put the video on screen: 1 playing, 3 buffering. A resume seek can start playback on its own. */
+export const hidesPoster = (state: number) => state === 1 || state === 3;
+
 export function VideoLessonClient({
   lessonId,
   youtubeId,
@@ -102,6 +105,9 @@ export function VideoLessonClient({
             readyRef.current = true;
             if (resumePositionRef.current > 0) playerRef.current?.seekTo?.(resumePositionRef.current, true);
             if (pendingPlayRef.current) playerRef.current?.playVideo?.();
+          },
+          onStateChange: (e: { data: number }) => {
+            if (hidesPoster(e.data)) setPoster(false);
           },
           onError: (e: { data: number }) => {
             if (e.data === 101 || e.data === 150) setPlayerError("The video owner has disabled embedding for this video.");
@@ -201,7 +207,7 @@ export function VideoLessonClient({
                 type="button"
                 onClick={play}
                 aria-label={`Play video${title ? `: ${title}` : ""}`}
-                className={cx("absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center text-white", `cover-field-${art.field}`)}
+                className={cx("video-poster absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center text-white", `cover-field-${art.field}`)}
               >
                 <span className="pressable flex size-16 items-center justify-center rounded-full bg-surface text-foreground shadow-[var(--shadow-raised)]">
                   <Icon name="play" size={28} />
@@ -485,3 +491,4 @@ function TutorPanel({
     </section>
   );
 }
+

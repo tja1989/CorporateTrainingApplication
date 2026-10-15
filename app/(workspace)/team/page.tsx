@@ -1,4 +1,4 @@
-import { and, inArray, sql } from "drizzle-orm";
+import { and, gte, inArray, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { trainingScope } from "@/lib/auth/scope";
 import { requireRole, teamOf } from "@/lib/auth/guard";
@@ -15,6 +15,8 @@ import {
 import { WorkspaceLink } from "@/components/workspace-ui";
 import { noun, plural } from "@/lib/format";
 import { nudgeAction } from "./actions";
+import { WorkspaceForm } from "@/components/workspace-form";
+import { NUDGE_WINDOW_MS, nudgeKey } from "@/lib/nudge";
 export const dynamic = "force-dynamic";
 const FILTERS = [
   { key: "OVERDUE", label: "Overdue", unit: ["assignment", "assignments"] },
@@ -67,6 +69,20 @@ export default async function TeamPage({
         )
     : [];
   const active = new Set(recent.map((e) => e.userId));
+  const nudged = new Set(
+    (ids.length
+      ? await db
+          .select({ userId: t.notifications.userId })
+          .from(t.notifications)
+          .where(
+            and(
+              inArray(t.notifications.dedupeKey, ids.map(nudgeKey)),
+              gte(t.notifications.sentAt, new Date(Date.now() - NUDGE_WINDOW_MS)),
+            ),
+          )
+      : []
+    ).map((n) => n.userId),
+  );
   const itemsOf = (id: string) =>
     enrollments.filter((e) => e.userId === id && e.status !== "WITHDRAWN");
   const matches = (id: string, status: string) =>
@@ -257,14 +273,16 @@ export default async function TeamPage({
                       </td>
                       <td className={cx(cell, "md:text-end")}>
                         {overdue || soon ? (
-                          <form action={nudgeAction.bind(null, member.id)} className="inline-flex flex-col items-start gap-1 md:items-end">
-                            <Button type="submit" variant="secondary">
-                              Send reminder
-                            </Button>
-                            <span className="text-xs text-muted">
-                              {member.email ? "Email and in-app" : active.has(member.id) ? "In-app" : "In-app; mention it in person too"}
-                            </span>
-                          </form>
+                          <WorkspaceForm action={nudgeAction.bind(null, member.id)}>
+                            <div className="inline-flex flex-col items-start gap-1 md:items-end">
+                              <Button type="submit" variant="secondary" disabled={nudged.has(member.id)}>
+                                {nudged.has(member.id) ? "Reminded in the last 48h" : "Send reminder"}
+                              </Button>
+                              <span className="text-xs text-muted">
+                                {member.email ? "Email and in-app" : active.has(member.id) ? "In-app" : "In-app; mention it in person too"}
+                              </span>
+                            </div>
+                          </WorkspaceForm>
                         ) : null}
                       </td>
                     </tr>

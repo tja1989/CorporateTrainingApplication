@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { readOnlyReason } from "@/lib/courses/workflow-steps";
 import { eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import type { CurrentUser } from "@/lib/auth/guard";
@@ -525,11 +526,7 @@ export async function CourseEditor({
               {!editable ? (
                 <p role="status" className="mb-4 flex items-start gap-2 rounded-control bg-surface-2 p-3 text-sm text-foreground">
                   <Icon name="warning" size={16} className="mt-1 shrink-0 text-muted" />
-                  {course.status === "PUBLISHED"
-                    ? "Published. Revise this course to make changes."
-                    : course.approvalState === "SUBMITTED"
-                      ? "Waiting for Department Head review. Withdraw the submission to make changes."
-                      : "Only the course's instructor can change these settings."}
+                  {readOnlyReason(course)}
                 </p>
               ) : null}
               <WorkspaceForm action={updateCourseAction.bind(null, course.id)}>

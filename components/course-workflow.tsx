@@ -6,16 +6,9 @@ import { canAuthorCourse } from "@/lib/courses/ownership";
 import { workflowAction } from "@/app/(workspace)/admin/courses/actions";
 import { WorkspaceForm } from "./workspace-form";
 import { Button, Chip, Field, Icon, Select, Textarea } from "./ui";
-import { workflowSteps } from "@/lib/courses/workflow-steps";
+import { APPROVAL_LABELS as labels, workflowLabel, workflowSteps } from "@/lib/courses/workflow-steps";
 import { statusLabel } from "@/lib/status";
 import { formatDateTime } from "@/lib/format";
-const labels = {
-  DRAFT: "Draft",
-  SUBMITTED: "Awaiting Department Head approval",
-  APPROVED: "Approved for publication",
-  REJECTED: "Changes requested",
-  LEGACY_PUBLISHED: "Published before approvals",
-};
 export async function CourseWorkflow({
   actor,
   course,
@@ -84,16 +77,16 @@ export async function CourseWorkflow({
         <h2 className="type-section">Approval and publication</h2>
         <Chip
           variant={
-            course.approvalState === "APPROVED"
-              ? "success"
-              : course.approvalState === "REJECTED"
-                ? "destructive"
-                : "neutral"
+            course.status === "ARCHIVED"
+              ? "neutral"
+              : course.approvalState === "APPROVED"
+                ? "success"
+                : course.approvalState === "REJECTED"
+                  ? "destructive"
+                  : "neutral"
           }
         >
-          {course.status === "PUBLISHED" && course.approvalState === "APPROVED"
-            ? "Published · approved"
-            : labels[course.approvalState]}
+          {workflowLabel(course)}
         </Chip>
       </div>
       <ol className="workflow-steps mt-5 mb-4" aria-label="Approval steps">

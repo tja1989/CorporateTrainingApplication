@@ -68,7 +68,7 @@ export async function notify(
   dedupeKey?: string,
   dedupeWithinMs?: number,
   transaction?: LearningWriteContext,
-): Promise<void> {
+): Promise<boolean> {
   const connection = transaction?.connection ?? db;
   if (dedupeKey) {
     const dup = await connection
@@ -76,7 +76,7 @@ export async function notify(
       .from(t.notifications)
       .where(and(eq(t.notifications.userId, userId), eq(t.notifications.dedupeKey, dedupeKey), dedupeWithinMs !== undefined ? gte(t.notifications.sentAt, new Date(Date.now() - dedupeWithinMs)) : undefined))
       .limit(1);
-    if (dup.length > 0) return;
+    if (dup.length > 0) return false;
   }
   const channels = ["inapp"];
   const [user] = await connection.select().from(t.users).where(eq(t.users.id, userId)).limit(1);
@@ -90,6 +90,7 @@ export async function notify(
     if (transaction) transaction.afterCommit.push(deliver);
     else await deliver();
   }
+  return true;
 }
 
 export function renderNotification(kind: string, payload: Record<string, unknown>): { title: string; body: string } {

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { quizIntroFigures } from "@/lib/quiz/intro-figures";
+import { currentQuizAttempts } from "@/lib/quiz/engine";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth/guard";
 import { learnerLesson } from "@/lib/lms/lesson-access";
@@ -32,10 +34,6 @@ export default async function LessonPage({
   const access = await learnerLesson(user.id, lessonId);
   if (!access) notFound();
   const { lesson, mod, course, view, self } = access;
-  const quizSettings =
-    lesson.type === "QUIZ" && lesson.payload.quizId
-      ? (await db.select({ settings: t.quizzes.settings }).from(t.quizzes).where(eq(t.quizzes.id, lesson.payload.quizId)).limit(1))[0]?.settings ?? null
-      : null;
   if (access.pathLock)
     return (
       <div>
@@ -74,6 +72,13 @@ export default async function LessonPage({
         )}
       </div>
     );
+  const quiz =
+    lesson.type === "QUIZ" && lesson.payload.quizId
+      ? (await db.select({ id: t.quizzes.id, lessonId: t.quizzes.lessonId, settings: t.quizzes.settings }).from(t.quizzes).where(eq(t.quizzes.id, lesson.payload.quizId)).limit(1))[0]
+      : undefined;
+  const quizFigures = quiz
+    ? quizIntroFigures(quiz.settings, user.timeMultiplier, (await currentQuizAttempts(quiz, user.id)).filter((a) => a.state !== "VOIDED").length)
+    : null;
   const { prev, index, total } = lessonNeighbours(view, lesson.id);
   return (
     <LessonProgressProvider key={lesson.id} initialView={view}>
@@ -175,13 +180,9 @@ export default async function LessonPage({
                         ? "You have passed this assessment. You can review your result or try again if attempts are available."
                         : "Check the rules below. Opening the assessment shows its consent information before you start."}
                     </p>
-                    {quizSettings ? (
+                    {quizFigures ? (
                       <dl className="mb-5 grid max-w-lg grid-cols-3 gap-3">
-                        {[
-                          ["Time limit", quizSettings.timeLimitSec ? `${Math.round(quizSettings.timeLimitSec / 60)} min` : "None"],
-                          ["Attempts", quizSettings.attemptsLimit ? String(quizSettings.attemptsLimit) : "Unlimited"],
-                          ["Pass mark", `${quizSettings.passPct}%`],
-                        ].map(([term, value]) => (
+                        {quizFigures.map(([term, value]) => (
                           <div key={term} className="rounded-control bg-surface-2 p-3">
                             <dt className="text-xs text-muted">{term}</dt>
                             <dd className="type-number mt-1 text-lg text-foreground">{value}</dd>

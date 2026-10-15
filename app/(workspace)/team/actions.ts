@@ -8,6 +8,7 @@ import { requireRole } from "@/lib/auth/guard";
 import { canResetPerson, canonicalRole, type Actor } from "@/lib/auth/roles";
 import { rolloutTraining } from "@/lib/courses/rollout";
 import { notify } from "@/lib/notify";
+import { NUDGE_WINDOW_MS, nudgeKey } from "@/lib/nudge";
 import { issueResetCode } from "@/lib/auth/login";
 async function authorizeOnTeam(actor: Actor, userId: string) {
   const [person] = await db
@@ -58,14 +59,14 @@ export async function nudgeAction(userId: string): Promise<void> {
   const actor = await requireRole("DEPARTMENT_HEAD", "ADMIN", "HR_HEAD");
   const member = await authorizeOnTeam(actor, userId);
   if (!member) throw new Error("This employee is outside your department.");
-  await notify(
+  const sent = await notify(
     userId,
     "overdue",
     { courseTitle: "your assigned training", courseId: "" },
-    `nudge:${userId}`,
-    48 * 3600_000,
+    nudgeKey(userId),
+    NUDGE_WINDOW_MS,
   );
-  await setFlash(`Nudge sent to ${member.name}.`);
+  await setFlash(sent ? `Nudge sent to ${member.name}.` : `${member.name} was already reminded in the last 48 hours.`);
   revalidatePath(`/team/${userId}`);
   revalidatePath("/team");
 }
