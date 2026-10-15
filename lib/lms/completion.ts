@@ -1,35 +1,68 @@
 import { linkCompletionDelivery } from "@/lib/feedback/delivery";
+import { assertCoursePlanningAccess } from "./planning-access";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { id, certificateSerial } from "@/lib/ids";
 import { computeComplianceStatus } from "./compliance";
 import { isoWeekStart, localDate } from "@/lib/time";
 import { notify } from "@/lib/notify";
-import { currentCycleStart, lessonCourseId, lockLearningCourse, type LearningDatabase, type LearningWriteContext } from "./learning-cycle";
+import {
+  currentCycleStart,
+  lessonCourseId,
+  lockLearningCourse,
+  type LearningDatabase,
+  type LearningWriteContext,
+} from "./learning-cycle";
 
 /** Award points once per (kind, refId) per user. */
-export async function awardPoints(userId: string, kind: string, refId: string, amount: number, connection: LearningDatabase = db): Promise<void> {
+export async function awardPoints(
+  userId: string,
+  kind: string,
+  refId: string,
+  amount: number,
+  connection: LearningDatabase = db,
+): Promise<void> {
   const existing = await connection
     .select({ id: t.pointsLedger.id })
     .from(t.pointsLedger)
-    .where(and(eq(t.pointsLedger.userId, userId), eq(t.pointsLedger.kind, kind), eq(t.pointsLedger.refId, refId)))
+    .where(
+      and(
+        eq(t.pointsLedger.userId, userId),
+        eq(t.pointsLedger.kind, kind),
+        eq(t.pointsLedger.refId, refId),
+      ),
+    )
     .limit(1);
   if (existing.length > 0) return;
-  await connection.insert(t.pointsLedger).values({ id: id(), userId, kind, refId, amount });
+  await connection
+    .insert(t.pointsLedger)
+    .values({ id: id(), userId, kind, refId, amount });
 }
 
-export async function awardBadge(userId: string, badge: "first_course" | "five_courses" | "four_week_streak" | "perfect_quiz", connection: LearningDatabase = db) {
-  await connection.insert(t.badges).values({ id: id(), userId, badge }).onConflictDoNothing();
+export async function awardBadge(
+  userId: string,
+  badge: "first_course" | "five_courses" | "four_week_streak" | "perfect_quiz",
+  connection: LearningDatabase = db,
+) {
+  await connection
+    .insert(t.badges)
+    .values({ id: id(), userId, badge })
+    .onConflictDoNothing();
 }
 
 /** Record learning activity for the weekly-goal streak (3 distinct days / ISO week). */
-export async function recordActivityDay(userId: string, connection: LearningDatabase = db): Promise<void> {
+export async function recordActivityDay(
+  userId: string,
+  connection: LearningDatabase = db,
+): Promise<void> {
   const week = isoWeekStart();
   const today = localDate();
   const [row] = await connection
     .select()
     .from(t.streakState)
-    .where(and(eq(t.streakState.userId, userId), eq(t.streakState.weekStart, week)));
+    .where(
+      and(eq(t.streakState.userId, userId), eq(t.streakState.weekStart, week)),
+    );
   if (!row) {
     // carry streak weeks forward from the latest previous row
     const prev = await connection
@@ -52,85 +85,165 @@ export async function recordActivityDay(userId: string, connection: LearningData
   }
   if (!row.daysActive.includes(today)) {
     const days = [...row.daysActive, today];
-    const updates: Partial<typeof t.streakState.$inferInsert> = { daysActive: days };
+    const updates: Partial<typeof t.streakState.$inferInsert> = {
+      daysActive: days,
+    };
     if (days.length === 3) {
       updates.currentStreakWeeks = row.currentStreakWeeks + 1;
-      if (row.currentStreakWeeks + 1 >= 4) await awardBadge(userId, "four_week_streak", connection);
+      if (row.currentStreakWeeks + 1 >= 4)
+        await awardBadge(userId, "four_week_streak", connection);
     }
-    await connection.update(t.streakState).set(updates).where(eq(t.streakState.id, row.id));
+    await connection
+      .update(t.streakState)
+      .set(updates)
+      .where(eq(t.streakState.id, row.id));
   }
 }
 
 /** Credit inside an existing learning transaction without borrowing another client. */
-export async function markLessonCompleteInTransaction(context: LearningWriteContext, userId: string, lessonId: string, courseId: string, evidenceStartedAt?: Date): Promise<boolean> {
+export async function markLessonCompleteInTransaction(
+  context: LearningWriteContext,
+  userId: string,
+  lessonId: string,
+  courseId: string,
+  evidenceStartedAt?: Date,
+): Promise<boolean> {
   const { connection } = context;
   await lockLearningCourse(connection, userId, courseId);
+  await assertCoursePlanningAccess(userId, courseId, connection);
   const cycle = await currentCycleStart(userId, courseId, connection);
   if (evidenceStartedAt && cycle && evidenceStartedAt < cycle) return false;
-  await connection.insert(t.lessonProgress).values({ id: id(), userId, lessonId, status: "COMPLETED" })
-    .onConflictDoUpdate({ target: [t.lessonProgress.userId, t.lessonProgress.lessonId], set: { status: "COMPLETED", updatedAt: new Date() } });
+  await connection
+    .insert(t.lessonProgress)
+    .values({ id: id(), userId, lessonId, status: "COMPLETED" })
+    .onConflictDoUpdate({
+      target: [t.lessonProgress.userId, t.lessonProgress.lessonId],
+      set: { status: "COMPLETED", updatedAt: new Date() },
+    });
   await checkCourseCompletion(userId, courseId, context);
   await awardPoints(userId, "lesson_complete", lessonId, 10, connection);
   await recordActivityDay(userId, connection);
   return true;
 }
 
-export async function markLessonComplete(userId: string, lessonId: string, evidenceStartedAt?: Date): Promise<void> {
+export async function markLessonComplete(
+  userId: string,
+  lessonId: string,
+  evidenceStartedAt?: Date,
+): Promise<void> {
   const courseId = await lessonCourseId(lessonId);
   if (!courseId) return;
   const afterCommit: LearningWriteContext["afterCommit"] = [];
-  await db.transaction(connection => markLessonCompleteInTransaction({ connection, afterCommit }, userId, lessonId, courseId, evidenceStartedAt));
+  await db.transaction((connection) =>
+    markLessonCompleteInTransaction(
+      { connection, afterCommit },
+      userId,
+      lessonId,
+      courseId,
+      evidenceStartedAt,
+    ),
+  );
   for (const effect of afterCommit) await effect();
 }
 
 /** Course completes when all lessons of all modules complete (spec FR-2.4). */
-export async function checkCourseCompletion(userId: string, courseId: string, context?: LearningWriteContext): Promise<boolean> {
+export async function checkCourseCompletion(
+  userId: string,
+  courseId: string,
+  context?: LearningWriteContext,
+): Promise<boolean> {
   const connection = context?.connection ?? db;
-  const mods = await connection.select().from(t.modules).where(eq(t.modules.courseId, courseId));
+  const mods = await connection
+    .select()
+    .from(t.modules)
+    .where(eq(t.modules.courseId, courseId));
   if (mods.length === 0) return false;
   const lessonRows = await connection
     .select()
     .from(t.lessons)
-    .where(inArray(t.lessons.moduleId, mods.map((m) => m.id)));
+    .where(
+      inArray(
+        t.lessons.moduleId,
+        mods.map((m) => m.id),
+      ),
+    );
   if (lessonRows.length === 0) return false;
   const progress = await connection
     .select()
     .from(t.lessonProgress)
-    .where(and(eq(t.lessonProgress.userId, userId), inArray(t.lessonProgress.lessonId, lessonRows.map((l) => l.id))));
-  const done = new Set(progress.filter((p) => p.status === "COMPLETED").map((p) => p.lessonId));
+    .where(
+      and(
+        eq(t.lessonProgress.userId, userId),
+        inArray(
+          t.lessonProgress.lessonId,
+          lessonRows.map((l) => l.id),
+        ),
+      ),
+    );
+  const done = new Set(
+    progress.filter((p) => p.status === "COMPLETED").map((p) => p.lessonId),
+  );
   const allDone = lessonRows.every((l) => done.has(l.id));
   if (!allDone) {
     // mark active enrollment in progress
     await connection
       .update(t.enrollments)
       .set({ status: "IN_PROGRESS" })
-      .where(and(eq(t.enrollments.userId, userId), eq(t.enrollments.courseId, courseId), eq(t.enrollments.status, "NOT_STARTED")));
+      .where(
+        and(
+          eq(t.enrollments.userId, userId),
+          eq(t.enrollments.courseId, courseId),
+          eq(t.enrollments.status, "NOT_STARTED"),
+        ),
+      );
     return false;
   }
   await completeCourse(userId, courseId, context);
   return true;
 }
 
-export async function completeCourse(userId: string, courseId: string, context?: LearningWriteContext): Promise<void> {
-  if(!context){
-    const afterCommit: LearningWriteContext["afterCommit"]=[];
-    await db.transaction(async connection=>{await lockLearningCourse(connection,userId,courseId);await completeCourse(userId,courseId,{connection,afterCommit})});
-    for(const effect of afterCommit)await effect();return;
+export async function completeCourse(
+  userId: string,
+  courseId: string,
+  context?: LearningWriteContext,
+): Promise<void> {
+  if (!context) {
+    const afterCommit: LearningWriteContext["afterCommit"] = [];
+    await db.transaction(async (connection) => {
+      await lockLearningCourse(connection, userId, courseId);
+      await completeCourse(userId, courseId, { connection, afterCommit });
+    });
+    for (const effect of afterCommit) await effect();
+    return;
   }
   const connection = context?.connection ?? db;
   const enrollments = await connection
     .select()
     .from(t.enrollments)
-    .where(and(eq(t.enrollments.userId, userId), eq(t.enrollments.courseId, courseId)));
-  const active = enrollments.find((e) => e.status === "NOT_STARTED" || e.status === "IN_PROGRESS");
+    .where(
+      and(
+        eq(t.enrollments.userId, userId),
+        eq(t.enrollments.courseId, courseId),
+      ),
+    );
+  const active = enrollments.find(
+    (e) => e.status === "NOT_STARTED" || e.status === "IN_PROGRESS",
+  );
   if (!active) return; // already completed or no enrollment
+  await assertCoursePlanningAccess(userId, courseId, connection);
 
   const now = new Date();
-  const [course] = await connection.select().from(t.courses).where(eq(t.courses.id, courseId)).limit(1);
+  const [course] = await connection
+    .select()
+    .from(t.courses)
+    .where(eq(t.courses.id, courseId))
+    .limit(1);
 
   // Immutable completion record (append-only)
-  const completionId=id();
-  await connection.insert(t.completionRecords).values({ id: completionId, userId, courseId, completedAt: now });
+  const completionId = id();
+  await connection
+    .insert(t.completionRecords)
+    .values({ id: completionId, userId, courseId, completedAt: now });
   await linkCompletionDelivery(context.connection, active.id, completionId);
 
   let certExpiresAt: Date | null = null;
@@ -154,7 +267,11 @@ export async function completeCourse(userId: string, courseId: string, context?:
     .set({
       status: "COMPLETED",
       completedAt: now,
-      complianceStatus: computeComplianceStatus({ status: "COMPLETED", dueAt: active.dueAt, certificateExpiresAt: certExpiresAt }),
+      complianceStatus: computeComplianceStatus({
+        status: "COMPLETED",
+        dueAt: active.dueAt,
+        certificateExpiresAt: certExpiresAt,
+      }),
     })
     .where(eq(t.enrollments.id, active.id));
 
@@ -167,5 +284,12 @@ export async function completeCourse(userId: string, courseId: string, context?:
   if (completions >= 1) await awardBadge(userId, "first_course", connection);
   if (completions >= 5) await awardBadge(userId, "five_courses", connection);
 
-  await notify(userId, "course_completed", { courseId, courseTitle: course?.title ?? "Course" }, undefined, undefined, context);
+  await notify(
+    userId,
+    "course_completed",
+    { courseId, courseTitle: course?.title ?? "Course" },
+    undefined,
+    undefined,
+    context,
+  );
 }

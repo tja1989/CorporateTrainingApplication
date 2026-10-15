@@ -3,17 +3,43 @@ import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { id } from "@/lib/ids";
 import { notify } from "@/lib/notify";
-import { markLessonComplete } from "@/lib/lms/completion";
-import { cycleStartsByCourse, type LearningDatabase } from "@/lib/lms/learning-cycle";
+import {
+  markLessonComplete,
+  markLessonCompleteInTransaction,
+} from "@/lib/lms/completion";
+import {
+  cycleStartsByCourse,
+  lockLearningCourse,
+  lessonCourseId,
+  type LearningDatabase,
+  type LearningWriteContext,
+} from "@/lib/lms/learning-cycle";
+import {
+  assertCoursePlanningAccess,
+  coursePlanningAccess,
+} from "@/lib/lms/planning-access";
 import { courseOutline } from "@/lib/lms/queries";
-import type { InterviewConfig, LiveEvaluation, LiveTurn } from "@/lib/db/schema";
-import { CONTENT_CHAR_CAP, fallbackEvaluate, interviewContentFor, parseInterviewConfig, pickScopeLessons, scoreEvaluation, type InterviewContent } from "./interview";
+import type {
+  InterviewConfig,
+  LiveEvaluation,
+  LiveTurn,
+} from "@/lib/db/schema";
+import {
+  CONTENT_CHAR_CAP,
+  fallbackEvaluate,
+  interviewContentFor,
+  parseInterviewConfig,
+  pickScopeLessons,
+  scoreEvaluation,
+  type InterviewContent,
+} from "./interview";
 
 /** Persistence for oral checks (spec FR-14.2 v1.4): post-lesson checks and INTERVIEW lessons. */
 
 /** Run work after the response is flushed when we are inside a request; otherwise inline. */
 function deferAfterResponse(fn: () => Promise<void>): void {
-  const guarded = () => fn().catch((err) => console.error("oral check: deferred work failed", err));
+  const guarded = () =>
+    fn().catch((err) => console.error("oral check: deferred work failed", err));
   try {
     after(guarded);
   } catch {
@@ -34,33 +60,67 @@ export async function createInterview(opts: {
   passPct: number;
 }): Promise<string> {
   const interviewId = id();
-  await db.insert(t.liveInterviews).values({ id: interviewId, ...opts });
+  await db.transaction(async (connection) => {
+    await lockLearningCourse(connection, opts.userId, opts.courseId);
+    if ((await lessonCourseId(opts.lessonId, connection)) !== opts.courseId)
+      throw new Error("This lesson does not belong to the course.");
+    await assertCoursePlanningAccess(opts.userId, opts.courseId, connection);
+    await connection
+      .insert(t.liveInterviews)
+      .values({ id: interviewId, ...opts });
+  });
   return interviewId;
 }
 
-export async function getInterview(interviewId: string): Promise<Interview | null> {
-  const [row] = await db.select().from(t.liveInterviews).where(eq(t.liveInterviews.id, interviewId)).limit(1);
+export async function getInterview(
+  interviewId: string,
+): Promise<Interview | null> {
+  const [row] = await db
+    .select()
+    .from(t.liveInterviews)
+    .where(eq(t.liveInterviews.id, interviewId))
+    .limit(1);
   return row ?? null;
 }
 
 /** Appends transcript turns in one statement (jsonb concatenation). */
-export async function appendInterviewTurns(interviewId: string, turns: LiveTurn[]): Promise<void> {
+export async function appendInterviewTurns(
+  interviewId: string,
+  turns: LiveTurn[],
+): Promise<void> {
   if (turns.length === 0) return;
-  const clean: LiveTurn[] = turns.map((x) => ({ role: x.role, text: x.text.slice(0, 4000), at: x.at ?? new Date().toISOString(), ...(x.mock ? { mock: true } : {}) }));
+  const clean: LiveTurn[] = turns.map((x) => ({
+    role: x.role,
+    text: x.text.slice(0, 4000),
+    at: x.at ?? new Date().toISOString(),
+    ...(x.mock ? { mock: true } : {}),
+  }));
   await db
     .update(t.liveInterviews)
-    .set({ transcript: sql`coalesce(${t.liveInterviews.transcript}, '[]'::jsonb) || ${JSON.stringify(clean)}::jsonb` })
+    .set({
+      transcript: sql`coalesce(${t.liveInterviews.transcript}, '[]'::jsonb) || ${JSON.stringify(clean)}::jsonb`,
+    })
     .where(eq(t.liveInterviews.id, interviewId));
 }
 
 type LessonRow = typeof t.lessons.$inferSelect;
 
 /** Interviewable text of one VIDEO (READY transcript) or TEXT lesson. */
-async function lessonContent(lesson: LessonRow): Promise<InterviewContent | null> {
+async function lessonContent(
+  lesson: LessonRow,
+): Promise<InterviewContent | null> {
   if (lesson.type === "VIDEO" && lesson.payload.videoId) {
-    const [video] = await db.select().from(t.videos).where(eq(t.videos.id, lesson.payload.videoId)).limit(1);
+    const [video] = await db
+      .select()
+      .from(t.videos)
+      .where(eq(t.videos.id, lesson.payload.videoId))
+      .limit(1);
     const chunks = video
-      ? await db.select({ text: t.videoChunks.text }).from(t.videoChunks).where(eq(t.videoChunks.videoId, video.id)).orderBy(t.videoChunks.startSec)
+      ? await db
+          .select({ text: t.videoChunks.text })
+          .from(t.videoChunks)
+          .where(eq(t.videoChunks.videoId, video.id))
+          .orderBy(t.videoChunks.startSec)
       : [];
     return interviewContentFor(lesson, video ?? null, chunks);
   }
@@ -81,17 +141,37 @@ export type LoadedLesson = {
  * lessons assemble their scope (previous / module / course); VIDEO and TEXT
  * lessons interview on themselves (the post-lesson oral check).
  */
-export async function loadLessonContent(lessonId: string): Promise<LoadedLesson | null> {
-  const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, lessonId)).limit(1);
+export async function loadLessonContent(
+  lessonId: string,
+): Promise<LoadedLesson | null> {
+  const [lesson] = await db
+    .select()
+    .from(t.lessons)
+    .where(eq(t.lessons.id, lessonId))
+    .limit(1);
   if (!lesson) return null;
-  const [mod] = await db.select().from(t.modules).where(eq(t.modules.id, lesson.moduleId)).limit(1);
+  const [mod] = await db
+    .select()
+    .from(t.modules)
+    .where(eq(t.modules.id, lesson.moduleId))
+    .limit(1);
   if (!mod) return null;
-  const [course] = await db.select().from(t.courses).where(eq(t.courses.id, mod.courseId)).limit(1);
+  const [course] = await db
+    .select()
+    .from(t.courses)
+    .where(eq(t.courses.id, mod.courseId))
+    .limit(1);
   if (!course) return null;
   const outline = await courseOutline(course.id);
 
   if (lesson.type !== "INTERVIEW") {
-    return { lesson, course, outline, config: null, content: await lessonContent(lesson) };
+    return {
+      lesson,
+      course,
+      outline,
+      config: null,
+      content: await lessonContent(lesson),
+    };
   }
   const config = parseInterviewConfig(lesson.payload.interview);
   const byId = new Map(outline.flatMap((o) => o.lessons).map((l) => [l.id, l]));
@@ -108,7 +188,12 @@ export async function loadLessonContent(lessonId: string): Promise<LoadedLesson 
   }
   const text = parts.join("\n\n").slice(0, CONTENT_CHAR_CAP);
   const content: InterviewContent | null = text.trim()
-    ? { title: lesson.title, text, source: sources.size > 1 ? "mixed" : sources.has("video") ? "video" : "text" }
+    ? {
+        title: lesson.title,
+        text,
+        source:
+          sources.size > 1 ? "mixed" : sources.has("video") ? "video" : "text",
+      }
     : null;
   return { lesson, course, outline, config, content };
 }
@@ -125,31 +210,79 @@ export async function completeInterview(
 ): Promise<{ pct: number; outcome: "PASS" | "FAIL" }> {
   const row = await getInterview(interviewId);
   if (!row) throw new Error("Interview not found");
-  if (row.state === "COMPLETED") return { pct: row.scorePct ?? 0, outcome: row.outcome ?? "FAIL" };
+  if (row.state === "COMPLETED")
+    return { pct: row.scorePct ?? 0, outcome: row.outcome ?? "FAIL" };
   const scored = scoreEvaluation(evaluation, row.passPct);
-  await db
-    .update(t.liveInterviews)
-    .set({ evaluation, evaluationSource: source, scorePct: scored.pct, outcome: scored.outcome, state: "COMPLETED", completedAt: new Date() })
-    .where(eq(t.liveInterviews.id, interviewId));
-
-  const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, row.lessonId)).limit(1);
+  const [lesson] = await db
+    .select()
+    .from(t.lessons)
+    .where(eq(t.lessons.id, row.lessonId))
+    .limit(1);
+  const afterCommit: LearningWriteContext["afterCommit"] = [];
+  await db.transaction(async (connection) => {
+    await lockLearningCourse(connection, row.userId, row.courseId);
+    await assertCoursePlanningAccess(row.userId, row.courseId, connection);
+    await connection
+      .update(t.liveInterviews)
+      .set({
+        evaluation,
+        evaluationSource: source,
+        scorePct: scored.pct,
+        outcome: scored.outcome,
+        state: "COMPLETED",
+        completedAt: new Date(),
+      })
+      .where(eq(t.liveInterviews.id, interviewId));
+    if (lesson?.type === "INTERVIEW") {
+      const cfg = parseInterviewConfig(lesson.payload.interview);
+      if (scored.outcome === "PASS" || !cfg.requirePass)
+        await markLessonCompleteInTransaction(
+          { connection, afterCommit },
+          row.userId,
+          row.lessonId,
+          row.courseId,
+          row.startedAt,
+        );
+    }
+  });
+  for (const effect of afterCommit) await effect();
   const lessonTitle = lesson?.title ?? "lesson";
 
   // The interviewer is blocked on this tool response — the learner hears
   // silence until it returns. Notifications can reach SMTP, so they run once
   // the reply is on the wire, not before it.
   deferAfterResponse(async () => {
-    const [user] = await db.select().from(t.users).where(eq(t.users.id, row.userId)).limit(1);
-    await notify(row.userId, "oral_check_result", { lessonTitle, scorePct: scored.pct, outcome: scored.outcome, interviewId }, `oral:${interviewId}`);
+    const [user] = await db
+      .select()
+      .from(t.users)
+      .where(eq(t.users.id, row.userId))
+      .limit(1);
+    await notify(
+      row.userId,
+      "oral_check_result",
+      {
+        lessonTitle,
+        scorePct: scored.pct,
+        outcome: scored.outcome,
+        interviewId,
+      },
+      `oral:${interviewId}`,
+    );
     if (scored.outcome === "FAIL" && user?.managerId) {
-      await notify(user.managerId, "oral_check_review", { learnerName: user.name, lessonTitle, scorePct: scored.pct, interviewId }, `oral-review:${interviewId}`);
+      await notify(
+        user.managerId,
+        "oral_check_review",
+        {
+          learnerName: user.name,
+          lessonTitle,
+          scorePct: scored.pct,
+          interviewId,
+        },
+        `oral-review:${interviewId}`,
+      );
     }
   });
 
-  if (lesson?.type === "INTERVIEW") {
-    const cfg = parseInterviewConfig(lesson.payload.interview);
-    if (scored.outcome === "PASS" || !cfg.requirePass) await markLessonComplete(row.userId, row.lessonId, row.startedAt);
-  }
   return scored;
 }
 
@@ -158,59 +291,117 @@ export async function completeInterview(
  * but no recorded evaluation is graded from the transcript by the fallback;
  * an empty one is marked abandoned.
  */
-export async function finishInterview(interviewId: string): Promise<Interview | null> {
+export async function finishInterview(
+  interviewId: string,
+): Promise<Interview | null> {
   const row = await getInterview(interviewId);
   if (!row || row.state !== "IN_PROGRESS") return row;
-  const answered = row.transcript.some((x) => x.role === "user" && x.text.trim().length > 0);
+  if ((await coursePlanningAccess(row.userId, row.courseId)).blocked) {
+    await db
+      .update(t.liveInterviews)
+      .set({ state: "ABANDONED", completedAt: new Date() })
+      .where(
+        and(
+          eq(t.liveInterviews.id, interviewId),
+          eq(t.liveInterviews.state, "IN_PROGRESS"),
+        ),
+      );
+    return getInterview(interviewId);
+  }
+  const answered = row.transcript.some(
+    (x) => x.role === "user" && x.text.trim().length > 0,
+  );
   if (!answered) {
-    await db.update(t.liveInterviews).set({ state: "ABANDONED", completedAt: new Date() }).where(eq(t.liveInterviews.id, interviewId));
+    await db
+      .update(t.liveInterviews)
+      .set({ state: "ABANDONED", completedAt: new Date() })
+      .where(eq(t.liveInterviews.id, interviewId));
     return getInterview(interviewId);
   }
   const loaded = await loadLessonContent(row.lessonId);
-  const content = loaded?.content ?? { title: "lesson", text: "", source: "text" as const };
-  const { evaluation, source } = await fallbackEvaluate(row.transcript, content);
+  const content = loaded?.content ?? {
+    title: "lesson",
+    text: "",
+    source: "text" as const,
+  };
+  const { evaluation, source } = await fallbackEvaluate(
+    row.transcript,
+    content,
+  );
   await completeInterview(interviewId, evaluation, source);
   return getInterview(interviewId);
 }
 
 /** An admin overturns a fail: the check counts as passed and an INTERVIEW lesson completes. */
-export async function overturnInterview(interviewId: string, reviewerId: string): Promise<void> {
+export async function overturnInterview(
+  interviewId: string,
+  reviewerId: string,
+): Promise<void> {
   const row = await getInterview(interviewId);
   if (!row || row.state !== "COMPLETED") return;
   await db
     .update(t.liveInterviews)
     .set({ outcome: "PASS", reviewedBy: reviewerId, reviewedAt: new Date() })
     .where(eq(t.liveInterviews.id, interviewId));
-  const [lesson] = await db.select().from(t.lessons).where(eq(t.lessons.id, row.lessonId)).limit(1);
-  if (lesson?.type === "INTERVIEW") await markLessonComplete(row.userId, row.lessonId, row.startedAt);
+  const [lesson] = await db
+    .select()
+    .from(t.lessons)
+    .where(eq(t.lessons.id, row.lessonId))
+    .limit(1);
+  if (lesson?.type === "INTERVIEW")
+    await markLessonComplete(row.userId, row.lessonId, row.startedAt);
   await notify(
     row.userId,
     "oral_check_result",
-    { lessonTitle: lesson?.title ?? "lesson", scorePct: row.scorePct ?? 0, outcome: "PASS", overturned: true, interviewId },
+    {
+      lessonTitle: lesson?.title ?? "lesson",
+      scorePct: row.scorePct ?? 0,
+      outcome: "PASS",
+      overturned: true,
+      interviewId,
+    },
     `oral-overturn:${interviewId}`,
   );
 }
 
 /** Latest interview per lesson for a learner (completed rows win over abandoned ones). */
-export async function latestInterviewsByLesson(userId: string, lessonIds: string[], connection: LearningDatabase = db): Promise<Map<string, Interview>> {
+export async function latestInterviewsByLesson(
+  userId: string,
+  lessonIds: string[],
+  connection: LearningDatabase = db,
+): Promise<Map<string, Interview>> {
   if (lessonIds.length === 0) return new Map();
   const rows = await connection
     .select()
     .from(t.liveInterviews)
-    .where(and(eq(t.liveInterviews.userId, userId), inArray(t.liveInterviews.lessonId, lessonIds)))
+    .where(
+      and(
+        eq(t.liveInterviews.userId, userId),
+        inArray(t.liveInterviews.lessonId, lessonIds),
+      ),
+    )
     .orderBy(desc(t.liveInterviews.startedAt));
-  const starts = await cycleStartsByCourse(userId, [...new Set(rows.map(r => r.courseId))], connection);
+  const starts = await cycleStartsByCourse(
+    userId,
+    [...new Set(rows.map((r) => r.courseId))],
+    connection,
+  );
   const map = new Map<string, Interview>();
   for (const r of rows) {
     const cycle = starts.get(r.courseId);
     if (cycle && r.startedAt < cycle) continue;
     const cur = map.get(r.lessonId);
-    if (!cur || (cur.state !== "COMPLETED" && r.state === "COMPLETED")) map.set(r.lessonId, r);
+    if (!cur || (cur.state !== "COMPLETED" && r.state === "COMPLETED"))
+      map.set(r.lessonId, r);
   }
   return map;
 }
 
-export type InterviewWithTitles = Interview & { lessonTitle: string; courseTitle: string; learnerName: string };
+export type InterviewWithTitles = Interview & {
+  lessonTitle: string;
+  courseTitle: string;
+  learnerName: string;
+};
 
 async function withTitles(rows: Interview[]): Promise<InterviewWithTitles[]> {
   if (rows.length === 0) return [];
@@ -218,37 +409,72 @@ async function withTitles(rows: Interview[]): Promise<InterviewWithTitles[]> {
   const courseIds = [...new Set(rows.map((r) => r.courseId))];
   const userIds = [...new Set(rows.map((r) => r.userId))];
   const [lessons, courses, users] = await Promise.all([
-    db.select({ id: t.lessons.id, title: t.lessons.title }).from(t.lessons).where(inArray(t.lessons.id, lessonIds)),
-    db.select({ id: t.courses.id, title: t.courses.title }).from(t.courses).where(inArray(t.courses.id, courseIds)),
-    db.select({ id: t.users.id, name: t.users.name }).from(t.users).where(inArray(t.users.id, userIds)),
+    db
+      .select({ id: t.lessons.id, title: t.lessons.title })
+      .from(t.lessons)
+      .where(inArray(t.lessons.id, lessonIds)),
+    db
+      .select({ id: t.courses.id, title: t.courses.title })
+      .from(t.courses)
+      .where(inArray(t.courses.id, courseIds)),
+    db
+      .select({ id: t.users.id, name: t.users.name })
+      .from(t.users)
+      .where(inArray(t.users.id, userIds)),
   ]);
   const l = new Map(lessons.map((x) => [x.id, x.title]));
   const c = new Map(courses.map((x) => [x.id, x.title]));
   const u = new Map(users.map((x) => [x.id, x.name]));
-  return rows.map((r) => ({ ...r, lessonTitle: l.get(r.lessonId) ?? "Lesson", courseTitle: c.get(r.courseId) ?? "Course", learnerName: u.get(r.userId) ?? "Learner" }));
+  return rows.map((r) => ({
+    ...r,
+    lessonTitle: l.get(r.lessonId) ?? "Lesson",
+    courseTitle: c.get(r.courseId) ?? "Course",
+    learnerName: u.get(r.userId) ?? "Learner",
+  }));
 }
 
-export async function interviewsForUser(userId: string, limit = 20): Promise<InterviewWithTitles[]> {
+export async function interviewsForUser(
+  userId: string,
+  limit = 20,
+): Promise<InterviewWithTitles[]> {
   const rows = await db
     .select()
     .from(t.liveInterviews)
-    .where(and(eq(t.liveInterviews.userId, userId), eq(t.liveInterviews.state, "COMPLETED")))
+    .where(
+      and(
+        eq(t.liveInterviews.userId, userId),
+        eq(t.liveInterviews.state, "COMPLETED"),
+      ),
+    )
     .orderBy(desc(t.liveInterviews.completedAt))
     .limit(limit);
   return withTitles(rows);
 }
 
 /** Failed checks nobody has looked at yet (spec FR-6.10a: a human can confirm or overturn). */
-export async function pendingInterviewReviews(limit = 50): Promise<InterviewWithTitles[]> {
+export async function pendingInterviewReviews(
+  limit = 50,
+): Promise<InterviewWithTitles[]> {
   const rows = await db
     .select()
     .from(t.liveInterviews)
-    .where(and(eq(t.liveInterviews.outcome, "FAIL"), isNull(t.liveInterviews.reviewedAt)))
+    .where(
+      and(
+        eq(t.liveInterviews.outcome, "FAIL"),
+        isNull(t.liveInterviews.reviewedAt),
+      ),
+    )
     .orderBy(desc(t.liveInterviews.completedAt))
     .limit(limit);
   return withTitles(rows);
 }
 
-export async function markInterviewReviewed(interviewId: string, reviewerId: string): Promise<void> {
-  await db.update(t.liveInterviews).set({ reviewedBy: reviewerId, reviewedAt: new Date() }).where(eq(t.liveInterviews.id, interviewId));
+export async function markInterviewReviewed(
+  interviewId: string,
+  reviewerId: string,
+): Promise<void> {
+  await db
+    .update(t.liveInterviews)
+    .set({ reviewedBy: reviewerId, reviewedAt: new Date() })
+    .where(eq(t.liveInterviews.id, interviewId));
 }

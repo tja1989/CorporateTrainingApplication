@@ -4,31 +4,72 @@ import { db, t } from "@/lib/db/client";
 import { buildCourseOutline } from "./course-outline";
 import { pathPrerequisite } from "./path-access";
 import { flatLessons } from "./outline";
+import { coursePlanningAccess } from "./planning-access";
 
 /** The same published-course and sequential rules feed pages and mutations.
  * Published courses remain open to learners, without introducing enrollment gates. */
-export async function learnerLesson(userId: string, lessonId: string, connection: LearningDatabase = db) {
-  const [lesson] = await connection.select().from(t.lessons).where(eq(t.lessons.id, lessonId)).limit(1);
+export async function learnerLesson(
+  userId: string,
+  lessonId: string,
+  connection: LearningDatabase = db,
+) {
+  const [lesson] = await connection
+    .select()
+    .from(t.lessons)
+    .where(eq(t.lessons.id, lessonId))
+    .limit(1);
   if (!lesson) return null;
-  const [mod] = await connection.select().from(t.modules).where(eq(t.modules.id, lesson.moduleId)).limit(1);
+  const [mod] = await connection
+    .select()
+    .from(t.modules)
+    .where(eq(t.modules.id, lesson.moduleId))
+    .limit(1);
   if (!mod) return null;
-  const [course] = await connection.select().from(t.courses).where(eq(t.courses.id, mod.courseId)).limit(1);
+  const [course] = await connection
+    .select()
+    .from(t.courses)
+    .where(eq(t.courses.id, mod.courseId))
+    .limit(1);
   if (!course || course.status !== "PUBLISHED") return null;
-  const view = await buildCourseOutline({ courseId: course.id, userId, sequentialLock: course.sequentialLock, currentLessonId: lesson.id }, connection);
-  const self = flatLessons(view).find(l => l.id === lesson.id);
+  const view = await buildCourseOutline(
+    {
+      courseId: course.id,
+      userId,
+      sequentialLock: course.sequentialLock,
+      currentLessonId: lesson.id,
+    },
+    connection,
+  );
+  const self = flatLessons(view).find((l) => l.id === lesson.id);
   if (!self) return null;
   const pathLock = await pathPrerequisite(userId, course.id, connection);
-  return { lesson, mod, course, view, self: pathLock ? { ...self, locked: true } : self, pathLock };
+  const planning = await coursePlanningAccess(userId, course.id, connection);
+  return {
+    lesson,
+    mod,
+    course,
+    view,
+    self: pathLock || planning.blocked ? { ...self, locked: true } : self,
+    pathLock,
+    planning,
+  };
 }
 
 /** Older quiz records can be linked only through the lesson payload. Standalone
  * quizzes keep their existing access; attached ones share lesson/path rules. */
-export async function learnerQuizLesson(userId: string, quiz: { id: string; lessonId: string | null }) {
+export async function learnerQuizLesson(
+  userId: string,
+  quiz: { id: string; lessonId: string | null },
+  connection: LearningDatabase = db,
+) {
   let lessonId = quiz.lessonId;
   if (!lessonId) {
-    const [lesson] = await db.select({ id: t.lessons.id }).from(t.lessons)
-      .where(sql`${t.lessons.payload}->>'quizId' = ${quiz.id}`).limit(1);
+    const [lesson] = await connection
+      .select({ id: t.lessons.id })
+      .from(t.lessons)
+      .where(sql`${t.lessons.payload}->>'quizId' = ${quiz.id}`)
+      .limit(1);
     lessonId = lesson?.id ?? null;
   }
-  return lessonId ? learnerLesson(userId, lessonId) : undefined;
+  return lessonId ? learnerLesson(userId, lessonId, connection) : undefined;
 }

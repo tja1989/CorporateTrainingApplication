@@ -5,10 +5,41 @@ vi.mock("../lib/db/client", async () => ({
   db: {},
 }));
 import { validateCurriculum } from "../lib/courses/workflow";
+import type { courses } from "../lib/db/schema";
+const course: typeof courses.$inferSelect = {
+  id: "c",
+  title: "Course",
+  description: "",
+  coverUrl: null,
+  status: "DRAFT",
+  language: "en",
+  estMinutes: 15,
+  tags: [],
+  objectives: [],
+  startsAt: null,
+  endsAt: null,
+  folderPath: "",
+  sequentialLock: false,
+  certificateEnabled: false,
+  certificateValidityDays: null,
+  recertLeadDays: 30,
+  createdBy: null,
+  departmentId: null,
+  instructorId: null,
+  approvalState: "DRAFT",
+  contentRevision: 1,
+  submittedRevision: null,
+  approvedRevision: null,
+  submittedBy: null,
+  approvedBy: null,
+  publishedAt: null,
+  createdAt: new Date("2026-10-15T00:00Z"),
+};
 function transaction(): any {
+  const responses = [[course], [], ...state.responses];
   return {
     select: () => {
-      const rows = state.responses.shift() ?? [];
+      const rows = responses.shift() ?? [];
       const q: any = {
         from: () => q,
         innerJoin: () => q,

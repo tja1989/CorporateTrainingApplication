@@ -18,6 +18,8 @@ import { mutateDraftCourse, transitionCourse } from "@/lib/courses/workflow";
 import { canAuthorCourse, courseWorkspacePath } from "@/lib/courses/ownership";
 import type { LearningTransaction } from "@/lib/lms/learning-cycle";
 import type { WorkflowInput } from "@/lib/courses/approval-policy";
+import { parseCoursePlanning } from "@/lib/courses/planning";
+import { saveCoursePlanning } from "@/lib/courses/planning-service";
 
 function errorResult(error: unknown): ActionResult {
   return {
@@ -171,6 +173,14 @@ export async function updateCourseAction(
         )
           throw new Error("Only HR or Super Admin can reassign this course.");
         await assignment(tx, departmentId, instructorId);
+        if (form.has("planningFields")) {
+          await saveCoursePlanning(tx, courseId, parseCoursePlanning({
+            startDate: String(form.get("startDate") ?? ""),
+            endDate: String(form.get("endDate") ?? ""),
+            folderPath: String(form.get("folderPath") ?? ""),
+            prerequisiteIds: form.getAll("prerequisiteIds").map(String),
+          }));
+        }
         await tx
           .update(t.courses)
           .set({

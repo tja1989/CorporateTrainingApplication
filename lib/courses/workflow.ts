@@ -5,6 +5,9 @@ import { canonicalRole, type Actor } from "@/lib/auth/roles";
 import { notify } from "@/lib/notify";
 import type { LearningTransaction } from "@/lib/lms/learning-cycle";
 import { decideCourseAction, type WorkflowInput } from "./approval-policy";
+import { validateCoursePlanning } from "./planning-service";
+import { lockAssessmentCurriculum } from "./locks";
+export { lockAssessmentCurriculum } from "./locks";
 import {
   canAuthorCourse,
   canReadCourse,
@@ -17,11 +20,6 @@ export async function lockCurriculum(
 ) {
   await tx.execute(
     sql`SELECT pg_advisory_xact_lock(hashtextextended(${`curriculum:${courseId}`},0))`,
-  );
-}
-export async function lockAssessmentCurriculum(tx: LearningTransaction) {
-  await tx.execute(
-    sql`SELECT pg_advisory_xact_lock(hashtextextended('assessment-curriculum',0))`,
   );
 }
 async function freshActor(
@@ -89,6 +87,7 @@ export async function validateCurriculum(
   tx: LearningTransaction,
   courseId: string,
 ): Promise<number> {
+  await validateCoursePlanning(tx, courseId);
   const lessons = await tx
     .select({ lesson: t.lessons })
     .from(t.lessons)
@@ -296,22 +295,20 @@ export async function transitionCourse(
             : course.publishedAt,
       })
       .where(eq(t.courses.id, course.id));
-    await tx
-      .insert(t.courseWorkflowEvents)
-      .values({
-        id: id(),
-        courseId: course.id,
-        actorId: current.id,
-        actorRole: current.role,
-        action: input.action,
-        revision: course.contentRevision,
-        fromState: course.approvalState,
-        toState: decision.state,
-        fromPublication: course.status,
-        toPublication: decision.publication,
-        comment: input.comment.trim(),
-        requestId: input.requestId,
-      });
+    await tx.insert(t.courseWorkflowEvents).values({
+      id: id(),
+      courseId: course.id,
+      actorId: current.id,
+      actorRole: current.role,
+      action: input.action,
+      revision: course.contentRevision,
+      fromState: course.approvalState,
+      toState: decision.state,
+      fromPublication: course.status,
+      toPublication: decision.publication,
+      comment: input.comment.trim(),
+      requestId: input.requestId,
+    });
     const recipients = new Map<string, typeof t.users.$inferSelect>();
     if (instructor && !instructor.erasedAt)
       recipients.set(instructor.id, instructor);

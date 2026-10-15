@@ -11,6 +11,8 @@ import type { DueRule, RuleCriteria } from "@/lib/db/schema";
 import { snapshotEnrollment } from "@/lib/feedback/delivery";
 import { isCourseAvailable } from "@/lib/courses/availability";
 import { lockAssessmentCurriculum } from "@/lib/courses/workflow";
+import { enrollmentDeadline } from "@/lib/courses/planning";
+import { computeComplianceStatus } from "./compliance";
 
 type User = typeof t.users.$inferSelect;
 type Rule = typeof t.enrollmentRules.$inferSelect;
@@ -180,15 +182,42 @@ export async function reevaluateUser(
     const tz = await storeTz(user.storeId, tx);
     const targets = new Map<string, Rule>();
     const assignable = new Map<string, Rule>();
+    const deadlines = new Map<string, Date | null>();
     for (const rule of rules.filter((r) =>
       userMatchesRule(user, r.criteria, ancestry),
     )) {
       const courseIds = await targetCourseIds(rule, tx);
       // Keep matching coverage for existing history, but assign a path only as a whole.
-      for (const courseId of courseIds) if (!targets.has(courseId)) targets.set(courseId, rule);
-      const courses = courseIds.length ? await tx.select().from(t.courses).where(inArray(t.courses.id, courseIds)) : [];
-      if (!courseIds.length || courses.length !== new Set(courseIds).size || courses.some(c => !isCourseAvailable(c))) continue;
-      for (const courseId of courseIds) if (!assignable.has(courseId)) assignable.set(courseId, rule);
+      for (const courseId of courseIds)
+        if (!targets.has(courseId)) targets.set(courseId, rule);
+      const courses = courseIds.length
+        ? await tx
+            .select()
+            .from(t.courses)
+            .where(inArray(t.courses.id, courseIds))
+        : [];
+      if (
+        !courseIds.length ||
+        courses.length !== new Set(courseIds).size ||
+        courses.some((c) => !isCourseAvailable(c))
+      )
+        continue;
+      const candidateDeadlines = new Map<string, Date | null>();
+      try {
+        const explicit = computeDueDate(rule.dueRule, user, tz);
+        for (const course of courses)
+          candidateDeadlines.set(
+            course.id,
+            enrollmentDeadline(course, explicit),
+          );
+      } catch {
+        continue;
+      }
+      for (const courseId of courseIds)
+        if (!assignable.has(courseId)) {
+          assignable.set(courseId, rule);
+          deadlines.set(courseId, candidateDeadlines.get(courseId) ?? null);
+        }
     }
     const before = await tx
       .select()
@@ -222,13 +251,18 @@ export async function reevaluateUser(
           courseId,
           source: "rule",
           sourceId: rule.id,
-          dueAt: computeDueDate(rule.dueRule, user, tz),
+          dueAt: deadlines.get(courseId) ?? null,
           status: "NOT_STARTED",
-          complianceStatus: "ON_TRACK",
+          complianceStatus: computeComplianceStatus({
+            status: "NOT_STARTED",
+            dueAt: deadlines.get(courseId) ?? null,
+            certificateExpiresAt: null,
+          }),
         })
         .onConflictDoNothing()
         .returning();
-      for(const enrollment of inserted) await snapshotEnrollment(tx,enrollment.id);
+      for (const enrollment of inserted)
+        await snapshotEnrollment(tx, enrollment.id);
       existing.push(...inserted);
       enrolled += inserted.length;
     }
@@ -270,60 +304,87 @@ export async function enrollUser(
   dueAt: Date | null,
   transaction?: LearningTransaction,
 ): Promise<number> {
-  const courseIds =
-    target.type === "course"
-      ? [target.id]
-      : (
-          await (transaction ?? db)
-            .select()
-            .from(t.pathCourses)
-            .where(eq(t.pathCourses.pathId, target.id))
-        )
-          .sort((a, b) => a.sort - b.sort)
-          .map((r) => r.courseId);
-  let n = 0;
-  for (const courseId of courseIds) {
-    const create = async (tx: LearningTransaction) => {
-      if (source === "recert") {
-        await lockAssessmentCurriculum(tx);
-        const [course] = await tx.select().from(t.courses).where(eq(t.courses.id, courseId)).limit(1);
-        if (!course || !isCourseAvailable(course)) return false;
-      }
+  const create = async (tx: LearningTransaction): Promise<number> => {
+    await lockAssessmentCurriculum(tx);
+    const courseIds =
+      target.type === "course"
+        ? [target.id]
+        : (
+            await tx
+              .select()
+              .from(t.pathCourses)
+              .where(eq(t.pathCourses.pathId, target.id))
+          )
+            .sort((a, b) => a.sort - b.sort)
+            .map((row) => row.courseId);
+    if (!courseIds.length) return 0;
+    const courses = await tx
+      .select()
+      .from(t.courses)
+      .where(inArray(t.courses.id, courseIds));
+    if (
+      courses.length !== new Set(courseIds).size ||
+      courses.some((course) => !isCourseAvailable(course))
+    ) {
+      if (source === "recert") return 0;
+      throw new Error(
+        "Every target course must be published and approved before assignment.",
+      );
+    }
+    for (const courseId of [...new Set(courseIds)].sort())
       await lockLearningCourse(tx, userId, courseId);
-      const existing = await tx
-        .select()
-        .from(t.enrollments)
-        .where(
-          and(
-            eq(t.enrollments.userId, userId),
-            eq(t.enrollments.courseId, courseId),
+    const existing = await tx
+      .select()
+      .from(t.enrollments)
+      .where(
+        and(
+          eq(t.enrollments.userId, userId),
+          inArray(t.enrollments.courseId, courseIds),
+        ),
+      );
+    const needed = new Set(
+      courseIds.filter(
+        (courseId) =>
+          !existing.some(
+            (row) =>
+              row.courseId === courseId &&
+              (row.status === "NOT_STARTED" ||
+                row.status === "IN_PROGRESS" ||
+                (source === "recert" &&
+                  row.source === "recert" &&
+                  row.sourceId === sourceId)),
           ),
-        );
-      if (
-        existing.some(
-          (e) => e.status === "NOT_STARTED" || e.status === "IN_PROGRESS",
-        )
-      )
-        return false;
-      // A repeated/concurrent sweep of the same certificate cannot create a
-      // second renewal even if its first assignment has already completed.
-      if (
-        source === "recert" &&
-        existing.some((e) => e.source === "recert" && e.sourceId === sourceId)
-      )
-        return false;
-      const enrollmentId = id();
+      ),
+    );
+    const deadlines = new Map<string, Date | null>();
+    try {
+      for (const course of courses.filter((course) => needed.has(course.id)))
+        deadlines.set(course.id, enrollmentDeadline(course, dueAt));
+    } catch (error) {
+      if (source === "recert") return 0;
+      throw error;
+    }
+    // Validate every new target before writing any path enrollment. Duplicates retain their existing deadlines.
+    let n = 0;
+    for (const courseId of [...new Set(courseIds)]) {
+      if (!needed.has(courseId)) continue;
+      const enrollmentId = id(),
+        deadline = deadlines.get(courseId) ?? null;
       await tx.insert(t.enrollments).values({
         id: enrollmentId,
         userId,
         courseId,
         source: target.type === "path" ? "path" : source,
         sourceId: target.type === "path" ? target.id : sourceId,
-        dueAt,
+        dueAt: deadline,
         status: "NOT_STARTED",
-        complianceStatus: "ON_TRACK",
+        complianceStatus: computeComplianceStatus({
+          status: "NOT_STARTED",
+          dueAt: deadline,
+          certificateExpiresAt: null,
+        }),
       });
-      await snapshotEnrollment(tx,enrollmentId);
+      await snapshotEnrollment(tx, enrollmentId);
       if (source === "recert") {
         const lessons = await tx
           .select({ id: t.lessons.id })
@@ -344,17 +405,14 @@ export async function enrollUser(
                 eq(t.lessonProgress.userId, userId),
                 inArray(
                   t.lessonProgress.lessonId,
-                  lessons.map((l) => l.id),
+                  lessons.map((row) => row.id),
                 ),
               ),
             );
       }
-      return true;
-    };
-    const created = transaction
-      ? await create(transaction)
-      : await db.transaction(create);
-    if (created) n++;
-  }
-  return n;
+      n++;
+    }
+    return n;
+  };
+  return transaction ? create(transaction) : db.transaction(create);
 }

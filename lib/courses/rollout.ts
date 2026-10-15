@@ -11,7 +11,7 @@ import { isCourseAvailable } from "./availability";
 export type RolloutInput = {
   target: { type: "course" | "path"; id: string };
   audience: { type: "employee" | "department" | "group"; id: string };
-  dueDays: number;
+  dueDays: number | null;
 };
 export async function availableTraining(
   target: RolloutInput["target"],
@@ -51,7 +51,7 @@ export async function availableTraining(
     .where(inArray(t.courses.id, courseIds));
   if (
     courses.length !== new Set(courseIds).size ||
-    courses.some(c => !isCourseAvailable(c))
+    courses.some((c) => !isCourseAvailable(c))
   )
     throw new Error(
       "Every target course must be published and approved before rollout.",
@@ -65,9 +65,10 @@ export async function rolloutTraining(
   if (!hasPermission(actor.role, "course.rollout"))
     throw new Error("Not authorized to roll out training.");
   if (
-    !Number.isInteger(input.dueDays) ||
-    input.dueDays < 1 ||
-    input.dueDays > 3650
+    input.dueDays !== null &&
+    (!Number.isInteger(input.dueDays) ||
+      input.dueDays < 1 ||
+      input.dueDays > 3650)
   )
     throw new Error("Due days must be a whole number from 1 to 3650.");
   const afterCommit: Array<() => Promise<void>> = [];
@@ -153,7 +154,9 @@ export async function rolloutTraining(
         input.target,
         "manual",
         actor.id,
-        endOfDayInTz(input.dueDays, store?.timezone ?? "Asia/Dubai"),
+        input.dueDays === null
+          ? null
+          : endOfDayInTz(input.dueDays, store?.timezone ?? "Asia/Dubai"),
         tx,
       );
       if (n) {
