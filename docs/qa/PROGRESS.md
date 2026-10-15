@@ -1,5 +1,13 @@
 # xprtn rework progress
 
+## UI refinement Phase 1 — 15 October 2026
+
+Branch `ui-refinement-phase-1` (from main `f3ee763`) implements [the Phase 1 plan](../superpowers/plans/2026-10-15-ui-refinement-phase-1.md) from the [UI refinement design](../superpowers/specs/2026-10-15-ui-refinement-design.md): one display-formatting module (Dubai-time dates, plurals, language/tag names), one status vocabulary with `StatusChip`, plain demo/offline labels (still visible), jargon removed, contiguous sidebars with distinct icons, one primary action per view, cover sizing fixes and removal of dead animation classes. Not merged or deployed.
+
+Evidence: 359 unit tests, type check and production build pass. A fresh whole-branch review found no Critical issue after its fix pass; all five Review Focus cases pass on a UTC clock. E2e suites were updated to the new copy but not executed (they need the dedicated QA stack). A live screenshot pass is pending the user's decision; the branch build runs locally on port 3219 against a private copy of the fictional seed database.
+
+Open: fresh `npm run seed` fails on main under the approval rules (flagged separately); deferred minors are listed in the branch ledger.
+
 ## Client demo release — 14 October 2026
 
 User authorized a bounded client demo deployment. PR #18 is merged; Railway serves xprtn commit `3d8ffcc` (documentation update; app code unchanged from `24da41e`) with initialization ready and 30 demo users. The source checkout is updated to main. This does not close the historical Tutor acceptance item or change the 70% accepted full-plan figure below.
