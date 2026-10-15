@@ -93,7 +93,7 @@ export default async function LessonPage({
               Lesson {index + 1} of {total} · {lessonTypeLabel(self.type)}
               {self.minutes ? ` · ${self.minutes} min` : ""}
             </p>
-            <h1 className="text-2xl font-semibold sm:text-[32px]">
+            <h1 className="type-title">
               {lesson.title}
             </h1>
           </div>

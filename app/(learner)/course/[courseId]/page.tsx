@@ -183,7 +183,7 @@ export default async function CoursePage({
       <div className="mb-8 grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(240px,1fr)]">
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold sm:text-[32px]">
+            <h1 className="type-title">
               {course.title}
             </h1>
             {chip ? <Chip variant={chip.variant}>{chip.label}</Chip> : null}

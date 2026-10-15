@@ -52,6 +52,27 @@ describe("xprtn design contract", () => {
     expect(uses("course-cover-fill")).toEqual(["(learner)/path/[pathId]/page.tsx"]);
     expect(uses("course-cover-compact")).toEqual(["course-catalog.tsx"]);
   });
+  it("sets headings in the bundled display face through type roles", () => {
+    expect(css).toMatch(/--font-display:\s*var\(--font-instrument\)/);
+    for (const role of ["type-display", "type-title", "type-section", "type-number"]) expect(css).toMatch(new RegExp(`\\.${role}\\s*\\{[^}]*font-family:\\s*var\\(--font-display\\)`));
+    const layout = readFileSync(join(ROOT, "app/layout.tsx"), "utf8");
+    expect(layout).toContain("next/font/local");
+    expect(layout).toContain("instrument-sans-latin-wght-normal.woff2");
+  });
+  it("gives the brand ink, the action blue its own job and navigation a neutral active state", () => {
+    expect(css).toMatch(/\.brand\s*\{[^}]*color:\s*var\(--foreground\)/);
+    for (const nav of [".workspace-nav-link[aria-current]", ".header-nav-link[aria-current]"]) {
+      const rule = css.slice(css.indexOf(`${nav} {`)).split("}")[0];
+      expect(rule).toContain("var(--surface-2)");
+      expect(rule).not.toContain("accent-tint");
+    }
+    expect(tokens(":root").ai).not.toBe(tokens(":root").primary);
+  });
+  it("defines resting elevation, press feedback and an opening transition for dialogs", () => {
+    expect(css).toContain("--shadow-resting:");
+    expect(css).toMatch(/\.pressable:active\s*\{[^}]*transform/);
+    expect(css).toMatch(/@starting-style/);
+  });
   it("has no stale product brand in shipped source", () => {
     expect(files.filter(file => /LuLu Learn|welearn/i.test(readFileSync(file, "utf8")))).toEqual([]);
   });
@@ -73,7 +94,7 @@ const textPairs = [
   ["foreground", "accent-tint"], ["foreground", "success-tint"], ["foreground", "warning-tint"], ["foreground", "destructive-tint"],
   ["muted-foreground", "warning-tint"], ["success-fg", "surface"], ["warning-fg", "surface"], ["destructive-text", "surface"], ["ai-fg", "surface"], ["success-fg", "success-tint"], ["warning-fg", "warning-tint"],
   ["destructive-text", "destructive-tint"], ["destructive-fg", "destructive"],
-  ["ai-fg", "ai-tint"], ["foreground", "ai-tint"], ["muted-foreground", "ai-tint"],
+  ["ai-fg", "ai-tint"], ["foreground", "ai-tint"], ["muted-foreground", "ai-tint"], ["ai-fg", "background"],
 ] as const;
 describe("semantic text contrast is WCAG AA in both themes", () => {
   for (const theme of [":root", ".dark"]) it(`${theme}: every supported text pair is at least 4.5:1`, () => {
