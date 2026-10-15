@@ -99,3 +99,67 @@ The approved scheduling phase is implemented, independently reviewed, corrected 
 Deferred minor:
 
 - Final: minor (deferred): Course cards show a Dubai opening date without a nearby timezone label; course detail has the explicit timezone. No minor polish entered the correction pass.
+
+## UI refinement Phase 1 — 15 October 2026
+
+Branch `ui-refinement-phase-1`, plan `docs/superpowers/plans/2026-10-15-ui-refinement-phase-1.md`. Rulings are in the order they were made, each with its cost if wrong.
+
+- Setup: Ruling: worktree under .claude/worktrees (untracked) instead of .worktrees — avoids committing a .gitignore change to main and keeps another session's dev server in the main checkout untouched — cost if wrong: worktree dir appears inside the untracked .claude/ folder.
+
+- Pre-flight: Ruling: T3 display guard's enum-case assertion moves to T4 — the enum sites (lesson type, language, feedbackMode) are fixed in T4, so T3's "all tests PASS" could not hold — cost if wrong: none, same guard lands one task later.
+
+- Pre-flight: Ruling: T7 nudge guard targets className usage only — the plan's regex also matches the user copy "the nudge lands in-app" (team/[userId]) — cost if wrong: a non-className use of an undefined class would slip by.
+
+- Task 2: Ruling: course list meta shows the approval state only when it is SUBMITTED or REJECTED — the plan's version repeated the status chip ("Draft"/"Draft", "Approved" beside "Published") — cost if wrong: authors miss an approved-but-unpublished hint in the list (still shown on the course page).
+
+- Task 3: Ruling: display guard scans whole files (multi-line aware) and covers 2 extra sites the plan table missed (interview.tsx:194 toLocaleString, profile:26 certificate dates) — single-line matching missed the course-feedback-form chained call — cost if wrong: none.
+
+- Task 3: Ruling: feedback period labels word their UTC-midnight calendar markers with tz "UTC" — formatting them in a zone west of UTC would show the previous day — cost if wrong: none for Asia/Dubai.
+
+- Task 4: Ruling: added assignmentSourceLabel (lib/status) for team member rows ("rule"/"manual" → "Assigned automatically"/"Assigned by a manager"), plus statusLabel for admin integrity attempt states and policy/video statuses the guard found — the audit flagged them and the enum guard required it — cost if wrong: label wording only.
+
+- Task 4: Ruling: course-workflow meta line rewritten here ("Version N. Instructor submits, Department Head decides, HR publishes.") instead of in Task 5 — it carried a status.toLowerCase() that the enum guard rejects — cost if wrong: none; Task 5 skips that row.
+
+- Task 4: Ruling: report day fields labelled "Days until expiry" / "Days of activity" instead of a separate suffix — same clarity without new layout markup — cost if wrong: wording only.
+
+- Task 4: Ruling: updated tests/live.test.ts expectation to "2 courses assigned" — it pinned the old plural wording of the voice tool summary — cost if wrong: none.
+
+- Task 5: Ruling: renamed the transcript form button "Retry ingestion" → "Retry processing" and its 3 e2e selectors (workspaces.e2e.ts) — it sat under the new "Retry video processing" summary; the global constraint lists the e2e names that must stay, and this one was not on it — cost if wrong: one e2e rename to revert.
+
+- Task 5: Ruling: admin overview tile "Failed video ingestions" → "Videos that failed to process", and moderation "revision" → "version", beyond the plan table — the same jargon, found by the guard and grep — cost if wrong: wording only.
+
+- Task 6: Ruling: feedback Save buttons are primary only while that form has unsaved changes (instead of "instructor secondary until course saved") — no state shows two primaries, and it needs no page-level state — cost if wrong: an untouched form's Save looks secondary until the person rates.
+
+- Task 6: Ruling: overview shortcut row, catalog Apply/Create link and the workflow Withdraw button changed without unit tests — they live in database-bound server components; covered by typecheck and the Task 8 screenshot pass — cost if wrong: a style regression found only visually.
+
+- Task 6: Ruling: vitest now compiles JSX with the automatic runtime (vitest.config.ts esbuild.jsx) and three render tests were added (report-summary, lesson-footer, feedback-form) — the plan had no failing test for these UI changes; rendering the real components gives one — cost if wrong: none, matches Next's JSX runtime.
+
+- Task 7: Ruling: Upcoming empty state, oral-check footer width and the profile disclosure arrow changed without unit tests — database-bound server pages; covered by typecheck, build and the Task 8 screenshot pass — cost if wrong: a layout regression found only visually.
+
+- Task 7: Ruling: the path cover uses align-self: stretch with aspect-ratio auto only from 640px — CSS grid items with an aspect-ratio don't stretch, which caused the band; phones keep 16:9 — cost if wrong: none.
+
+- Task 8: Ruling: e2e suites not run — they need the dedicated QA stack/database and would mutate shared demo data — cost if wrong: an e2e text assertion regression surfaces later.
+
+- Task 8: Ruling: npm run seed is broken on main for fresh DBs (approval ordering) — out of scope, flagged as a separate task — cost if wrong: none to this branch.
+
+- Final: Ruling: CSV exports keep raw status codes while screens show words; e2e compares through statusLabel — CSV is machine-readable and may feed other systems — cost if wrong: a reader comparing CSV and screen sees two vocabularies.
+
+- Final: Ruling: report date cells stay ISO (declined item) — screen/CSV parity is asserted by e2e; formatting them needs a screen/CSV split better done in Phase 2 — cost if wrong: managers still see ISO dates in report tables.
+
+- Final: Ruling: HR ticket states stay as-is (declined item) — not one of the spec's status domains — cost if wrong: lowercase "open"/"resolved" remain on ticket pages.
+
+- Final: Ruling: DemoBanner restyled in place on its existing pages, not moved into the shell (declined item) — the plan narrowed the spec; moving it is Phase 2 shell work — cost if wrong: demo pages without the banner rely on other demo labels.
+
+- Final: Ruling: demo pill contrast (declined item) — muted-foreground on surface-2 is an AA pair already enforced in tests/design-guardrails.test.ts — cost if wrong: none.
+
+Deferred minors:
+
+- Final: minor (deferred): voice-consent demo line mentions grading on the HR assistant page too.
+
+- Final: minor (deferred): course_workflow_updated notification can read "is now changes requested".
+
+- Final: minor (deferred): jargon in lib/*.ts strings ("historical instructor", "Ingestion failed", "Video ingestion queued").
+
+- Final: minor (deferred): DataTable treats any exact status string cell as a status (could limit to status columns).
+
+- Final: minor (deferred): small hydration risk in two client date sites (new-year boundary, engine month names).
