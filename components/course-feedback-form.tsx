@@ -123,7 +123,7 @@ export function CourseFeedbackForm({
               rows={5}
             />
           </Field>
-          <Button type="submit">
+          <Button type="submit" variant={dirty ? "primary" : "secondary"}>
             {pending ? "Saving…" : `Save ${kind} feedback`}
           </Button>
         </fieldset>

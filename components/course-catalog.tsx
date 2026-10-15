@@ -62,7 +62,7 @@ export async function CourseCatalog({
         sub="Find your courses, review their approval state, and continue the next step."
         actions={
           author ? (
-            <WorkspaceLink href="#new-course">Create a course</WorkspaceLink>
+            <WorkspaceLink href="#new-course" className="xl:hidden">Create a course</WorkspaceLink>
           ) : null
         }
       />
@@ -83,7 +83,7 @@ export async function CourseCatalog({
           </Select>
         </Field>
         <div className="mb-4 flex gap-2">
-          <Button type="submit">Apply</Button>
+          <Button type="submit" variant="secondary">Apply</Button>
           {q || status ? (
             <WorkspaceLink href={base}>Reset</WorkspaceLink>
           ) : null}

@@ -130,7 +130,7 @@ test("@core Empty-manager reports, CSV and Ask Reports never include outside use
   await signIn(page, manager);
   for (const report of reports) {
     await page.goto(`/team/reports?report=${report}`);
-    await expect(page.getByText("0 results · CSV uses these same filters")).toBeVisible();
+    await expect(page.getByText("0 results", { exact: true })).toBeVisible();
     await expect(page.getByText("No rows match these filters.")).toBeVisible();
     const csv = await page.request.get(`/api/reports/${report}/csv`); expect(csv.ok()).toBe(true);
     expect((await csv.text()).trim().split("\n")).toHaveLength(1);

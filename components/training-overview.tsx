@@ -47,16 +47,16 @@ export async function TrainingOverview({
     <div>
       <PageHeader title={title} sub={sub} />
       <div className="mb-6 flex flex-wrap gap-3">
-        <ButtonAnchor href={`${base}/courses`}>
-          {actor.role === "INSTRUCTOR" ? "My courses" : "Course catalog"}
+        <ButtonAnchor variant="secondary" href={`${base}/courses`}>
+          {actor.role === "INSTRUCTOR" ? "My courses" : actor.role === "DEPARTMENT_HEAD" ? "Department courses" : "Courses"}
         </ButtonAnchor>
         {actor.role !== "INSTRUCTOR" ? (
           <ButtonAnchor variant="secondary" href={`${base}/rollout`}>
-            Roll out training
+            Training rollout
           </ButtonAnchor>
         ) : null}
         <ButtonAnchor variant="secondary" href={`${base}/reports`}>
-          Training reports
+          {actor.role === "INSTRUCTOR" ? "Training reports" : "Reports"}
         </ButtonAnchor>
       </div>
       {!actor.departmentId && actor.role !== "HR_HEAD" ? (

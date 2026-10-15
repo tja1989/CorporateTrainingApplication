@@ -115,7 +115,7 @@ for (const role of ["MANAGER", "ADMIN"] as const) {
       if (["cert_expiry", "engagement"].includes(report.id)) await page.getByRole("spinbutton").fill("45");
       await page.getByRole("button", { name: "Apply filters", exact: true }).click();
       await page.waitForURL(url => url.searchParams.get("report") === report.id && url.searchParams.get("employee") === learner.employeeId);
-      await expect(page.getByText("1 result · CSV uses these same filters", { exact: true })).toBeVisible();
+      await expect(page.getByText("1 result", { exact: true })).toBeVisible();
       const table = page.getByRole("region", { name: "Report results", exact: true }).locator("table");
       const visible = await table.locator("tr").evaluateAll(rows => rows.map(row => Array.from(row.querySelectorAll("th,td"), cell => cell.textContent!.trim())));
       const download = page.waitForEvent("download"); await page.getByRole("link", { name: "Export CSV", exact: true }).click();

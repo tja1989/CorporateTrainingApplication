@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ADMIN_NAV, LEARNER_NAV, MANAGER_NAV, activeNavHref, isLessonWorkspace } from "../lib/navigation";
+import { ADMIN_NAV, DEPARTMENT_NAV, HR_NAV, INSTRUCTOR_NAV, LEARNER_NAV, MANAGER_NAV, activeNavHref, isLessonWorkspace } from "../lib/navigation";
 
 describe("workspace navigation", () => {
   it("offers the five learner destinations in the mobile order", () => {
@@ -43,5 +43,23 @@ describe("keyboard tabs", () => {
   it("follows the visible direction in RTL", () => {
     expect(nextTabIndex("ArrowRight", 1, 3, true)).toBe(0);
     expect(nextTabIndex("ArrowLeft", 1, 3, true)).toBe(2);
+  });
+});
+
+describe("sidebar consistency", () => {
+  it("keeps each sidebar group contiguous", () => {
+    for (const nav of [ADMIN_NAV, HR_NAV]) {
+      const groups = nav.map(i => i.group ?? "").filter((g, i, a) => g && g !== a[i - 1]);
+      expect(new Set(groups).size).toBe(groups.length);
+      const lastUngrouped = nav.map(i => i.group).lastIndexOf(undefined);
+      expect(nav.slice(0, lastUngrouped + 1).every(i => !i.group)).toBe(true);
+    }
+  });
+  it("gives every item in a role's sidebar its own icon", () => {
+    for (const nav of [ADMIN_NAV, HR_NAV, DEPARTMENT_NAV, INSTRUCTOR_NAV]) expect(new Set(nav.map(i => i.icon)).size).toBe(nav.length);
+  });
+  it("labels sidebar items with their page titles", () => {
+    expect(DEPARTMENT_NAV.find(i => i.href === "/team")?.label).toBe("My team");
+    expect(ADMIN_NAV.find(i => i.href === "/admin/people")?.label).toBe("People");
   });
 });

@@ -67,7 +67,7 @@ export async function CourseWorkflow({
         ) : null}
         <Button
           type="submit"
-          variant={["reject","archive"].includes(action) ? "secondary" : "primary"}
+          variant={["reject", "archive", "withdraw"].includes(action) ? "secondary" : "primary"}
         >
           {label}
         </Button>

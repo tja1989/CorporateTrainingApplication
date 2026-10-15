@@ -20,12 +20,12 @@ export const ADMIN_NAV: NavItem[] = [
   {
     href: "/admin/rollout",
     label: "Training rollout",
-    icon: "users",
+    icon: "arrow-right",
     group: "Learning",
   },
   {
     href: "/admin/people",
-    label: "People & assignments",
+    label: "People",
     icon: "users",
     group: "People",
   },
@@ -48,7 +48,7 @@ export const ADMIN_NAV: NavItem[] = [
     icon: "chart",
     group: "Oversight",
   },
-  {href:"/feedback",label:"Feedback reports",icon:"chart"},
+  { href: "/feedback", label: "Feedback reports", icon: "star", group: "Oversight" },
   {
     href: "/admin/integrity",
     label: "Assessment integrity",
@@ -63,10 +63,10 @@ export const MANAGER_NAV: NavItem[] = [
 export const HR_NAV: NavItem[] = [
   { href: "/hr", label: "Overview", icon: "grid" },
   { href: "/hr/courses", label: "Courses", icon: "book" },
-  { href: "/hr/rollout", label: "Training rollout", icon: "users" },
+  { href: "/hr/rollout", label: "Training rollout", icon: "arrow-right" },
   { href: "/hr/people", label: "Employees", icon: "users" },
   { href: "/hr/reports", label: "Reports", icon: "chart" },
-  {href:"/feedback",label:"Feedback reports",icon:"chart"},
+  { href: "/feedback", label: "Feedback reports", icon: "star" },
   {
     href: "/admin/corpus",
     label: "Policy library",
@@ -89,16 +89,16 @@ export const DEPARTMENT_NAV: NavItem[] = [
     icon: "check-square",
   },
   { href: "/department/courses", label: "Department courses", icon: "book" },
-  { href: "/team", label: "Department employees", icon: "users" },
-  { href: "/department/rollout", label: "Training rollout", icon: "users" },
+  { href: "/team", label: "My team", icon: "users" },
+  { href: "/department/rollout", label: "Training rollout", icon: "arrow-right" },
   { href: "/department/reports", label: "Reports", icon: "chart" },
-  {href:"/feedback",label:"Feedback reports",icon:"chart"},
+  { href: "/feedback", label: "Feedback reports", icon: "star" },
 ];
 export const INSTRUCTOR_NAV: NavItem[] = [
   { href: "/instructor", label: "Overview", icon: "grid" },
   { href: "/instructor/courses", label: "My courses", icon: "book" },
   { href: "/instructor/reports", label: "Training reports", icon: "chart" },
-  {href:"/feedback",label:"Feedback reports",icon:"chart"},
+  { href: "/feedback", label: "Feedback reports", icon: "star" },
 ];
 export function workspaceNavigation(role: string): NavItem[] {
   switch (canonicalRole(role)) {

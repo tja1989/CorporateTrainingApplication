@@ -36,13 +36,13 @@ export function LessonCompletion({ lessonId }: { lessonId: string }) {
   return (
     <section className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-card border border-border bg-surface p-4" aria-label="Lesson completion">
       <div>
-        {self.done ? <Chip variant="success">Lesson complete</Chip> : <p className="text-sm text-muted">{self.type === "TEXT" || self.type === "PDF" ? "When you have finished, mark this lesson complete." : "Your progress is recorded as you complete this lesson."}</p>}
+        {self.done ? <Chip variant="success">Lesson complete</Chip> : self.type === "TEXT" || self.type === "PDF" ? null : <p className="text-sm text-muted">Completes automatically when you finish.</p>}
         {next?.locked ? <p className="mt-2 text-sm text-muted">Complete this lesson to unlock “{next.title}”.</p> : null}
       </div>
       <div className="flex flex-wrap gap-2">
         {(self.type === "TEXT" || self.type === "PDF") && !self.done ? <CompleteLessonForm lessonId={lessonId} /> : null}
         {self.done && (self.type === "TEXT" || self.type === "VIDEO") ? <ButtonLink variant="secondary" href={`/lesson/${lessonId}/interview`}>Optional oral check</ButtonLink> : null}
-        {next && !next.locked ? <ButtonLink href={next.href}>Next lesson</ButtonLink> : !next && self.done ? <ButtonLink href={`/course/${view.courseId}`}>View course completion</ButtonLink> : null}
+        {next && !next.locked ? <ButtonLink variant={self.done ? "primary" : "secondary"} href={next.href}>Next lesson</ButtonLink> : !next && self.done ? <ButtonLink href={`/course/${view.courseId}`}>View course completion</ButtonLink> : null}
       </div>
     </section>
   );

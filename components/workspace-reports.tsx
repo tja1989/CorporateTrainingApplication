@@ -1,5 +1,7 @@
 import { Button, Field, Input, Select } from "./ui";
 import { DataTable, WorkspaceLink, WorkspaceTabs } from "./workspace-ui";
+import { plural } from "@/lib/format";
+import { statusLabel } from "@/lib/status";
 import {
   REPORTS,
   COMPLIANCE_STATUSES,
@@ -88,7 +90,7 @@ export function WorkspaceReports({
                 <option value="">All statuses</option>
                 {COMPLIANCE_STATUSES.map((s) => (
                   <option key={s} value={s}>
-                    {s.toLowerCase().replaceAll("_", " ")}
+                    {statusLabel(s).label}
                   </option>
                 ))}
               </Select>
@@ -125,23 +127,16 @@ export function WorkspaceReports({
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">{result.title}</h2>
-          <p className="text-sm text-muted">
-            {result.rows.length} result{result.rows.length === 1 ? "" : "s"} ·
-            CSV uses these same filters
-          </p>
+          <p className="text-sm text-muted">{plural(result.rows.length, "result")}</p>
         </div>
         <WorkspaceLink
+          title="Exports every filtered result"
           href={`/api/reports/${report}/csv?${tail}${base === "/team/reports" ? "&scope=team" : ""}`}
         >
           Export CSV
         </WorkspaceLink>
       </div>
-      <p className="mb-3 text-sm text-muted">
-        Showing{" "}
-        {result.rows.length ? `${offset + 1}–${offset + visible.length}` : "0"}{" "}
-        of {result.rows.length}. CSV includes all filtered results.
-      </p>
-      <nav
+      {pages > 1 ? <nav
         aria-label="Report pages"
         className="mb-3 flex flex-wrap items-center gap-3"
       >
@@ -156,7 +151,7 @@ export function WorkspaceReports({
         {current < pages ? (
           <WorkspaceLink href={pageHref(current + 1)}>Next page</WorkspaceLink>
         ) : null}
-      </nav>
+      </nav> : null}
       <DataTable title={result.title} columns={result.columns} rows={visible} />
     </section>
   );
