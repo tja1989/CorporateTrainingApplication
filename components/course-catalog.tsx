@@ -5,7 +5,7 @@ import { canReadCourse, courseWorkspacePath } from "@/lib/courses/ownership";
 import { hasPermission } from "@/lib/auth/permissions";
 import {
   Button,
-  Chip,
+  StatusChip,
   Field,
   Input,
   PageHeader,
@@ -15,6 +15,8 @@ import {
 import { WorkspaceForm } from "@/components/workspace-form";
 import { WorkspaceSection, WorkspaceLink } from "@/components/workspace-ui";
 import { CourseCover } from "@/components/course-cover";
+import { languageName } from "@/lib/format";
+import { statusLabel } from "@/lib/status";
 import { createCourseAction } from "@/app/(workspace)/admin/courses/actions";
 export const dynamic = "force-dynamic";
 export async function CourseCatalog({
@@ -109,23 +111,15 @@ export async function CourseCatalog({
                     {c.title}
                   </h2>
                   <p className="mt-1 text-sm text-muted">
-                    {c.estMinutes} min · {c.language} ·{" "}
-                    {c.approvalState.toLowerCase().replaceAll("_", " ")}
-                    {c.certificateEnabled ? " · certificate" : ""}
+                    {c.estMinutes} min, {languageName(c.language)}
+                    {c.approvalState === "SUBMITTED" || c.approvalState === "REJECTED" ? `, ${statusLabel(c.approvalState).label.toLowerCase()}` : ""}
+                    {c.certificateEnabled ? ", certificate" : ""}
                   </p>
                   <div className="mt-2">
-                    <Chip
+                    <StatusChip
+                      status={c.status}
                       className="max-w-full [overflow-wrap:anywhere]"
-                      variant={
-                        c.status === "PUBLISHED"
-                          ? "success"
-                          : c.status === "DRAFT"
-                            ? "warning"
-                            : "neutral"
-                      }
-                    >
-                      {c.status.toLowerCase()}
-                    </Chip>
+                    />
                   </div>
                 </div>
               </a>

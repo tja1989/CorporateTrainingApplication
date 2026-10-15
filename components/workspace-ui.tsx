@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from "react";
-import { cx, Chip } from "./ui";
+import { cx, StatusChip } from "./ui";
+import { isKnownStatus } from "@/lib/status";
 
 /** Full document navigation keeps workspace lists, filters and history reliable. */
 export function WorkspaceLink({ className, ...props }: ComponentProps<"a">) {
@@ -104,19 +105,7 @@ export function DataTable({
               <tr key={i} className="border-t border-border hover:bg-surface-2">
                 {row.map((cell, j) => (
                   <td key={j} className="px-4 py-3">
-                    {["OVERDUE", "EXPIRED"].includes(String(cell)) ? (
-                      <Chip variant="destructive">{cell}</Chip>
-                    ) : ["DUE_SOON", "COMPLETED_EXPIRING", "INACTIVE"].includes(
-                        String(cell),
-                      ) ? (
-                      <Chip variant="warning">
-                        {String(cell).replaceAll("_", " ")}
-                      </Chip>
-                    ) : ["COMPLETED", "ACTIVE"].includes(String(cell)) ? (
-                      <Chip variant="success">{cell}</Chip>
-                    ) : (
-                      cell
-                    )}
+                    {isKnownStatus(cell) ? <StatusChip status={cell} /> : cell}
                   </td>
                 ))}
               </tr>

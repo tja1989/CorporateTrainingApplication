@@ -4,7 +4,7 @@ import { WorkspaceForm } from "@/components/workspace-form";
 import { desc, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { requirePermission } from "@/lib/auth/guard";
-import { Card, Chip, PageTitle, DemoBanner, Button, Field, Input, Select, Textarea, Tile } from "@/components/ui";
+import { Card, StatusChip, PageTitle, DemoBanner, Button, Field, Input, Select, Textarea, Tile } from "@/components/ui";
 import { publishPolicyAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -56,7 +56,7 @@ export default async function CorpusPage({ searchParams }: { searchParams: Promi
                     {doc.owner ? ` · owner: ${doc.owner}` : ""}
                   </p>
                 </div>
-                <Chip variant={doc.status === "ACTIVE" ? "success" : "neutral"}>{doc.status.toLowerCase()}</Chip>
+                <StatusChip status={doc.status} />
               </a>
             ))}
           </nav><article className="min-w-0 rounded-card border border-border bg-surface p-4 sm:p-6">{(() => { const doc = docs.find(d => d.id === (docId ?? docs[0]?.id)); return doc ? <><h2 className="mb-2 text-lg font-semibold">{doc.title}</h2><p className="mb-4 text-sm text-muted">Version {doc.version} · {doc.status.toLowerCase()} · {doc.country} · {doc.audience}</p><Markdown text={doc.body} headingOffset={1} /></> : <p className="text-muted">Select a policy version to read its content, or publish your first policy.</p>; })()}</article></div>

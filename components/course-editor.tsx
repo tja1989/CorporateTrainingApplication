@@ -15,6 +15,7 @@ import { CourseLessonPreview } from "@/components/course-lesson-preview";
 import {
   Button,
   Chip,
+  StatusChip,
   Field,
   Input,
   Select,
@@ -22,6 +23,7 @@ import {
   Textarea,
   Icon,
 } from "@/components/ui";
+import { statusLabel } from "@/lib/status";
 import {
   WorkspaceLink,
   WorkspaceTabs,
@@ -142,11 +144,7 @@ export async function CourseEditor({
         sub={`${mods.length} module${mods.length === 1 ? "" : "s"} · ${lessons.length} lesson${lessons.length === 1 ? "" : "s"} · ${course.estMinutes} min`}
         actions={
           <>
-            <Chip
-              variant={course.status === "PUBLISHED" ? "success" : "warning"}
-            >
-              {course.status.toLowerCase()}
-            </Chip>
+            <StatusChip status={course.status} />
             {course.status === "PUBLISHED" ? (
               <WorkspaceLink href={`/course/${course.id}`}>
                 View learner course
@@ -339,7 +337,7 @@ export async function CourseEditor({
                                       : "warning"
                                 }
                               >
-                                Video {video.ingestionStatus.toLowerCase()}
+                                Video {statusLabel(video.ingestionStatus).label.toLowerCase()}
                               </Chip>
                               {video.ingestionStatus !== "READY" && editable ? (
                                 <details className="mt-2">

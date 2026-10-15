@@ -8,7 +8,7 @@ import { db, t } from "@/lib/db/client";
 import type { CurrentUser } from "@/lib/auth/guard";
 import { canReadCourse, courseWorkspacePath } from "@/lib/courses/ownership";
 import { defaultWorkspace, workspaceHome } from "@/lib/auth/roles";
-import { ButtonAnchor, Chip, PageHeader, EmptyState } from "./ui";
+import { ButtonAnchor, Chip, StatusChip, PageHeader, EmptyState } from "./ui";
 import { WorkspaceLink } from "./workspace-ui";
 export async function TrainingOverview({
   actor,
@@ -93,15 +93,7 @@ export async function TrainingOverview({
                     minutes
                   </p>
                 </div>
-                <Chip
-                  variant={
-                    course.approvalState === "REJECTED"
-                      ? "destructive"
-                      : "neutral"
-                  }
-                >
-                  {course.approvalState.toLowerCase().replaceAll("_", " ")}
-                </Chip>
+                <StatusChip status={course.approvalState} />
               </li>
             ))}
           </ul>

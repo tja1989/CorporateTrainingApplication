@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cloneElement, isValidElement, useId, type ComponentProps, type ReactNode } from "react";
 import { Icon, IconDisc, type IconName } from "./icons";
+import { statusLabel } from "@/lib/status";
 
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
@@ -105,16 +106,15 @@ export function Chip({
   );
 }
 
+/** Any status a person can see, worded and coloured from the shared vocabulary in lib/status. */
+export function StatusChip({ status, className }: { status: string; className?: string }) {
+  const { label, tone } = statusLabel(status);
+  return <Chip variant={tone} className={className}>{label}</Chip>;
+}
+
 export function complianceChip(status: string): { label: string; variant: keyof typeof chipVariants } {
-  switch (status) {
-    case "OVERDUE": return { label: "Overdue", variant: "destructive" };
-    case "DUE_SOON": return { label: "Due soon", variant: "warning" };
-    case "COMPLETED": return { label: "Completed", variant: "success" };
-    case "COMPLETED_EXPIRING": return { label: "Expiring", variant: "warning" };
-    case "EXPIRED": return { label: "Expired", variant: "destructive" };
-    case "WITHDRAWN": return { label: "Withdrawn", variant: "neutral" };
-    default: return { label: "On track", variant: "neutral" };
-  }
+  const { label, tone } = statusLabel(status || "ON_TRACK");
+  return { label, variant: tone };
 }
 
 /* ------------------------------ Forms ------------------------------ */

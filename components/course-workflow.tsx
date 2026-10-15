@@ -6,12 +6,13 @@ import { canAuthorCourse } from "@/lib/courses/ownership";
 import { workflowAction } from "@/app/(workspace)/admin/courses/actions";
 import { WorkspaceForm } from "./workspace-form";
 import { Button, Chip, Field, Select, Textarea } from "./ui";
+import { statusLabel } from "@/lib/status";
 const labels = {
   DRAFT: "Draft",
   SUBMITTED: "Awaiting Department Head approval",
   APPROVED: "Approved for publication",
   REJECTED: "Changes requested",
-  LEGACY_PUBLISHED: "Existing published course",
+  LEGACY_PUBLISHED: "Published before approvals",
 };
 export async function CourseWorkflow({
   actor,
@@ -200,8 +201,8 @@ export async function CourseWorkflow({
                 </p>
                 <p className="mt-1 text-muted">
                   {event.at.toLocaleString("en-GB", { timeZone: "Asia/Dubai" })}{" "}
-                  · {event.toState.toLowerCase().replaceAll("_", " ")} ·{" "}
-                  {event.toPublication.toLowerCase()}
+                  · {statusLabel(event.toState).label},{" "}
+                  {statusLabel(event.toPublication).label.toLowerCase()}
                 </p>
                 {event.comment ? (
                   <p className="mt-2 whitespace-pre-wrap break-words">
