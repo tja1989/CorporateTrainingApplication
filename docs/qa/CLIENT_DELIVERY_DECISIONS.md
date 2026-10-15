@@ -163,3 +163,22 @@ Deferred minors:
 - Final: minor (deferred): DataTable treats any exact status string cell as a status (could limit to status columns).
 
 - Final: minor (deferred): small hydration risk in two client date sites (new-year boundary, engine month names).
+
+## UI refinement Phase 2–3 — 15 October 2026
+
+Branch `ui-refinement-phase-2`, plan `docs/superpowers/plans/2026-10-15-ui-refinement-phase-2-3.md`. Rulings are in the order they were made, each with its cost if wrong. The final review rulings and deferred minors are added after the branch review.
+
+- Task 5: Ruling: Phase 1 cover-size guardrail relaxed from exact file lists to "includes" — home now uses both sizes for its hero and required-training thumbnails — cost if wrong: none.
+
+- Task 5: Ruling: home, course, path, catalog and lesson layout changes verified by typecheck, build and the Task 12 screenshot pass rather than unit tests (database-bound server pages); the video poster has render tests — cost if wrong: layout regressions found only visually.
+
+- Task 5: Ruling: kept the folder chips' accessible names ("Safety · 1 course") and every path chip text because e2e pins them; removed the duplicate Folder select and carry the current folder through a hidden field — cost if wrong: none.
+
+- Task 6: Ruling: per-row "Send reminder" appears only for team members with overdue or due-soon training (not every row) and nudgeAction now also revalidates /team so the flash shows — reminders are for people who need one; the audit flagged the repeated per-row text — cost if wrong: a manager wanting to nudge an on-track person uses their record page.
+
+- Task 6: Ruling: role overview figures are computed by a pure lib/overview.ts (tested); the overview itself is verified by typecheck and screenshots (database-bound) — cost if wrong: layout issues found only visually.
+
+- Task 7: Ruling: the stepper shows "changes requested" as a warning-coloured step without repeating the text — e2e matches the workflow chip labels by exact text, so a second "Changes requested" would break strict matching — cost if wrong: the reason is still in the chip and decision history.
+
+- Task 7: Ruling: Cover image URL and Course folder stay text inputs (e2e fills them by label); the cover gets a live preview and the folder a datalist of existing paths; language becomes a select labelled "Language" (no e2e use) — cost if wrong: none.
+

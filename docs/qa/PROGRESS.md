@@ -1,5 +1,11 @@
 # xprtn rework progress
 
+## UI refinement Phase 2–3 — 15 October 2026
+
+Branch `ui-refinement-phase-2` (from main `8f2882f`) implements [the Phase 2–3 plan](../superpowers/plans/2026-10-15-ui-refinement-phase-2-3.md) from the [UI refinement design](../superpowers/specs/2026-10-15-ui-refinement-design.md): a self-hosted display face and type roles, ink brand with a logomark and app icons, violet for AI help, two elevation levels and press feedback, generated subject covers, one progress bar and tab strip, a single "continue" hero on Home, a path timeline, a video poster, role overviews with attention figures, an approval stepper, a star rating, a refined sign-in page and the Phase 1 deferred minors. The shorter feedback privacy wording is a [proposal for sign-off](PRIVACY_WORDING_PROPOSAL.md); the shipped text is unchanged. Not merged or deployed.
+
+Evidence so far: 407 unit tests and the type check pass. Production build, screenshot pass and branch review are recorded below when done.
+
 ## UI refinement Phase 1 — 15 October 2026
 
 Branch `ui-refinement-phase-1` (from main `f3ee763`) implements [the Phase 1 plan](../superpowers/plans/2026-10-15-ui-refinement-phase-1.md) from the [UI refinement design](../superpowers/specs/2026-10-15-ui-refinement-design.md): one display-formatting module (Dubai-time dates, plurals, language/tag names), one status vocabulary with `StatusChip`, plain demo/offline labels (still visible), jargon removed, contiguous sidebars with distinct icons, one primary action per view, cover sizing fixes and removal of dead animation classes. Not merged or deployed.
