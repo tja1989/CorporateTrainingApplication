@@ -31,6 +31,13 @@
   --ai-fg: #5534C2;
   --ai-tint: #F3EFFE;
   --link: #1559C9;
+  /* Generated course cover fields; white illustrations keep at least 3:1. */
+  --cover-1: #0F5C63;
+  --cover-2: #3A3F8F;
+  --cover-3: #7A3E62;
+  --cover-4: #8A5A12;
+  --cover-5: #2F6B45;
+  --cover-6: #3E4C63;
   --duration-fast: 150ms;
   --duration-base: 200ms;
   --duration-slow: 250ms;
@@ -64,6 +71,12 @@
   --ai-fg: #CDBFFF;
   --ai-tint: #2B2452;
   --link: #A9CCFF;
+  --cover-1: #13707A;
+  --cover-2: #4A50A8;
+  --cover-3: #8E4B74;
+  --cover-4: #956319;
+  --cover-5: #3A7D53;
+  --cover-6: #4C5B75;
 }
 
 @theme inline {
@@ -290,15 +303,12 @@ dialog[open] { opacity: 1; transform: none; transition: opacity var(--duration-b
 @starting-style { dialog[open] { opacity: 0; transform: translateY(8px) scale(0.98); } }
 dialog[open]::backdrop { transition: background-color var(--duration-base) var(--ease-out); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } .pressable:active, .card-interactive:hover { transform: none; } }
-.course-cover { aspect-ratio: 16 / 9; width: 100%; overflow: hidden; background: var(--accent-tint); }
-.course-cover-fallback { position: relative; height: 100%; min-height: 140px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; color: var(--primary); }
-.course-cover-symbol { display: flex; align-items: center; justify-content: center; width: 104px; height: 88px; border: 1px solid currentColor; border-radius: 12px; background: var(--surface); }
-.course-cover-line { width: 96px; height: 4px; border-radius: 2px; background: currentColor; opacity: .35; }
-.course-cover-line-short { width: 64px; }
+.course-cover { aspect-ratio: 16 / 9; width: 100%; overflow: hidden; background: var(--surface-2); }
+.course-cover-fallback { height: 100%; min-height: 140px; }
+.course-cover-art { display: block; width: 100%; height: 100%; }
+.cover-field-1 { background: var(--cover-1); } .cover-field-2 { background: var(--cover-2); } .cover-field-3 { background: var(--cover-3); }
+.cover-field-4 { background: var(--cover-4); } .cover-field-5 { background: var(--cover-5); } .cover-field-6 { background: var(--cover-6); }
 /* Grid rows: aspect-ratio would stop the cover stretching, leaving a band under it. */
 @media (min-width: 640px) { .course-cover.course-cover-fill { aspect-ratio: auto; align-self: stretch; } }
-/* List thumbnails: the full-size fallback would be clipped at this height. */
-.course-cover-compact .course-cover-fallback { min-height: 0; gap: 0; }
-.course-cover-compact .course-cover-symbol { width: 48px; height: 40px; border-radius: 8px; }
-.course-cover-compact .course-cover-symbol svg { width: 24px; height: 24px; }
-.course-cover-compact .course-cover-line { display: none; }
+/* List thumbnails: drop the full-size minimum height. */
+.course-cover-compact .course-cover-fallback { min-height: 0; }
