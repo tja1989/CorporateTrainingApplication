@@ -229,3 +229,33 @@ Deferred minors:
 - Final: minor (deferred): w-14 in the rating distribution is not in the spacing scale (predates the branch).
 
 - Final: minor (deferred): course Settings shows two cover previews (live preview and saved cover card); a read-only "Save settings" still looks primary.
+
+## Premium polish follow-up — 17 October 2026
+
+The Phase 2–3 deferred minors that affect the finished look were closed on main. The Phase 1 deferred minors were already resolved by Phase 2–3 (workflow notification phrases, plain lib strings, status cells limited to status columns, separate HR voice-consent line).
+
+- Resolved: hero and course "Continue" buttons use `size="lg"` instead of layering size classes; dead `text-lg` beside `.type-section` and the overridden `SectionTitle` margin are removed.
+- Resolved: cover subjects match whole words ("Data Protection Refresher" is general learning); same-subject courses keep their colour but get one of three background patterns from the title.
+- Resolved: overview figures link to lists filtered by the same rule they count, through a new "Approval stage" filter on every course list (`?approval=`).
+- Resolved: editor folder suggestions only list folders from courses the author can already read; the editor loads courses once for both folder and prerequisite lists.
+- Resolved: the video poster clamps long titles to two lines, keeps keyboard focus on the player after Play, and a citation clicked before the player is ready seeks once it is; the video lesson reuses the course the page already loaded.
+- Resolved: quiz figures wrap to two columns on phones instead of breaking "Unlimited" mid-word.
+- Resolved: the home hero shows overdue dates in red and reads "Next up: …" before the first lesson instead of "0 of N lessons into".
+- Resolved: stepper steps announce "done" or "not reached yet" to screen readers.
+- Resolved: the whole path-step card opens its course (stretched title link), matching its hover lift.
+- Resolved: the logomark inverts on dark surfaces.
+- Resolved: `metadataBase` comes from `PUBLIC_APP_URL`, else Railway's `RAILWAY_PUBLIC_DOMAIN`, so share images use the public domain.
+- Resolved: the cover preview updates after a pause or on leaving the field, not on every keystroke.
+- Resolved: the rating distribution label column uses `w-16` from the spacing scale.
+- Resolved: course Settings shows one live cover preview, and read-only settings show no Save button.
+- Resolved (found by e2e): the star rating's transparent radio now covers each star, so a click lands on the radio itself. The Phase 2–3 ruling that Playwright retargets a label hit to the radio was wrong; `client-feedback` and `client-approval` failed until this change.
+- Resolved (found by e2e): the authoring test in `workspaces.e2e.ts` fills the "Add lesson" form only. The per-lesson edit form added on 14 October reuses the "Lesson title" and "Lesson content" labels; this test predates the redesign.
+- Resolved (found by e2e): `learner.e2e.ts` expects the HR assistant's own demo line on `/ask-hr/live`.
+- Resolved (found by the full matrix): `api-permissions.e2e.ts` and `navigation.e2e.ts` still expected the pre-five-role names (legacy Manager home `/team`, "Switch to manager", "Manager workspace", "Team reports"). Since the five-role release on 14 October a legacy Manager opens the Department workspace at `/department`, and the Super Admin switch reads "Switch to Super Admin". The tests now use the shipped names; the header check is scoped to the banner because the Department overview's page title repeats "Department workspace".
+- Resolved (found by the full matrix): `voice-faults.e2e.ts` simulates a configured voice provider by removing the demo-mode notice from the server HTML. It matched the old "Offline demo mode" text, so after the Phase 1 copy change the notice stayed in the HTML and React reported a hydration mismatch. The fixture now matches "Demo mode:". The app itself was not at fault.
+- Resolved (found by the full matrix, real layout bug): course Settings overflowed sideways at 360px and at tablet width with 200% zoom in right-to-left layout. Two causes. Fieldsets keep their widest content by default, and the "Add prerequisite course" select is as wide as its longest course title; `fieldset { min-inline-size: 0; }` in `app/globals.css` lets every fieldset shrink. The cover preview sat in a fixed 160px grid column chosen by viewport width; it now wraps under the URL field when the form itself is narrow.
+- Resolved (found by the full matrix): `client-approval.e2e.ts` navigated while the "Add lesson" form was still doing its full reload (the saved lesson renders first from the server refresh). WebKit lost that race; the helper now waits for the reload.
+- Result: the complete configured matrix (885 executions, all ten projects including Firefox and WebKit, two workers, no retries) passed 885/885 in one run on 17 October against a local production build of the uncommitted tree (`QA_BUILD_DIRTY=1`, database `welearn_e2e_full_1017`). This is release confidence, not the formal two-consecutive-run qualification on a committed build described in `LOCAL_TESTING.md`.
+- Seeding rewrites `public/demo/fire-safety-guide.pdf` with a new timestamp; revert it after a local seed so it does not enter a commit.
+- Still open: the shorter feedback privacy wording waits for client sign-off (`docs/qa/PRIVACY_WORDING_PROPOSAL.md`).
+
