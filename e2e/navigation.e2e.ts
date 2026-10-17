@@ -49,11 +49,17 @@ test("NAV: learner navigation, profile disclosure, theme persistence and logout 
   await expect(page.locator('summary[aria-label="Profile and account"]')).toHaveCount(0);
 });
 
+// Legacy MANAGER accounts open the Department Head workspace (five-role release, 14 October).
+const workspaceOf = {
+  MANAGER: { home: "/department", name: "Department" },
+  ADMIN: { home: "/admin", name: "Super Admin" },
+} as const;
+
 for (const role of ["MANAGER", "ADMIN"] as const) {
+  const { home, name } = workspaceOf[role];
   test(`NAV: ${role.toLowerCase()} My profile opens a coherent learner workspace @core @template`, async ({ page }, info) => {
     const person = await createPerson(role);
     await signIn(page, person);
-    const home = role === "ADMIN" ? "/admin" : "/team";
     const mobile = (page.viewportSize()?.width ?? 1440) < 768;
     const account = page.locator('summary[aria-label="Profile and account"]');
     await account.click();
@@ -65,10 +71,10 @@ for (const role of ["MANAGER", "ADMIN"] as const) {
       await expect(page).toHaveURL(/\/profile$/);
       await expect(nav).toBeVisible();
       await expect(page.getByRole("search", { name: "Course search", exact: true })).toBeVisible();
-      await expect(page.getByRole("button", { name: `Open ${role.toLowerCase()} workspace navigation`, exact: true })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: `Open ${name.toLowerCase()} workspace navigation`, exact: true })).toHaveCount(0);
       await account.click();
       await expect(page.getByText("Learning workspace", { exact: true })).toBeVisible();
-      await expect(page.getByRole("button", { name: `Switch to ${role.toLowerCase()}`, exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: `Switch to ${name}`, exact: true })).toBeVisible();
       await expect(page.getByRole("button", { name: "View as learner", exact: true })).toHaveCount(0);
       await page.keyboard.press("Escape");
     }
@@ -80,20 +86,20 @@ for (const role of ["MANAGER", "ADMIN"] as const) {
     await nav.getByRole("link", { name: "Home", exact: true }).click();
     await expect(page).toHaveURL(/\/home$/);
     await account.click();
-    await page.getByRole("button", { name: `Switch to ${role.toLowerCase()}`, exact: true }).click();
+    await page.getByRole("button", { name: `Switch to ${name}`, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`${home}$`));
-    await expect(page.getByText(`${role === "ADMIN" ? "Admin" : "Manager"} workspace`, { exact: true }).filter({ visible: true })).toBeVisible();
-    if (mobile) await expect(page.getByRole("button", { name: `Open ${role.toLowerCase()} workspace navigation`, exact: true })).toBeVisible();
+    // The Department overview's page title repeats the workspace name, so check the header label.
+    await expect(page.getByRole("banner").getByText(`${name} workspace`, { exact: true }).filter({ visible: true })).toBeVisible();
+    if (mobile) await expect(page.getByRole("button", { name: `Open ${name.toLowerCase()} workspace navigation`, exact: true })).toBeVisible();
     else await expect(page.getByRole("navigation", { name: "Workspace", exact: true }).filter({ visible: true })).toBeVisible();
   });
 
   test(`NAV: ${role.toLowerCase()} workspace navigation and return from learner view @core @template`, async ({ page }, info) => {
     const person = await createPerson(role);
     await signIn(page, person);
-    const home = role === "ADMIN" ? "/admin" : "/team";
     await expect(page).toHaveURL(new RegExp(`${home}$`));
     const compact = (page.viewportSize()?.width ?? 1440) < 768;
-    const trigger = page.getByRole("button", { name: `Open ${role.toLowerCase()} workspace navigation`, exact: true });
+    const trigger = page.getByRole("button", { name: `Open ${name.toLowerCase()} workspace navigation`, exact: true });
     if (compact) {
       await trigger.click();
       await expect(page.getByRole("dialog")).toBeVisible();
@@ -102,7 +108,7 @@ for (const role of ["MANAGER", "ADMIN"] as const) {
       await trigger.click();
     }
     const workspace = page.getByRole("navigation", { name: "Workspace", exact: true }).filter({ visible: true });
-    const reportName = role === "ADMIN" ? "Reports" : "Team reports";
+    const reportName = "Reports";
     await Promise.all([
       page.waitForEvent("load"),
       workspace.getByRole("link", { name: reportName, exact: true }).click(),
@@ -126,7 +132,7 @@ for (const role of ["MANAGER", "ADMIN"] as const) {
     await page.getByRole("button", { name: "View as learner", exact: true }).click();
     await expect(page).toHaveURL(/\/home$/);
     await account.click();
-    await page.getByRole("button", { name: `Switch to ${role.toLowerCase()}`, exact: true }).click();
+    await page.getByRole("button", { name: `Switch to ${name}`, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`${home}$`));
   });
 }

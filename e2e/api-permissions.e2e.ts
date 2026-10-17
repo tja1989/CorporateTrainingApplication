@@ -44,7 +44,7 @@ test("@core Certificate and learner API data require completed MFA and privacy a
 
 test("Root follows the authenticated workspace; the local health endpoint reports its real database check", async ({ page }) => {
   await page.goto("/"); await expect(page).toHaveURL(/\/login$/);
-  for (const [role, route] of [["LEARNER", "/home"], ["MANAGER", "/team"], ["ADMIN", "/admin"]] as const) {
+  for (const [role, route] of [["LEARNER", "/home"], ["MANAGER", "/department"], ["ADMIN", "/admin"]] as const) {
     await page.context().clearCookies(); await signIn(page, await createPerson(role)); await page.goto("/");
     expect(new URL(page.url()).pathname).toBe(route);
   }

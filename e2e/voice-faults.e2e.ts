@@ -51,7 +51,7 @@ async function configured(page: Page) {
     // Update both HTML and Flight props so the configuration fixture does not
     // introduce a React hydration mismatch unrelated to the transport fault.
     const body=original.replaceAll('\\"configured\\":false','\\"configured\\":true')
-      .replace(/<p class="mb-3 text-xs text-muted">Offline demo mode[^<]*<\/p>/, "")
+      .replace(/<p class="mb-3 text-xs text-muted">Demo mode:[^<]*<\/p>/, "")
       .replace(/(<button[^>]*>Start talking<\/button>)/, button => button + button
         .replace("bg-primary text-primary-fg hover:bg-primary-hover", "bg-surface border border-border text-foreground hover:border-foreground hover:bg-surface-2")
         .replace("Start talking", "Start with typing"));

@@ -323,16 +323,18 @@ test("@core @template Type-specific authoring preserves all lesson types and the
   await page.getByLabel("Lesson type").selectOption("TEXT");
   await expect(page.getByLabel("Questions to draw")).toBeDisabled();
   await expect(page.getByLabel("Questions (1–6)", { exact: true })).toBeDisabled();
+  // Added lessons get their own "Edit lesson content" forms with the same field labels, so fill the add form only.
+  const add = page.locator("details").filter({ has: page.locator("summary", { hasText: "Add lesson to Authoring module" }) });
   for (const type of ["TEXT", "PDF", "VIDEO", "QUIZ", "INTERVIEW"]) {
     if (type !== "TEXT") await page.getByText("Add lesson to Authoring module", { exact: true }).click();
-    await page.getByLabel("Lesson type").selectOption(type);
-    await page.getByLabel("Lesson title", { exact: true }).fill(`QA ${type} lesson`);
-    await expect(page.getByLabel("Lesson content", { exact: true })).toBeVisible({ visible: type === "TEXT" });
-    if (type === "TEXT") await page.getByLabel("Lesson content", { exact: true }).fill("# Read this\n\nKeep walkways clear.");
-    if (type === "PDF") await page.getByLabel("PDF file URL").fill("/demo/food-safety-hygiene-card.pdf");
-    if (type === "VIDEO") { await page.getByLabel("YouTube URL or video ID").fill(`QA${course.replaceAll("-", "").slice(0,9)}`); await page.getByLabel("Transcript (SRT or VTT)", { exact: true }).fill("1\n00:00:00,000 --> 00:00:10,000\nKeep walkways clear and report hazards to your supervisor."); }
-    if (type === "QUIZ") { await page.getByLabel("Question bank").selectOption(bank); await page.getByLabel("Questions to draw").fill("1"); await page.getByLabel("Exam mode (feedback after submission)").check(); }
-    if (type === "INTERVIEW") await page.getByLabel("Focus (optional)").fill("Safety routines");
+    await add.getByLabel("Lesson type").selectOption(type);
+    await add.getByLabel("Lesson title", { exact: true }).fill(`QA ${type} lesson`);
+    await expect(add.getByLabel("Lesson content", { exact: true })).toBeVisible({ visible: type === "TEXT" });
+    if (type === "TEXT") await add.getByLabel("Lesson content", { exact: true }).fill("# Read this\n\nKeep walkways clear.");
+    if (type === "PDF") await add.getByLabel("PDF file URL").fill("/demo/food-safety-hygiene-card.pdf");
+    if (type === "VIDEO") { await add.getByLabel("YouTube URL or video ID").fill(`QA${course.replaceAll("-", "").slice(0,9)}`); await add.getByLabel("Transcript (SRT or VTT)", { exact: true }).fill("1\n00:00:00,000 --> 00:00:10,000\nKeep walkways clear and report hazards to your supervisor."); }
+    if (type === "QUIZ") { await add.getByLabel("Question bank").selectOption(bank); await add.getByLabel("Questions to draw").fill("1"); await add.getByLabel("Exam mode (feedback after submission)").check(); }
+    if (type === "INTERVIEW") await add.getByLabel("Focus (optional)").fill("Safety routines");
     await expectNoPageOverflow(page); await capture(page, info, `editor-${type.toLowerCase()}`);
     await saveAndReload(page, page.getByRole("button", { name: "Add lesson", exact: true }));
     await expect(page.getByText(`QA ${type} lesson`, { exact: true })).toBeVisible();
@@ -346,9 +348,9 @@ test("@core @template Type-specific authoring preserves all lesson types and the
   await edit.getByLabel("Focus (optional)").fill("Updated service focus"); await saveAndReload(page, edit.getByRole("button", { name: "Save oral check" }));
   await expect.poll(async () => withDb(async db => (await db.query("SELECT payload->'interview'->>'focus' focus FROM lessons WHERE module_id=$1 AND type='INTERVIEW'", [mod])).rows[0].focus)).toBe("Updated service focus");
   await page.getByText("Add lesson to Authoring module", { exact: true }).click();
-  await page.getByLabel("Lesson type").selectOption("VIDEO");
-  await page.getByLabel("Lesson title", { exact: true }).fill("QA reused video lesson");
-  await page.getByLabel("YouTube URL or video ID").fill(`QA${course.replaceAll("-", "").slice(0,9)}`);
+  await add.getByLabel("Lesson type").selectOption("VIDEO");
+  await add.getByLabel("Lesson title", { exact: true }).fill("QA reused video lesson");
+  await add.getByLabel("YouTube URL or video ID").fill(`QA${course.replaceAll("-", "").slice(0,9)}`);
   await saveAndReload(page, page.getByRole("button", { name: "Add lesson", exact: true }));
   await expect(page.getByText("QA reused video lesson", { exact: true })).toBeVisible();
   const sharedVideos = await withDb(async db => (await db.query("SELECT payload->>'videoId' AS video_id FROM lessons WHERE module_id=$1 AND type='VIDEO'", [mod])).rows);

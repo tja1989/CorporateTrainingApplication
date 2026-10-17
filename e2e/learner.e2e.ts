@@ -217,7 +217,7 @@ test("@core Offline HR voice starts typing without waiting for microphone permis
   });
   await signIn(page, person);
   await page.goto("/ask-hr/live");
-  await expect(page.getByText("Demo mode: type your answers. Grading works the same way.")).toBeVisible();
+  await expect(page.getByText("Demo mode: type your questions. Answers still come from the policy library.")).toBeVisible();
   await page.getByRole("button", { name: "Start talking", exact: true }).click();
   const input = page.getByRole("textbox", { name: "Type a message" });
   await expect(input).toBeEnabled();

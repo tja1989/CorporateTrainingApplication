@@ -117,9 +117,12 @@ test("@core Instructor submits, Department Head rejects and approves, HR publish
         .getByLabel("Lesson title", { exact: true })
         .fill(lessonTitle);
       await addForm.getByLabel("Lesson content", { exact: true }).fill(content);
-      await page
-        .getByRole("button", { name: "Add lesson", exact: true })
-        .click();
+      // The saved lesson can render before the form's full reload; wait for that reload
+      // so the next navigation cannot interrupt it (seen in WebKit).
+      await Promise.all([
+        page.waitForEvent("load"),
+        page.getByRole("button", { name: "Add lesson", exact: true }).click(),
+      ]);
       await expect(page.getByText(lessonTitle, { exact: true })).toBeVisible();
     }
     await addText(
