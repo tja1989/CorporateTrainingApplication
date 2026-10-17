@@ -96,7 +96,7 @@ export function CourseFeedbackForm({
                 {scores.map(([value, text]) => (
                   <label
                     key={value}
-                    className="touch-target flex cursor-pointer items-center justify-center rounded-control text-warning has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary"
+                    className="touch-target relative flex cursor-pointer items-center justify-center rounded-control text-warning has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary"
                   >
                     <input
                       type="radio"
@@ -105,10 +105,12 @@ export function CourseFeedbackForm({
                       checked={rating === value}
                       onChange={() => setRating(value)}
                       required
-                      className="sr-only"
+                      className="absolute inset-0 m-0 cursor-pointer opacity-0"
                     />
+                    {/* Decorative: the transparent radio above covers the star, so every click lands on the radio itself. */}
                     <svg
                       data-star={value <= rating ? "filled" : "empty"}
+                      className="pointer-events-none"
                       width="30"
                       height="30"
                       viewBox="0 0 24 24"

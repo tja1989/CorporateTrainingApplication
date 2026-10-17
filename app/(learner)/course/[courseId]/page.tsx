@@ -198,7 +198,7 @@ export default async function CoursePage({
           </div>
           {course.objectives.length > 0 ? (
             <section className="mb-6 max-w-2xl">
-              <h2 className="type-section mb-3 text-lg">You will learn to</h2>
+              <h2 className="type-section mb-3">You will learn to</h2>
               <ul className="flex flex-col gap-1 text-sm">
                 {course.objectives.map((o) => (
                   <li key={o} className="flex gap-2">
@@ -228,7 +228,7 @@ export default async function CoursePage({
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex flex-wrap gap-2">
               {view.nextLessonId ? (
-                <ButtonLink href={`/lesson/${view.nextLessonId}`} className="min-h-12 px-6 text-base">
+                <ButtonLink href={`/lesson/${view.nextLessonId}`} size="lg">
                   {view.doneCount > 0 ? "Continue" : "Start course"}
                 </ButtonLink>
               ) : null}

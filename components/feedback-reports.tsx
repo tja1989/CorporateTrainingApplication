@@ -116,11 +116,11 @@ export function FeedbackReports({
             aria-label="Rating distribution"
             className="mb-6 rounded-card border border-border bg-surface p-5"
           >
-            <h2 className="type-section mb-3 text-lg">Rating distribution</h2>
+            <h2 className="type-section mb-3">Rating distribution</h2>
             <div className="grid gap-2">
               {report.distribution.map((count, index) => (
                 <div key={index} className="flex items-center gap-3 text-sm">
-                  <span className="w-14 shrink-0">
+                  <span className="w-16 shrink-0">
                     {index + 1} {index ? "stars" : "star"}
                   </span>
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-2">

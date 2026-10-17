@@ -30,7 +30,6 @@ import {
   WorkspaceSection,
 } from "@/components/workspace-ui";
 import { WorkspaceForm, SubmitButton } from "@/components/workspace-form";
-import { CourseCover } from "@/components/course-cover";
 import { LessonIcon } from "@/components/lesson-icon";
 import type { LessonType } from "@/lib/lms/outline";
 import { parseInterviewConfig } from "@/lib/live/interview";
@@ -75,13 +74,15 @@ export async function CourseEditor({
     course.status === "DRAFT" &&
     course.approvalState !== "SUBMITTED";
   const departments = await db.select().from(t.departments);
-  const folderOptions = [...new Set((await db.select({ folderPath: t.courses.folderPath }).from(t.courses)).map((row) => row.folderPath).filter(Boolean))].sort();
+  const allCourses = await db.select().from(t.courses);
+  // Suggest only folders from courses this person can already see.
+  const folderOptions = [...new Set(allCourses.filter((row) => canReadCourse(actor, row)).map((row) => row.folderPath).filter(Boolean))].sort();
   const selectedPrerequisites = await db
     .select()
     .from(t.coursePrerequisites)
     .where(eq(t.coursePrerequisites.courseId, course.id));
   const selectedIds = selectedPrerequisites.map((row) => row.requiredCourseId);
-  const prerequisiteChoices = (await db.select().from(t.courses))
+  const prerequisiteChoices = allCourses
     .filter(
       (row) =>
         row.id !== course.id &&
@@ -521,7 +522,7 @@ export async function CourseEditor({
             ) : null}
           </div>
         ) : (
-          <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <div className="min-w-0 max-w-4xl">
             <WorkspaceSection title="Course settings">
               {!editable ? (
                 <p role="status" className="mb-4 flex items-start gap-2 rounded-control bg-surface-2 p-3 text-sm text-foreground">
@@ -640,26 +641,9 @@ export async function CourseEditor({
                     </Field>
                   </div>
                 ) : null}
-                <Button type="submit">Save settings</Button>
+                {editable ? <Button type="submit">Save settings</Button> : null}
               </WorkspaceForm>
             </WorkspaceSection>
-            <aside className="min-w-0">
-              <div className="overflow-hidden rounded-card border border-border bg-surface">
-                <CourseCover
-                  title={course.title}
-                  coverUrl={course.coverUrl}
-                  tags={course.tags}
-                />
-                <div className="p-4">
-                  <h2 className="font-semibold">Course cover</h2>
-                  <p className="mt-2 text-sm text-muted">
-                    This saved cover appears in the catalog and on the learner
-                    course page. A missing or broken image uses the subject
-                    illustration.
-                  </p>
-                </div>
-              </div>
-            </aside>
           </div>
         )}
       </fieldset>

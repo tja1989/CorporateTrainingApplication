@@ -20,6 +20,16 @@ describe("role overview figures", () => {
   it("shows HR what is ready to publish", () => {
     expect(values(overviewFigures("HR_HEAD", "/hr", courses))).toEqual({ "Ready to publish": 1, "Awaiting department review": 1, Published: 2, Drafts: 1 });
   });
+  it("links each course figure to a list with exactly that many courses", () => {
+    for (const role of ["INSTRUCTOR", "HR_HEAD"] as const) {
+      for (const f of overviewFigures(role, "/x", courses)) {
+        const params = new URL(f.href, "https://example.test").searchParams;
+        const status = params.get("status"), approval = params.get("approval");
+        expect(status || approval, `${role} ${f.label} links to a filtered list`).toBeTruthy();
+        expect(courses.filter(c => (!status || c.status === status) && (!approval || c.approvalState === approval)).length, `${role} ${f.label}`).toBe(f.value);
+      }
+    }
+  });
   it("renders calm zeros for empty workspaces", () => {
     for (const role of ["INSTRUCTOR", "DEPARTMENT_HEAD", "HR_HEAD"] as const) {
       const f = overviewFigures(role, "/x", [], { overdue: 0, dueSoon: 0 });

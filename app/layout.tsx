@@ -4,7 +4,11 @@ import localFont from "next/font/local";
 import { MotionProvider } from "@/components/motion-config";
 import "./globals.css";
 
+/** Public address for share images: PUBLIC_APP_URL, else the domain Railway assigns to the service. */
+const publicUrl = process.env.PUBLIC_APP_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : "");
+
 export const metadata: Metadata = {
+  ...(publicUrl ? { metadataBase: new URL(publicUrl) } : {}),
   title: { default: "xprtn", template: "%s · xprtn" },
   description: "Workplace learning, practice, and support",
   applicationName: "xprtn",

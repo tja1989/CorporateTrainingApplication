@@ -114,7 +114,7 @@ export default async function PathPage({
               <span className="path-marker" aria-hidden="true">
                 {s.complete ? <Icon name="check" size={18} /> : i + 1}
               </span>
-              <Card interactive={!s.locked && s.course.status === "PUBLISHED"} className="overflow-hidden sm:grid sm:grid-cols-[180px_minmax(0,1fr)]">
+              <Card interactive={!s.locked && s.course.status === "PUBLISHED"} className="relative overflow-hidden sm:grid sm:grid-cols-[180px_minmax(0,1fr)]">
                 <CourseCover
                   className="course-cover-fill"
                   title={s.course.title}
@@ -126,12 +126,12 @@ export default async function PathPage({
                     Course {i + 1} of {steps.length}
                   </p>
                   <div className="mb-2 flex flex-wrap items-center gap-3">
-                    <h2 className="type-section text-lg">
+                    <h2 className="type-section">
                       {s.locked || s.course.status !== "PUBLISHED" ? (
                         s.course.title
                       ) : (
                         <Link
-                          className="touch-target inline-flex items-center hover:underline"
+                          className="touch-target inline-flex items-center hover:underline after:absolute after:inset-0 after:content-['']"
                           href={`/course/${s.course.id}`}
                         >
                           {s.course.title}

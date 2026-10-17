@@ -11,19 +11,18 @@ import { statusLabel } from "@/lib/status";
 /** Video lesson: player + Tutor + transcript (spec FR-5.6..5.13, §11.5). */
 export async function VideoLesson({
   lesson,
-  courseId,
+  course,
   isDone,
   requestedPosition,
 }: {
   lesson: typeof t.lessons.$inferSelect;
-  courseId: string;
+  course: { id: string; title: string; tags: string[] };
   isDone: boolean;
   requestedPosition?: number;
 }) {
   const user = await currentUser();
   const videoId = lesson.payload.videoId;
   const [video] = videoId ? await db.select().from(t.videos).where(eq(t.videos.id, videoId)).limit(1) : [];
-  const [course] = await db.select({ title: t.courses.title, tags: t.courses.tags }).from(t.courses).where(eq(t.courses.id, courseId)).limit(1);
   if (!video) {
     return (
       <Card className="mb-6 max-w-3xl p-6">
@@ -54,7 +53,7 @@ export async function VideoLesson({
     const [thread] = await db
       .select()
       .from(t.tutorThreads)
-      .where(and(eq(t.tutorThreads.userId, user.id), eq(t.tutorThreads.courseId, courseId)))
+      .where(and(eq(t.tutorThreads.userId, user.id), eq(t.tutorThreads.courseId, course.id)))
       .limit(1);
     if (thread) {
       const allowed = await allowedTutorSources(user.id, lesson.id);
@@ -86,8 +85,8 @@ export async function VideoLesson({
       initialPositionSec={clampVideoPosition(requestedPosition ?? progress?.lastPositionSec ?? 0, video.durationSec) ?? 0}
       durationSec={video.durationSec}
       title={lesson.title}
-      courseTitle={course?.title}
-      courseTags={course?.tags}
+      courseTitle={course.title}
+      courseTags={course.tags}
       initialCoverage={videoCoverage(progress?.watchedBuckets ?? [], video.durationSec)}
     />
   );

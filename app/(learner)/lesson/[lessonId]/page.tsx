@@ -155,7 +155,7 @@ export default async function LessonPage({
             {lesson.type === "VIDEO" ? (
               <VideoLesson
                 lesson={lesson}
-                courseId={course.id}
+                course={course}
                 isDone={self.done}
                 requestedPosition={requestedPosition}
               />
@@ -181,11 +181,11 @@ export default async function LessonPage({
                         : "Check the rules below. Opening the assessment shows its consent information before you start."}
                     </p>
                     {quizFigures ? (
-                      <dl className="mb-5 grid max-w-lg grid-cols-3 gap-3">
+                      <dl className="mb-5 grid max-w-lg grid-cols-[repeat(auto-fit,minmax(min(100%,7rem),1fr))] gap-3">
                         {quizFigures.map(([term, value]) => (
                           <div key={term} className="rounded-control bg-surface-2 p-3">
                             <dt className="text-xs text-muted">{term}</dt>
-                            <dd className="type-number mt-1 text-lg text-foreground">{value}</dd>
+                            <dd className="type-number mt-1 text-lg text-foreground [overflow-wrap:normal]">{value}</dd>
                           </div>
                         ))}
                       </dl>
@@ -224,7 +224,7 @@ export default async function LessonPage({
             </nav>
           </div>
           <aside className="lesson-contents-panel sticky top-20 max-h-[calc(100dvh-112px)] min-w-0 self-start overflow-y-auto rounded-card border border-border bg-surface p-4">
-            <h2 className="type-section mb-3 text-lg">Course contents</h2>
+            <h2 className="type-section mb-3">Course contents</h2>
             <LiveCourseOutline view={view} variant="rail" />
           </aside>
         </div>

@@ -85,11 +85,19 @@ export function VideoLessonClient({
   const [poster, setPoster] = useState(true);
   const readyRef = useRef(false);
   const pendingPlayRef = useRef(false);
+  // A citation clicked before the player is ready seeks here once it is.
+  const pendingSeekRef = useRef<number | null>(null);
+  const playerFrameRef = useRef<HTMLDivElement>(null);
   const art = courseArt(courseTitle ?? title ?? "", courseTags);
   function play() {
     setPoster(false);
     if (readyRef.current) playerRef.current?.playVideo?.();
     else pendingPlayRef.current = true;
+    // The poster button unmounts, so keep keyboard focus on the player instead of dropping it to the page.
+    requestAnimationFrame(() => {
+      const frame = playerFrameRef.current;
+      (frame?.querySelector("iframe") ?? frame)?.focus();
+    });
   }
 
   // ---- YouTube IFrame API (spec FR-5.6)
@@ -103,7 +111,8 @@ export function VideoLessonClient({
         events: {
           onReady: () => {
             readyRef.current = true;
-            if (resumePositionRef.current > 0) playerRef.current?.seekTo?.(resumePositionRef.current, true);
+            const start = pendingSeekRef.current ?? resumePositionRef.current;
+            if (start > 0) playerRef.current?.seekTo?.(start, true);
             if (pendingPlayRef.current) playerRef.current?.playVideo?.();
           },
           onStateChange: (e: { data: number }) => {
@@ -169,8 +178,13 @@ export function VideoLessonClient({
   const seekTo = useCallback(
     (sec: number) => {
       setPoster(false);
-      playerRef.current?.seekTo?.(sec, true);
-      playerRef.current?.playVideo?.();
+      if (readyRef.current) {
+        playerRef.current?.seekTo?.(sec, true);
+        playerRef.current?.playVideo?.();
+      } else {
+        pendingSeekRef.current = sec;
+        pendingPlayRef.current = true;
+      }
       // On narrow screens the player is not sticky — bring it back into view.
       if (window.matchMedia("(max-width: 1023px)").matches) {
         playerColumnRef.current?.scrollIntoView({ block: "start", behavior: reducedMotion() ? "auto" : "smooth" });
@@ -199,7 +213,7 @@ export function VideoLessonClient({
           </Card>
         ) : (
           <div className="relative overflow-hidden rounded-card border border-border bg-black">
-            <div className="aspect-video w-full">
+            <div ref={playerFrameRef} tabIndex={-1} className="aspect-video w-full outline-none">
               <div ref={playerHostRef} data-player-host="true" className="h-full w-full" />
             </div>
             {poster ? (
@@ -212,7 +226,7 @@ export function VideoLessonClient({
                 <span className="pressable flex size-16 items-center justify-center rounded-full bg-surface text-foreground shadow-[var(--shadow-raised)]">
                   <Icon name="play" size={28} />
                 </span>
-                {title ? <span className="type-section max-w-[32ch] text-lg">{title}</span> : null}
+                {title ? <span className="type-section line-clamp-2 max-w-[32ch]">{title}</span> : null}
                 <span className="text-sm">
                   {resumePositionRef.current > 0 ? `Resume from ${fmtTime(resumePositionRef.current)}` : fmtTime(durationSec)}
                 </span>

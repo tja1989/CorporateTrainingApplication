@@ -15,6 +15,19 @@ describe("course art", () => {
     ["Workplace Security", [], "safety"],
     ["Merchandising 101", [], "learning"],
   ])("%s draws the %s illustration", (title, tags, subject) => expect(courseArt(title, tags as string[]).subject).toBe(subject));
+  it.each([
+    ["Data Protection Refresher", "learning"],
+    ["Steam Oven Basics", "learning"],
+    ["Tilling the Garden", "learning"],
+    ["Fresh Produce Handling", "food"],
+    ["Store Teams in Action", "service"],
+  ])("matches whole words only: %s draws the %s illustration", (title, subject) => expect(courseArt(title).subject).toBe(subject));
+  it("gives courses on the same subject different background patterns", () => {
+    const titles = ["Food Safety Essentials", "Kitchen Hygiene", "Allergen Awareness", "Cold Chain Basics", "Fresh Food Handling", "Food Labelling"];
+    const art = titles.map((title) => courseArt(title));
+    expect(new Set(art.map((a) => a.field))).toEqual(new Set([1]));
+    expect(new Set(art.map((a) => a.pattern)).size).toBeGreaterThan(1);
+  });
   it("is stable for the same course and always picks a valid field", () => {
     expect(courseArt("Merchandising 101")).toEqual(courseArt("Merchandising 101"));
     for (const title of ["", "x".repeat(300), "مقدمة في خدمة العملاء", "Merchandising 101"]) expect([1, 2, 3, 4, 5, 6]).toContain(courseArt(title).field);

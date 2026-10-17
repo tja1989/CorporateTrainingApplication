@@ -12,9 +12,9 @@ export function overviewFigures(role: OverviewRole, base: string, courses: Cours
     ({ label, value, href, tone: attention && value > 0 ? attention : "default" });
   if (role === "INSTRUCTOR")
     return [
-      figure("Drafts", drafts, `${base}/courses?status=DRAFT`),
-      figure("Awaiting approval", submitted, `${base}/courses`),
-      figure("Changes requested", count((c) => c.approvalState === "REJECTED"), `${base}/courses`, "warning"),
+      figure("Drafts", drafts, `${base}/courses?status=DRAFT&approval=DRAFT`),
+      figure("Awaiting approval", submitted, `${base}/courses?approval=SUBMITTED`),
+      figure("Changes requested", count((c) => c.approvalState === "REJECTED"), `${base}/courses?approval=REJECTED`, "warning"),
       figure("Published", published, `${base}/courses?status=PUBLISHED`),
     ];
   if (role === "DEPARTMENT_HEAD")
@@ -25,9 +25,9 @@ export function overviewFigures(role: OverviewRole, base: string, courses: Cours
       figure("Due soon", team.dueSoon, "/team?filter=DUE_SOON", "warning"),
     ];
   return [
-    figure("Ready to publish", count((c) => c.approvalState === "APPROVED" && c.status === "DRAFT"), `${base}/courses`, "warning"),
-    figure("Awaiting department review", submitted, `${base}/courses`),
+    figure("Ready to publish", count((c) => c.approvalState === "APPROVED" && c.status === "DRAFT"), `${base}/courses?status=DRAFT&approval=APPROVED`, "warning"),
+    figure("Awaiting department review", submitted, `${base}/courses?approval=SUBMITTED`),
     figure("Published", published, `${base}/courses?status=PUBLISHED`),
-    figure("Drafts", drafts, `${base}/courses?status=DRAFT`),
+    figure("Drafts", drafts, `${base}/courses?status=DRAFT&approval=DRAFT`),
   ];
 }

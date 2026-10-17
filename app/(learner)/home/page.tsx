@@ -17,7 +17,7 @@ import {
   SectionTitle,
   StatusChip,
 } from "@/components/ui";
-import { formatDay, formatDue } from "@/lib/format";
+import { calendarDaysBetween, formatDay, formatDue, plural } from "@/lib/format";
 import { lessonTypeLabel } from "@/components/lesson-icon";
 export const dynamic = "force-dynamic";
 export default async function HomePage() {
@@ -95,7 +95,9 @@ export default async function HomePage() {
         <h1 className="type-display">Welcome back, {firstName}</h1>
         <p className="mt-2 max-w-[60ch] text-base text-muted">
           {resume && outline
-            ? `You're ${outline.doneCount} of ${outline.total} lessons into ${resume.course.title}.`
+            ? outline.doneCount
+              ? `You're ${outline.doneCount} of ${outline.total} lessons into ${resume.course.title}.`
+              : `Next up: ${resume.course.title}, ${plural(outline.total, "lesson")}.`
             : "Your next step in learning."}
         </p>
       </header>
@@ -121,7 +123,7 @@ export default async function HomePage() {
                   {next.minutes ? `, about ${next.minutes} min` : ""}
                 </span>
                 {resume.enrollment?.dueAt && resume.enrollment.status !== "COMPLETED" ? (
-                  <span className="font-medium text-warning-fg">{formatDue(resume.enrollment.dueAt)}</span>
+                  <span className={calendarDaysBetween(new Date(), resume.enrollment.dueAt) < 0 ? "font-medium text-destructive-text" : "font-medium text-warning-fg"}>{formatDue(resume.enrollment.dueAt)}</span>
                 ) : null}
               </p>
               <LearningProgress
@@ -129,7 +131,7 @@ export default async function HomePage() {
                 label={`${outline.doneCount} of ${outline.total} lessons complete`}
               />
               <div className="mt-1">
-                <ButtonLink href={next.href} className="min-h-12 px-6 text-base">
+                <ButtonLink href={next.href} size="lg">
                   Continue lesson
                 </ButtonLink>
               </div>
@@ -171,7 +173,7 @@ export default async function HomePage() {
       )}
       {due.length ? (
         <section className="mb-10" aria-labelledby="required-heading">
-          <SectionTitle className="mb-2">
+          <SectionTitle>
             <span id="required-heading">Required training</span>
           </SectionTitle>
           <ul className="divide-y divide-border border-y border-border">
@@ -211,7 +213,7 @@ export default async function HomePage() {
               return (
                 <Link key={p.id} href={`/path/${p.id}`} className="block rounded-card">
                   <Card interactive className="flex h-full flex-col gap-3 p-5">
-                    <h3 className="type-section text-lg">{p.title}</h3>
+                    <h3 className="type-section">{p.title}</h3>
                     {p.description ? <p className="text-sm text-muted">{p.description}</p> : null}
                     <div className="mt-auto">
                       <LearningProgress
@@ -247,7 +249,7 @@ export default async function HomePage() {
         aria-label="Optional practice"
       >
         <div>
-          <h2 className="type-section text-lg">Keep your knowledge fresh</h2>
+          <h2 className="type-section">Keep your knowledge fresh</h2>
           <p className="text-sm text-muted">
             Optional daily practice unlocks after your first completed lesson.
           </p>

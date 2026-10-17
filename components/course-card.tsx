@@ -53,7 +53,7 @@ export function CourseCard({
               </Chip>
             ))}
           </div>
-          <h3 className="type-section mb-2 text-lg">{course.title}</h3>
+          <h3 className="type-section mb-2">{course.title}</h3>
           <p className="mb-3 line-clamp-2 text-sm text-muted">
             {course.description}
           </p>

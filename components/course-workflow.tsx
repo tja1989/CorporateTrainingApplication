@@ -102,6 +102,7 @@ export async function CourseWorkflow({
               {step.state === "done" ? <Icon name="check" size={14} /> : i + 1}
             </span>
             <span>{step.label}</span>
+            {step.state !== "current" ? <span className="sr-only">{step.state === "done" ? ", done" : ", not reached yet"}</span> : null}
           </li>
         ))}
       </ol>

@@ -21,7 +21,13 @@ export type { IconName } from "./icons";
 
 /* 44px primary and secondary controls; pills are reserved for status tags. */
 const buttonBase =
-  "pressable touch-target inline-flex items-center justify-center gap-2 rounded-control px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed";
+  "pressable touch-target inline-flex items-center justify-center gap-2 rounded-control font-medium disabled:opacity-50 disabled:cursor-not-allowed";
+/* Size owns padding and type, so a larger hero button never fights the base classes. */
+const buttonSizes = {
+  md: "px-4 py-2 text-sm",
+  lg: "min-h-12 px-6 py-3 text-base",
+} as const;
+type ButtonSize = keyof typeof buttonSizes;
 const buttonVariants = {
   primary: "bg-primary text-primary-fg hover:bg-primary-hover",
   accent: "bg-primary text-primary-fg hover:bg-primary-hover",
@@ -31,29 +37,31 @@ const buttonVariants = {
 } as const;
 
 /** Class list for a button-styled element, for links and forms that render their own tag. */
-export function buttonClass(variant: keyof typeof buttonVariants = "primary"): string {
-  return cx(buttonBase, buttonVariants[variant]);
+export function buttonClass(variant: keyof typeof buttonVariants = "primary", size: ButtonSize = "md"): string {
+  return cx(buttonBase, buttonSizes[size], buttonVariants[variant]);
 }
 
 export function Button({
   variant = "primary",
+  size = "md",
   className,
   ...props
-}: ComponentProps<"button"> & { variant?: keyof typeof buttonVariants }) {
-  return <button className={cx(buttonBase, buttonVariants[variant], className)} {...props} />;
+}: ComponentProps<"button"> & { variant?: keyof typeof buttonVariants; size?: ButtonSize }) {
+  return <button className={cx(buttonClass(variant, size), className)} {...props} />;
 }
 
 export function ButtonLink({
   variant = "primary",
+  size = "md",
   className,
   ...props
-}: ComponentProps<typeof Link> & { variant?: keyof typeof buttonVariants }) {
-  return <Link className={cx(buttonBase, buttonVariants[variant], className)} {...props} />;
+}: ComponentProps<typeof Link> & { variant?: keyof typeof buttonVariants; size?: ButtonSize }) {
+  return <Link className={cx(buttonClass(variant, size), className)} {...props} />;
 }
 
 /** Native document navigation for GET-filtered views and browser history. */
 export function ButtonAnchor({ variant = "primary", className, ...props }: ComponentProps<"a"> & { variant?: keyof typeof buttonVariants }) {
-  return <a className={cx(buttonBase, buttonVariants[variant], className)} {...props} />;
+  return <a className={cx(buttonClass(variant), className)} {...props} />;
 }
 
 /* Compatibility names for compact actions; they use the shared control shape. */

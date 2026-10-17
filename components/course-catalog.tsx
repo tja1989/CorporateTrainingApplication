@@ -17,6 +17,7 @@ import { WorkspaceSection, WorkspaceLink } from "@/components/workspace-ui";
 import { CourseCover } from "@/components/course-cover";
 import { languageName, plural } from "@/lib/format";
 import { statusLabel } from "@/lib/status";
+import { APPROVAL_LABELS } from "@/lib/courses/workflow-steps";
 import { createCourseAction } from "@/app/(workspace)/admin/courses/actions";
 export const dynamic = "force-dynamic";
 export async function CourseCatalog({
@@ -24,7 +25,7 @@ export async function CourseCatalog({
   searchParams,
 }: {
   actor: CurrentUser;
-  searchParams: Promise<{ q?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; approval?: string }>;
 }) {
   const base = courseWorkspacePath(actor, "_")
     .split("/")
@@ -46,14 +47,15 @@ export async function CourseCatalog({
     (u) =>
       u.role === "INSTRUCTOR" && !u.erasedAt && u.passwordState === "ACTIVE",
   );
-  const { q = "", status = "" } = await searchParams;
+  const { q = "", status = "", approval = "" } = await searchParams;
   const courses = (
     await db.select().from(t.courses).orderBy(desc(t.courses.createdAt))
   ).filter(
     (c) =>
       canReadCourse(actor, c) &&
       (!q || c.title.toLowerCase().includes(q.toLowerCase())) &&
-      (!status || c.status === status),
+      (!status || c.status === status) &&
+      (!approval || c.approvalState === approval),
   );
   return (
     <div>
@@ -69,7 +71,7 @@ export async function CourseCatalog({
       <form
         action={base}
         method="get"
-        className="mb-6 grid items-end gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]"
+        className="mb-6 grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto]"
       >
         <Field label="Search courses">
           <Input name="q" defaultValue={q} />
@@ -82,9 +84,19 @@ export async function CourseCatalog({
             <option value="ARCHIVED">Archived</option>
           </Select>
         </Field>
+        <Field label="Approval stage">
+          <Select name="approval" defaultValue={approval}>
+            <option value="">All stages</option>
+            {Object.entries(APPROVAL_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </Select>
+        </Field>
         <div className="mb-4 flex gap-2">
           <Button type="submit" variant="secondary">Apply</Button>
-          {q || status ? (
+          {q || status || approval ? (
             <WorkspaceLink href={base}>Reset</WorkspaceLink>
           ) : null}
         </div>

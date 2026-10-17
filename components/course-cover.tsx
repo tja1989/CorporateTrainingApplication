@@ -1,6 +1,6 @@
 "use client";
 import { useState, type ReactNode } from "react";
-import { courseArt, type CoverSubject } from "@/lib/course-art";
+import { courseArt, type CoverPattern, type CoverSubject } from "@/lib/course-art";
 import { cx } from "./ui";
 
 /* White line drawings on a 160×90 canvas, centred so any crop keeps the subject. */
@@ -13,18 +13,23 @@ const ILLUSTRATION: Record<CoverSubject, ReactNode> = {
   learning: <><path d="M80 31c-8-6-18-7-27-5v35c9-2 19-1 27 5 8-6 18-7 27-5V26c-9-2-19-1-27 5z" /><path d="M80 31v35" /></>,
 };
 
+/* Soft white background shapes, kept clear of the centred illustration. */
+const PATTERN: Record<CoverPattern, ReactNode> = {
+  0: <g fill="#FFFFFF" fillOpacity="0.1"><circle cx="22" cy="18" r="10" /><circle cx="140" cy="24" r="16" /><circle cx="132" cy="78" r="8" /><circle cx="30" cy="74" r="14" /></g>,
+  1: <g fill="none" stroke="#FFFFFF" strokeOpacity="0.12" strokeWidth="6"><circle cx="148" cy="88" r="26" /><circle cx="148" cy="88" r="44" /><circle cx="8" cy="4" r="20" /></g>,
+  2: <g fill="#FFFFFF" fillOpacity="0.08"><path d="M-10 70 60-10h18L8 70z" /><path d="M96 100 176 20v18l-62 62z" /><circle cx="140" cy="16" r="6" /></g>,
+};
+
 /** Existing course media, or a generated cover: a colour field with a subject illustration. */
 export function CourseCover({ coverUrl, title, tags = [], className, priority = false, alt = "" }: { coverUrl?: string | null; title: string; tags?: string[]; className?: string; priority?: boolean; alt?: string }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  const { field, subject } = courseArt(title, tags);
+  const { field, subject, pattern } = courseArt(title, tags);
   return <div className={cx("course-cover", className)}>
     {coverUrl && failedUrl !== coverUrl
       ? <img src={coverUrl} alt={alt} width={640} height={360} loading={priority ? "eager" : "lazy"} decoding="async" onError={() => setFailedUrl(coverUrl)} className="h-full w-full object-cover" />
       : <div className={cx("course-cover-fallback", `cover-field-${field}`)} aria-hidden="true">
           <svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice" className="course-cover-art">
-            <g fill="#FFFFFF" fillOpacity="0.1">
-              <circle cx="22" cy="18" r="10" /><circle cx="140" cy="24" r="16" /><circle cx="132" cy="78" r="8" /><circle cx="30" cy="74" r="14" />
-            </g>
+            {PATTERN[pattern]}
             <g fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">{ILLUSTRATION[subject]}</g>
           </svg>
         </div>}
