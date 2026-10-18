@@ -72,8 +72,12 @@ test("@core Assessment windows, cooldown, attempt limits and exam answer sealing
   await page.getByRole("textbox", { name: "Type the safety word" }).fill("safe");
   const response = page.waitForResponse(r => /\/api\/attempt\//.test(r.url()) && r.request().method() === "POST");
   await page.getByRole("button", { name: "Submit assessment", exact: true }).click();
-  expect(await (await response).json()).toMatchObject({ reveal: false, review: [] });
-  await expect(page.getByText("Correct answers are revealed after the assessment window closes.")).toBeVisible();
+  const sealed = await (await response).json() as { reveal: boolean; review: Array<{ correct: boolean | null; explanation: string | null; correctAnswer: string[]; choices: Array<{ correct: boolean | null }> }> };
+  expect(sealed.reveal).toBe(false);
+  expect(sealed.review.map(r => r.correct)).toEqual([true, true]);
+  expect(sealed.review.every(r => r.explanation === null && r.correctAnswer.length === 0 && r.choices.every(c => c.correct === null))).toBe(true);
+  await expect(page.getByText("Correct answers appear after the assessment window closes.")).toBeVisible();
+  await expect(page.getByText("Your answer", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Clean hands protect customers.", { exact: true })).toHaveCount(0);
   await reviewAssessmentAttempts(page);
   await expect(page.getByText("1 attempt left", { exact: true })).toBeVisible();

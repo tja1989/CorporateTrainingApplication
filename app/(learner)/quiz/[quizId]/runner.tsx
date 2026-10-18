@@ -2,10 +2,12 @@
 
 import { Icon } from "@/components/icons";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AiSurface, AnimatedNumber, Button, ButtonLink, Card, Chip, cx } from "@/components/ui";
+import { AnimatedNumber, Button, ButtonLink, Card, Chip, cx } from "@/components/ui";
 import { AttemptSaveError, isAnswered, resultStatus, saveAttemptAnswers, submitSavedAttempt } from "@/lib/quiz/client-state";
 import { QuestionInput, type Served } from "@/components/question-input";
 import type { Answer } from "@/lib/quiz/scoring";
+import type { ReviewItem } from "@/lib/quiz/review";
+import { AnswerReview } from "@/components/answer-review";
 import { Dialog } from "@/components/dialog";
 import { plural } from "@/lib/format";
 
@@ -16,7 +18,7 @@ type Result = {
   scorePct: number;
   passed: boolean | null;
   reveal: boolean;
-  review: Array<{ questionId: string; prompt: string; correct: boolean | null; explanation: string | null; sourceStartSec: number | null; rationale: string | null }>;
+  review: ReviewItem[];
 };
 
 export function QuizRunner({
@@ -315,29 +317,21 @@ export function QuizRunner({
           ) : (
             <Chip variant="destructive">Final result: not passed</Chip>
           )}
-          {!result.reveal ? (
-            <p className="mt-2 text-sm text-muted">Correct answers are revealed after the assessment window closes.</p>
+          {result.review.length ? (
+            <p className="mt-2 text-sm text-muted">
+              {result.review.filter((r) => r.correct).length} of {result.review.length} answers correct.
+              {!result.reveal ? " Correct answers appear after the assessment window closes." : ""}
+            </p>
           ) : null}
         </Card>
-        {result.reveal
-          ? result.review.map((r, i) => (
-              <Card key={r.questionId} className="mb-2 p-4 text-sm">
-                <p className="mb-1 font-medium">
-                  {i + 1}. {r.prompt}{" "}
-                  {r.correct === null ? <Chip variant="ai">AI-graded</Chip> : r.correct ? <Chip variant="success">Correct</Chip> : <Chip variant="destructive">Incorrect</Chip>}
-                </p>
-                {r.explanation ? <p className="text-muted">{r.explanation}</p> : null}
-                {r.rationale ? (
-                  <AiSurface variant="block" className="mt-2" label="AI grading rationale">
-                    {r.rationale}
-                  </AiSurface>
-                ) : null}
-                {r.correct === false && r.sourceStartSec !== null ? (
-                  <p className="mt-1 text-xs text-muted">Review this part of the video: <span className="bidi-isolate font-mono">{Math.floor(r.sourceStartSec / 60)}:{String(Math.floor(r.sourceStartSec % 60)).padStart(2, "0")}</span></p>
-                ) : null}
-              </Card>
-            ))
-          : null}
+        {result.review.length ? (
+          <section aria-label="Your answers" className="mb-4">
+            <h2 className="type-section mb-3">Your answers</h2>
+            {result.review.map((r, i) => (
+              <AnswerReview key={r.questionId} item={r} number={i + 1} />
+            ))}
+          </section>
+        ) : null}
         <div className="flex flex-wrap gap-2">{lessonHref ? <ButtonLink href={lessonHref}>Return to lesson</ButtonLink> : null}<Button variant="secondary" onClick={() => window.location.reload()}>Review attempts and retry</Button></div>
       </div>
     );

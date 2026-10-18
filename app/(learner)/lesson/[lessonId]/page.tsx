@@ -13,6 +13,7 @@ import {
   LessonProgressProvider,
   LiveCourseOutline,
   LessonCompletion,
+  LiveProgressStatus,
 } from "@/components/lesson-progress";
 import { LessonContents } from "@/components/lesson-contents";
 import { VideoLesson } from "./video-lesson";
@@ -204,6 +205,9 @@ export default async function LessonPage({
             {/* The oral check reads in a narrower column; its footer matches it. */}
             <div className={lesson.type === "INTERVIEW" ? "max-w-3xl" : undefined}>
               <LessonCompletion lessonId={lesson.id} />
+              <div className="mb-6">
+                <LiveProgressStatus view={view} />
+              </div>
             </div>
             <nav
               className="flex flex-wrap justify-between gap-3"

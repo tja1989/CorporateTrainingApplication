@@ -34,7 +34,7 @@ test("@core @template Catalog pagination, language, duration, sort, empty result
   await expect(filters.getByLabel("Search courses", { exact: true })).toHaveValue("");
   const views = page.getByRole("navigation", { name: "Learning views" });
   await views.getByRole("link", { name: "My courses", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "0 courses", exact: true })).toBeVisible();
+  await expect(page.getByText("Nothing in progress", { exact: true })).toBeVisible();
   await views.getByRole("link", { name: "Learning paths", exact: true }).click();
   await expect(page.getByText("No learning paths assigned", { exact: true })).toBeVisible();
   await page.reload();

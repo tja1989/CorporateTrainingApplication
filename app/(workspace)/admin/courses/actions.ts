@@ -189,7 +189,6 @@ export async function updateCourseAction(
             coverUrl: cover.value,
             language: String(form.get("language") ?? "en").trim() || "en",
             estMinutes: minutes,
-            sequentialLock: form.get("sequentialLock") === "on",
             certificateEnabled: form.get("certificateEnabled") === "on",
             certificateValidityDays: validity,
             tags: String(form.get("tags") ?? "")

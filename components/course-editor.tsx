@@ -186,9 +186,7 @@ export async function CourseEditor({
               {canAuthorCourse(actor, course)
                 ? "Build your modules in learning order."
                 : "Review the curriculum and record your decision above."}{" "}
-              {course.sequentialLock
-                ? "Learners must complete lessons in order."
-                : "Learners can choose their lesson order."}{" "}
+              Learners must complete lessons in order.{" "}
               {course.status !== "PUBLISHED"
                 ? "Submit this revision for Department Head approval before HR publishes it."
                 : "Revise this published course before making changes; the next revision needs approval."}
@@ -583,14 +581,6 @@ export async function CourseEditor({
                   <legend className="font-semibold">
                     Completion and certificates
                   </legend>
-                  <label className="touch-target flex items-center gap-3 text-sm">
-                    <input
-                      type="checkbox"
-                      name="sequentialLock"
-                      defaultChecked={course.sequentialLock}
-                    />
-                    Complete lessons in order
-                  </label>
                   <label className="touch-target mb-3 flex items-center gap-3 text-sm">
                     <input
                       type="checkbox"
