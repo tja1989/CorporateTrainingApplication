@@ -3,6 +3,7 @@ import { db, t } from "@/lib/db/client";
 import { canonicalRole, type Actor } from "@/lib/auth/roles";
 import { hasPermission } from "@/lib/auth/permissions";
 import { lockAssessmentCurriculum, lockCurriculum } from "./workflow";
+import { canAuthorCourse } from "./ownership";
 /** Question-bank changes alter randomized assessments, so their users must
  * return to draft and receive a fresh approval revision as well. */
 export async function updateDraftQuestion(
@@ -21,10 +22,12 @@ export async function updateDraftQuestion(
       !person ||
       person.erasedAt ||
       person.passwordState !== "ACTIVE" ||
-      canonicalRole(person.role) !== actor.role ||
-      !hasPermission(actor.role, "assessment.review")
+      canonicalRole(person.role) !== actor.role
     )
       throw new Error("Not authorized to review questions.");
+    // HR and Super Admin review any draft; an Instructor reviews drafts used
+    // only by courses they author.
+    const reviewer = hasPermission(actor.role, "assessment.review");
     const [question] = await tx
       .select()
       .from(t.questions)
@@ -54,6 +57,8 @@ export async function updateDraftQuestion(
         ...(bank?.courseId ? [bank.courseId] : []),
       ]),
     ].sort();
+    if (!reviewer && (actor.role !== "INSTRUCTOR" || !courseIds.length))
+      throw new Error("Not authorized to review questions.");
     for (const courseId of courseIds) {
       await lockCurriculum(tx, courseId);
       const [course] = await tx
@@ -61,6 +66,8 @@ export async function updateDraftQuestion(
         .from(t.courses)
         .where(eq(t.courses.id, courseId))
         .limit(1);
+      if (course && !reviewer && !canAuthorCourse(actor, course))
+        throw new Error("Not authorized to review questions.");
       if (
         !course ||
         course.status !== "DRAFT" ||

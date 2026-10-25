@@ -83,6 +83,10 @@ export async function mutateDraftCourse<T>(
     return result;
   });
 }
+/** Names the quiz, its bank and the gap so the author knows exactly what to fix. */
+export function bankShortfallMessage(lessonTitle: string, bankName: string, needed: number, approved: number): string {
+  return `“${lessonTitle}” draws ${needed} question${needed === 1 ? "" : "s"} from “${bankName}”, but only ${approved} ${approved === 1 ? "is" : "are"} approved. Add or approve ${needed - approved} more in Question banks, or lower “Questions to draw”.`;
+}
 export async function validateCurriculum(
   tx: LearningTransaction,
   courseId: string,
@@ -165,10 +169,17 @@ export async function validateCurriculum(
               eq(t.questions.status, "APPROVED"),
             ),
           );
-        if (questions.filter((q) => !used.has(q.id)).length < count)
+        const available = questions.filter((q) => !used.has(q.id)).length;
+        if (available < count) {
+          const [bank] = await tx
+            .select({ name: t.questionBanks.name })
+            .from(t.questionBanks)
+            .where(eq(t.questionBanks.id, bankId))
+            .limit(1);
           throw new Error(
-            "An assessment bank has too few approved questions for its configured count.",
+            bankShortfallMessage(lesson.title, bank?.name ?? "its question bank", count, available),
           );
+        }
       }
     }
   }

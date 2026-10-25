@@ -20,6 +20,7 @@ import type { LearningTransaction } from "@/lib/lms/learning-cycle";
 import type { WorkflowInput } from "@/lib/courses/approval-policy";
 import { parseCoursePlanning } from "@/lib/courses/planning";
 import { saveCoursePlanning } from "@/lib/courses/planning-service";
+import { parseQuizSettingsInput } from "@/lib/courses/quiz-settings-input";
 
 function errorResult(error: unknown): ActionResult {
   return {
@@ -485,6 +486,79 @@ export async function updateContentLessonAction(courseId: string, lessonId: stri
     }, revision(form));
     refresh(courseId);return {success: "Lesson content saved. Submit this revision for approval."};
   } catch (error) { return errorResult(error); }
+}
+export async function updateQuizLessonAction(
+  courseId: string,
+  lessonId: string,
+  form: FormData,
+): Promise<ActionResult> {
+  const actor = await requirePermission("course.author");
+  const parsed = parseQuizSettingsInput({
+    bankId: String(form.get("bankId") ?? ""),
+    pickN: String(form.get("pickN") ?? ""),
+    passPct: String(form.get("passPct") ?? ""),
+    attemptsLimit: String(form.get("attemptsLimit") ?? ""),
+    timeLimitMinutes: String(form.get("timeLimitMinutes") ?? ""),
+    exam: form.get("exam") === "on",
+    integrity: form.get("integrity") === "on",
+  });
+  if ("error" in parsed) return parsed;
+  const settings = parsed.value;
+  try {
+    await mutateDraftCourse(
+      actor,
+      courseId,
+      async (tx) => {
+        const lesson = await courseLesson(tx, courseId, lessonId);
+        if (lesson.type !== "QUIZ" || !lesson.payload.quizId)
+          throw new Error("This lesson is not a quiz.");
+        const [bank] = await tx
+          .select()
+          .from(t.questionBanks)
+          .where(eq(t.questionBanks.id, settings.bankId))
+          .limit(1);
+        if (
+          !bank ||
+          (actor.role === "INSTRUCTOR" &&
+            bank.courseId &&
+            bank.courseId !== courseId)
+        )
+          throw new Error("This question bank is outside your course.");
+        const [quiz] = await tx
+          .select()
+          .from(t.quizzes)
+          .where(eq(t.quizzes.id, lesson.payload.quizId))
+          .limit(1);
+        if (!quiz) throw new Error("This quiz is missing. Reload and try again.");
+        const title = String(form.get("title") ?? "").trim() || lesson.title;
+        await tx.update(t.lessons).set({ title }).where(eq(t.lessons.id, lessonId));
+        await tx
+          .update(t.quizzes)
+          .set({
+            title,
+            settings: {
+              ...quiz.settings,
+              passPct: settings.passPct,
+              attemptsLimit: settings.attemptsLimit,
+              timeLimitSec: settings.timeLimitSec,
+              feedbackMode: settings.feedbackMode,
+              integrityMode: settings.integrityMode,
+            },
+            // Fixed questions stay; the random draw is replaced.
+            sections: [
+              ...quiz.sections.filter((s) => s.fixed?.length),
+              { bankId: settings.bankId, pickN: settings.pickN },
+            ],
+          })
+          .where(eq(t.quizzes.id, quiz.id));
+      },
+      revision(form),
+    );
+    refresh(courseId);
+    return { success: "Quiz settings saved." };
+  } catch (error) {
+    return errorResult(error);
+  }
 }
 export async function updateInterviewLessonAction(
   courseId: string,
