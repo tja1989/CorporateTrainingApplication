@@ -63,9 +63,9 @@ describe("parseQuestionForm valid input", () => {
       acceptedAnswers: ["Paris", "paris"],
     });
   });
-  it("parses matching, dropping incomplete pairs", () => {
+  it("parses matching, dropping empty pairs", () => {
     expect(
-      ok({ type: "matching", prompt: "Match", left: ["a", "b", "c"], right: ["1", "2", ""] }).body.pairs,
+      ok({ type: "matching", prompt: "Match", left: ["a", " ", "b", ""], right: ["1", "", "2", " "] }).body.pairs,
     ).toEqual([
       { left: "a", right: "1" },
       { left: "b", right: "2" },
@@ -84,8 +84,8 @@ describe("parseQuestionForm valid input", () => {
         type: "free_text",
         prompt: "Explain",
         stimulus: "Case",
-        criterionName: ["Clarity", "Accuracy", ""],
-        criterionPoints: ["2", "3", ""],
+        criterionName: ["Clarity", "", "Accuracy", " "],
+        criterionPoints: ["2", "", "3", " "],
         modelAnswer: " Model ",
         points: "5",
       }),
@@ -125,15 +125,30 @@ describe("parseQuestionForm errors", () => {
   });
   it("fill blank needs an answer", () => expect(err({ type: "fill_blank", prompt: "x", accepted: [" "] })).toBe("Add at least one accepted answer."));
   it("matching needs two complete pairs", () => {
-    expect(err({ type: "matching", prompt: "x", left: ["a", "b"], right: ["1", ""] })).toBe("Add at least two complete pairs.");
+    expect(err({ type: "matching", prompt: "x", left: ["a", ""], right: ["1", ""] })).toBe("Add at least two complete pairs.");
+  });
+  it("refuses a matching pair with only one side filled", () => {
+    const pairs = "Fill in both sides of every pair, or remove the empty ones.";
+    expect(err({ type: "matching", prompt: "x", left: ["a", "b", "c"], right: ["1", "2", ""] })).toBe(pairs);
+    expect(err({ type: "matching", prompt: "x", left: ["a", "b", " "], right: ["1", "2", "3"] })).toBe(pairs);
+    // A right side with no left input at all is half a pair too.
+    expect(err({ type: "matching", prompt: "x", left: ["a", "b"], right: ["1", "2", "3"] })).toBe(pairs);
   });
   it("ordering needs two items", () => expect(err({ type: "ordering", prompt: "x", orderItem: ["one"] })).toBe("Add at least two steps in the correct order."));
   it("written answer needs valid criteria and a model answer", () => {
     const base = { type: "free_text", prompt: "x", modelAnswer: "m" };
     expect(err({ ...base })).toBe("Add at least one marking criterion with points.");
-    expect(err({ ...base, criterionName: ["A"], criterionPoints: ["0"] })).toBe("Add at least one marking criterion with points.");
-    expect(err({ ...base, criterionName: ["A"], criterionPoints: ["x"] })).toBe("Add at least one marking criterion with points.");
+    expect(err({ ...base, criterionName: [""], criterionPoints: [" "] })).toBe("Add at least one marking criterion with points.");
     expect(err({ type: "free_text", prompt: "x", criterionName: ["A"], criterionPoints: ["2"] })).toBe("Add a model answer.");
+  });
+  it("refuses a marking criterion with a name but no valid points, or points but no name", () => {
+    const criterion = "Give every marking criterion a name and whole-number points, or remove it.";
+    const base = { type: "free_text", prompt: "x", modelAnswer: "m" };
+    for (const points of ["", "0", "x", "1.5", "-2"])
+      expect(err({ ...base, criterionName: ["Clarity", "A"], criterionPoints: ["2", points] })).toBe(criterion);
+    expect(err({ ...base, criterionName: ["Clarity", " "], criterionPoints: ["2", "3"] })).toBe(criterion);
+    // A name with no points input at all is half a criterion too.
+    expect(err({ ...base, criterionName: ["Clarity", "A"], criterionPoints: ["2"] })).toBe(criterion);
   });
 });
 

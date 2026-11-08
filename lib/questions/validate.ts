@@ -20,6 +20,13 @@ const many = (form: FormData, key: string) =>
 const nonEmpty = (xs: string[]) => xs.filter(Boolean);
 const wholeNumber = (s: string) => (/^\d+$/.test(s) ? Number(s) : NaN);
 const fail = (error: string): Result => ({ ok: false, error });
+/** Two repeated fields read as rows. Rows with both sides empty are dropped. */
+const rows = (form: FormData, a: string, b: string) => {
+  const as = many(form, a);
+  const bs = many(form, b);
+  return Array.from({ length: Math.max(as.length, bs.length) }, (_, i) => [as[i] ?? "", bs[i] ?? ""] as const)
+    .filter(([x, y]) => x || y);
+};
 
 export function parseQuestionForm(form: FormData): Result {
   const prompt = one(form, "prompt");
@@ -69,11 +76,9 @@ export function parseQuestionForm(form: FormData): Result {
     if (!accepted.length) return fail("Add at least one accepted answer.");
     body.acceptedAnswers = accepted;
   } else if (type === "matching") {
-    const left = many(form, "left");
-    const right = many(form, "right");
-    const pairs = left
-      .map((l, i) => ({ left: l, right: right[i] ?? "" }))
-      .filter((p) => p.left && p.right);
+    const pairs = rows(form, "left", "right").map(([left, right]) => ({ left, right }));
+    if (pairs.some((p) => !p.left || !p.right))
+      return fail("Fill in both sides of every pair, or remove the empty ones.");
     if (pairs.length < 2) return fail("Add at least two complete pairs.");
     body.pairs = pairs;
   } else if (type === "ordering") {
@@ -81,11 +86,12 @@ export function parseQuestionForm(form: FormData): Result {
     if (items.length < 2) return fail("Add at least two steps in the correct order.");
     body.orderItems = items;
   } else {
-    const names = many(form, "criterionName");
-    const pts = many(form, "criterionPoints");
-    const criteria = names
-      .map((name, i) => ({ name, points: wholeNumber(pts[i] ?? "") }))
-      .filter((c) => c.name && c.points >= 1);
+    const criteria = rows(form, "criterionName", "criterionPoints").map(([name, points]) => ({
+      name,
+      points: wholeNumber(points),
+    }));
+    if (criteria.some((c) => !c.name || !(c.points >= 1)))
+      return fail("Give every marking criterion a name and whole-number points, or remove it.");
     if (!criteria.length) return fail("Add at least one marking criterion with points.");
     const modelAnswer = one(form, "modelAnswer");
     if (!modelAnswer) return fail("Add a model answer.");
