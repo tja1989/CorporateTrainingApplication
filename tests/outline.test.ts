@@ -199,3 +199,15 @@ describe("lessonNeighbours", () => {
     expect(cleared.next?.locked).toBe(false);
   });
 });
+
+describe("decorateOutline hrefFor", () => {
+  const input = { courseId: "c1", modules, lessons, doneLessonIds: [], sequentialLock: false };
+  it("uses hrefFor for every lesson", () => {
+    const view = decorateOutline({ ...input, hrefFor: (id) => `/preview/${id}` });
+    for (const l of view.modules.flatMap((m) => m.lessons)) expect(l.href).toBe(`/preview/${l.id}`);
+  });
+  it("keeps the learner route without it", () => {
+    const view = decorateOutline(input);
+    for (const l of view.modules.flatMap((m) => m.lessons)) expect(l.href).toBe(`/lesson/${l.id}`);
+  });
+});

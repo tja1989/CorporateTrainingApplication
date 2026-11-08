@@ -137,7 +137,7 @@ export async function canStart(
   return { ok: true };
 }
 
-async function composeServedItems(
+export async function composeServedItems(
   quiz: Quiz,
   connection: LearningDatabase = db,
 ): Promise<ServedItem[]> {
