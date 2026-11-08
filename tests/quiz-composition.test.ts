@@ -18,6 +18,7 @@ const m = vi.hoisted(() => ({
   requirePermission: vi.fn(),
   createQuestion: vi.fn(),
   liveExam: vi.fn(),
+  liveBanks: vi.fn(),
   revalidatePath: vi.fn(),
 }));
 vi.mock("@/lib/db/client", async () => {
@@ -75,7 +76,10 @@ vi.mock("@/lib/db/client", async () => {
 vi.mock("@/lib/auth/guard", () => ({ requirePermission: m.requirePermission }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("@/lib/questions/bank", () => ({ createQuestion: m.createQuestion }));
-vi.mock("@/lib/questions/usage", () => ({ liveExamQuestionIds: m.liveExam }));
+vi.mock("@/lib/questions/usage", () => ({
+  liveExamQuestionIds: m.liveExam,
+  liveExamBankIds: m.liveBanks,
+}));
 
 import { db } from "../lib/db/client";
 import type { LearningTransaction } from "../lib/lms/learning-cycle";
@@ -141,6 +145,7 @@ beforeEach(() => {
   m.user = { id: "u1", role: "INSTRUCTOR", departmentId: "d1" };
   m.requirePermission.mockImplementation(async () => m.user);
   m.liveExam.mockResolvedValue(new Set());
+  m.liveBanks.mockResolvedValue(new Set());
   state.rows = {};
   state.executes = [];
   state.wheres = [];
@@ -324,6 +329,32 @@ describe("saveQuizAction", () => {
     const [lessonQuery] = whereOf("lessons");
     expect(lessonQuery.params).toEqual(expect.arrayContaining(["l1", "c"]));
     expect(m.revalidatePath).toHaveBeenCalledWith("/instructor/courses/c");
+  });
+
+  it("asks to confirm a practice quiz whose only content draws from a live-exam bank", async () => {
+    m.liveExam.mockResolvedValue(new Set());
+    m.liveBanks.mockResolvedValue(new Set(["b1"]));
+    const drawOnly = (...extra: [string, string][]) =>
+      form([["title", "Drill"], ["drawBank", "b1"], ["drawCount", "3"], ["revision", "4"], ...extra]);
+    expect(await saveQuizAction("c", "l1", drawOnly())).toEqual({
+      error: "Confirm that learners will see answers to questions used in a live exam.",
+    });
+    expect(m.liveBanks).toHaveBeenCalledWith(["b1"], expect.anything());
+    nothingWritten();
+    expect(await saveQuizAction("c", "l1", drawOnly(["confirmLiveExam", "on"]))).toEqual({
+      success: "Quiz saved. Submit this revision for approval.",
+    });
+    expect(written("quizzes")).toEqual([
+      expect.objectContaining({ sections: [{ bankId: "b1", pickN: 3 }] }),
+    ]);
+  });
+
+  it("needs no confirmation when neither the picks nor the draws are in a live exam", async () => {
+    m.liveExam.mockResolvedValue(new Set());
+    expect(await saveQuizAction("c", "l1", quizForm())).toEqual({
+      success: "Quiz saved. Submit this revision for approval.",
+    });
+    expect(m.liveBanks).toHaveBeenCalledWith(["b1"], expect.anything());
   });
 
   it("needs no confirmation for an exam quiz", async () => {

@@ -48,13 +48,14 @@ vi.mock("@/app/(workspace)/admin/courses/actions", () => ({ addLessonAction: vi.
 
 import { QuizBuilder } from "../components/quiz-builder";
 import { CourseLessonPreview } from "../components/course-lesson-preview";
+import { LIVE_EXAM_CONFIRMATION_REQUIRED, saveConfirmingLiveExam } from "../lib/quiz/live-exam";
 
 type BuilderProps = Parameters<typeof QuizBuilder>[0];
 type Lesson = Parameters<typeof CourseLessonPreview>[0]["lesson"];
 
 const banks = [
-  { id: "b1", name: "Fire safety", approvedCount: 3 },
-  { id: "b2", name: "First aid", approvedCount: 12 },
+  { id: "b1", name: "Fire safety", approvedCount: 3, liveExam: false },
+  { id: "b2", name: "First aid", approvedCount: 12, liveExam: false },
 ];
 const picker = (id: string, prompt: string, liveExam = false) => ({
   id, bankId: "b1", bankName: "Fire safety", type: "mcq_single", prompt, points: 1, liveExam,
@@ -102,6 +103,13 @@ describe("QuizBuilder", () => {
     expect(count(builder(), "Used in a live exam")).toBe(1);
   });
 
+  it("marks a random draw from a bank a live exam uses", () => {
+    const html = builder({ banks: [banks[0], { ...banks[1], liveExam: true }] });
+    expect(count(html, "Used in a live exam")).toBe(2);
+    // The draw's badge sits in its own row, after the picked question's.
+    expect(html.lastIndexOf("Used in a live exam")).toBeGreaterThan(html.indexOf("Random draw 2"));
+  });
+
   it("warns when a random draw asks for more than the bank's approved questions", () => {
     const html = builder();
     expect(html).toContain(
@@ -122,6 +130,54 @@ describe("QuizBuilder", () => {
     expect(values(html, "picked")).toEqual([]);
     expect(html).toContain("Lesson title");
     expect(html).toContain("Add lesson");
+  });
+});
+
+describe("saveConfirmingLiveExam", () => {
+  const quizForm = () => {
+    const form = new FormData();
+    form.set("title", "Drill");
+    form.set("confirmLiveExam", "");
+    return form;
+  };
+
+  it("asks when a stale page's save needs confirmation, then saves again confirmed", async () => {
+    const save = vi.fn()
+      .mockResolvedValueOnce({ error: LIVE_EXAM_CONFIRMATION_REQUIRED })
+      .mockResolvedValueOnce({ success: "Quiz saved. Submit this revision for approval." });
+    const ask = vi.fn(() => true);
+    expect(await saveConfirmingLiveExam(save, quizForm(), ask)).toEqual({
+      success: "Quiz saved. Submit this revision for approval.",
+    });
+    expect(ask).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledTimes(2);
+    expect((save.mock.calls[1][0] as FormData).get("confirmLiveExam")).toBe("on");
+    expect((save.mock.calls[1][0] as FormData).get("title")).toBe("Drill");
+  });
+
+  it("stops quietly when the author cancels", async () => {
+    const save = vi.fn().mockResolvedValue({ error: LIVE_EXAM_CONFIRMATION_REQUIRED });
+    expect(await saveConfirmingLiveExam(save, quizForm(), () => false)).toEqual({ cancelled: true });
+    expect(save).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes other results through without asking", async () => {
+    const ask = vi.fn(() => true);
+    for (const result of [{ error: "Add at least one question." }, { success: "Saved." }, undefined]) {
+      const save = vi.fn().mockResolvedValue(result);
+      expect(await saveConfirmingLiveExam(save, quizForm(), ask)).toEqual(result);
+      expect(save).toHaveBeenCalledTimes(1);
+    }
+    expect(ask).not.toHaveBeenCalled();
+  });
+
+  it("does not ask twice when the confirmed save still needs confirmation", async () => {
+    const form = quizForm();
+    form.set("confirmLiveExam", "on");
+    const save = vi.fn().mockResolvedValue({ error: LIVE_EXAM_CONFIRMATION_REQUIRED });
+    const ask = vi.fn(() => true);
+    expect(await saveConfirmingLiveExam(save, form, ask)).toEqual({ error: LIVE_EXAM_CONFIRMATION_REQUIRED });
+    expect(ask).not.toHaveBeenCalled();
   });
 });
 

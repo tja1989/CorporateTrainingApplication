@@ -1,4 +1,4 @@
-import { eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import type { QuizSection } from "@/lib/db/schema";
 import type { LearningDatabase } from "@/lib/lms/learning-cycle";
@@ -159,4 +159,19 @@ export async function liveExamQuestionIds(
       .filter(([, refs]) => refs.some((ref) => ref.live && ref.exam))
       .map(([questionId]) => questionId),
   );
+}
+
+/** Banks holding an APPROVED question that a live course uses in an
+ * exam-mode quiz, so a random draw from them can serve that question. */
+export async function liveExamBankIds(
+  bankIds: string[],
+  conn: LearningDatabase = db,
+): Promise<Set<string>> {
+  if (bankIds.length === 0) return new Set();
+  const approved = await conn
+    .select({ id: t.questions.id, bankId: t.questions.bankId })
+    .from(t.questions)
+    .where(and(inArray(t.questions.bankId, bankIds), eq(t.questions.status, "APPROVED")));
+  const live = await liveExamQuestionIds(approved.map((q) => q.id), conn);
+  return new Set(approved.filter((q) => live.has(q.id)).map((q) => q.bankId));
 }

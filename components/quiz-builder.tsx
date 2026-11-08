@@ -13,9 +13,11 @@ import {
   searchQuestionsAction,
 } from "@/lib/quiz/composition-actions";
 import type { PickerQuestion, QuizContent } from "@/lib/quiz/composition";
+import { saveConfirmingLiveExam } from "@/lib/quiz/live-exam";
 import { plural } from "@/lib/format";
 
-type Bank = { id: string; name: string; approvedCount: number };
+/** `liveExam`: the bank holds an approved question a live exam uses. */
+export type QuizBank = { id: string; name: string; approvedCount: number; liveExam: boolean };
 type DrawRow = { key: number; bankId: string; count: string };
 
 const LIVE_EXAM_CONFIRM = "Learners will see these answers right after submitting.";
@@ -45,7 +47,7 @@ function BankSearch({
   pickedIds,
   onAdd,
 }: {
-  banks: Bank[];
+  banks: QuizBank[];
   pickedIds: Set<string>;
   onAdd: (question: PickerQuestion) => void;
 }) {
@@ -168,7 +170,7 @@ function WriteQuestionDialog({
 }: {
   open: boolean;
   onClose: () => void;
-  banks: Bank[];
+  banks: QuizBank[];
   courseId: string;
   onCreated: (question: PickerQuestion, revision?: number) => void;
   returnFocusRef: RefObject<HTMLButtonElement | null>;
@@ -244,7 +246,7 @@ export function QuizBuilder({
   lessonId?: string;
   moduleId?: string;
   initial: { title: string; content: QuizContent; questions: PickerQuestion[]; exam: boolean; integrity: boolean };
-  banks: Bank[];
+  banks: QuizBank[];
   copySources: { lessonId: string; label: string }[];
   revision: number;
 }) {
@@ -266,11 +268,16 @@ export function QuizBuilder({
   const writeButton = useRef<HTMLButtonElement>(null);
   const confirmField = useRef<HTMLInputElement>(null);
   const pickedIds = new Set(picked.map((q) => q.id));
+  const liveBanks = new Set(banks.filter((b) => b.liveExam).map((b) => b.id));
   const sources = copySources.filter((s) => s.lessonId !== lessonId);
   const action =
     mode === "new"
       ? addLessonAction.bind(null, courseId, moduleId ?? "")
       : saveQuizAction.bind(null, courseId, lessonId ?? "");
+  // A page loaded before a live exam started using these questions learns it
+  // from the save; ask then, and save again on OK.
+  const save = (data: FormData) =>
+    saveConfirmingLiveExam(action, data, () => window.confirm(LIVE_EXAM_CONFIRM));
 
   const add = (questions: PickerQuestion[]) =>
     setPicked((current) => {
@@ -324,12 +331,13 @@ export function QuizBuilder({
   };
 
   /** A practice quiz shows answers right after submitting, so picking a
-   * question a live exam uses needs the author's say-so. */
+   * question a live exam uses, or drawing from a bank holding one, needs
+   * the author's say-so. */
   const confirmLiveExam = (event: FormEvent) => {
     const field = confirmField.current;
     if (!field) return;
     field.value = "";
-    if (exam || !picked.some((q) => q.liveExam)) return;
+    if (exam || !(picked.some((q) => q.liveExam) || draws.some((d) => liveBanks.has(d.bankId)))) return;
     if (window.confirm(LIVE_EXAM_CONFIRM)) field.value = "on";
     else {
       event.preventDefault();
@@ -340,7 +348,7 @@ export function QuizBuilder({
   return (
     <div className="min-w-0">
       <div onSubmitCapture={confirmLiveExam} className="min-w-0">
-        <WorkspaceForm action={action} className="min-w-0">
+        <WorkspaceForm action={save} className="min-w-0">
           {mode === "new" ? <input type="hidden" name="type" value="QUIZ" /> : null}
           <input type="hidden" name="revision" value={revision} />
           <input type="hidden" name="confirmLiveExam" defaultValue="" ref={confirmField} />
@@ -405,6 +413,11 @@ export function QuizBuilder({
                       <Input name="drawCount" type="number" min={1} max={100} inputMode="numeric" value={d.count} onChange={(e) => patchDraw(d.key, { count: e.target.value })} required />
                     </Field>
                   </div>
+                  {liveBanks.has(d.bankId) ? (
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <Chip variant="warning">Used in a live exam</Chip>
+                    </div>
+                  ) : null}
                   {over ? (
                     <p className="mb-3 flex items-start gap-2 rounded-control bg-warning-tint p-3 text-sm text-warning-fg">
                       <Icon name="warning" size={16} className="mt-1 shrink-0" />

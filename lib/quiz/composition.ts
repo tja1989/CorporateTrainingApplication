@@ -5,7 +5,8 @@ import type { Actor } from "@/lib/auth/roles";
 import { canReadCourse, type CourseOwnership } from "@/lib/courses/ownership";
 import type { LearningDatabase, LearningTransaction } from "@/lib/lms/learning-cycle";
 import type { QuestionSearchRow } from "@/lib/questions/search";
-import { liveExamQuestionIds } from "@/lib/questions/usage";
+import { liveExamBankIds, liveExamQuestionIds } from "@/lib/questions/usage";
+import { LIVE_EXAM_CONFIRMATION_REQUIRED } from "./live-exam";
 
 /** A quiz's content: picked questions in order, plus random draws from banks. */
 export type QuizContent = { picked: string[]; draws: { bankId: string; pickN: number }[] };
@@ -100,8 +101,19 @@ export function quizModes(form: FormData): Pick<QuizSettings, "feedbackMode" | "
   };
 }
 
+/** Whether the quiz can serve a question a live exam uses: it picks one, or
+ * draws from a bank holding one. */
+async function servesLiveExamQuestions(
+  tx: LearningTransaction,
+  c: QuizContent,
+): Promise<boolean> {
+  if (c.picked.length > 0 && (await liveExamQuestionIds(c.picked, tx)).size > 0) return true;
+  const bankIds = [...new Set(c.draws.map((d) => d.bankId))];
+  return bankIds.length > 0 && (await liveExamBankIds(bankIds, tx)).size > 0;
+}
+
 /** Parses and checks a quiz form inside the curriculum transaction. A
- * practice quiz that picks a question a live exam uses needs
+ * practice quiz that can serve a question a live exam uses needs
  * `confirmLiveExam=on`, because its learners see answers right away. */
 export async function composeQuizSections(
   tx: LearningTransaction,
@@ -112,10 +124,9 @@ export async function composeQuizSections(
   if (
     quizModes(form).feedbackMode === "PRACTICE" &&
     form.get("confirmLiveExam") !== "on" &&
-    content.picked.length > 0 &&
-    (await liveExamQuestionIds(content.picked, tx)).size > 0
+    (await servesLiveExamQuestions(tx, content))
   )
-    throw new Error("Confirm that learners will see answers to questions used in a live exam.");
+    throw new Error(LIVE_EXAM_CONFIRMATION_REQUIRED);
   return toSections(content);
 }
 

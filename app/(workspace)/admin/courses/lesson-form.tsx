@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button, Field, Input, Select, Textarea } from "@/components/ui";
 import { WorkspaceForm } from "@/components/workspace-form";
-import { QuizBuilder } from "@/components/quiz-builder";
+import { QuizBuilder, type QuizBank } from "@/components/quiz-builder";
 import type { InterviewConfig } from "@/lib/db/schema";
 import { addLessonAction } from "./actions";
 export function InterviewFields({ cfg }: { cfg?: InterviewConfig }) {
@@ -78,7 +78,7 @@ export function LessonForm({
   revision: number;
   courseId: string;
   moduleId: string;
-  banks: { id: string; name: string; approvedCount: number }[];
+  banks: QuizBank[];
   copySources: { lessonId: string; label: string }[];
 }) {
   const [type, setType] = useState("TEXT");

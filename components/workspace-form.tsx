@@ -3,7 +3,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { Button, cx } from "./ui";
 
-export type ActionResult = { error?: string; success?: string; href?: string; codes?: string[] };
+/** `cancelled`: the person stopped the save (for example at a confirm); nothing is shown. */
+export type ActionResult = { error?: string; success?: string; href?: string; codes?: string[]; cancelled?: boolean };
 /** Server validation errors leave the live form intact, including its values. */
 export function WorkspaceForm({ action, children, className, success = "Changes saved.", reload = true }: {
   action: (form: FormData) => Promise<ActionResult | void>;
@@ -24,6 +25,7 @@ export function WorkspaceForm({ action, children, className, success = "Changes 
     void (async () => {
       try {
         const response = await action(data);
+        if (response?.cancelled) return;
         if (response?.error) { setResult(response); return; }
         if (response?.href) { window.location.assign(response.href); return; }
         if (response?.codes || !reload) { setResult(response ?? { success }); return; }

@@ -20,6 +20,7 @@ import {
   pickerQuestions,
   quizCopySources,
 } from "@/lib/quiz/composition";
+import { liveExamBankIds } from "@/lib/questions/usage";
 import {
   Button,
   Chip,
@@ -135,8 +136,11 @@ export async function CourseEditor({
   const videos = videoIds.length
     ? await db.select().from(t.videos).where(inArray(t.videos.id, videoIds))
     : [];
-  // The quiz builder's data. Banks are shared by every course.
-  const banks = editable ? await banksWithApprovedCounts() : [];
+  // The quiz builder's data. Banks are shared by every course; a bank holding
+  // a question a live exam uses marks its random draws "Used in a live exam".
+  const bankRows = editable ? await banksWithApprovedCounts() : [];
+  const liveExamBanks = await liveExamBankIds(bankRows.map((b) => b.id));
+  const banks = bankRows.map((b) => ({ ...b, liveExam: liveExamBanks.has(b.id) }));
   const copySources = editable ? await quizCopySources(actor) : [];
   const quizIds = editable
     ? lessons.flatMap((l) =>

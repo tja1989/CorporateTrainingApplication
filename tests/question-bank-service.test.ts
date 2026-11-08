@@ -66,6 +66,7 @@ import {
   updateDraftQuestion,
 } from "../lib/courses/questions";
 import { createBank, createQuestion, editQuestion } from "../lib/questions/bank";
+import { liveExamBankIds } from "../lib/questions/usage";
 
 const dialect = new PgDialect();
 const toQuery = (value: unknown) => dialect.sqlToQuery(value as SQL);
@@ -426,5 +427,33 @@ describe("updateDraftQuestion", () => {
     expect(locks()).toEqual(["assessment", "curriculum:owner", "curriculum:user"]);
     expect(written("courses")).toEqual([bump, bump]);
     expect(written("questions")).toEqual([{ status: "APPROVED" }]);
+  });
+});
+
+describe("liveExamBankIds", () => {
+  it("marks banks holding an approved question that a live exam picks or draws", async () => {
+    state.rows.questions = [
+      { id: "q1", bankId: "drawn" },
+      { id: "q2", bankId: "picked" },
+      { id: "q3", bankId: "practice" },
+      { id: "q4", bankId: "draft-exam" },
+    ];
+    state.rows.lessons = [
+      quiz(course("live", "PUBLISHED", "APPROVED"), [{ fixed: ["q2"] }, { bankId: "drawn", pickN: 2 }], "EXAM"),
+      quiz(course("practice", "PUBLISHED", "APPROVED"), [{ bankId: "practice", pickN: 1 }]),
+      quiz(course("draft"), [{ bankId: "draft-exam", pickN: 1 }], "EXAM"),
+    ];
+    expect(
+      await liveExamBankIds(["drawn", "picked", "practice", "draft-exam"], db as never),
+    ).toEqual(new Set(["drawn", "picked"]));
+    const [bankQuery] = state.wheres.filter((w) => w.table === "questions").map((w) => toQuery(w.where));
+    expect(bankQuery.params).toEqual(
+      expect.arrayContaining(["drawn", "picked", "practice", "draft-exam", "APPROVED"]),
+    );
+  });
+
+  it("reads nothing for no banks", async () => {
+    expect(await liveExamBankIds([], db as never)).toEqual(new Set());
+    expect(state.wheres).toEqual([]);
   });
 });
