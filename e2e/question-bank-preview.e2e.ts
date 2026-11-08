@@ -308,7 +308,9 @@ test.describe.serial("Instructor question bank, quiz builder and preview", () =>
     const reviewed = review.getByRole("list", { name: "Picked questions" }).locator(":scope > li");
     await expect(reviewed).toHaveCount(4);
     await expect(reviewed.nth(3)).toContainText(qs.multi.prompt);
-    await expect(review.getByRole("list", { name: "Random draws" })).toHaveText(`2 random from ${bankName} (8 approved questions)`);
+    const draws = review.getByRole("list", { name: "Random draws" }).locator(":scope > li");
+    await expect(draws).toHaveCount(1);
+    await expect(draws).toContainText(`2 random from ${bankName} (8 approved questions)`);
     [quiz] = await quizOf(courseId);
     expect(quiz.sections).toEqual([
       { fixed: [ids[qs.single.prompt], ids[qs.truefalse.prompt], ids[inline.prompt], ids[qs.multi.prompt]] },
@@ -426,7 +428,15 @@ test.describe.serial("Instructor question bank, quiz builder and preview", () =>
       await expect(single).toContainText(qs.single.explanation);
       await expect(picked.filter({ hasText: qs.truefalse.prompt })).toContainText("Correct answerTrue");
       await expect(picked.filter({ hasText: "QA inline" }).getByRole("list", { name: "Accepted answers" })).toHaveText("fire");
-      await expect(review.getByRole("list", { name: "Random draws" })).toHaveText(`2 random from ${bankName} (8 approved questions)`);
+      // Under the draw, the approver can open every approved question the draw can serve, with its answers.
+      const draw = review.getByRole("list", { name: "Random draws" }).locator(":scope > li");
+      await expect(draw).toHaveCount(1);
+      await expect(draw).toContainText(`2 random from ${bankName} (8 approved questions)`);
+      await draw.getByText("Show the approved questions in this bank", { exact: true }).click();
+      const drawable = draw.getByRole("list", { name: `Approved questions in ${bankName}`, exact: true }).locator(":scope > li");
+      await expect(drawable).toHaveCount(8);
+      await expect(drawable.filter({ hasText: qs.matching.prompt }).getByRole("list", { name: "Correct pairs" })).toContainText("Green → Safe condition");
+      await expect(drawable.filter({ hasText: qs.single.prompt }).getByRole("list", { name: "Answer choices" }).getByRole("listitem").filter({ hasText: "Carbon dioxide" })).toContainText("Correct answer");
       await expectNoPageOverflow(headPage);
       await capture(headPage, info, "department-head-answer-key");
 

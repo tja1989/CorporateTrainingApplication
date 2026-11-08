@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { Markdown } from "@/lib/markdown";
 import { parseCoverUrl } from "@/lib/workspace-inputs";
@@ -7,6 +7,10 @@ import { ButtonAnchor } from "./ui";
 import { plural } from "@/lib/format";
 import { banksWithApprovedCounts, fromSections } from "@/lib/quiz/composition";
 import { QuestionGuide } from "@/app/(workspace)/admin/reviews/question-guide";
+
+/** How many of a drawn bank's approved questions the answer key lists. */
+const DRAWN_QUESTIONS_SHOWN = 50;
+
 export async function CourseLessonPreview({
   lesson,
 }: {
@@ -89,7 +93,8 @@ export async function CourseLessonPreview({
         .limit(1)
     : [];
   if (!quiz) return <p>Assessment unavailable.</p>;
-  // The answer key for reviewers: every picked question in full, then each random draw.
+  // The answer key for reviewers: every picked question in full, then each
+  // random draw with the approved questions it can serve.
   const { picked, draws } = fromSections(quiz.sections);
   const approved = picked.length
     ? await db
@@ -99,8 +104,25 @@ export async function CourseLessonPreview({
     : [];
   const byId = new Map(approved.map((q) => [q.id, q]));
   const questions = picked.flatMap((id) => byId.get(id) ?? []);
+  const drawnBankIds = [...new Set(draws.map((d) => d.bankId))];
   const banks = new Map(
-    (await banksWithApprovedCounts([...new Set(draws.map((d) => d.bankId))])).map((b) => [b.id, b]),
+    (await banksWithApprovedCounts(drawnBankIds)).map((b) => [b.id, b]),
+  );
+  const bankQuestions = new Map(
+    await Promise.all(
+      drawnBankIds.map(
+        async (bankId) =>
+          [
+            bankId,
+            await db
+              .select()
+              .from(t.questions)
+              .where(and(eq(t.questions.bankId, bankId), eq(t.questions.status, "APPROVED")))
+              .orderBy(asc(t.questions.createdAt), asc(t.questions.id))
+              .limit(DRAWN_QUESTIONS_SHOWN),
+          ] as const,
+      ),
+    ),
   );
   return (
     <div className="min-w-0">
@@ -125,9 +147,29 @@ export async function CourseLessonPreview({
         <ul aria-label="Random draws" className="mt-3 list-disc space-y-1 ps-6 text-sm">
           {draws.map((d, index) => {
             const bank = banks.get(d.bankId);
+            const shown = bankQuestions.get(d.bankId) ?? [];
+            const more = (bank?.approvedCount ?? 0) - shown.length;
             return (
               <li key={index} className="break-words">
                 {`${d.pickN} random from ${bank?.name ?? "an unknown bank"} (${bank?.approvedCount ?? 0} approved questions)`}
+                {shown.length ? (
+                  <details className="mt-1">
+                    <summary className="touch-target flex items-center text-link">
+                      Show the approved questions in this bank
+                    </summary>
+                    <ol aria-label={`Approved questions in ${bank?.name ?? "this bank"}`} className="list-decimal space-y-4 ps-6 text-base">
+                      {shown.map((q) => (
+                        <li key={q.id} className="min-w-0">
+                          <p className="break-words font-medium">{q.body.prompt}</p>
+                          <QuestionGuide type={q.type} body={q.body} rubric={q.rubric} />
+                        </li>
+                      ))}
+                    </ol>
+                    {more > 0 ? (
+                      <p className="mb-3 text-muted">{`and ${more} more approved questions in this bank`}</p>
+                    ) : null}
+                  </details>
+                ) : null}
               </li>
             );
           })}

@@ -4,10 +4,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 
-// Rows each table returns, keyed by table name, and the where clauses asked.
+// Rows each table returns, keyed by table name (a function gets the query's
+// where clause), and the where clauses and limits asked.
 const state = vi.hoisted(() => ({
-  rows: {} as Record<string, unknown[]>,
+  rows: {} as Record<string, unknown[] | ((where: unknown) => unknown[])>,
   wheres: [] as { table: string; where: unknown }[],
+  limits: [] as { table: string; n: number }[],
 }));
 vi.mock("@/lib/db/client", async () => {
   const { getTableName } = await import("drizzle-orm");
@@ -16,6 +18,7 @@ vi.mock("@/lib/db/client", async () => {
     db: {
       select: () => {
         let table = "";
+        let clause: unknown;
         const q: any = {
           from: (source: any) => {
             table = getTableName(source);
@@ -25,13 +28,19 @@ vi.mock("@/lib/db/client", async () => {
           innerJoin: () => q,
           groupBy: () => q,
           orderBy: () => q,
-          limit: () => q,
+          limit: (n: number) => {
+            state.limits.push({ table, n });
+            return q;
+          },
           where: (where: unknown) => {
+            clause = where;
             state.wheres.push({ table, where });
             return q;
           },
-          then: (resolve: any, reject: any) =>
-            Promise.resolve(state.rows[table] ?? []).then(resolve, reject),
+          then: (resolve: any, reject: any) => {
+            const rows = state.rows[table] ?? [];
+            return Promise.resolve(typeof rows === "function" ? rows(clause) : rows).then(resolve, reject);
+          },
         };
         return q;
       },
@@ -183,36 +192,80 @@ describe("saveConfirmingLiveExam", () => {
 
 describe("CourseLessonPreview answer key", () => {
   const dialect = new PgDialect();
+  const lesson = { id: "l1", type: "QUIZ", title: "Fire quiz", payload: { quizId: "qz" } } as unknown as Lesson;
+  const picked = {
+    id: "q1",
+    type: "mcq_single",
+    status: "APPROVED",
+    rubric: null,
+    body: { prompt: "Which exit is closest to the till?", options: ["North door", "South door"], correct: [1] },
+  };
+  const drawn = (n: number) => ({
+    id: `d${n}`,
+    type: "mcq_single",
+    status: "APPROVED",
+    rubric: null,
+    body: { prompt: `Bank question ${n}: which extinguisher suits an electrical fire?`, options: ["Water", "CO2"], correct: [1] },
+  });
+  /** Picked questions for the picked query, otherwise the bank's questions. */
+  const questionsBy = (bank: unknown[]) => (where: unknown) =>
+    dialect.sqlToQuery(where as SQL).params.includes("b1") ? bank : [picked];
+  const questionQueries = () =>
+    state.wheres
+      .filter((w) => w.table === "questions")
+      .map((w) => dialect.sqlToQuery(w.where as SQL));
   beforeEach(() => {
     state.wheres = [];
+    state.limits = [];
     state.rows = {
       quizzes: [{
         id: "qz",
         settings: { passPct: 80, attemptsLimit: 3, feedbackMode: "EXAM", integrityMode: false },
         sections: [{ fixed: ["q1"] }, { bankId: "b1", pickN: 4 }],
       }],
-      questions: [{
-        id: "q1",
-        type: "mcq_single",
-        status: "APPROVED",
-        rubric: null,
-        body: { prompt: "Which exit is closest to the till?", options: ["North door", "South door"], correct: [1] },
-      }],
+      questions: questionsBy([drawn(1), drawn(2), drawn(3)]),
       question_banks: [{ id: "b1", name: "Fire safety", approvedCount: 3 }],
     };
   });
 
   it("shows each picked question with its answers, and each random draw", async () => {
-    const lesson = { id: "l1", type: "QUIZ", title: "Fire quiz", payload: { quizId: "qz" } } as unknown as Lesson;
     const html = renderToStaticMarkup(await CourseLessonPreview({ lesson }));
     expect(html).toContain("Pass mark 80%");
     expect(html).toContain("Which exit is closest to the till?");
     expect(html).toContain("Correct answer");
     expect(html).toContain("4 random from Fire safety (3 approved questions)");
-    const questionQuery = state.wheres
-      .filter((w) => w.table === "questions")
-      .map((w) => dialect.sqlToQuery(w.where as SQL));
-    expect(questionQuery).toHaveLength(1);
-    expect(questionQuery[0].params).toEqual(expect.arrayContaining(["q1", "APPROVED"]));
+    expect(questionQueries()[0].params).toEqual(expect.arrayContaining(["q1", "APPROVED"]));
+  });
+
+  it("lists, under each random draw, the bank's approved questions with their answers", async () => {
+    const html = renderToStaticMarkup(await CourseLessonPreview({ lesson }));
+    expect(html).toContain("Show the approved questions in this bank");
+    for (const n of [1, 2, 3]) expect(html).toContain(`Bank question ${n}: which extinguisher suits an electrical fire?`);
+    // One "Correct answer" for the picked question, one per bank question.
+    expect(count(html, "Correct answer")).toBe(4);
+    expect(html.indexOf("Show the approved questions in this bank")).toBeGreaterThan(
+      html.indexOf("4 random from Fire safety (3 approved questions)"),
+    );
+    expect(html).not.toContain("more approved questions in this bank");
+    const bankQuery = questionQueries().find((q) => q.params.includes("b1"));
+    expect(bankQuery?.params).toEqual(expect.arrayContaining(["b1", "APPROVED"]));
+    expect(state.limits).toContainEqual({ table: "questions", n: 50 });
+  });
+
+  it("shows the first 50 of a bank's approved questions and counts the rest", async () => {
+    state.rows.question_banks = [{ id: "b1", name: "Fire safety", approvedCount: 53 }];
+    state.rows.questions = questionsBy(Array.from({ length: 50 }, (_, i) => drawn(i + 1)));
+    const html = renderToStaticMarkup(await CourseLessonPreview({ lesson }));
+    expect(html).toContain("4 random from Fire safety (53 approved questions)");
+    expect(html).toContain("Bank question 50:");
+    expect(html).toContain("and 3 more approved questions in this bank");
+  });
+
+  it("lists nothing under a draw from a bank without approved questions", async () => {
+    state.rows.question_banks = [{ id: "b1", name: "Fire safety", approvedCount: 0 }];
+    state.rows.questions = questionsBy([]);
+    const html = renderToStaticMarkup(await CourseLessonPreview({ lesson }));
+    expect(html).toContain("4 random from Fire safety (0 approved questions)");
+    expect(html).not.toContain("Show the approved questions in this bank");
   });
 });
