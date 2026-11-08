@@ -17,6 +17,7 @@ export const LEARNER_NAV: NavItem[] = [
 export const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Overview", icon: "grid" },
   { href: "/admin/courses", label: "Courses", icon: "book", group: "Learning" },
+  { href: "/admin/questions", label: "Question bank", icon: "note", group: "Learning" },
   {
     href: "/admin/rollout",
     label: "Training rollout",
@@ -63,6 +64,7 @@ export const MANAGER_NAV: NavItem[] = [
 export const HR_NAV: NavItem[] = [
   { href: "/hr", label: "Overview", icon: "grid" },
   { href: "/hr/courses", label: "Courses", icon: "book" },
+  { href: "/hr/questions", label: "Question bank", icon: "note" },
   { href: "/hr/rollout", label: "Training rollout", icon: "arrow-right" },
   { href: "/hr/people", label: "Employees", icon: "users" },
   { href: "/hr/reports", label: "Reports", icon: "chart" },
@@ -97,9 +99,24 @@ export const DEPARTMENT_NAV: NavItem[] = [
 export const INSTRUCTOR_NAV: NavItem[] = [
   { href: "/instructor", label: "Overview", icon: "grid" },
   { href: "/instructor/courses", label: "My courses", icon: "book" },
+  { href: "/instructor/questions", label: "Question bank", icon: "note" },
   { href: "/instructor/reports", label: "Training reports", icon: "chart" },
   { href: "/feedback", label: "Feedback reports", icon: "star" },
 ];
+export function questionBankPath(
+  role: string,
+): "/admin/questions" | "/hr/questions" | "/instructor/questions" {
+  switch (canonicalRole(role)) {
+    case "ADMIN":
+      return "/admin/questions";
+    case "HR_HEAD":
+      return "/hr/questions";
+    case "INSTRUCTOR":
+      return "/instructor/questions";
+    default:
+      throw new Error(`Role ${role} has no question bank`);
+  }
+}
 export function workspaceNavigation(role: string): NavItem[] {
   switch (canonicalRole(role)) {
     case "ADMIN":

@@ -71,6 +71,8 @@ export async function runDeployInit(): Promise<void> {
     console.log("deploy-init: feedback storage migration complete");
     await client.query(readFileSync(resolve(process.cwd(), "migrations/20261015_course_planning.sql"), "utf8"));
     console.log("deploy-init: course planning migration complete");
+    await client.query(readFileSync(resolve(process.cwd(), "migrations/20261108_question_authors.sql"), "utf8"));
+    console.log("deploy-init: question author migration complete");
   } catch(error) {
     await client.query("ROLLBACK").catch(()=>{});
     throw error;

@@ -591,6 +591,7 @@ export const questions = pgTable("questions", {
     .$type<"human" | "ai">()
     .notNull()
     .default("human"),
+  authorId: text("author_id"),
   version: integer("version").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

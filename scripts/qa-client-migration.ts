@@ -76,6 +76,9 @@ async function run() {
       "utf8",
     );
     await client.query(planningSql);
+    await client.query(
+      readFileSync("migrations/20261108_question_authors.sql", "utf8"),
+    );
     const graph = (
       await client.query(
         "SELECT * FROM course_prerequisites ORDER BY course_id,required_course_id",

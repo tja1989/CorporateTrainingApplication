@@ -2,6 +2,7 @@ import type { Role } from "./roles";
 export type Permission =
   | "identity.manage"
   | "course.author"
+  | "question.author"
   | "course.approve"
   | "course.publish"
   | "course.override"
@@ -15,6 +16,7 @@ const GRANTS: Record<Role, readonly Permission[]> = {
   ADMIN: [
     "identity.manage",
     "course.author",
+    "question.author",
     "course.approve",
     "course.publish",
     "course.override",
@@ -27,6 +29,7 @@ const GRANTS: Record<Role, readonly Permission[]> = {
   ],
   HR_HEAD: [
     "course.author",
+    "question.author",
     "course.publish",
     "course.rollout",
     "reports.read",
@@ -41,7 +44,7 @@ const GRANTS: Record<Role, readonly Permission[]> = {
     "reports.read",
     "feedback.read",
   ],
-  INSTRUCTOR: ["course.author", "reports.read", "feedback.read"],
+  INSTRUCTOR: ["course.author", "question.author", "reports.read", "feedback.read"],
   LEARNER: [],
 };
 export function hasPermission(role: Role, permission: Permission): boolean {
