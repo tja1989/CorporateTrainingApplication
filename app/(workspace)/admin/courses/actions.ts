@@ -20,6 +20,7 @@ import type { LearningTransaction } from "@/lib/lms/learning-cycle";
 import type { WorkflowInput } from "@/lib/courses/approval-policy";
 import { parseCoursePlanning } from "@/lib/courses/planning";
 import { saveCoursePlanning } from "@/lib/courses/planning-service";
+import { composeQuizSections, quizModes } from "@/lib/quiz/composition";
 
 function errorResult(error: unknown): ActionResult {
   return {
@@ -318,13 +319,6 @@ export async function addLessonAction(
     if (file.error || !file.value)
       return { error: "Enter a local path or HTTPS URL for the PDF." };
   }
-  if (
-    type === "QUIZ" &&
-    (!form.get("bankId") ||
-      !Number.isInteger(Number(form.get("pickN"))) ||
-      Number(form.get("pickN")) < 1)
-  )
-    return { error: "Choose a question bank and a positive question count." };
   let youtubeId = "",
     check: { durationSec: number; title: string } | undefined;
   if (type === "VIDEO") {
@@ -375,19 +369,7 @@ export async function addLessonAction(
         if (type === "INTERVIEW")
           payload = { interview: interviewConfigFromForm(form) };
         if (type === "QUIZ") {
-          const bankId = String(form.get("bankId"));
-          const [bank] = await tx
-            .select()
-            .from(t.questionBanks)
-            .where(eq(t.questionBanks.id, bankId))
-            .limit(1);
-          if (
-            !bank ||
-            (actor.role === "INSTRUCTOR" &&
-              bank.courseId &&
-              bank.courseId !== courseId)
-          )
-            throw new Error("This question bank is outside your course.");
+          const sections = await composeQuizSections(tx, form);
           const { DEFAULT_SETTINGS } = await import("@/lib/quiz/engine");
           const quizId = id();
           await tx
@@ -396,12 +378,8 @@ export async function addLessonAction(
               id: quizId,
               lessonId,
               title,
-              settings: {
-                ...DEFAULT_SETTINGS,
-                feedbackMode: form.get("exam") === "on" ? "EXAM" : "PRACTICE",
-                integrityMode: form.get("integrity") === "on",
-              },
-              sections: [{ bankId, pickN: Number(form.get("pickN")) }],
+              settings: { ...DEFAULT_SETTINGS, ...quizModes(form) },
+              sections,
             });
           payload = { quizId };
         }

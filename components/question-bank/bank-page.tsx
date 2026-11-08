@@ -1,10 +1,10 @@
-import { and, asc, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import type { Actor } from "@/lib/auth/roles";
 import { questionBankPath } from "@/lib/navigation";
 import { editBlockReason, isLiveCourse } from "@/lib/questions/rules";
+import { searchApprovedQuestions, searchPage } from "@/lib/questions/search";
 import { questionUsage, referencingCourses, servedCount, type UsageRef } from "@/lib/questions/usage";
-import type { QuestionType } from "@/lib/questions/validate";
 import { createBankAction, createQuestionAction, editQuestionAction } from "@/lib/questions/actions";
 import { draftToFormDefaults } from "@/lib/questions/validate";
 import { QuestionEditor } from "./question-editor";
@@ -19,7 +19,6 @@ const PAGE_SIZE = 25;
 export type BankSearchParams = {
   bank?: string; type?: string; mine?: string; q?: string; page?: string; question?: string;
 };
-const escapeLike = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 function authorLabel(q: { authorId: string | null; createdBy: string }, actor: Actor, names: Map<string, string>) {
   if (q.authorId === actor.id) return "You";
@@ -49,25 +48,15 @@ export async function BankPage({ actor, searchParams }: { actor: Actor; searchPa
   const typeFilter = searchParams.type ?? "";
   const mine = searchParams.mine === "1";
   const search = (searchParams.q ?? "").trim();
-  const page = Math.max(1, Math.floor(Number(searchParams.page)) || 1);
+  const page = searchPage(searchParams.page);
   const selectedId = searchParams.question ?? "";
 
   const banks = await db.select().from(t.questionBanks).orderBy(asc(t.questionBanks.name));
   const bankName = new Map(banks.map((b) => [b.id, b.name]));
 
-  const filters: SQL[] = [eq(t.questions.status, "APPROVED")];
-  if (bankFilter) filters.push(eq(t.questions.bankId, bankFilter));
-  if (typeFilter in questionTypeLabels) filters.push(eq(t.questions.type, typeFilter as QuestionType));
-  if (mine) filters.push(eq(t.questions.authorId, actor.id));
-  if (search) {
-    const pattern = `%${escapeLike(search)}%`;
-    filters.push(sql`(${t.questions.body}->>'prompt' ILIKE ${pattern} OR ${t.questions.body}->>'stimulus' ILIKE ${pattern})`);
-  }
-  const where = and(...filters);
-  const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(t.questions).where(where);
-  const rows = await db.select().from(t.questions).where(where)
-    .orderBy(desc(t.questions.createdAt), asc(t.questions.id))
-    .limit(PAGE_SIZE).offset((page - 1) * PAGE_SIZE);
+  const { rows, total } = await searchApprovedQuestions({
+    bankId: bankFilter, type: typeFilter, q: search, authorId: mine ? actor.id : undefined, page, pageSize: PAGE_SIZE,
+  });
   const [selected] = selectedId
     ? await db.select().from(t.questions).where(and(eq(t.questions.id, selectedId), eq(t.questions.status, "APPROVED"))).limit(1)
     : [];
@@ -186,7 +175,7 @@ export async function BankPage({ actor, searchParams }: { actor: Actor; searchPa
                   <div className="mb-1 flex flex-wrap items-center gap-2">
                     <Chip>{questionTypeLabels[q.type] ?? q.type}</Chip>
                     <span className="text-sm text-muted">{q.points} {q.points === 1 ? "point" : "points"}</span>
-                    <span className="min-w-0 break-words text-sm text-muted">· {bankName.get(q.bankId) ?? "Bank"} · {authorLabel(q, actor, names)}</span>
+                    <span className="min-w-0 break-words text-sm text-muted">· {q.bankName ?? "Bank"} · {authorLabel(q, actor, names)}</span>
                   </div>
                   <a href={link({ question: q.id, page: page > 1 ? page : undefined })} aria-current={q.id === selected?.id ? "true" : undefined} className="block break-words font-medium text-link">{q.body.prompt}</a>
                   <div className="mt-2"><UsedIn refs={usage.get(q.id) ?? []} /></div>

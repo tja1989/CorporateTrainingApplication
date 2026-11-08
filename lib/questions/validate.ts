@@ -9,7 +9,7 @@ export type QuestionDraft = {
 };
 type Result = { ok: true; value: QuestionDraft } | { ok: false; error: string };
 
-const TYPES: QuestionType[] = ["mcq_single", "mcq_multi", "truefalse", "fill_blank", "matching", "ordering", "free_text"];
+export const QUESTION_TYPES: QuestionType[] = ["mcq_single", "mcq_multi", "truefalse", "fill_blank", "matching", "ordering", "free_text"];
 
 const one = (form: FormData, key: string) => {
   const v = form.get(key);
@@ -25,7 +25,7 @@ export function parseQuestionForm(form: FormData): Result {
   const prompt = one(form, "prompt");
   if (!prompt) return fail("Enter the question.");
   const type = one(form, "type") as QuestionType;
-  if (!TYPES.includes(type)) return fail("Choose a question type.");
+  if (!QUESTION_TYPES.includes(type)) return fail("Choose a question type.");
 
   const pointsText = one(form, "points");
   const points = pointsText === "" ? 1 : wholeNumber(pointsText);

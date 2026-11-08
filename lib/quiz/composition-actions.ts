@@ -1,0 +1,133 @@
+"use server";
+import { and, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { t } from "@/lib/db/client";
+import { requirePermission } from "@/lib/auth/guard";
+import type { Permission } from "@/lib/auth/permissions";
+import type { Actor } from "@/lib/auth/roles";
+import type { ActionResult } from "@/components/workspace-form";
+import { mutateDraftCourse } from "@/lib/courses/workflow";
+import type { LearningTransaction } from "@/lib/lms/learning-cycle";
+import { createQuestion } from "@/lib/questions/bank";
+import { MAX_SEARCH_PAGE, searchApprovedQuestions, searchPage } from "@/lib/questions/search";
+import { parseQuestionForm } from "@/lib/questions/validate";
+import {
+  composeQuizSections,
+  pickerQuestions,
+  quizContentToCopy,
+  quizModes,
+  toPickerQuestions,
+  type PickerQuestion,
+  type QuizContent,
+} from "./composition";
+
+const PAGE_SIZE = 25;
+
+/** Always the signed-in user; nothing about the actor comes from the client. */
+async function signedIn(permission: Permission): Promise<Actor> {
+  const user = await requirePermission(permission);
+  return { id: user.id, role: user.role, departmentId: user.departmentId };
+}
+const message = (error: unknown) =>
+  error instanceof Error ? error.message : "Could not save. Reload and try again.";
+const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+
+export async function searchQuestionsAction(filter: {
+  bank?: string;
+  type?: string;
+  q?: string;
+  mine?: boolean;
+  page?: number;
+}): Promise<{ rows: PickerQuestion[]; more: boolean }> {
+  const actor = await signedIn("question.author");
+  const page = searchPage(filter?.page);
+  const { rows, total } = await searchApprovedQuestions({
+    bankId: text(filter?.bank),
+    type: text(filter?.type),
+    q: text(filter?.q),
+    authorId: filter?.mine === true ? actor.id : undefined,
+    page,
+    pageSize: PAGE_SIZE,
+  });
+  return {
+    rows: await toPickerQuestions(rows),
+    more: page < MAX_SEARCH_PAGE && page * PAGE_SIZE < total,
+  };
+}
+
+/** Saves a new question to its bank and returns it ready to pick. */
+export async function createQuestionInlineAction(
+  form: FormData,
+): Promise<{ error?: string; question?: PickerQuestion }> {
+  const actor = await signedIn("question.author");
+  const parsed = parseQuestionForm(form);
+  if (!parsed.ok) return { error: parsed.error };
+  let questionId: string;
+  try {
+    questionId = await createQuestion(actor, String(form.get("bankId") ?? ""), parsed.value);
+  } catch (error) {
+    return { error: message(error) };
+  }
+  for (const path of ["/admin/questions", "/hr/questions", "/instructor/questions"])
+    revalidatePath(path);
+  const [question] = await pickerQuestions([questionId]);
+  return { question };
+}
+
+export async function copyQuizContentAction(
+  sourceLessonId: string,
+): Promise<{ error?: string; content?: QuizContent; questions?: PickerQuestion[] }> {
+  const actor = await signedIn("question.author");
+  const copy = await quizContentToCopy(actor, String(sourceLessonId ?? ""));
+  return copy ?? { error: "This quiz is not available to copy." };
+}
+
+async function courseQuiz(tx: LearningTransaction, courseId: string, lessonId: string) {
+  const [row] = await tx
+    .select({ lesson: t.lessons })
+    .from(t.lessons)
+    .innerJoin(t.modules, eq(t.lessons.moduleId, t.modules.id))
+    .where(and(eq(t.lessons.id, lessonId), eq(t.modules.courseId, courseId)))
+    .limit(1);
+  if (!row) throw new Error("This lesson does not belong to this course.");
+  if (row.lesson.type !== "QUIZ") throw new Error("This lesson is not a quiz.");
+  const quizId = row.lesson.payload.quizId;
+  const [quiz] = quizId
+    ? await tx.select().from(t.quizzes).where(eq(t.quizzes.id, quizId)).limit(1)
+    : [];
+  if (!quiz) throw new Error("This quiz is no longer available. Reload and try again.");
+  return quiz;
+}
+
+/** Replaces a draft quiz's title, questions and modes; other settings stay. */
+export async function saveQuizAction(
+  courseId: string,
+  lessonId: string,
+  form: FormData,
+): Promise<ActionResult> {
+  const actor = await signedIn("course.author");
+  const title = String(form.get("title") ?? "").trim();
+  if (!title) return { error: "Enter a quiz title." };
+  try {
+    await mutateDraftCourse(
+      actor,
+      courseId,
+      async (tx) => {
+        const quiz = await courseQuiz(tx, courseId, lessonId);
+        const sections = await composeQuizSections(tx, form);
+        await tx
+          .update(t.quizzes)
+          .set({ title, sections, settings: { ...quiz.settings, ...quizModes(form) } })
+          .where(eq(t.quizzes.id, quiz.id));
+        await tx.update(t.lessons).set({ title }).where(eq(t.lessons.id, lessonId));
+      },
+      form.has("revision") ? Number(form.get("revision")) : undefined,
+    );
+  } catch (error) {
+    return { error: message(error) };
+  }
+  for (const root of ["admin", "hr", "department", "instructor"])
+    revalidatePath(`/${root}/courses/${courseId}`);
+  revalidatePath(`/course/${courseId}`);
+  return { success: "Quiz saved. Submit this revision for approval." };
+}
