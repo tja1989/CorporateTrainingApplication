@@ -432,6 +432,30 @@ describe("createQuestionInlineAction", () => {
       expect.objectContaining({ type: "mcq_single", points: 2 }),
     );
   });
+
+  it("returns the course's revision as it stands after the write", async () => {
+    state.rows.questions = questionRows(["q9"]);
+    state.rows.courses = [{ id: "c1", contentRevision: 4, instructorId: "u1", departmentId: "d1" }];
+    m.createQuestion.mockImplementation(async () => {
+      // Writing into a bank this draft draws from bumps its revision.
+      state.rows.courses = [{ id: "c1", contentRevision: 5, instructorId: "u1", departmentId: "d1" }];
+      return "q9";
+    });
+    expect(await createQuestionInlineAction(form([...mcq, ["courseId", "c1"]]))).toEqual({
+      question: picker("q9"),
+      revision: 5,
+    });
+    expect(whereOf("courses").map((q) => q.params)).toEqual([["c1"]]);
+  });
+
+  it("leaves the revision out for a course the author cannot read or that is missing", async () => {
+    m.createQuestion.mockResolvedValue("q9");
+    state.rows.questions = questionRows(["q9"]);
+    state.rows.courses = [{ id: "c2", contentRevision: 7, instructorId: "someone-else", departmentId: "d2" }];
+    expect(await createQuestionInlineAction(form([...mcq, ["courseId", "c2"]]))).not.toHaveProperty("revision");
+    state.rows.courses = [];
+    expect(await createQuestionInlineAction(form([...mcq, ["courseId", "gone"]]))).not.toHaveProperty("revision");
+  });
 });
 
 describe("copying from another quiz", () => {

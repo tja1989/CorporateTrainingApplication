@@ -1,11 +1,12 @@
 "use server";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { t } from "@/lib/db/client";
+import { db, t } from "@/lib/db/client";
 import { requirePermission } from "@/lib/auth/guard";
 import type { Permission } from "@/lib/auth/permissions";
 import type { Actor } from "@/lib/auth/roles";
 import type { ActionResult } from "@/components/workspace-form";
+import { canReadCourse } from "@/lib/courses/ownership";
 import { mutateDraftCourse } from "@/lib/courses/workflow";
 import type { LearningTransaction } from "@/lib/lms/learning-cycle";
 import { createQuestion } from "@/lib/questions/bank";
@@ -55,10 +56,26 @@ export async function searchQuestionsAction(filter: {
   };
 }
 
-/** Saves a new question to its bank and returns it ready to pick. */
+/** The course's current revision, or undefined when the actor cannot read it. */
+async function readableRevision(actor: Actor, courseId: string): Promise<number | undefined> {
+  const [course] = await db
+    .select({
+      contentRevision: t.courses.contentRevision,
+      instructorId: t.courses.instructorId,
+      departmentId: t.courses.departmentId,
+    })
+    .from(t.courses)
+    .where(eq(t.courses.id, courseId))
+    .limit(1);
+  return course && canReadCourse(actor, course) ? course.contentRevision : undefined;
+}
+
+/** Saves a new question to its bank and returns it ready to pick. With a
+ * `courseId`, also returns that course's revision as it stands after the
+ * write, because writing into a bank a draft draws from bumps the draft. */
 export async function createQuestionInlineAction(
   form: FormData,
-): Promise<{ error?: string; question?: PickerQuestion }> {
+): Promise<{ error?: string; question?: PickerQuestion; revision?: number }> {
   const actor = await signedIn("question.author");
   const parsed = parseQuestionForm(form);
   if (!parsed.ok) return { error: parsed.error };
@@ -71,7 +88,9 @@ export async function createQuestionInlineAction(
   for (const path of ["/admin/questions", "/hr/questions", "/instructor/questions"])
     revalidatePath(path);
   const [question] = await pickerQuestions([questionId]);
-  return { question };
+  const courseId = text(form.get("courseId"));
+  const revision = courseId ? await readableRevision(actor, courseId) : undefined;
+  return revision === undefined ? { question } : { question, revision };
 }
 
 export async function copyQuizContentAction(

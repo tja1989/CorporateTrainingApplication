@@ -13,6 +13,13 @@ import { CoursePlanningFields } from "@/components/course-planning-fields";
 import { isCourseAvailable } from "@/lib/courses/availability";
 import { localDate } from "@/lib/time";
 import { CourseLessonPreview } from "@/components/course-lesson-preview";
+import { QuizBuilder } from "@/components/quiz-builder";
+import {
+  banksWithApprovedCounts,
+  fromSections,
+  pickerQuestions,
+  quizCopySources,
+} from "@/lib/quiz/composition";
 import {
   Button,
   Chip,
@@ -128,14 +135,23 @@ export async function CourseEditor({
   const videos = videoIds.length
     ? await db.select().from(t.videos).where(inArray(t.videos.id, videoIds))
     : [];
-  const banks = editable
-    ? (await db.select().from(t.questionBanks)).filter(
-        (bank) =>
-          actor.role !== "INSTRUCTOR" ||
-          !bank.courseId ||
-          bank.courseId === courseId,
+  // The quiz builder's data. Banks are shared by every course.
+  const banks = editable ? await banksWithApprovedCounts() : [];
+  const copySources = editable ? await quizCopySources(actor) : [];
+  const quizIds = editable
+    ? lessons.flatMap((l) =>
+        l.type === "QUIZ" && l.payload.quizId ? [l.payload.quizId] : [],
       )
     : [];
+  const quizzes = (
+    quizIds.length
+      ? await db.select().from(t.quizzes).where(inArray(t.quizzes.id, quizIds))
+      : []
+  ).map((quiz) => ({ quiz, content: fromSections(quiz.sections) }));
+  const quizById = new Map(quizzes.map((q) => [q.quiz.id, q]));
+  const quizQuestions = await pickerQuestions([
+    ...new Set(quizzes.flatMap((q) => q.content.picked)),
+  ]);
   return (
     <div className="min-w-0">
       <a
@@ -148,11 +164,16 @@ export async function CourseEditor({
         title={course.title}
         sub={`${mods.length} module${mods.length === 1 ? "" : "s"} · ${lessons.length} lesson${lessons.length === 1 ? "" : "s"} · ${course.estMinutes} min`}
         actions={
-          course.status === "PUBLISHED" ? (
-            <WorkspaceLink href={`/course/${course.id}`}>
-              View learner course
+          <>
+            <WorkspaceLink href={`/preview/course/${course.id}`}>
+              Preview as learner
             </WorkspaceLink>
-          ) : null
+            {course.status === "PUBLISHED" ? (
+              <WorkspaceLink href={`/course/${course.id}`}>
+                View learner course
+              </WorkspaceLink>
+            ) : null}
+          </>
         }
       />
       <CourseWorkflow actor={actor} course={course} />
@@ -263,6 +284,10 @@ export async function CourseEditor({
                       const video = videos.find(
                         (v) => v.id === lesson.payload.videoId,
                       );
+                      const quiz =
+                        lesson.type === "QUIZ" && lesson.payload.quizId
+                          ? quizById.get(lesson.payload.quizId)
+                          : undefined;
                       return (
                         <li key={lesson.id} className="min-w-0 py-3">
                           <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -466,6 +491,32 @@ export async function CourseEditor({
                               </WorkspaceForm>
                             </details>
                           ) : null}
+                          {editable && quiz ? (
+                            <details className="mt-3">
+                              <summary className="touch-target flex items-center text-sm text-link">
+                                Edit quiz
+                              </summary>
+                              <div className="mt-3">
+                                <QuizBuilder
+                                  mode="edit"
+                                  courseId={course.id}
+                                  lessonId={lesson.id}
+                                  initial={{
+                                    title: lesson.title,
+                                    content: quiz.content,
+                                    questions: quizQuestions.filter((q) =>
+                                      quiz.content.picked.includes(q.id),
+                                    ),
+                                    exam: quiz.quiz.settings.feedbackMode === "EXAM",
+                                    integrity: quiz.quiz.settings.integrityMode,
+                                  }}
+                                  banks={banks}
+                                  copySources={copySources}
+                                  revision={course.contentRevision}
+                                />
+                              </div>
+                            </details>
+                          ) : null}
                           <details className="mt-3">
                             <summary className="touch-target flex items-center text-sm text-link">
                               Review lesson content
@@ -494,6 +545,7 @@ export async function CourseEditor({
                       courseId={course.id}
                       moduleId={mod.id}
                       banks={banks}
+                      copySources={copySources}
                       revision={course.contentRevision}
                     />
                   </details>

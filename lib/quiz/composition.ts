@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import type { QuizSection, QuizSettings } from "@/lib/db/schema";
 import type { Actor } from "@/lib/auth/roles";
@@ -153,6 +153,28 @@ export async function pickerQuestions(
     ids.flatMap((id) => byId.get(id) ?? []),
     conn,
   );
+}
+
+/** Banks by name, each with its number of APPROVED questions. All banks, or
+ * only the given ones. */
+export async function banksWithApprovedCounts(
+  bankIds?: string[],
+): Promise<{ id: string; name: string; approvedCount: number }[]> {
+  if (bankIds?.length === 0) return [];
+  return db
+    .select({
+      id: t.questionBanks.id,
+      name: t.questionBanks.name,
+      approvedCount: count(t.questions.id),
+    })
+    .from(t.questionBanks)
+    .leftJoin(
+      t.questions,
+      and(eq(t.questions.bankId, t.questionBanks.id), eq(t.questions.status, "APPROVED")),
+    )
+    .where(bankIds ? inArray(t.questionBanks.id, bankIds) : undefined)
+    .groupBy(t.questionBanks.id)
+    .orderBy(asc(t.questionBanks.name));
 }
 
 /** Authors may copy from any course they can read, and from any published course. */

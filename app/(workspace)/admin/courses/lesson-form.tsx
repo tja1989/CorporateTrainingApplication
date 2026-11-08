@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Button, Field, Input, Select, Textarea } from "@/components/ui";
 import { WorkspaceForm } from "@/components/workspace-form";
+import { QuizBuilder } from "@/components/quiz-builder";
 import type { InterviewConfig } from "@/lib/db/schema";
 import { addLessonAction } from "./actions";
 export function InterviewFields({ cfg }: { cfg?: InterviewConfig }) {
@@ -60,31 +61,32 @@ export function InterviewFields({ cfg }: { cfg?: InterviewConfig }) {
     </div>
   );
 }
+const emptyQuiz = {
+  title: "",
+  content: { picked: [], draws: [] },
+  questions: [],
+  exam: false,
+  integrity: false,
+};
 export function LessonForm({
   courseId,
   moduleId,
   banks,
+  copySources,
   revision,
 }: {
-  revision?: number;
+  revision: number;
   courseId: string;
   moduleId: string;
-  banks: { id: string; name: string }[];
+  banks: { id: string; name: string; approvedCount: number }[];
+  copySources: { lessonId: string; label: string }[];
 }) {
   const [type, setType] = useState("TEXT");
   return (
-    <WorkspaceForm
-      action={addLessonAction.bind(null, courseId, moduleId)}
-      className="mt-4"
-    >
-      <input type="hidden" name="revision" value={revision} />
+    <div className="mt-4 min-w-0">
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Lesson type">
-          <Select
-            name="type"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-          >
+          <Select value={type} onChange={(e) => setType(e.target.value)}>
             <option value="TEXT">Text</option>
             <option value="PDF">PDF document</option>
             <option value="VIDEO">YouTube video</option>
@@ -92,99 +94,78 @@ export function LessonForm({
             <option value="INTERVIEW">Voice oral check</option>
           </Select>
         </Field>
-        <Field label="Lesson title">
-          <Input name="title" required />
-        </Field>
       </div>
-      <fieldset
-        hidden={type !== "TEXT"}
-        disabled={type !== "TEXT"}
-        className="min-w-0"
-      >
-        <Field
-          label="Lesson content"
-          hint="Markdown supports headings, lists and links."
-        >
-          <Textarea name="body" rows={7} required={type === "TEXT"} />
-        </Field>
-      </fieldset>
-      <fieldset
-        hidden={type !== "PDF"}
-        disabled={type !== "PDF"}
-        className="min-w-0"
-      >
-        <Field
-          label="PDF file URL"
-          hint="Use a local /demo/ path or an HTTPS PDF URL."
-        >
-          <Input name="fileUrl" required={type === "PDF"} />
-        </Field>
-      </fieldset>
-      <fieldset
-        hidden={type !== "VIDEO"}
-        disabled={type !== "VIDEO"}
-        className="min-w-0"
-      >
-        <Field
-          label="YouTube URL or video ID"
-          hint="The video must be public or unlisted and allow embedding."
-        >
-          <Input name="youtubeUrl" required={type === "VIDEO"} />
-        </Field>
-        <Field
-          label="Transcript (SRT or VTT)"
-          hint="Paste a transcript you have permission to use. Without it, the configured vendor fetcher is used."
-        >
-          <Textarea name="transcript" rows={5} />
-        </Field>
-      </fieldset>
-      <fieldset
-        hidden={type !== "QUIZ"}
-        disabled={type !== "QUIZ"}
-        className="min-w-0"
-      >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Question bank">
-            <Select name="bankId" required={type === "QUIZ"} defaultValue="">
-              <option value="">Choose a question bank</option>
-              {banks.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </Select>
+      {/* A quiz has its own form. Both stay mounted, so switching type keeps entries. */}
+      <div hidden={type !== "QUIZ"} className="min-w-0">
+        <QuizBuilder
+          mode="new"
+          courseId={courseId}
+          moduleId={moduleId}
+          initial={emptyQuiz}
+          banks={banks}
+          copySources={copySources}
+          revision={revision}
+        />
+      </div>
+      <div hidden={type === "QUIZ"} className="min-w-0">
+        <WorkspaceForm action={addLessonAction.bind(null, courseId, moduleId)}>
+          <input type="hidden" name="revision" value={revision} />
+          <input type="hidden" name="type" value={type} />
+          <Field label="Lesson title">
+            <Input name="title" required />
           </Field>
-          <Field label="Questions to draw">
-            <Input
-              name="pickN"
-              type="number"
-              min={1}
-              max={100}
-              defaultValue={5}
-            />
-          </Field>
-        </div>
-        <label className="touch-target flex items-center gap-3 text-sm">
-          <input type="checkbox" name="exam" />
-          Exam mode (feedback after submission)
-        </label>
-        <label className="touch-target mb-4 flex items-center gap-3 text-sm">
-          <input type="checkbox" name="integrity" />
-          Integrity monitoring
-        </label>
-        <p className="mb-4 text-sm text-muted">
-          All seven question formats in the selected bank are supported.
-          Free-text AI grades still require human review where applicable.
-        </p>
-      </fieldset>
-      <fieldset
-        hidden={type !== "INTERVIEW"}
-        disabled={type !== "INTERVIEW"}
-        className="min-w-0"
-      >
-        <InterviewFields />
-      </fieldset>
-      <Button type="submit">Add lesson</Button>
-    </WorkspaceForm>
+          <fieldset
+            hidden={type !== "TEXT"}
+            disabled={type !== "TEXT"}
+            className="min-w-0"
+          >
+            <Field
+              label="Lesson content"
+              hint="Markdown supports headings, lists and links."
+            >
+              <Textarea name="body" rows={7} required={type === "TEXT"} />
+            </Field>
+          </fieldset>
+          <fieldset
+            hidden={type !== "PDF"}
+            disabled={type !== "PDF"}
+            className="min-w-0"
+          >
+            <Field
+              label="PDF file URL"
+              hint="Use a local /demo/ path or an HTTPS PDF URL."
+            >
+              <Input name="fileUrl" required={type === "PDF"} />
+            </Field>
+          </fieldset>
+          <fieldset
+            hidden={type !== "VIDEO"}
+            disabled={type !== "VIDEO"}
+            className="min-w-0"
+          >
+            <Field
+              label="YouTube URL or video ID"
+              hint="The video must be public or unlisted and allow embedding."
+            >
+              <Input name="youtubeUrl" required={type === "VIDEO"} />
+            </Field>
+            <Field
+              label="Transcript (SRT or VTT)"
+              hint="Paste a transcript you have permission to use. Without it, the configured vendor fetcher is used."
+            >
+              <Textarea name="transcript" rows={5} />
+            </Field>
+          </fieldset>
+          <fieldset
+            hidden={type !== "INTERVIEW"}
+            disabled={type !== "INTERVIEW"}
+            className="min-w-0"
+          >
+            <InterviewFields />
+          </fieldset>
+          <Button type="submit">Add lesson</Button>
+        </WorkspaceForm>
+      </div>
+    </div>
   );
 }
