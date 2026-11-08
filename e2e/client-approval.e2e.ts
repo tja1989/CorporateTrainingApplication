@@ -113,8 +113,10 @@ test("@core Instructor submits, Department Head rejects and approves, HR publish
           hasText: "Add lesson to Foundations",
         }),
       });
+      // The quiz builder keeps its own (hidden) "Lesson title" field mounted beside this one.
       await addForm
         .getByLabel("Lesson title", { exact: true })
+        .filter({ visible: true })
         .fill(lessonTitle);
       await addForm.getByLabel("Lesson content", { exact: true }).fill(content);
       // The saved lesson can render before the form's full reload; wait for that reload
