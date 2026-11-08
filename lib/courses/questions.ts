@@ -3,13 +3,16 @@ import { db, t } from "@/lib/db/client";
 import { canonicalRole, type Actor } from "@/lib/auth/roles";
 import { hasPermission } from "@/lib/auth/permissions";
 import type { LearningTransaction } from "@/lib/lms/learning-cycle";
+import { isLiveCourse } from "@/lib/questions/rules";
 import { lockAssessmentCurriculum, lockCurriculum } from "./workflow";
-/** Returns each course to a new draft revision with approval reset, locking
- * courses in id order. Refuses when any course is not an unsubmitted draft.
- * Call after `lockAssessmentCurriculum(tx)`. */
-export async function reopenDraftCourses(
+type Course = typeof t.courses.$inferSelect;
+/** Locks each course in id order and re-reads it. Throws `refusal(course)`
+ * when it returns a message; otherwise the course (if it exists) gets a new
+ * content revision with approval reset. Its status is never changed. */
+async function startNewRevisions(
   tx: LearningTransaction,
   courseIds: string[],
+  refusal: (course: Course | undefined) => string | null,
 ): Promise<void> {
   for (const courseId of [...new Set(courseIds)].sort()) {
     await lockCurriculum(tx, courseId);
@@ -18,14 +21,9 @@ export async function reopenDraftCourses(
       .from(t.courses)
       .where(eq(t.courses.id, courseId))
       .limit(1);
-    if (
-      !course ||
-      course.status !== "DRAFT" ||
-      ["APPROVED", "SUBMITTED"].includes(course.approvalState)
-    )
-      throw new Error(
-        "Revise affected courses before changing their assessment questions. Approval is currently locked.",
-      );
+    const reason = refusal(course);
+    if (reason) throw new Error(reason);
+    if (!course) continue;
     await tx
       .update(t.courses)
       .set({
@@ -38,6 +36,34 @@ export async function reopenDraftCourses(
       })
       .where(eq(t.courses.id, courseId));
   }
+}
+/** Returns each course to a new draft revision with approval reset, locking
+ * courses in id order. Refuses when any course is not an unsubmitted draft.
+ * Call after `lockAssessmentCurriculum(tx)`. */
+export async function reopenDraftCourses(
+  tx: LearningTransaction,
+  courseIds: string[],
+): Promise<void> {
+  await startNewRevisions(tx, courseIds, (course) =>
+    !course ||
+    course.status !== "DRAFT" ||
+    ["APPROVED", "SUBMITTED"].includes(course.approvalState)
+      ? "Revise affected courses before changing their assessment questions. Approval is currently locked."
+      : null,
+  );
+}
+/** For shared-bank writes: draft courses get a new revision, and archived
+ * courses lose their approval too (they stay archived), so republishing one
+ * needs a fresh approval of the changed content. A course found live under
+ * its lock refuses with `liveError`. Call after `lockAssessmentCurriculum(tx)`. */
+export async function revokeCourseApprovals(
+  tx: LearningTransaction,
+  courseIds: string[],
+  liveError: (titles: string[]) => string,
+): Promise<void> {
+  await startNewRevisions(tx, courseIds, (course) =>
+    course && isLiveCourse(course) ? liveError([course.title]) : null,
+  );
 }
 /** Question-bank changes alter randomized assessments, so their users must
  * return to draft and receive a fresh approval revision as well. */

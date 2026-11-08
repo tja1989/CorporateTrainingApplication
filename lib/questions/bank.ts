@@ -4,9 +4,9 @@ import { id } from "@/lib/ids";
 import { canonicalRole, type Actor } from "@/lib/auth/roles";
 import { hasPermission } from "@/lib/auth/permissions";
 import { lockAssessmentCurriculum } from "@/lib/courses/locks";
-import { reopenDraftCourses } from "@/lib/courses/questions";
+import { revokeCourseApprovals } from "@/lib/courses/questions";
 import type { LearningTransaction } from "@/lib/lms/learning-cycle";
-import { editBlockReason, isDraftCourse, isLiveCourse } from "./rules";
+import { editBlockReason, isLiveCourse, usedByLiveTraining } from "./rules";
 import { randomDrawCourses, referencingCourses, servedCount } from "./usage";
 import type { QuestionDraft } from "./validate";
 
@@ -58,8 +58,12 @@ export async function createBank(
   });
 }
 
+const feedsLiveTraining = (titles: string[]) =>
+  `This bank feeds live training (${titles.join(", ")}). Choose another bank or create a new one.`;
+
 /** A new question joins every random draw from its bank, so live courses
- * drawing from it refuse, and drafts drawing from it start a new revision. */
+ * drawing from it refuse. Draft and archived courses drawing from it start
+ * a new revision without approval. */
 export async function createQuestion(
   actor: Actor,
   bankId: string,
@@ -75,12 +79,11 @@ export async function createQuestion(
     const courses = await randomDrawCourses(bankId, tx);
     const live = courses.filter(isLiveCourse);
     if (live.length > 0)
-      throw new Error(
-        `This bank feeds live training (${live.map((c) => c.title).join(", ")}). Choose another bank or create a new one.`,
-      );
-    await reopenDraftCourses(
+      throw new Error(feedsLiveTraining(live.map((c) => c.title)));
+    await revokeCourseApprovals(
       tx,
-      courses.filter(isDraftCourse).map((c) => c.id),
+      courses.map((c) => c.id),
+      feedsLiveTraining,
     );
     const questionId = id();
     await tx.insert(t.questions).values({
@@ -119,9 +122,10 @@ export async function editQuestion(
       liveCourseTitles: courses.filter(isLiveCourse).map((c) => c.title),
     });
     if (blocked) throw new Error(blocked);
-    await reopenDraftCourses(
+    await revokeCourseApprovals(
       tx,
-      courses.filter(isDraftCourse).map((c) => c.id),
+      courses.map((c) => c.id),
+      usedByLiveTraining,
     );
     await tx
       .update(t.questions)

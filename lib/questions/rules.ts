@@ -24,6 +24,9 @@ export function isDraftCourse(c: Publication): boolean {
   return c.status === "DRAFT" && !isLiveCourse(c);
 }
 
+export const usedByLiveTraining = (titles: string[]) =>
+  `Used by live training: ${titles.join(", ")}. Copy it to make changes.`;
+
 /** Why an actor may not edit a question in place, or null when they may. */
 export function editBlockReason(i: {
   actor: Actor;
@@ -36,7 +39,6 @@ export function editBlockReason(i: {
     return "Only the author, HR Head or Admin can edit this question.";
   if (i.servedCount > 0)
     return "Learners have already answered this question. Copy it to make changes.";
-  if (i.liveCourseTitles.length > 0)
-    return `Used by live training: ${i.liveCourseTitles.join(", ")}. Copy it to make changes.`;
+  if (i.liveCourseTitles.length > 0) return usedByLiveTraining(i.liveCourseTitles);
   return null;
 }

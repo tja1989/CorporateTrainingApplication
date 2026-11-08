@@ -60,13 +60,6 @@ vi.mock("@/lib/db/client", async () => {
     db: { ...conn, transaction: async (run: any) => run(conn) },
   };
 });
-// Wrap the real reopen so tests can see what bank writes ask it to reopen.
-vi.mock("@/lib/courses/questions", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("../lib/courses/questions")>();
-  return { ...actual, reopenDraftCourses: vi.fn(actual.reopenDraftCourses) };
-});
-
 import { db } from "../lib/db/client";
 import {
   reopenDraftCourses,
@@ -190,9 +183,12 @@ describe("createQuestion", () => {
     state.rows.question_banks = [{ id: "bank" }];
   });
 
-  it("refuses a bank that a live course draws from at random", async () => {
+  it("refuses a bank that a live course draws from at random, naming only live courses", async () => {
     state.rows.lessons = [
       quiz({ ...course("fire", "PUBLISHED", "APPROVED"), title: "Fire Safety" }, [
+        { bankId: "bank", pickN: 3 },
+      ]),
+      quiz({ ...course("old", "ARCHIVED", "APPROVED"), title: "Old Fire Safety" }, [
         { bankId: "bank", pickN: 3 },
       ]),
     ];
@@ -203,11 +199,20 @@ describe("createQuestion", () => {
     expect(state.updates).toEqual([]);
   });
 
+  it("refuses when a course turns out to be live once it is locked", async () => {
+    state.rows.lessons = [quiz(course("fire"), [{ bankId: "bank", pickN: 3 }])];
+    state.rows.courses = courseRows(course("fire", "PUBLISHED", "APPROVED"));
+    await expect(createQuestion(ana, "bank", draft)).rejects.toThrow(
+      "This bank feeds live training (Course fire). Choose another bank or create a new one.",
+    );
+    expect(state.inserts).toEqual([]);
+    expect(state.updates).toEqual([]);
+  });
+
   it("reopens draft courses that draw from the bank and stores an approved question", async () => {
     state.rows.lessons = [quiz(course("draft"), [{ bankId: "bank", pickN: 2 }])];
     state.rows.courses = courseRows(course("draft"));
     const questionId = await createQuestion(ana, "bank", draft);
-    expect(reopenDraftCourses).toHaveBeenCalledWith(expect.anything(), ["draft"]);
     expect(locks()).toEqual(["assessment", "curriculum:draft"]);
     expect(written("courses")).toEqual([bump]);
     expect(state.inserts).toEqual([
@@ -228,7 +233,7 @@ describe("createQuestion", () => {
     ]);
   });
 
-  it("ignores picked questions, other banks, draws without a count and archived courses", async () => {
+  it("ignores picked questions, other banks and draws without a count", async () => {
     const live = course("live", "PUBLISHED", "APPROVED");
     state.rows.lessons = [
       quiz(live, [
@@ -236,11 +241,22 @@ describe("createQuestion", () => {
         { bankId: "other-bank", pickN: 2 },
         { bankId: "bank" },
       ]),
-      quiz(course("old", "ARCHIVED", "APPROVED"), [{ bankId: "bank", pickN: 2 }]),
     ];
     await createQuestion(ana, "bank", draft);
-    expect(reopenDraftCourses).toHaveBeenCalledWith(expect.anything(), []);
+    expect(locks()).toEqual(["assessment"]);
     expect(written("courses")).toEqual([]);
+    expect(state.inserts).toHaveLength(1);
+  });
+
+  it("takes approval away from an archived course that draws from the bank, keeping it archived", async () => {
+    state.rows.lessons = [
+      quiz(course("old", "ARCHIVED", "APPROVED"), [{ bankId: "bank", pickN: 2 }]),
+    ];
+    state.rows.courses = courseRows(course("old", "ARCHIVED", "APPROVED"));
+    await createQuestion(ana, "bank", draft);
+    expect(locks()).toEqual(["assessment", "curriculum:old"]);
+    // No status field: the course stays ARCHIVED but needs a fresh approval.
+    expect(written("courses")).toEqual([bump]);
     expect(state.inserts).toHaveLength(1);
   });
 
@@ -308,6 +324,9 @@ describe("editQuestion", () => {
       quiz({ ...course("lift", "DRAFT", "SUBMITTED"), title: "Forklift" }, [
         { bankId: "bank", pickN: 1 },
       ]),
+      quiz({ ...course("old", "ARCHIVED", "APPROVED"), title: "Old Fire Safety" }, [
+        { fixed: ["q1"] },
+      ]),
     ];
     await expect(editQuestion(ana, "q1", draft)).rejects.toThrow(
       "Used by live training: Fire Safety, Forklift. Copy it to make changes.",
@@ -327,20 +346,50 @@ describe("editQuestion", () => {
     expect(state.updates).toEqual([]);
   });
 
-  it("reopens referencing draft courses in lock order, then saves the next version", async () => {
+  it("takes approval away from an archived course that picks the question, keeping it archived", async () => {
+    state.rows.lessons = [
+      quiz(course("old", "ARCHIVED", "APPROVED"), [{ fixed: ["q1"] }]),
+    ];
+    state.rows.courses = courseRows(course("old", "ARCHIVED", "APPROVED"));
+    await editQuestion(ana, "q1", draft);
+    expect(locks()).toEqual(["assessment", "curriculum:old"]);
+    // No status field: the course stays ARCHIVED but needs a fresh approval.
+    expect(written("courses")).toEqual([bump]);
+    expect(written("questions")).toHaveLength(1);
+  });
+
+  it("refuses when a referencing course turns out to be live once it is locked", async () => {
+    state.rows.lessons = [quiz(course("fire"), [{ fixed: ["q1"] }])];
+    state.rows.courses = courseRows(course("fire", "DRAFT", "SUBMITTED"));
+    await expect(editQuestion(ana, "q1", draft)).rejects.toThrow(
+      "Used by live training: Course fire. Copy it to make changes.",
+    );
+    expect(state.updates).toEqual([]);
+  });
+
+  it("revises referencing draft and archived courses in one lock order, then saves the next version", async () => {
     state.rows.lessons = [
       quiz(course("b"), [{ bankId: "bank", pickN: 2 }]),
       quiz(course("a"), [{ fixed: ["q1"] }]),
-      quiz(course("old", "ARCHIVED", "APPROVED"), [{ fixed: ["q1"] }]),
+      quiz(course("a2", "ARCHIVED", "APPROVED"), [{ fixed: ["q1"] }]),
       quiz(course("other", "PUBLISHED", "APPROVED"), [
         { fixed: ["q2"] },
         { bankId: "other-bank", pickN: 1 },
       ]),
     ];
-    state.rows.courses = courseRows(course("a"), course("b"));
+    state.rows.courses = courseRows(
+      course("a"),
+      course("a2", "ARCHIVED", "APPROVED"),
+      course("b"),
+    );
     await editQuestion(ana, "q1", draft);
-    expect(locks()).toEqual(["assessment", "curriculum:a", "curriculum:b"]);
-    expect(written("courses")).toEqual([bump, bump]);
+    expect(locks()).toEqual([
+      "assessment",
+      "curriculum:a",
+      "curriculum:a2",
+      "curriculum:b",
+    ]);
+    expect(written("courses")).toEqual([bump, bump, bump]);
     expect(written("questions")).toEqual([
       { type: "truefalse", points: 2, body: draft.body, rubric: null, version: 4 },
     ]);
