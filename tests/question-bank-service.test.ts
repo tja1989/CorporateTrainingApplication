@@ -212,7 +212,8 @@ describe("createQuestion", () => {
   it("reopens draft courses that draw from the bank and stores an approved question", async () => {
     state.rows.lessons = [quiz(course("draft"), [{ bankId: "bank", pickN: 2 }])];
     state.rows.courses = courseRows(course("draft"));
-    const questionId = await createQuestion(ana, "bank", draft);
+    const { id: questionId, bumpedCourseIds } = await createQuestion(ana, "bank", draft);
+    expect(bumpedCourseIds).toEqual(["draft"]);
     expect(locks()).toEqual(["assessment", "curriculum:draft"]);
     expect(written("courses")).toEqual([bump]);
     expect(state.inserts).toEqual([
@@ -242,7 +243,7 @@ describe("createQuestion", () => {
         { bankId: "bank" },
       ]),
     ];
-    await createQuestion(ana, "bank", draft);
+    expect((await createQuestion(ana, "bank", draft)).bumpedCourseIds).toEqual([]);
     expect(locks()).toEqual(["assessment"]);
     expect(written("courses")).toEqual([]);
     expect(state.inserts).toHaveLength(1);
@@ -253,7 +254,7 @@ describe("createQuestion", () => {
       quiz(course("old", "ARCHIVED", "APPROVED"), [{ bankId: "bank", pickN: 2 }]),
     ];
     state.rows.courses = courseRows(course("old", "ARCHIVED", "APPROVED"));
-    await createQuestion(ana, "bank", draft);
+    expect((await createQuestion(ana, "bank", draft)).bumpedCourseIds).toEqual(["old"]);
     expect(locks()).toEqual(["assessment", "curriculum:old"]);
     // No status field: the course stays ARCHIVED but needs a fresh approval.
     expect(written("courses")).toEqual([bump]);

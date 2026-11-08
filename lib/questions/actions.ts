@@ -43,7 +43,7 @@ export async function createQuestionAction(form: FormData): Promise<ActionResult
   if (!parsed.ok) return { error: parsed.error };
   let questionId: string;
   try {
-    questionId = await createQuestion(actor, String(form.get("bankId") ?? ""), parsed.value);
+    ({ id: questionId } = await createQuestion(actor, String(form.get("bankId") ?? ""), parsed.value));
   } catch (error) {
     return { error: message(error) };
   }

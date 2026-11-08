@@ -70,26 +70,31 @@ async function readableRevision(actor: Actor, courseId: string): Promise<number 
   return course && canReadCourse(actor, course) ? course.contentRevision : undefined;
 }
 
-/** Saves a new question to its bank and returns it ready to pick. With a
- * `courseId`, also returns that course's revision as it stands after the
- * write, because writing into a bank a draft draws from bumps the draft. */
+/** Saves a new question to its bank and returns it ready to pick. When the
+ * write bumped the `courseId` course (its draft draws from that bank), also
+ * returns that course's revision as it stands after the write. A course the
+ * write did not bump keeps whatever revision the page loaded with, so a
+ * change made elsewhere still shows up as stale on the next save. */
 export async function createQuestionInlineAction(
   form: FormData,
 ): Promise<{ error?: string; question?: PickerQuestion; revision?: number }> {
   const actor = await signedIn("question.author");
   const parsed = parseQuestionForm(form);
   if (!parsed.ok) return { error: parsed.error };
-  let questionId: string;
+  let created: { id: string; bumpedCourseIds: string[] };
   try {
-    questionId = await createQuestion(actor, String(form.get("bankId") ?? ""), parsed.value);
+    created = await createQuestion(actor, String(form.get("bankId") ?? ""), parsed.value);
   } catch (error) {
     return { error: message(error) };
   }
   for (const path of ["/admin/questions", "/hr/questions", "/instructor/questions"])
     revalidatePath(path);
-  const [question] = await pickerQuestions([questionId]);
+  const [question] = await pickerQuestions([created.id]);
   const courseId = text(form.get("courseId"));
-  const revision = courseId ? await readableRevision(actor, courseId) : undefined;
+  const revision =
+    courseId && created.bumpedCourseIds.includes(courseId)
+      ? await readableRevision(actor, courseId)
+      : undefined;
   return revision === undefined ? { question } : { question, revision };
 }
 

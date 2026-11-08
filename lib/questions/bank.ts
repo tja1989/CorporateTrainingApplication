@@ -63,12 +63,12 @@ const feedsLiveTraining = (titles: string[]) =>
 
 /** A new question joins every random draw from its bank, so live courses
  * drawing from it refuse. Draft and archived courses drawing from it start
- * a new revision without approval. */
+ * a new revision without approval; their ids come back as `bumpedCourseIds`. */
 export async function createQuestion(
   actor: Actor,
   bankId: string,
   draft: QuestionDraft,
-): Promise<string> {
+): Promise<{ id: string; bumpedCourseIds: string[] }> {
   return asQuestionAuthor(actor, async (tx) => {
     const [bank] = await tx
       .select({ id: t.questionBanks.id })
@@ -80,7 +80,7 @@ export async function createQuestion(
     const live = courses.filter(isLiveCourse);
     if (live.length > 0)
       throw new Error(feedsLiveTraining(live.map((c) => c.title)));
-    await revokeCourseApprovals(
+    const bumpedCourseIds = await revokeCourseApprovals(
       tx,
       courses.map((c) => c.id),
       feedsLiveTraining,
@@ -97,7 +97,7 @@ export async function createQuestion(
       createdBy: "human",
       authorId: actor.id,
     });
-    return questionId;
+    return { id: questionId, bumpedCourseIds };
   });
 }
 

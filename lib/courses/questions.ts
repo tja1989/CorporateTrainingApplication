@@ -8,12 +8,14 @@ import { lockAssessmentCurriculum, lockCurriculum } from "./workflow";
 type Course = typeof t.courses.$inferSelect;
 /** Locks each course in id order and re-reads it. Throws `refusal(course)`
  * when it returns a message; otherwise the course (if it exists) gets a new
- * content revision with approval reset. Its status is never changed. */
+ * content revision with approval reset. Its status is never changed.
+ * Returns the ids of the courses that got a new revision. */
 async function startNewRevisions(
   tx: LearningTransaction,
   courseIds: string[],
   refusal: (course: Course | undefined) => string | null,
-): Promise<void> {
+): Promise<string[]> {
+  const bumped: string[] = [];
   for (const courseId of [...new Set(courseIds)].sort()) {
     await lockCurriculum(tx, courseId);
     const [course] = await tx
@@ -35,7 +37,9 @@ async function startNewRevisions(
         approvedBy: null,
       })
       .where(eq(t.courses.id, courseId));
+    bumped.push(courseId);
   }
+  return bumped;
 }
 /** Returns each course to a new draft revision with approval reset, locking
  * courses in id order. Refuses when any course is not an unsubmitted draft.
@@ -60,8 +64,8 @@ export async function revokeCourseApprovals(
   tx: LearningTransaction,
   courseIds: string[],
   liveError: (titles: string[]) => string,
-): Promise<void> {
-  await startNewRevisions(tx, courseIds, (course) =>
+): Promise<string[]> {
+  return startNewRevisions(tx, courseIds, (course) =>
     course && isLiveCourse(course) ? liveError([course.title]) : null,
   );
 }

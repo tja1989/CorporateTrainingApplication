@@ -48,7 +48,7 @@ describe("question bank actions", () => {
   });
 
   it("creates with the server-derived actor and links to the new question", async () => {
-    m.createQuestion.mockResolvedValue("q9");
+    m.createQuestion.mockResolvedValue({ id: "q9", bumpedCourseIds: [] });
     const r = await createQuestionAction(form([...mcp, ["actor", "evil"], ["role", "ADMIN"]]));
     expect(r).toEqual({ href: "/instructor/questions?question=q9" });
     expect(m.createQuestion).toHaveBeenCalledWith(
@@ -61,7 +61,7 @@ describe("question bank actions", () => {
 
   it("uses the role's own bank path", async () => {
     m.user = { id: "h1", role: "HR_HEAD", departmentId: null };
-    m.createQuestion.mockResolvedValue("q1");
+    m.createQuestion.mockResolvedValue({ id: "q1", bumpedCourseIds: [] });
     expect(await createQuestionAction(form(mcp))).toEqual({ href: "/hr/questions?question=q1" });
   });
 

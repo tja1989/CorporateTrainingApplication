@@ -421,7 +421,7 @@ describe("createQuestionInlineAction", () => {
   });
 
   it("creates as the signed-in author and returns the picker row", async () => {
-    m.createQuestion.mockResolvedValue("q9");
+    m.createQuestion.mockResolvedValue({ id: "q9", bumpedCourseIds: [] });
     state.rows.questions = questionRows(["q9"]);
     const result = await createQuestionInlineAction(form([...mcq, ["actor", "evil"], ["role", "ADMIN"]]));
     expect(result).toEqual({ question: picker("q9") });
@@ -433,13 +433,13 @@ describe("createQuestionInlineAction", () => {
     );
   });
 
-  it("returns the course's revision as it stands after the write", async () => {
+  it("returns the course's revision as it stands after the write when the write bumped it", async () => {
     state.rows.questions = questionRows(["q9"]);
     state.rows.courses = [{ id: "c1", contentRevision: 4, instructorId: "u1", departmentId: "d1" }];
     m.createQuestion.mockImplementation(async () => {
       // Writing into a bank this draft draws from bumps its revision.
       state.rows.courses = [{ id: "c1", contentRevision: 5, instructorId: "u1", departmentId: "d1" }];
-      return "q9";
+      return { id: "q9", bumpedCourseIds: ["c0", "c1"] };
     });
     expect(await createQuestionInlineAction(form([...mcq, ["courseId", "c1"]]))).toEqual({
       question: picker("q9"),
@@ -448,8 +448,18 @@ describe("createQuestionInlineAction", () => {
     expect(whereOf("courses").map((q) => q.params)).toEqual([["c1"]]);
   });
 
+  it("leaves the revision out when the write did not bump that course", async () => {
+    state.rows.questions = questionRows(["q9"]);
+    // Another change moved the course on: the next save must still see it as stale.
+    state.rows.courses = [{ id: "c1", contentRevision: 6, instructorId: "u1", departmentId: "d1" }];
+    m.createQuestion.mockResolvedValue({ id: "q9", bumpedCourseIds: ["other"] });
+    const result = await createQuestionInlineAction(form([...mcq, ["courseId", "c1"]]));
+    expect(result).toEqual({ question: picker("q9") });
+    expect(whereOf("courses")).toEqual([]);
+  });
+
   it("leaves the revision out for a course the author cannot read or that is missing", async () => {
-    m.createQuestion.mockResolvedValue("q9");
+    m.createQuestion.mockResolvedValue({ id: "q9", bumpedCourseIds: ["c2", "gone"] });
     state.rows.questions = questionRows(["q9"]);
     state.rows.courses = [{ id: "c2", contentRevision: 7, instructorId: "someone-else", departmentId: "d2" }];
     expect(await createQuestionInlineAction(form([...mcq, ["courseId", "c2"]]))).not.toHaveProperty("revision");
