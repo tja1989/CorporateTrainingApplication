@@ -304,7 +304,7 @@ test.describe.serial("Instructor question bank, quiz builder and preview", () =>
 
     // The curriculum's review lists 4 picked questions (with answers) and the random draw.
     const review = lesson.locator("details").filter({ has: page.locator("summary", { hasText: "Review lesson content" }) });
-    await review.locator("summary").click();
+    await review.locator(":scope > summary").click();
     const reviewed = review.getByRole("list", { name: "Picked questions" }).locator(":scope > li");
     await expect(reviewed).toHaveCount(4);
     await expect(reviewed.nth(3)).toContainText(qs.multi.prompt);
@@ -419,7 +419,7 @@ test.describe.serial("Instructor question bank, quiz builder and preview", () =>
       await expect(headPage.getByText("Edit quiz", { exact: true })).toHaveCount(0);
       const lesson = headPage.locator("li").filter({ has: headPage.getByText(quizTitle, { exact: true }) });
       const review = lesson.locator("details").filter({ has: headPage.locator("summary", { hasText: "Review lesson content" }) });
-      await review.locator("summary").click();
+      await review.locator(":scope > summary").click();
       const picked = review.getByRole("list", { name: "Picked questions" }).locator(":scope > li");
       await expect(picked).toHaveCount(4);
       const single = picked.filter({ hasText: qs.single.prompt });
@@ -615,7 +615,7 @@ test("bank, builder and preview fit a 360px phone with a 300-character unbroken 
   await expectNoPageOverflow(page);
   await capture(page, info, "phone-builder-edit");
   const review = lesson.locator("details").filter({ has: page.locator("summary", { hasText: "Review lesson content" }) });
-  await review.locator("summary").click();
+  await review.locator(":scope > summary").click();
   await expect(review.getByText(longOption, { exact: true })).toBeVisible();
   await expectNoPageOverflow(page);
   const add = await openQuizBuilder(page, moduleTitle);
