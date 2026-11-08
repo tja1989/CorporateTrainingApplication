@@ -108,11 +108,13 @@ it("an instructor's quiz can draw from a bank that names another course", async 
   const { db } = await import("../lib/db/client");
   state.actor = { id: "ana", role: "INSTRUCTOR", departmentId: null };
   state.mutate.mockImplementation(async (_actor, _course, run) => run(db));
-  // module, its lessons, then the drawn bank
+  // module, its lessons, the drawn bank, then its approved questions (none
+  // in a live exam, so the practice quiz needs no confirmation)
   state.responses = [
     [{ id: "m", courseId: "c" }],
     [],
     [{ id: "other-bank", courseId: "another-course" }],
+    [],
   ];
   const form = new FormData();
   form.set("type", "QUIZ");
