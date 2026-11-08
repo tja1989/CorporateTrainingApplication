@@ -1,0 +1,380 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { SQL } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
+import type { Actor } from "../lib/auth/roles";
+import type { QuestionDraft } from "../lib/questions/validate";
+
+// Rows each table returns, keyed by table name. A function is called per query.
+const state = vi.hoisted(() => ({
+  rows: {} as Record<string, unknown[] | (() => unknown[])>,
+  executes: [] as unknown[],
+  wheres: [] as { table: string; where: unknown }[],
+  inserts: [] as { table: string; values: Record<string, unknown> }[],
+  updates: [] as { table: string; values: Record<string, unknown> }[],
+}));
+vi.mock("@/lib/db/client", async () => {
+  const { getTableName } = await import("drizzle-orm");
+  const read = (table: string) => {
+    const rows = state.rows[table] ?? [];
+    return typeof rows === "function" ? rows() : rows;
+  };
+  const conn: any = {
+    execute: async (query: unknown) => {
+      state.executes.push(query);
+    },
+    select: () => {
+      let table = "";
+      const q: any = {
+        from: (source: any) => {
+          table = getTableName(source);
+          return q;
+        },
+        innerJoin: () => q,
+        where: (where: unknown) => {
+          state.wheres.push({ table, where });
+          return q;
+        },
+        limit: async () => read(table),
+        then: (resolve: any, reject: any) =>
+          Promise.resolve()
+            .then(() => read(table))
+            .then(resolve, reject),
+      };
+      return q;
+    },
+    insert: (source: any) => ({
+      values: async (values: Record<string, unknown>) => {
+        state.inserts.push({ table: getTableName(source), values });
+      },
+    }),
+    update: (source: any) => ({
+      set: (values: Record<string, unknown>) => ({
+        where: async () => {
+          state.updates.push({ table: getTableName(source), values });
+        },
+      }),
+    }),
+  };
+  return {
+    t: await import("../lib/db/schema"),
+    db: { ...conn, transaction: async (run: any) => run(conn) },
+  };
+});
+// Wrap the real reopen so tests can see what bank writes ask it to reopen.
+vi.mock("@/lib/courses/questions", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../lib/courses/questions")>();
+  return { ...actual, reopenDraftCourses: vi.fn(actual.reopenDraftCourses) };
+});
+
+import { db } from "../lib/db/client";
+import {
+  reopenDraftCourses,
+  updateDraftQuestion,
+} from "../lib/courses/questions";
+import { createBank, createQuestion, editQuestion } from "../lib/questions/bank";
+
+const dialect = new PgDialect();
+const toQuery = (value: unknown) => dialect.sqlToQuery(value as SQL);
+/** Advisory locks taken, in order: "assessment" or the curriculum lock key. */
+const locks = () =>
+  state.executes.map((statement) => {
+    const query = toQuery(statement);
+    return query.sql.includes("assessment-curriculum")
+      ? "assessment"
+      : String(query.params[0]);
+  });
+
+const ana: Actor = { id: "ana", role: "INSTRUCTOR", departmentId: null };
+const person = (actor: Actor, role: string = actor.role) => ({
+  id: actor.id,
+  role,
+  erasedAt: null,
+  passwordState: "ACTIVE",
+  departmentId: null,
+});
+type Course = { id: string; title: string; status: string; approvalState: string };
+const course = (
+  id: string,
+  status = "DRAFT",
+  approvalState = "DRAFT",
+): Course => ({ id, title: `Course ${id}`, status, approvalState });
+const quiz = (
+  c: Course,
+  sections: unknown[],
+  feedbackMode = "PRACTICE",
+) => ({
+  courseId: c.id,
+  courseTitle: c.title,
+  status: c.status,
+  approvalState: c.approvalState,
+  lessonId: `lesson-${c.id}`,
+  quizTitle: `Quiz ${c.id}`,
+  sections,
+  settings: { feedbackMode },
+});
+/** Rows for `SELECT * FROM courses WHERE id = …`, served in lock order. */
+const courseRows = (...rows: Course[]) => {
+  const queue = rows.map((row) => ({ ...row, contentRevision: 4 }));
+  return () => [queue.shift()];
+};
+const bump = {
+  contentRevision: 5,
+  approvalState: "DRAFT",
+  submittedRevision: null,
+  approvedRevision: null,
+  submittedBy: null,
+  approvedBy: null,
+};
+const draft: QuestionDraft = {
+  type: "truefalse",
+  points: 2,
+  body: { prompt: "Fire exits must stay clear.", correct: [0] },
+  rubric: null,
+};
+const written = (table: string) =>
+  state.updates.filter((u) => u.table === table).map((u) => u.values);
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  state.rows = { users: [person(ana)] };
+  state.executes = [];
+  state.wheres = [];
+  state.inserts = [];
+  state.updates = [];
+});
+
+describe("createBank", () => {
+  it("refuses a name an existing bank has, ignoring case and spacing", async () => {
+    state.rows.question_banks = [{ name: "Fire  Safety" }];
+    await expect(
+      createBank(ana, { name: "  fire safety ", tags: [] }),
+    ).rejects.toThrow("A bank with this name already exists.");
+    expect(locks()).toEqual(["assessment"]);
+    expect(state.inserts).toEqual([]);
+  });
+
+  it("requires a name", async () => {
+    await expect(createBank(ana, { name: "   ", tags: [] })).rejects.toThrow(
+      "Enter a bank name.",
+    );
+    expect(state.inserts).toEqual([]);
+  });
+
+  it("stores the trimmed, single-spaced name with no course", async () => {
+    state.rows.question_banks = [{ name: "Forklift Basics" }];
+    const bankId = await createBank(ana, {
+      name: "  Fire \t  Safety ",
+      tags: ["safety"],
+    });
+    expect(bankId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(state.inserts).toEqual([
+      {
+        table: "question_banks",
+        values: { id: bankId, name: "Fire Safety", courseId: null, tags: ["safety"] },
+      },
+    ]);
+  });
+
+  it("re-reads the actor and refuses a role that changed", async () => {
+    state.rows.users = [person(ana, "LEARNER")];
+    await expect(
+      createBank(ana, { name: "Fire Safety", tags: [] }),
+    ).rejects.toThrow("Not authorized to manage questions.");
+    expect(state.inserts).toEqual([]);
+  });
+});
+
+describe("createQuestion", () => {
+  beforeEach(() => {
+    state.rows.question_banks = [{ id: "bank" }];
+  });
+
+  it("refuses a bank that a live course draws from at random", async () => {
+    state.rows.lessons = [
+      quiz({ ...course("fire", "PUBLISHED", "APPROVED"), title: "Fire Safety" }, [
+        { bankId: "bank", pickN: 3 },
+      ]),
+    ];
+    await expect(createQuestion(ana, "bank", draft)).rejects.toThrow(
+      "This bank feeds live training (Fire Safety). Choose another bank or create a new one.",
+    );
+    expect(state.inserts).toEqual([]);
+    expect(state.updates).toEqual([]);
+  });
+
+  it("reopens draft courses that draw from the bank and stores an approved question", async () => {
+    state.rows.lessons = [quiz(course("draft"), [{ bankId: "bank", pickN: 2 }])];
+    state.rows.courses = courseRows(course("draft"));
+    const questionId = await createQuestion(ana, "bank", draft);
+    expect(reopenDraftCourses).toHaveBeenCalledWith(expect.anything(), ["draft"]);
+    expect(locks()).toEqual(["assessment", "curriculum:draft"]);
+    expect(written("courses")).toEqual([bump]);
+    expect(state.inserts).toEqual([
+      {
+        table: "questions",
+        values: {
+          id: questionId,
+          bankId: "bank",
+          type: "truefalse",
+          points: 2,
+          body: draft.body,
+          rubric: null,
+          status: "APPROVED",
+          createdBy: "human",
+          authorId: "ana",
+        },
+      },
+    ]);
+  });
+
+  it("ignores picked questions, other banks, draws without a count and archived courses", async () => {
+    const live = course("live", "PUBLISHED", "APPROVED");
+    state.rows.lessons = [
+      quiz(live, [
+        { fixed: ["old-question"] },
+        { bankId: "other-bank", pickN: 2 },
+        { bankId: "bank" },
+      ]),
+      quiz(course("old", "ARCHIVED", "APPROVED"), [{ bankId: "bank", pickN: 2 }]),
+    ];
+    await createQuestion(ana, "bank", draft);
+    expect(reopenDraftCourses).toHaveBeenCalledWith(expect.anything(), []);
+    expect(written("courses")).toEqual([]);
+    expect(state.inserts).toHaveLength(1);
+  });
+
+  it("refuses a Department Head", async () => {
+    const head: Actor = { id: "head", role: "DEPARTMENT_HEAD", departmentId: "ops" };
+    state.rows.users = [person(head)];
+    await expect(createQuestion(head, "bank", draft)).rejects.toThrow(
+      "Not authorized to manage questions.",
+    );
+    expect(state.inserts).toEqual([]);
+  });
+
+  it("refuses a bank that does not exist", async () => {
+    state.rows.question_banks = [];
+    await expect(createQuestion(ana, "missing", draft)).rejects.toThrow(
+      "Choose a question bank.",
+    );
+    expect(state.inserts).toEqual([]);
+  });
+});
+
+describe("editQuestion", () => {
+  const question = {
+    id: "q1",
+    bankId: "bank",
+    status: "APPROVED",
+    authorId: "ana",
+    version: 3,
+    type: "mcq_single",
+    points: 1,
+    body: { prompt: "Old", options: ["a", "b"], correct: [0] },
+    rubric: null,
+  };
+  beforeEach(() => {
+    state.rows.questions = [question];
+    state.rows.attempts = [{ count: 0 }];
+    state.rows.lessons = [];
+  });
+
+  it("refuses another instructor's question", async () => {
+    const ben: Actor = { id: "ben", role: "INSTRUCTOR", departmentId: null };
+    state.rows.users = [person(ben)];
+    await expect(editQuestion(ben, "q1", draft)).rejects.toThrow(
+      "Only the author, HR Head or Admin can edit this question.",
+    );
+    expect(state.updates).toEqual([]);
+  });
+
+  it("refuses a question learners have answered, counted by served-item containment", async () => {
+    state.rows.attempts = [{ count: 2 }];
+    await expect(editQuestion(ana, "q1", draft)).rejects.toThrow(
+      "Learners have already answered this question. Copy it to make changes.",
+    );
+    const served = toQuery(state.wheres.find((w) => w.table === "attempts")?.where);
+    expect(served.sql).toContain('"attempts"."served_items" @> $1::jsonb');
+    expect(served.params).toEqual(['[{"questionId":"q1"}]']);
+    expect(state.updates).toEqual([]);
+  });
+
+  it("refuses a question live training picks or draws", async () => {
+    state.rows.lessons = [
+      quiz({ ...course("fire", "PUBLISHED", "APPROVED"), title: "Fire Safety" }, [
+        { fixed: ["q1"] },
+      ]),
+      quiz({ ...course("lift", "DRAFT", "SUBMITTED"), title: "Forklift" }, [
+        { bankId: "bank", pickN: 1 },
+      ]),
+    ];
+    await expect(editQuestion(ana, "q1", draft)).rejects.toThrow(
+      "Used by live training: Fire Safety, Forklift. Copy it to make changes.",
+    );
+    expect(state.updates).toEqual([]);
+  });
+
+  it("only edits approved questions", async () => {
+    state.rows.questions = [{ ...question, status: "DRAFT" }];
+    await expect(editQuestion(ana, "q1", draft)).rejects.toThrow(
+      "Only approved questions can be edited here.",
+    );
+    state.rows.questions = [];
+    await expect(editQuestion(ana, "q1", draft)).rejects.toThrow(
+      "Only approved questions can be edited here.",
+    );
+    expect(state.updates).toEqual([]);
+  });
+
+  it("reopens referencing draft courses in lock order, then saves the next version", async () => {
+    state.rows.lessons = [
+      quiz(course("b"), [{ bankId: "bank", pickN: 2 }]),
+      quiz(course("a"), [{ fixed: ["q1"] }]),
+      quiz(course("old", "ARCHIVED", "APPROVED"), [{ fixed: ["q1"] }]),
+      quiz(course("other", "PUBLISHED", "APPROVED"), [
+        { fixed: ["q2"] },
+        { bankId: "other-bank", pickN: 1 },
+      ]),
+    ];
+    state.rows.courses = courseRows(course("a"), course("b"));
+    await editQuestion(ana, "q1", draft);
+    expect(locks()).toEqual(["assessment", "curriculum:a", "curriculum:b"]);
+    expect(written("courses")).toEqual([bump, bump]);
+    expect(written("questions")).toEqual([
+      { type: "truefalse", points: 2, body: draft.body, rubric: null, version: 4 },
+    ]);
+  });
+});
+
+describe("reopenDraftCourses", () => {
+  it("locks each course once, in id order, and starts a new revision", async () => {
+    state.rows.courses = courseRows(course("a"), course("b"));
+    await reopenDraftCourses(db as never, ["b", "a", "b"]);
+    expect(locks()).toEqual(["curriculum:a", "curriculum:b"]);
+    expect(written("courses")).toEqual([bump, bump]);
+  });
+
+  it("refuses a submitted course", async () => {
+    state.rows.courses = courseRows(course("a", "DRAFT", "SUBMITTED"));
+    await expect(reopenDraftCourses(db as never, ["a"])).rejects.toThrow(
+      "Revise affected courses before changing their assessment questions. Approval is currently locked.",
+    );
+    expect(state.updates).toEqual([]);
+  });
+});
+
+describe("updateDraftQuestion", () => {
+  it("reopens courses that use the question or own its bank before approving it", async () => {
+    const admin: Actor = { id: "it", role: "ADMIN", departmentId: null };
+    state.rows.users = [person(admin)];
+    state.rows.questions = [{ id: "q1", bankId: "bank", status: "DRAFT" }];
+    state.rows.question_banks = [{ id: "bank", courseId: "owner" }];
+    state.rows.lessons = [{ courseId: "user" }, { courseId: "owner" }];
+    state.rows.courses = courseRows(course("owner"), course("user"));
+    await updateDraftQuestion(admin, "q1", "APPROVED");
+    expect(locks()).toEqual(["assessment", "curriculum:owner", "curriculum:user"]);
+    expect(written("courses")).toEqual([bump, bump]);
+    expect(written("questions")).toEqual([{ status: "APPROVED" }]);
+  });
+});

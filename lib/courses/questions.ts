@@ -2,7 +2,43 @@ import { and, eq, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import { canonicalRole, type Actor } from "@/lib/auth/roles";
 import { hasPermission } from "@/lib/auth/permissions";
+import type { LearningTransaction } from "@/lib/lms/learning-cycle";
 import { lockAssessmentCurriculum, lockCurriculum } from "./workflow";
+/** Returns each course to a new draft revision with approval reset, locking
+ * courses in id order. Refuses when any course is not an unsubmitted draft.
+ * Call after `lockAssessmentCurriculum(tx)`. */
+export async function reopenDraftCourses(
+  tx: LearningTransaction,
+  courseIds: string[],
+): Promise<void> {
+  for (const courseId of [...new Set(courseIds)].sort()) {
+    await lockCurriculum(tx, courseId);
+    const [course] = await tx
+      .select()
+      .from(t.courses)
+      .where(eq(t.courses.id, courseId))
+      .limit(1);
+    if (
+      !course ||
+      course.status !== "DRAFT" ||
+      ["APPROVED", "SUBMITTED"].includes(course.approvalState)
+    )
+      throw new Error(
+        "Revise affected courses before changing their assessment questions. Approval is currently locked.",
+      );
+    await tx
+      .update(t.courses)
+      .set({
+        contentRevision: course.contentRevision + 1,
+        approvalState: "DRAFT",
+        submittedRevision: null,
+        approvedRevision: null,
+        submittedBy: null,
+        approvedBy: null,
+      })
+      .where(eq(t.courses.id, courseId));
+  }
+}
 /** Question-bank changes alter randomized assessments, so their users must
  * return to draft and receive a fresh approval revision as well. */
 export async function updateDraftQuestion(
@@ -48,39 +84,10 @@ export async function updateDraftQuestion(
       .where(
         sql`EXISTS(SELECT 1 FROM jsonb_array_elements(${t.quizzes.sections}) s WHERE s->>'bankId'=${question.bankId} OR (s->'fixed') ? ${questionId})`,
       );
-    const courseIds = [
-      ...new Set([
-        ...references.map((r) => r.courseId),
-        ...(bank?.courseId ? [bank.courseId] : []),
-      ]),
-    ].sort();
-    for (const courseId of courseIds) {
-      await lockCurriculum(tx, courseId);
-      const [course] = await tx
-        .select()
-        .from(t.courses)
-        .where(eq(t.courses.id, courseId))
-        .limit(1);
-      if (
-        !course ||
-        course.status !== "DRAFT" ||
-        ["APPROVED", "SUBMITTED"].includes(course.approvalState)
-      )
-        throw new Error(
-          "Revise affected courses before changing their assessment questions. Approval is currently locked.",
-        );
-      await tx
-        .update(t.courses)
-        .set({
-          contentRevision: course.contentRevision + 1,
-          approvalState: "DRAFT",
-          submittedRevision: null,
-          approvedRevision: null,
-          submittedBy: null,
-          approvedBy: null,
-        })
-        .where(eq(t.courses.id, courseId));
-    }
+    await reopenDraftCourses(tx, [
+      ...references.map((r) => r.courseId),
+      ...(bank?.courseId ? [bank.courseId] : []),
+    ]);
     await tx
       .update(t.questions)
       .set({ status })
