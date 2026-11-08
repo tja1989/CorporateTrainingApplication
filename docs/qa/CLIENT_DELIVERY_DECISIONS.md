@@ -259,3 +259,64 @@ The Phase 2–3 deferred minors that affect the finished look were closed on mai
 - Seeding rewrites `public/demo/fire-safety-guide.pdf` with a new timestamp; revert it after a local seed so it does not enter a commit.
 - Still open: the shorter feedback privacy wording waits for client sign-off (`docs/qa/PRIVACY_WORDING_PROPOSAL.md`).
 
+
+## Question Bank, quiz builder and preview — 8 November 2026
+
+Branch `feature/question-bank-preview`, spec `docs/superpowers/specs/2026-11-08-question-bank-quiz-builder-preview-design.md`, plan `docs/superpowers/plans/2026-11-08-question-bank-quiz-builder-preview.md`. It answers the client feedback of 8 November: instructors could not reach a Question Bank, wanted to reuse and add questions and build quizzes from them, and wanted to see a course exactly as a learner does at any stage.
+
+What changed for people:
+
+- Instructors, HR Head and Super Admin get a "Question bank" page (`/instructor/questions`, `/hr/questions`, `/admin/questions`). It lists every approved question with filters, the author and where each one is used. They can add banks and write questions of all 7 types.
+- Quiz lessons are built and edited in a quiz builder: questions picked from the bank, questions written on the spot (saved to the bank), random draws from a bank, and "Copy from another quiz". Existing quizzes open in it with "Edit quiz".
+- The approval page's "Review lesson content" shows every question a quiz can serve, with its full answer key, plus each random draw.
+- "Preview as learner" opens any course, at any stage, as a learner sees it, with a "Preview — nothing is saved" banner and "Back to editor". Quizzes can be taken and scored; nothing is recorded.
+
+TJ's decisions:
+
+1. One shared Question Bank. Instructors add questions straight into the central bank; there are no private pools.
+2. Instructors can write all 7 question types: single choice, multiple choice, true/false, fill in the blank, matching, ordering, written answer (with rubric and model answer).
+3. Quizzes stay inside their course. Reuse happens at the question level; there is no separate quiz library.
+4. Preview lets you take quizzes for real: answer, submit, and see the score and correct answers. Nothing is saved.
+5. Trust authors with answers. Everyone with bank access sees every question's answers, including questions used in live exams. Adding a live-exam question to a practice quiz shows a warning ("Learners will see these answers right after submitting.") but is allowed.
+
+Claude's calls, shown to TJ in the spec and not objected to:
+
+- Instructor-written questions can be used at once, with no separate review step; the Department Head's course approval covers them. AI-drafted questions keep the existing review step.
+- Editing is limited so a live exam never changes by accident: only the author, HR Head or Super Admin may edit, and only a question no learner has answered and no published, submitted or approved course uses. Otherwise the page offers "Copy and edit".
+- HR Head and Super Admin also get the Question Bank page.
+- The builder mixes picked, newly written and random-draw questions, and existing quizzes can be edited.
+- "Copy from another quiz" gives a fast start.
+- The bank shows where each question is used.
+- Changing a quiz in a published course still needs "Revise course" first.
+- Preview: the button shows at any stage; locked lessons show a note instead of blocking; a voice oral check shows only its start screen; Instructors, HR Head, Super Admin and the course's Department Head can preview.
+- Written answers in preview show the model answer instead of AI grading.
+
+Claude's calls listed in the spec as not yet discussed with TJ (please confirm):
+
+- A bank that feeds a live random draw (a published, submitted or approved course) refuses new questions, naming those courses: "This bank feeds live training (…). Choose another bank or create a new one." Draft courses drawing from it get a new revision and their approval reset instead.
+- HR Head and Super Admin can edit any eligible question; instructors only their own.
+- "Copy from another quiz" draws on any course the person can read, plus any published course.
+- The AI tutor is hidden in preview.
+- The approval and review screens show every quiz question's full answer key.
+- The daily drill is unchanged; the "live exams never change" rule covers graded quizzes and exams only.
+
+Rulings made during the build that changed behaviour, each with its cost if wrong:
+
+- Ruling R7: an archived course that uses a changed bank or question does not block the change, but loses its approval in the same transaction (new revision, approval back to draft, still archived) — HR can otherwise restore an archived course to published on its old approval and serve unapproved bank content; blocking instead would lock banks forever behind archived courses — cost if wrong: such an archived course needs approval again (or a recorded Super Admin intervention) before it can come back.
+- Ruling R9: the existing rule stays that a course cannot be submitted or published while a random draw asks for more questions than its bank has approved; saving a draft is still allowed. The builder warns "Only N approved questions in this bank. Lower the number or add questions before submitting for approval.", and preview serves what exists — the spec's "learners will get N" wording would be false because submitting is blocked — cost if wrong: authors fix an over-draw before submitting, as before.
+- Ruling R10: writing a question in the builder returns the course's current revision, and the builder keeps it, so a question written into a bank the author's own draft draws from doesn't make the next save "stale" — cost if wrong: a change someone else made between opening the page and that inline write is not flagged as stale on the next save.
+
+Found by the end-to-end tests:
+
+- Resolved (real layout bug): a long unbroken answer choice overflowed sideways at 360px in the answer guide used by the bank's question view, the approval answer key and the preview result. The choice could not shrink below its text; it now wraps.
+- Resolved: `client-approval.e2e.ts` and `workspaces.e2e.ts` filled "Lesson title" in the "Add lesson" form. The quiz builder keeps its own (hidden) "Lesson title" field beside the other types' form, so the tests now fill the visible one. The authoring test drives the builder ("Add a random draw"), checks the hidden quiz fields belong to the builder's own form instead of a disabled fieldset, and now also checks the saved quiz draw and exam mode.
+- Checked: very long unbroken course titles fit preview breadcrumbs and headings at 360px; the page-wide `overflow-wrap: anywhere` covers them.
+
+Verification (commit `39e8cb2`, local production build, database `welearn_e2e_full_1017`):
+
+- Unit tests: 72 files, 572 tests passed. Typecheck clean. Production build passed.
+- New `e2e/question-bank-preview.e2e.ts` on chromium-desktop and chromium-mobile: 9 passed, 1 skipped (the 360px phone check runs on mobile only).
+- Full configured matrix: 891 passed, 1 skipped (the phone check on chromium-desktop) and 3 failed out of 895 executions in one run (all ten projects, two workers, no retries, `QA_BUILD_DIRTY=0`). The 3 failures are in code this branch does not touch, and each passed when its file was re-run once on the same build:
+  - `quality-qualification.e2e.ts` "Active assessment, dialogs, media, voice and HR recovery … in dark" on chromium-mobile and chromium-small timed out waiting for `/api/hr/reauth`. The trace shows no request: unlocking HR history reloads the page, and the test sends its focus event once the password field is gone, which can be before the reloaded page has attached its focus listener. Re-run on both projects: 16 of 16 passed.
+  - `voice-faults.e2e.ts` "Ending a pending microphone request …" on webkit-mobile found the audio context still running when checked (it passed on the other five browsers). Re-run on webkit-mobile: 4 of 4 passed.
+- This is one run, not the formal two consecutive passing runs described in `LOCAL_TESTING.md`.
