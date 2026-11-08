@@ -268,7 +268,7 @@ What changed for people:
 
 - Instructors, HR Head and Super Admin get a "Question bank" page (`/instructor/questions`, `/hr/questions`, `/admin/questions`). It lists every approved question with filters, the author and where each one is used. They can add banks and write questions of all 7 types.
 - Quiz lessons are built and edited in a quiz builder: questions picked from the bank, questions written on the spot (saved to the bank), random draws from a bank, and "Copy from another quiz". Existing quizzes open in it with "Edit quiz".
-- The approval page's "Review lesson content" shows every question a quiz can serve, with its full answer key, plus each random draw.
+- The approval page's "Review lesson content" shows every question a quiz can serve, with its full answer key: the picked questions, then each random draw with "Show the approved questions in this bank" (that bank's approved questions and their answers, the first 50).
 - "Preview as learner" opens any course, at any stage, as a learner sees it, with a "Preview — nothing is saved" banner and "Back to editor". Quizzes can be taken and scored; nothing is recorded.
 
 TJ's decisions:
@@ -304,7 +304,14 @@ Rulings made during the build that changed behaviour, each with its cost if wron
 
 - Ruling R7: an archived course that uses a changed bank or question does not block the change, but loses its approval in the same transaction (new revision, approval back to draft, still archived) — HR can otherwise restore an archived course to published on its old approval and serve unapproved bank content; blocking instead would lock banks forever behind archived courses — cost if wrong: such an archived course needs approval again (or a recorded Super Admin intervention) before it can come back.
 - Ruling R9: the existing rule stays that a course cannot be submitted or published while a random draw asks for more questions than its bank has approved; saving a draft is still allowed. The builder warns "Only N approved questions in this bank. Lower the number or add questions before submitting for approval.", and preview serves what exists — the spec's "learners will get N" wording would be false because submitting is blocked — cost if wrong: authors fix an over-draw before submitting, as before.
-- Ruling R10: writing a question in the builder returns the course's current revision, and the builder keeps it, so a question written into a bank the author's own draft draws from doesn't make the next save "stale" — cost if wrong: a change someone else made between opening the page and that inline write is not flagged as stale on the next save.
+- Ruling R10: writing a question in the builder returns the course's current revision, and the builder keeps it, so a question written into a bank the author's own draft draws from doesn't make the next save "stale" — cost if wrong: a change someone else made between opening the page and that inline write is not flagged as stale on the next save. Narrowed by R14: the revision comes back only when that write actually moved this course to a new revision.
+
+Rulings from the final whole-branch review:
+
+- Ruling R11: approvers see the questions behind each random draw. Under each draw line the answer key offers "Show the approved questions in this bank", listing that bank's approved questions with their answers (first 50, then "and N more approved questions in this bank") — approval is the only check on instructor-written questions, so the approver must be able to read every question a quiz can serve — cost if wrong: a longer review page.
+- Ruling R12: the schema now declares the question author link to users, so the schema step at deploy keeps it, and the question author migration adds an index on the questions each attempt was served (`attempts_served_items_gin`), which the "has any learner answered this?" check before an edit uses — cost if wrong: one index build on deploy.
+- Ruling R13: the live-exam warning also covers random draws. A practice quiz drawing from a bank that holds a question used in a live exam shows "Used in a live exam" on the draw and asks "Learners will see these answers right after submitting." before saving. If the page was opened before the question went into a live exam, saving asks the same question and saves on OK — cost if wrong: one extra confirmation.
+- Ruling R14: stricter question forms and clearer preview. A matching pair with only one side filled, or a marking criterion missing its name or whole-number points, is refused with a message instead of being dropped silently (fully empty rows are still ignored). A preview of a quiz with nothing auto-scorable (only written answers) shows no score or pass/fail, just the written-answer note and the answer keys. Before starting, preview also says how long learners wait between attempts and when the quiz is open to learners — cost if wrong: small wording changes.
 
 Found by the end-to-end tests:
 
