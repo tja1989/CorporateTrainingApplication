@@ -6,10 +6,58 @@ import { QuestionInput } from "@/components/question-input";
 import { QuestionGuide } from "@/app/(workspace)/admin/reviews/question-guide";
 import { startPreviewQuizAction, submitPreviewQuizAction, type PreviewResult, type PreviewStart } from "@/lib/preview/quiz-actions";
 import type { Answer } from "@/lib/quiz/scoring";
+import { formatDateTime, plural } from "@/lib/format";
 
-type Rules = { attemptsLimit: number | null; integrityMode: boolean; exam: boolean };
+type Rules = {
+  attemptsLimit: number | null;
+  integrityMode: boolean;
+  exam: boolean;
+  cooldownMinutes: number;
+  availableFrom: string | null;
+  availableUntil: string | null;
+};
 
 const WRITTEN_NOTE = "Written answers are graded by AI and reviewed by people for learners. Not scored in preview.";
+
+/** A quiz window boundary, worded in the organisation's time zone. */
+const windowTime = (iso: string) => formatDateTime(new Date(iso), { withYear: true });
+
+/** When the quiz is open to learners, or null when it always is. */
+function availability({ availableFrom, availableUntil }: Rules): string | null {
+  if (!availableFrom && !availableUntil) return null;
+  const from = availableFrom ? ` from ${windowTime(availableFrom)}` : "";
+  const until = availableUntil ? ` until ${windowTime(availableUntil)}` : "";
+  return `Open to learners${from}${until}.`;
+}
+
+/** The scored preview: score and pass mark (only when something is scorable),
+ * the written-answer note, then each question with its answer key. */
+export function PreviewResultView({ result }: { result: PreviewResult }) {
+  const scorable = result.possible > 0;
+  return (
+    <>
+      <Card className="mb-4 p-6">
+        {scorable ? (
+          <>
+            <p className="display mb-2 text-xl">Score {result.earned} of {result.possible} ({result.pct}%)</p>
+            <div className="flex flex-wrap items-center gap-2">
+              {result.passed ? <Chip variant="success">Passed</Chip> : <Chip variant="destructive">Not passed</Chip>}
+              <span className="text-sm text-muted">Pass mark {result.passPct}%</span>
+            </div>
+          </>
+        ) : null}
+        {result.writtenCount > 0 ? <p className={scorable ? "mt-3 text-sm text-muted" : "text-sm text-muted"}>{WRITTEN_NOTE}</p> : null}
+      </Card>
+      {result.items.map((item, i) => (
+        <Card key={item.questionId} className="mb-3 p-4 text-sm">
+          <p className="mb-1 font-medium [overflow-wrap:anywhere]">{i + 1}. {item.prompt}</p>
+          <p className="text-muted">{item.earned === null ? WRITTEN_NOTE : `${item.earned} / ${item.points} points`}</p>
+          <QuestionGuide type={item.type} body={item.body} rubric={item.rubric} />
+        </Card>
+      ))}
+    </>
+  );
+}
 
 export function PreviewQuizRunner({ courseId, lessonId, lessonHref, rules }: { courseId: string; lessonId: string; lessonHref: string; rules: Rules }) {
   const [start, setStart] = useState<PreviewStart | null>(null);
@@ -83,21 +131,7 @@ export function PreviewQuizRunner({ courseId, lessonId, lessonHref, rules }: { c
   if (result) {
     return (
       <div>
-        <Card className="mb-4 p-6">
-          <p className="display mb-2 text-xl">Score {result.earned} of {result.possible} ({result.pct}%)</p>
-          <div className="flex flex-wrap items-center gap-2">
-            {result.passed ? <Chip variant="success">Passed</Chip> : <Chip variant="destructive">Not passed</Chip>}
-            <span className="text-sm text-muted">Pass mark {result.passPct}%</span>
-          </div>
-          {result.writtenCount > 0 ? <p className="mt-3 text-sm text-muted">{WRITTEN_NOTE}</p> : null}
-        </Card>
-        {result.items.map((item, i) => (
-          <Card key={item.questionId} className="mb-3 p-4 text-sm">
-            <p className="mb-1 font-medium [overflow-wrap:anywhere]">{i + 1}. {item.prompt}</p>
-            <p className="text-muted">{item.earned === null ? WRITTEN_NOTE : `${item.earned} / ${item.points} points`}</p>
-            <QuestionGuide type={item.type} body={item.body} rubric={item.rubric} />
-          </Card>
-        ))}
+        <PreviewResultView result={result} />
         {alert}
         <div className="flex flex-wrap gap-2">
           <Button disabled={busy} onClick={() => void begin()}>{busy ? "Preparing…" : "Try again"}</Button>
@@ -108,12 +142,15 @@ export function PreviewQuizRunner({ courseId, lessonId, lessonHref, rules }: { c
   }
 
   if (!start) {
+    const open = availability(rules);
     return (
       <div className="flex flex-col items-start gap-3">
         <ul className="flex flex-col gap-1 text-sm text-muted">
           <li>Learners get {rules.attemptsLimit ?? "unlimited"} attempts</li>
           {rules.integrityMode ? <li>Integrity monitoring is on for learners; it doesn&#39;t run in preview.</li> : null}
           {rules.exam ? <li>In exam mode, learners see answers only after the window closes.</li> : null}
+          {rules.cooldownMinutes > 0 ? <li>Learners wait {plural(rules.cooldownMinutes, "minute")} between attempts.</li> : null}
+          {open ? <li>{open}</li> : null}
         </ul>
         {alert}
         {error === "This quiz has no questions yet." ? null : <Button disabled={busy} onClick={() => void begin()}>{busy ? "Preparing…" : "Start"}</Button>}

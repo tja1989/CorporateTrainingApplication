@@ -32,7 +32,14 @@ export default async function PreviewQuizPage({ params }: { params: Promise<{ co
           courseId={courseId}
           lessonId={lessonId}
           lessonHref={`/preview/course/${courseId}/lesson/${lessonId}`}
-          rules={{ attemptsLimit: s.attemptsLimit, integrityMode: s.integrityMode, exam: s.feedbackMode === "EXAM" }}
+          rules={{
+            attemptsLimit: s.attemptsLimit,
+            integrityMode: s.integrityMode,
+            exam: s.feedbackMode === "EXAM",
+            cooldownMinutes: s.cooldownMinutes,
+            availableFrom: s.availableFrom ?? null,
+            availableUntil: s.availableUntil ?? null,
+          }}
         />
       </div>
     </div>

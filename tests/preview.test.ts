@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 const m = vi.hoisted(() => ({
   actor: { id: "u1", role: "INSTRUCTOR", departmentId: null } as { id: string; role: string; departmentId: string | null },
@@ -40,6 +42,8 @@ import { previewScore } from "../lib/preview/score";
 import { startPreviewQuizAction, submitPreviewQuizAction } from "../lib/preview/quiz-actions";
 import { learnerLockNote, previewLessonHref } from "../lib/preview/course";
 import { toServed } from "../lib/quiz/served";
+import { PreviewQuizRunner, PreviewResultView } from "../components/preview-quiz-runner";
+import type { PreviewResult } from "../lib/preview/score";
 
 const settings = {
   attemptsLimit: null, cooldownMinutes: 0, gradingMethod: "highest", passPct: 70, shuffleQuestions: false,
@@ -166,5 +170,61 @@ describe("preview helpers", () => {
   it("toServed shows options in the shuffled order", () => {
     const s = toServed(q("q1") as never, { questionId: "q1", order: 0, choiceOrder: [1, 2, 0] });
     expect(s.options).toEqual(["b", "c", "a"]);
+  });
+});
+
+describe("PreviewQuizRunner", () => {
+  const WRITTEN_NOTE = "Written answers are graded by AI and reviewed by people for learners. Not scored in preview.";
+  const written: PreviewResult["items"][number] = {
+    questionId: "w1", type: "free_text", prompt: "Explain how you report a hazard.", points: 2, earned: null,
+    body: { prompt: "Explain how you report a hazard." },
+    rubric: { criteria: [{ name: "Names the supervisor", points: 2 }], modelAnswer: "Tell the supervisor straight away." },
+  };
+  const choice: PreviewResult["items"][number] = {
+    questionId: "c1", type: "mcq_single", prompt: "Which extinguisher suits electrical fires?", points: 1, earned: 0,
+    body: { prompt: "Which extinguisher suits electrical fires?", options: ["Water", "Carbon dioxide"], correct: [1] },
+    rubric: null,
+  };
+  const result = (items: PreviewResult["items"], possible: number): PreviewResult => ({
+    earned: 0, possible, pct: 0, passed: false, passPct: 70, writtenCount: items.filter((i) => i.earned === null).length, items,
+  });
+  const rules = { attemptsLimit: 3, integrityMode: false, exam: false, cooldownMinutes: 0, availableFrom: null, availableUntil: null };
+  const runner = (extra: Partial<typeof rules> | Record<string, unknown> = {}) =>
+    renderToStaticMarkup(createElement(PreviewQuizRunner, {
+      courseId: "c1", lessonId: "l1", lessonHref: "/preview/course/c1/lesson/l1", rules: { ...rules, ...extra },
+    }));
+
+  it("shows the score and pass mark when something is scorable", () => {
+    const html = renderToStaticMarkup(createElement(PreviewResultView, { result: result([choice, written], 1) }));
+    expect(html).toContain("Score 0 of 1 (0%)");
+    expect(html).toContain("Not passed");
+    expect(html).toContain("Pass mark 70%");
+    expect(html).toContain(WRITTEN_NOTE);
+  });
+
+  it("shows only the written-answer note and the answer keys when nothing is scorable", () => {
+    const html = renderToStaticMarkup(createElement(PreviewResultView, { result: result([written], 0) }));
+    for (const text of ["Score", "Passed", "Not passed", "Pass mark"]) expect(html).not.toContain(text);
+    expect(html).toContain(WRITTEN_NOTE);
+    expect(html).toContain("Explain how you report a hazard.");
+    expect(html).toContain("Marking rubric");
+    expect(html).toContain("Tell the supervisor straight away.");
+  });
+
+  it("says how long learners wait between attempts", () => {
+    expect(runner({ cooldownMinutes: 30 })).toContain("Learners wait 30 minutes between attempts.");
+    expect(runner({ cooldownMinutes: 1 })).toContain("Learners wait 1 minute between attempts.");
+    expect(runner()).not.toContain("between attempts");
+  });
+
+  it("says when the quiz is open to learners, in the organisation's time zone", () => {
+    const from = "2026-11-10T06:00:00.000Z";
+    const until = "2026-11-20T15:30:00.000Z";
+    expect(runner({ availableFrom: from, availableUntil: until })).toContain(
+      "Open to learners from Tue 10 Nov 2026, 10:00 until Fri 20 Nov 2026, 19:30.",
+    );
+    expect(runner({ availableFrom: from })).toContain("Open to learners from Tue 10 Nov 2026, 10:00.");
+    expect(runner({ availableUntil: until })).toContain("Open to learners until Fri 20 Nov 2026, 19:30.");
+    expect(runner()).not.toContain("Open to learners");
   });
 });
