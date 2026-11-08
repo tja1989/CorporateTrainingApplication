@@ -40,7 +40,7 @@ vi.mock("@/lib/db/client", async () => {
 
 import { previewScore } from "../lib/preview/score";
 import { startPreviewQuizAction, submitPreviewQuizAction } from "../lib/preview/quiz-actions";
-import { learnerLockNote, previewLessonHref } from "../lib/preview/course";
+import { learnerLockNote, loadPreviewCourse, previewLessonHref } from "../lib/preview/course";
 import { toServed } from "../lib/quiz/served";
 import { PreviewQuizRunner, PreviewResultView } from "../components/preview-quiz-runner";
 import type { PreviewResult } from "../lib/preview/score";
@@ -103,10 +103,42 @@ describe("previewScore", () => {
 });
 
 describe("preview actions", () => {
+  // Preview writes nothing, whatever the case.
+  afterEach(() => {
+    expect(m.writes).not.toHaveBeenCalled();
+  });
+
   it("refuses learners and people who cannot read the course", async () => {
     m.actor = { id: "u9", role: "LEARNER", departmentId: null };
     expect(await startPreviewQuizAction("c1", "l1")).toEqual({ error: "Preview is not available." });
     expect(await submitPreviewQuizAction("c1", "l1", [], {})).toEqual({ error: "Preview is not available." });
+  });
+
+  it("refuses an instructor who does not own the course and a Department Head of another department", async () => {
+    (m.rows.courses as { departmentId: string | null }[])[0].departmentId = "d1";
+    for (const actor of [
+      { id: "u2", role: "INSTRUCTOR", departmentId: "d1" },
+      { id: "h2", role: "DEPARTMENT_HEAD", departmentId: "d2" },
+    ]) {
+      m.actor = actor;
+      expect(await startPreviewQuizAction("c1", "l1")).toEqual({ error: "Preview is not available." });
+      expect(
+        await submitPreviewQuizAction("c1", "l1", [{ questionId: "q1", order: 0 }], { q1: { kind: "choice", selected: [0] } }),
+      ).toEqual({ error: "Preview is not available." });
+      expect(await loadPreviewCourse(actor as never, "c1")).toBeNull();
+    }
+  });
+
+  it("lets the owning instructor and the course's Department Head preview", async () => {
+    (m.rows.courses as { departmentId: string | null }[])[0].departmentId = "d1";
+    for (const actor of [
+      { id: "u1", role: "INSTRUCTOR", departmentId: null },
+      { id: "h1", role: "DEPARTMENT_HEAD", departmentId: "d1" },
+    ]) {
+      m.actor = actor;
+      expect(await loadPreviewCourse(actor as never, "c1")).toMatchObject({ course: { id: "c1" }, lessons: [{ id: "l1" }] });
+      expect((await startPreviewQuizAction("c1", "l1")).start?.servedItems).toEqual([{ questionId: "q1", order: 0 }]);
+    }
   });
 
   it("refuses a lesson that is not a quiz in this course", async () => {
@@ -153,9 +185,6 @@ describe("preview actions", () => {
     expect(r.result?.items[1].rubric?.modelAnswer).toBe("m");
   });
 
-  it("never writes", () => {
-    expect(m.writes).not.toHaveBeenCalled();
-  });
 });
 
 describe("preview helpers", () => {
