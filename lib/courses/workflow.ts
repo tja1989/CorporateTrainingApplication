@@ -85,7 +85,7 @@ export async function mutateDraftCourse<T>(
 }
 /** Names the quiz, its bank and the gap so the author knows exactly what to fix. */
 export function bankShortfallMessage(lessonTitle: string, bankName: string, needed: number, approved: number): string {
-  return `“${lessonTitle}” draws ${needed} question${needed === 1 ? "" : "s"} from “${bankName}”, but only ${approved} ${approved === 1 ? "is" : "are"} approved. Add or approve ${needed - approved} more in Question banks, or lower “Questions to draw”.`;
+  return `“${lessonTitle}” draws ${needed} question${needed === 1 ? "" : "s"} from “${bankName}”, but only ${approved} ${approved === 1 ? "is" : "are"} approved. Add or approve ${needed - approved} more in the Question bank, or lower “Questions to draw”.`;
 }
 export async function validateCurriculum(
   tx: LearningTransaction,

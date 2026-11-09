@@ -96,13 +96,96 @@ it("adding a quiz cannot write around a rejected ownership gate", async () => {
   state.mutate.mockRejectedValueOnce(new Error("You cannot edit this course."));
   const form = new FormData();
   form.set("type", "QUIZ");
+  form.set("passPct", "70");
   form.set("title", "Forged quiz");
-  form.set("bankId", "other-bank");
-  form.set("pickN", "2");
+  form.set("drawBank", "other-bank");
+  form.set("drawCount", "2");
   expect(await addLessonAction("c", "other-module", form)).toEqual({
     error: "You cannot edit this course.",
   });
   expect(state.writes).not.toHaveBeenCalled();
+});
+it("an instructor's quiz can draw from a bank that names another course", async () => {
+  const { db } = await import("../lib/db/client");
+  state.actor = { id: "ana", role: "INSTRUCTOR", departmentId: null };
+  state.mutate.mockImplementation(async (_actor, _course, run) => run(db));
+  // module, its lessons, the drawn bank, then its approved questions (none
+  // in a live exam, so the practice quiz needs no confirmation)
+  state.responses = [
+    [{ id: "m", courseId: "c" }],
+    [],
+    [{ id: "other-bank", courseId: "another-course" }],
+    [],
+  ];
+  const form = new FormData();
+  form.set("type", "QUIZ");
+  form.set("passPct", "70");
+  form.set("title", "Shared bank quiz");
+  form.set("passPct", "80");
+  form.set("attemptsLimit", "2");
+  form.set("timeLimitMinutes", "10");
+  form.append("drawBank", "other-bank");
+  form.append("drawCount", "2");
+  expect(await addLessonAction("c", "m", form)).toEqual({ success: "Lesson added." });
+  expect(state.writes).toHaveBeenCalledWith(
+    expect.objectContaining({
+      title: "Shared bank quiz",
+      sections: [{ bankId: "other-bank", pickN: 2 }],
+      settings: expect.objectContaining({
+        passPct: 80, attemptsLimit: 2, timeLimitSec: 600, cooldownMinutes: 0, feedbackMode: "PRACTICE", integrityMode: false,
+      }),
+    }),
+  );
+  expect(state.writes).toHaveBeenCalledWith(
+    expect.objectContaining({ type: "QUIZ", payload: { quizId: expect.any(String) } }),
+  );
+});
+it("a new quiz with an out-of-range pass mark is refused before anything is written", async () => {
+  const form = new FormData();
+  form.set("type", "QUIZ");
+  form.set("title", "Bad pass mark");
+  form.set("passPct", "101");
+  form.append("drawBank", "b");
+  form.append("drawCount", "1");
+  expect(await addLessonAction("c", "m", form)).toEqual({ error: "Pass mark must be a whole number from 1 to 100." });
+  expect(state.mutate).not.toHaveBeenCalled();
+  expect(state.writes).not.toHaveBeenCalled();
+});
+it("a new quiz is validated like a saved one and writes nothing when empty", async () => {
+  const { db } = await import("../lib/db/client");
+  state.mutate.mockImplementation(async (_actor, _course, run) => run(db));
+  state.responses = [[{ id: "m", courseId: "c" }], []];
+  const form = new FormData();
+  form.set("type", "QUIZ");
+  form.set("passPct", "70");
+  form.set("title", "Empty quiz");
+  expect(await addLessonAction("c", "m", form)).toEqual({ error: "Add at least one question." });
+  expect(state.writes).not.toHaveBeenCalled();
+});
+it("a new practice quiz with a live-exam question needs confirmation", async () => {
+  const { db } = await import("../lib/db/client");
+  state.mutate.mockImplementation(async (_actor, _course, run) => run(db));
+  const liveExam = {
+    courseId: "live", courseTitle: "Live", status: "PUBLISHED", approvalState: "APPROVED",
+    lessonId: "exam", quizTitle: "Exam", sections: [{ fixed: ["q1"] }], settings: { feedbackMode: "EXAM" },
+  };
+  // module, its lessons, approved picks, then usage: the question and the quizzes using it
+  state.responses = [[{ id: "m", courseId: "c" }], [], [{ id: "q1" }], [{ id: "q1", bankId: "b" }], [liveExam]];
+  const form = new FormData();
+  form.set("type", "QUIZ");
+  form.set("passPct", "70");
+  form.set("title", "Practice");
+  form.append("picked", "q1");
+  expect(await addLessonAction("c", "m", form)).toEqual({
+    error: "Confirm that learners will see answers to questions used in a live exam.",
+  });
+  expect(state.writes).not.toHaveBeenCalled();
+  state.responses = [[{ id: "m", courseId: "c" }], [], [{ id: "q1" }]];
+  form.set("confirmLiveExam", "on");
+  expect(await addLessonAction("c", "m", form)).toEqual({ success: "Lesson added." });
+  expect(state.writes).toHaveBeenCalledWith(
+    expect.objectContaining({ title: "Practice", sections: [{ fixed: ["q1"] }] }),
+  );
 });
 
 it("correcting a rejected text lesson cannot bypass the draft revision guard",async()=>{

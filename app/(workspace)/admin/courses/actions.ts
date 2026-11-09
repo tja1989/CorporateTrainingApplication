@@ -20,7 +20,7 @@ import type { LearningTransaction } from "@/lib/lms/learning-cycle";
 import type { WorkflowInput } from "@/lib/courses/approval-policy";
 import { parseCoursePlanning } from "@/lib/courses/planning";
 import { saveCoursePlanning } from "@/lib/courses/planning-service";
-import { parseQuizSettingsInput } from "@/lib/courses/quiz-settings-input";
+import { composeQuizSections, quizFormSettings } from "@/lib/quiz/composition";
 
 function errorResult(error: unknown): ActionResult {
   return {
@@ -311,6 +311,8 @@ export async function addLessonAction(
   if (!title) return { error: "Enter a lesson title." };
   if (!["TEXT", "PDF", "VIDEO", "QUIZ", "INTERVIEW"].includes(type))
     return { error: "Choose a supported lesson type." };
+  const quizSettings = type === "QUIZ" ? quizFormSettings(form) : null;
+  if (quizSettings && "error" in quizSettings) return quizSettings;
   if (type === "TEXT" && !String(form.get("body") ?? "").trim())
     return { error: "Add the lesson content." };
   if (type === "PDF") {
@@ -318,13 +320,6 @@ export async function addLessonAction(
     if (file.error || !file.value)
       return { error: "Enter a local path or HTTPS URL for the PDF." };
   }
-  if (
-    type === "QUIZ" &&
-    (!form.get("bankId") ||
-      !Number.isInteger(Number(form.get("pickN"))) ||
-      Number(form.get("pickN")) < 1)
-  )
-    return { error: "Choose a question bank and a positive question count." };
   let youtubeId = "",
     check: { durationSec: number; title: string } | undefined;
   if (type === "VIDEO") {
@@ -375,19 +370,7 @@ export async function addLessonAction(
         if (type === "INTERVIEW")
           payload = { interview: interviewConfigFromForm(form) };
         if (type === "QUIZ") {
-          const bankId = String(form.get("bankId"));
-          const [bank] = await tx
-            .select()
-            .from(t.questionBanks)
-            .where(eq(t.questionBanks.id, bankId))
-            .limit(1);
-          if (
-            !bank ||
-            (actor.role === "INSTRUCTOR" &&
-              bank.courseId &&
-              bank.courseId !== courseId)
-          )
-            throw new Error("This question bank is outside your course.");
+          const sections = await composeQuizSections(tx, form);
           const { DEFAULT_SETTINGS } = await import("@/lib/quiz/engine");
           const quizId = id();
           await tx
@@ -396,12 +379,8 @@ export async function addLessonAction(
               id: quizId,
               lessonId,
               title,
-              settings: {
-                ...DEFAULT_SETTINGS,
-                feedbackMode: form.get("exam") === "on" ? "EXAM" : "PRACTICE",
-                integrityMode: form.get("integrity") === "on",
-              },
-              sections: [{ bankId, pickN: Number(form.get("pickN")) }],
+              settings: { ...DEFAULT_SETTINGS, ...quizSettings?.value },
+              sections,
             });
           payload = { quizId };
         }
@@ -486,79 +465,6 @@ export async function updateContentLessonAction(courseId: string, lessonId: stri
     }, revision(form));
     refresh(courseId);return {success: "Lesson content saved. Submit this revision for approval."};
   } catch (error) { return errorResult(error); }
-}
-export async function updateQuizLessonAction(
-  courseId: string,
-  lessonId: string,
-  form: FormData,
-): Promise<ActionResult> {
-  const actor = await requirePermission("course.author");
-  const parsed = parseQuizSettingsInput({
-    bankId: String(form.get("bankId") ?? ""),
-    pickN: String(form.get("pickN") ?? ""),
-    passPct: String(form.get("passPct") ?? ""),
-    attemptsLimit: String(form.get("attemptsLimit") ?? ""),
-    timeLimitMinutes: String(form.get("timeLimitMinutes") ?? ""),
-    exam: form.get("exam") === "on",
-    integrity: form.get("integrity") === "on",
-  });
-  if ("error" in parsed) return parsed;
-  const settings = parsed.value;
-  try {
-    await mutateDraftCourse(
-      actor,
-      courseId,
-      async (tx) => {
-        const lesson = await courseLesson(tx, courseId, lessonId);
-        if (lesson.type !== "QUIZ" || !lesson.payload.quizId)
-          throw new Error("This lesson is not a quiz.");
-        const [bank] = await tx
-          .select()
-          .from(t.questionBanks)
-          .where(eq(t.questionBanks.id, settings.bankId))
-          .limit(1);
-        if (
-          !bank ||
-          (actor.role === "INSTRUCTOR" &&
-            bank.courseId &&
-            bank.courseId !== courseId)
-        )
-          throw new Error("This question bank is outside your course.");
-        const [quiz] = await tx
-          .select()
-          .from(t.quizzes)
-          .where(eq(t.quizzes.id, lesson.payload.quizId))
-          .limit(1);
-        if (!quiz) throw new Error("This quiz is missing. Reload and try again.");
-        const title = String(form.get("title") ?? "").trim() || lesson.title;
-        await tx.update(t.lessons).set({ title }).where(eq(t.lessons.id, lessonId));
-        await tx
-          .update(t.quizzes)
-          .set({
-            title,
-            settings: {
-              ...quiz.settings,
-              passPct: settings.passPct,
-              attemptsLimit: settings.attemptsLimit,
-              timeLimitSec: settings.timeLimitSec,
-              feedbackMode: settings.feedbackMode,
-              integrityMode: settings.integrityMode,
-            },
-            // Fixed questions stay; the random draw is replaced.
-            sections: [
-              ...quiz.sections.filter((s) => s.fixed?.length),
-              { bankId: settings.bankId, pickN: settings.pickN },
-            ],
-          })
-          .where(eq(t.quizzes.id, quiz.id));
-      },
-      revision(form),
-    );
-    refresh(courseId);
-    return { success: "Quiz settings saved." };
-  } catch (error) {
-    return errorResult(error);
-  }
 }
 export async function updateInterviewLessonAction(
   courseId: string,

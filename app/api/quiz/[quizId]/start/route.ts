@@ -3,6 +3,7 @@ import { db, t } from "@/lib/db/client";
 import { apiUser as currentUser } from "@/lib/auth/guard";
 import { learnerQuizLesson } from "@/lib/lms/lesson-access";
 import { startAttempt, canStart } from "@/lib/quiz/engine";
+import { toServed } from "@/lib/quiz/served";
 
 /** Start (or resume) an attempt; serves question bodies WITHOUT answer keys. */
 export async function POST(_req: Request, { params }: { params: Promise<{ quizId: string }> }) {
@@ -31,22 +32,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ quizId
     .where(inArray(t.questions.id, attempt.servedItems.map((s) => s.questionId)));
   const byId = new Map(questions.map((q) => [q.id, q]));
 
-  const served = attempt.servedItems.map((s) => {
-    const q = byId.get(s.questionId)!;
-    const co = s.choiceOrder;
-    const displayOptions = (arr?: string[]) => (arr && co ? co.map((actual) => arr[actual]) : arr);
-    return {
-      questionId: q.id,
-      type: q.type,
-      points: q.points,
-      prompt: q.body.prompt,
-      stimulus: q.body.stimulus ?? null,
-      options: q.type === "truefalse" ? ["True", "False"] : displayOptions(q.body.options),
-      left: q.body.pairs?.map((p) => p.left) ?? null,
-      right: co && q.body.pairs ? co.map((actual) => q.body.pairs![actual].right) : (q.body.pairs?.map((p) => p.right) ?? null),
-      orderItems: co && q.body.orderItems ? co.map((actual) => q.body.orderItems![actual]) : (q.body.orderItems ?? null),
-    };
-  });
+  const served = attempt.servedItems.map((s) => toServed(byId.get(s.questionId)!, s));
 
   return Response.json({
     attemptId: attempt.id,

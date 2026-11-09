@@ -13,7 +13,7 @@ export function QuestionGuide({ type, body, rubric }: { type: string; body: Ques
     {type === "mcq_single" || type === "mcq_multi" ? <div>
       <h3 className="mb-2 font-semibold">Answer choices</h3>
       <p className="mb-2 text-muted">{type === "mcq_multi" ? "Learners must select every correct answer." : "Learners select one answer."}</p>
-      <ul aria-label="Answer choices" className="divide-y divide-border">{body.options?.map((option, index) => <li key={index} className="flex flex-wrap items-center justify-between gap-2 py-2"><span>{option}</span>{body.correct?.includes(index) ? <Chip variant="success">Correct answer</Chip> : null}</li>)}</ul>
+      <ul aria-label="Answer choices" className="divide-y divide-border">{body.options?.map((option, index) => <li key={index} className="flex flex-wrap items-center justify-between gap-2 py-2"><span className="min-w-0">{option}</span>{body.correct?.includes(index) ? <Chip variant="success">Correct answer</Chip> : null}</li>)}</ul>
       {!body.correct?.length ? <p className="text-destructive-text">No correct answer supplied.</p> : null}
     </div> : null}
     {type === "truefalse" ? <div><h3 className="mb-1 font-semibold">Correct answer</h3><p>{body.correct?.[0] === 0 ? "True" : body.correct?.[0] === 1 ? "False" : "No correct answer supplied."}</p></div> : null}

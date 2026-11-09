@@ -87,6 +87,8 @@ export type DecorateInput = {
   quizSec?: Map<string, number | null>;
   /** lessonId → latest oral check */
   oral?: Map<string, OralResult>;
+  /** Where a lesson row links. Defaults to the learner route `/lesson/${id}`. */
+  hrefFor?: (lessonId: string) => string;
 };
 
 /** Average adult reading speed for workplace prose; used for TEXT lessons only. */
@@ -176,7 +178,7 @@ export function decorateOutline(input: DecorateInput): CourseOutlineView {
         id: l.id,
         title: l.title,
         type: l.type,
-        href: `/lesson/${l.id}`,
+        href: input.hrefFor ? input.hrefFor(l.id) : `/lesson/${l.id}`,
         done: isDone,
         locked,
         current,

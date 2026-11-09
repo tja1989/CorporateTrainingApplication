@@ -259,3 +259,95 @@ The Phase 2–3 deferred minors that affect the finished look were closed on mai
 - Seeding rewrites `public/demo/fire-safety-guide.pdf` with a new timestamp; revert it after a local seed so it does not enter a commit.
 - Still open: the shorter feedback privacy wording waits for client sign-off (`docs/qa/PRIVACY_WORDING_PROPOSAL.md`).
 
+
+## Question Bank, quiz builder and preview — 8 November 2026
+
+Branch `feature/question-bank-preview`, spec `docs/superpowers/specs/2026-11-08-question-bank-quiz-builder-preview-design.md`, plan `docs/superpowers/plans/2026-11-08-question-bank-quiz-builder-preview.md`. It answers the client feedback of 8 November: instructors could not reach a Question Bank, wanted to reuse and add questions and build quizzes from them, and wanted to see a course exactly as a learner does at any stage.
+
+What changed for people:
+
+- Instructors, HR Head and Super Admin get a "Question bank" page (`/instructor/questions`, `/hr/questions`, `/admin/questions`). It lists every approved question with filters, the author and where each one is used. They can add banks and write questions of all 7 types.
+- Quiz lessons are built and edited in a quiz builder: questions picked from the bank, questions written on the spot (saved to the bank), random draws from a bank, and "Copy from another quiz". Existing quizzes open in it with "Edit quiz".
+- The approval page's "Review lesson content" shows every question a quiz can serve, with its full answer key: the picked questions, then each random draw with "Show the approved questions in this bank" (that bank's approved questions and their answers, the first 50).
+- "Preview as learner" opens any course, at any stage, as a learner sees it, with a "Preview — nothing is saved" banner and "Back to editor". Quizzes can be taken and scored; nothing is recorded.
+
+TJ's decisions:
+
+1. One shared Question Bank. Instructors add questions straight into the central bank; there are no private pools.
+2. Instructors can write all 7 question types: single choice, multiple choice, true/false, fill in the blank, matching, ordering, written answer (with rubric and model answer).
+3. Quizzes stay inside their course. Reuse happens at the question level; there is no separate quiz library.
+4. Preview lets you take quizzes for real: answer, submit, and see the score and correct answers. Nothing is saved.
+5. Trust authors with answers. Everyone with bank access sees every question's answers, including questions used in live exams. Adding a live-exam question to a practice quiz shows a warning ("Learners will see these answers right after submitting.") but is allowed.
+
+Claude's calls, shown to TJ in the spec and not objected to:
+
+- Instructor-written questions can be used at once, with no separate review step; the Department Head's course approval covers them. AI-drafted questions keep the existing review step.
+- Editing is limited so a live exam never changes by accident: only the author, HR Head or Super Admin may edit, and only a question no learner has answered and no published, submitted or approved course uses. Otherwise the page offers "Copy and edit".
+- HR Head and Super Admin also get the Question Bank page.
+- The builder mixes picked, newly written and random-draw questions, and existing quizzes can be edited.
+- "Copy from another quiz" gives a fast start.
+- The bank shows where each question is used.
+- Changing a quiz in a published course still needs "Revise course" first.
+- Preview: the button shows at any stage; locked lessons show a note instead of blocking; a voice oral check shows only its start screen; Instructors, HR Head, Super Admin and the course's Department Head can preview.
+- Written answers in preview show the model answer instead of AI grading.
+
+Claude's calls listed in the spec as not yet discussed with TJ (please confirm):
+
+- A bank that feeds a live random draw (a published, submitted or approved course) refuses new questions, naming those courses: "This bank feeds live training (…). Choose another bank or create a new one." Draft courses drawing from it get a new revision and their approval reset instead.
+- HR Head and Super Admin can edit any eligible question; instructors only their own.
+- "Copy from another quiz" draws on any course the person can read, plus any published course.
+- The AI tutor is hidden in preview.
+- The approval and review screens show every quiz question's full answer key.
+- The daily drill is unchanged; the "live exams never change" rule covers graded quizzes and exams only.
+
+Rulings made during the build that changed behaviour, each with its cost if wrong:
+
+- Ruling R7: an archived course that uses a changed bank or question does not block the change, but loses its approval in the same transaction (new revision, approval back to draft, still archived) — HR can otherwise restore an archived course to published on its old approval and serve unapproved bank content; blocking instead would lock banks forever behind archived courses — cost if wrong: such an archived course needs approval again (or a recorded Super Admin intervention) before it can come back.
+- Ruling R9: the existing rule stays that a course cannot be submitted or published while a random draw asks for more questions than its bank has approved; saving a draft is still allowed. The builder warns "Only N approved questions in this bank. Lower the number or add questions before submitting for approval.", and preview serves what exists — the spec's "learners will get N" wording would be false because submitting is blocked — cost if wrong: authors fix an over-draw before submitting, as before.
+- Ruling R10: writing a question in the builder returns the course's current revision, and the builder keeps it, so a question written into a bank the author's own draft draws from doesn't make the next save "stale" — cost if wrong: a change someone else made between opening the page and that inline write is not flagged as stale on the next save. Narrowed by R14: the revision comes back only when that write actually moved this course to a new revision.
+
+Rulings from the final whole-branch review:
+
+- Ruling R11: approvers see the questions behind each random draw. Under each draw line the answer key offers "Show the approved questions in this bank", listing that bank's approved questions with their answers (first 50, then "and N more approved questions in this bank") — approval is the only check on instructor-written questions, so the approver must be able to read every question a quiz can serve — cost if wrong: a longer review page.
+- Ruling R12: the schema now declares the question author link to users, so the schema step at deploy keeps it, and the question author migration adds an index on the questions each attempt was served (`attempts_served_items_gin`), which the "has any learner answered this?" check before an edit uses — cost if wrong: one index build on deploy.
+- Ruling R13: the live-exam warning also covers random draws. A practice quiz drawing from a bank that holds a question used in a live exam shows "Used in a live exam" on the draw and asks "Learners will see these answers right after submitting." before saving. If the page was opened before the question went into a live exam, saving asks the same question and saves on OK — cost if wrong: one extra confirmation.
+- Ruling R14: stricter question forms and clearer preview. A matching pair with only one side filled, or a marking criterion missing its name or whole-number points, is refused with a message instead of being dropped silently (fully empty rows are still ignored). A preview of a quiz with nothing auto-scorable (only written answers) shows no score or pass/fail, just the written-answer note and the answer keys. Before starting, preview also says how long learners wait between attempts and when the quiz is open to learners — cost if wrong: small wording changes.
+- Ruling R18: the schema also declares the three new indexes (`questions_author_idx`, `questions_bank_status_idx`, `attempts_served_items_gin`). The deploy's schema push drops any index the schema does not list, so without this every deploy dropped them and the migration rebuilt them. Checked on a throwaway database: after a full deploy, a second schema push leaves all three in place. The migration keeps its `IF NOT EXISTS` lines for databases that already have them — cost if wrong: none for data; an index named differently in the schema and the migration would be built twice.
+
+Found by the end-to-end tests:
+
+- Resolved (real layout bug): a long unbroken answer choice overflowed sideways at 360px in the answer guide used by the bank's question view, the approval answer key and the preview result. The choice could not shrink below its text; it now wraps.
+- Resolved: `client-approval.e2e.ts` and `workspaces.e2e.ts` filled "Lesson title" in the "Add lesson" form. The quiz builder keeps its own (hidden) "Lesson title" field beside the other types' form, so the tests now fill the visible one. The authoring test drives the builder ("Add a random draw"), checks the hidden quiz fields belong to the builder's own form instead of a disabled fieldset, and now also checks the saved quiz draw and exam mode.
+- Checked: very long unbroken course titles fit preview breadcrumbs and headings at 360px; the page-wide `overflow-wrap: anywhere` covers them.
+
+Verification (commit `39e8cb2`, local production build, database `welearn_e2e_full_1017`):
+
+- Unit tests: 72 files, 572 tests passed. Typecheck clean. Production build passed.
+- New `e2e/question-bank-preview.e2e.ts` on chromium-desktop and chromium-mobile: 9 passed, 1 skipped (the 360px phone check runs on mobile only).
+- Full configured matrix: 891 passed, 1 skipped (the phone check on chromium-desktop) and 3 failed out of 895 executions in one run (all ten projects, two workers, no retries, `QA_BUILD_DIRTY=0`). The 3 failures are in code this branch does not touch, and each passed when its file was re-run once on the same build:
+  - `quality-qualification.e2e.ts` "Active assessment, dialogs, media, voice and HR recovery … in dark" on chromium-mobile and chromium-small timed out waiting for `/api/hr/reauth`. The trace shows no request: unlocking HR history reloads the page, and the test sends its focus event once the password field is gone, which can be before the reloaded page has attached its focus listener. Re-run on both projects: 16 of 16 passed.
+  - `voice-faults.e2e.ts` "Ending a pending microphone request …" on webkit-mobile found the audio context still running when checked (it passed on the other five browsers). Re-run on webkit-mobile: 4 of 4 passed.
+- This is one run, not the formal two consecutive passing runs described in `LOCAL_TESTING.md`.
+
+## Combined with main's per-course question banks — 9 November 2026
+
+While this branch was in progress, `main` gained two earlier commits:
+- `711f06b` added a "Question banks" tab in each course and an "Edit quiz settings" form.
+- `308416c` added the learner feedback work: My courses tabs, the progress panel, a per-question answer review after submitting, and no skipping lessons.
+
+TJ's decision: **combine into one**. The shared Question bank and the quiz builder stay. Main's quiz settings move into the builder, and main's tab and settings form go, so instructors have one way to do each thing. Main's learner changes stay as they are.
+
+Rulings:
+
+- Ruling R19: "Edit quiz" and "Add lesson" now carry main's pass mark (1–100), attempts (1–20, blank for unlimited) and time limit (1–180 minutes, blank for none), with main's labels. New quizzes start at 70%, unlimited attempts, no time limit. Settings the builder does not show (cooldown, shuffling, open dates) are kept on save — cost if wrong: one more field group in the builder.
+- Ruling R20: "Remove from bank" moves to the shared bank for the question's author, HR Head and Admin.
+  - It is refused while a draft or live quiz picks the question, or live training draws from its bank.
+  - Courses drawing from the bank, and archived courses picking the question, start a new revision with approval reset (as in R7).
+  - Learners having answered the question does not block removal, because past attempts keep it.
+  - Cost if wrong: an author sometimes takes the question out of a quiz first.
+- Ruling R21: AI drafts. An instructor sees "AI drafts for your courses" on the bank page and can approve or discard them. This applies only to banks that their own courses alone use or own, while those courses are unsubmitted drafts. That is main's rule, still enforced on the server, so every draft shown can be acted on. Only approve and discard are accepted. HR Head and Admin see how many drafts wait, with a link to Assessment reviews — cost if wrong: drafts in banks shared with other instructors' courses still go to HR.
+- Ruling R22: questions written in main's course tab have no recorded author. When such a question sits in a bank that belongs to a course, that course's instructor can edit or remove it, as they could in the tab — cost if wrong: the course's instructor manages starter questions placed in their course's bank.
+- Ruling R23: main's "edit makes a new version and retires the old one" is not kept. Shared-bank questions are picked by id, so a new id would break every quiz that picks the question. Edits stay in place, or the author copies the question once learners have answered it or live training uses it — cost if wrong: none for learners; authors copy instead of overwriting.
+- Ruling R24: preview results now show main's learner answer review for each scored question, with the answer key shown, plus a note on what exam learners see. Written answers keep their rubric and model answer — cost if wrong: wording only.
+- Main's submission error now ends "Add or approve N more in the Question bank, or lower “Questions to draw”".
+- `20261018_lessons_in_order.sql` runs before `20261108_question_authors.sql` at deploy.

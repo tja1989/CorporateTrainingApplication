@@ -13,6 +13,14 @@ import { CoursePlanningFields } from "@/components/course-planning-fields";
 import { isCourseAvailable } from "@/lib/courses/availability";
 import { localDate } from "@/lib/time";
 import { CourseLessonPreview } from "@/components/course-lesson-preview";
+import { QuizBuilder } from "@/components/quiz-builder";
+import {
+  banksWithApprovedCounts,
+  fromSections,
+  pickerQuestions,
+  quizCopySources,
+} from "@/lib/quiz/composition";
+import { liveExamBankIds } from "@/lib/questions/usage";
 import {
   Button,
   Chip,
@@ -41,7 +49,6 @@ import {
   updateCourseAction,
   addModuleAction,
   updateInterviewLessonAction,
-  updateQuizLessonAction,
   updateContentLessonAction,
   retryIngestAction,
   moveLessonAction,
@@ -50,7 +57,6 @@ import {
 import { lessonTypeLabel } from "./lesson-icon";
 import { CoverUrlField } from "./cover-url-field";
 import { languageName } from "@/lib/format";
-import { QuestionBanks } from "./question-banks";
 export const dynamic = "force-dynamic";
 export async function CourseEditor({
   actor,
@@ -130,18 +136,26 @@ export async function CourseEditor({
   const videos = videoIds.length
     ? await db.select().from(t.videos).where(inArray(t.videos.id, videoIds))
     : [];
-  const banks = editable
-    ? (await db.select().from(t.questionBanks)).filter(
-        (bank) =>
-          actor.role !== "INSTRUCTOR" ||
-          !bank.courseId ||
-          bank.courseId === courseId,
+  // The quiz builder's data. Banks are shared by every course; a bank holding
+  // a question a live exam uses marks its random draws "Used in a live exam".
+  const bankRows = editable ? await banksWithApprovedCounts() : [];
+  const liveExamBanks = await liveExamBankIds(bankRows.map((b) => b.id));
+  const banks = bankRows.map((b) => ({ ...b, liveExam: liveExamBanks.has(b.id) }));
+  const copySources = editable ? await quizCopySources(actor) : [];
+  const quizIds = editable
+    ? lessons.flatMap((l) =>
+        l.type === "QUIZ" && l.payload.quizId ? [l.payload.quizId] : [],
       )
     : [];
-  const quizIds = lessons.flatMap((l) => (l.type === "QUIZ" && l.payload.quizId ? [l.payload.quizId] : []));
-  const quizRows = quizIds.length
-    ? await db.select().from(t.quizzes).where(inArray(t.quizzes.id, quizIds))
-    : [];
+  const quizzes = (
+    quizIds.length
+      ? await db.select().from(t.quizzes).where(inArray(t.quizzes.id, quizIds))
+      : []
+  ).map((quiz) => ({ quiz, content: fromSections(quiz.sections) }));
+  const quizById = new Map(quizzes.map((q) => [q.quiz.id, q]));
+  const quizQuestions = await pickerQuestions([
+    ...new Set(quizzes.flatMap((q) => q.content.picked)),
+  ]);
   return (
     <div className="min-w-0">
       <a
@@ -154,11 +168,16 @@ export async function CourseEditor({
         title={course.title}
         sub={`${mods.length} module${mods.length === 1 ? "" : "s"} · ${lessons.length} lesson${lessons.length === 1 ? "" : "s"} · ${course.estMinutes} min`}
         actions={
-          course.status === "PUBLISHED" ? (
-            <WorkspaceLink href={`/course/${course.id}`}>
-              View learner course
+          <>
+            <WorkspaceLink href={`/preview/course/${course.id}`}>
+              Preview as learner
             </WorkspaceLink>
-          ) : null
+            {course.status === "PUBLISHED" ? (
+              <WorkspaceLink href={`/course/${course.id}`}>
+                View learner course
+              </WorkspaceLink>
+            ) : null}
+          </>
         }
       />
       <CourseWorkflow actor={actor} course={course} />
@@ -177,11 +196,6 @@ export async function CourseEditor({
             href: `${base}/${course.id}`,
             label: "Curriculum",
             active: view === "curriculum",
-          },
-          {
-            href: `${base}/${course.id}?view=questions`,
-            label: "Question banks",
-            active: view === "questions",
           },
           {
             href: `${base}/${course.id}?view=settings`,
@@ -272,6 +286,10 @@ export async function CourseEditor({
                       const video = videos.find(
                         (v) => v.id === lesson.payload.videoId,
                       );
+                      const quiz =
+                        lesson.type === "QUIZ" && lesson.payload.quizId
+                          ? quizById.get(lesson.payload.quizId)
+                          : undefined;
                       return (
                         <li key={lesson.id} className="min-w-0 py-3">
                           <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -425,54 +443,6 @@ export async function CourseEditor({
                               </WorkspaceForm>
                             </details>
                           ) : null}
-                          {lesson.type === "QUIZ" && editable ? (() => {
-                            const quiz = quizRows.find((q) => q.id === lesson.payload.quizId);
-                            const draw = quiz?.sections.find((s) => s.bankId);
-                            return quiz ? (
-                              <details className="mt-2">
-                                <summary className="touch-target flex items-center text-sm text-link">
-                                  Edit quiz settings
-                                </summary>
-                                <WorkspaceForm action={updateQuizLessonAction.bind(null, course.id, lesson.id)}>
-                                  <input type="hidden" name="revision" value={course.contentRevision} />
-                                  <Field label="Quiz title">
-                                    <Input name="title" defaultValue={lesson.title} required />
-                                  </Field>
-                                  <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-                                    <Field label="Question bank">
-                                      <Select name="bankId" defaultValue={draw?.bankId ?? ""} required>
-                                        <option value="">Choose a question bank</option>
-                                        {banks.map((b) => (
-                                          <option key={b.id} value={b.id}>{b.name}</option>
-                                        ))}
-                                      </Select>
-                                    </Field>
-                                    <Field label="Questions to draw">
-                                      <Input name="pickN" type="number" min={1} max={100} defaultValue={draw?.pickN ?? 5} />
-                                    </Field>
-                                    <Field label="Pass mark %">
-                                      <Input name="passPct" type="number" min={1} max={100} defaultValue={quiz.settings.passPct} />
-                                    </Field>
-                                    <Field label="Attempts allowed (blank = unlimited)">
-                                      <Input name="attemptsLimit" type="number" min={1} max={20} defaultValue={quiz.settings.attemptsLimit ?? ""} />
-                                    </Field>
-                                    <Field label="Time limit in minutes (blank = none)">
-                                      <Input name="timeLimitMinutes" type="number" min={1} max={180} defaultValue={quiz.settings.timeLimitSec ? Math.round(quiz.settings.timeLimitSec / 60) : ""} />
-                                    </Field>
-                                  </div>
-                                  <label className="touch-target flex items-center gap-3 text-sm">
-                                    <input type="checkbox" name="exam" defaultChecked={quiz.settings.feedbackMode === "EXAM"} />
-                                    Exam mode (answer key revealed after the window closes)
-                                  </label>
-                                  <label className="touch-target mb-4 flex items-center gap-3 text-sm">
-                                    <input type="checkbox" name="integrity" defaultChecked={quiz.settings.integrityMode} />
-                                    Integrity monitoring
-                                  </label>
-                                  <Button type="submit" variant="secondary">Save quiz settings</Button>
-                                </WorkspaceForm>
-                              </details>
-                            ) : null;
-                          })() : null}
                           {editable && ["TEXT", "PDF"].includes(lesson.type) ? (
                             <details className="mt-3">
                               <summary className="touch-target flex items-center text-sm text-link">
@@ -523,6 +493,35 @@ export async function CourseEditor({
                               </WorkspaceForm>
                             </details>
                           ) : null}
+                          {editable && quiz ? (
+                            <details className="mt-3">
+                              <summary className="touch-target flex items-center text-sm text-link">
+                                Edit quiz
+                              </summary>
+                              <div className="mt-3">
+                                <QuizBuilder
+                                  mode="edit"
+                                  courseId={course.id}
+                                  lessonId={lesson.id}
+                                  initial={{
+                                    title: lesson.title,
+                                    content: quiz.content,
+                                    questions: quizQuestions.filter((q) =>
+                                      quiz.content.picked.includes(q.id),
+                                    ),
+                                    exam: quiz.quiz.settings.feedbackMode === "EXAM",
+                                    integrity: quiz.quiz.settings.integrityMode,
+                                    passPct: quiz.quiz.settings.passPct,
+                                    attemptsLimit: quiz.quiz.settings.attemptsLimit,
+                                    timeLimitSec: quiz.quiz.settings.timeLimitSec ?? null,
+                                  }}
+                                  banks={banks}
+                                  copySources={copySources}
+                                  revision={course.contentRevision}
+                                />
+                              </div>
+                            </details>
+                          ) : null}
                           <details className="mt-3">
                             <summary className="touch-target flex items-center text-sm text-link">
                               Review lesson content
@@ -551,6 +550,7 @@ export async function CourseEditor({
                       courseId={course.id}
                       moduleId={mod.id}
                       banks={banks}
+                      copySources={copySources}
                       revision={course.contentRevision}
                     />
                   </details>
@@ -578,8 +578,6 @@ export async function CourseEditor({
               </WorkspaceSection>
             ) : null}
           </div>
-        ) : view === "questions" ? (
-          <QuestionBanks course={course} lessons={lessons} editable={editable} />
         ) : (
           <div className="min-w-0 max-w-4xl">
             <WorkspaceSection title="Course settings">

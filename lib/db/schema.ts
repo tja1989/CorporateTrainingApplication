@@ -591,11 +591,17 @@ export const questions = pgTable("questions", {
     .$type<"human" | "ai">()
     .notNull()
     .default("human"),
+  authorId: text("author_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
   version: integer("version").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (t) => [
+  index("questions_author_idx").on(t.authorId),
+  index("questions_bank_status_idx").on(t.bankId, t.status),
+]);
 
 export type QuizSettings = {
   attemptsLimit: number | null; // null = unlimited
@@ -661,7 +667,10 @@ export const attempts = pgTable(
     voidReason: text("void_reason"),
     integrityMode: boolean("integrity_mode").notNull().default(false),
   },
-  (t) => [index("attempts_quiz_user_idx").on(t.quizId, t.userId)],
+  (t) => [
+    index("attempts_quiz_user_idx").on(t.quizId, t.userId),
+    index("attempts_served_items_gin").using("gin", t.servedItems.op("jsonb_path_ops")),
+  ],
 );
 
 export const gradingReviews = pgTable("grading_reviews", {
