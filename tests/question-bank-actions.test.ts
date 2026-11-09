@@ -132,6 +132,11 @@ describe("question bank actions", () => {
     expect(await reviewDraftAction("q3", "APPROVED")).toEqual({ error: "Not authorized to review questions." });
   });
 
+  it("reviewDraftAction refuses any decision other than approve or discard", async () => {
+    expect(await reviewDraftAction("q1", "HIDDEN" as "APPROVED")).toEqual({ error: "Choose approve or discard." });
+    expect(m.updateDraftQuestion).not.toHaveBeenCalled();
+  });
+
   it("the remove and review actions call nothing when the permission check redirects", async () => {
     m.requirePermission.mockRejectedValue(new Error("NEXT_REDIRECT"));
     await expect(removeQuestionAction("q1")).rejects.toThrow("NEXT_REDIRECT");

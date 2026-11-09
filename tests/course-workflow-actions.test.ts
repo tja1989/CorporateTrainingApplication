@@ -121,6 +121,9 @@ it("an instructor's quiz can draw from a bank that names another course", async 
   form.set("type", "QUIZ");
   form.set("passPct", "70");
   form.set("title", "Shared bank quiz");
+  form.set("passPct", "80");
+  form.set("attemptsLimit", "2");
+  form.set("timeLimitMinutes", "10");
   form.append("drawBank", "other-bank");
   form.append("drawCount", "2");
   expect(await addLessonAction("c", "m", form)).toEqual({ success: "Lesson added." });
@@ -128,12 +131,25 @@ it("an instructor's quiz can draw from a bank that names another course", async 
     expect.objectContaining({
       title: "Shared bank quiz",
       sections: [{ bankId: "other-bank", pickN: 2 }],
-      settings: expect.objectContaining({ passPct: 70, feedbackMode: "PRACTICE", integrityMode: false }),
+      settings: expect.objectContaining({
+        passPct: 80, attemptsLimit: 2, timeLimitSec: 600, cooldownMinutes: 0, feedbackMode: "PRACTICE", integrityMode: false,
+      }),
     }),
   );
   expect(state.writes).toHaveBeenCalledWith(
     expect.objectContaining({ type: "QUIZ", payload: { quizId: expect.any(String) } }),
   );
+});
+it("a new quiz with an out-of-range pass mark is refused before anything is written", async () => {
+  const form = new FormData();
+  form.set("type", "QUIZ");
+  form.set("title", "Bad pass mark");
+  form.set("passPct", "101");
+  form.append("drawBank", "b");
+  form.append("drawCount", "1");
+  expect(await addLessonAction("c", "m", form)).toEqual({ error: "Pass mark must be a whole number from 1 to 100." });
+  expect(state.mutate).not.toHaveBeenCalled();
+  expect(state.writes).not.toHaveBeenCalled();
 });
 it("a new quiz is validated like a saved one and writes nothing when empty", async () => {
   const { db } = await import("../lib/db/client");

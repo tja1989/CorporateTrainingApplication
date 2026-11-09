@@ -328,3 +328,26 @@ Verification (commit `39e8cb2`, local production build, database `welearn_e2e_fu
   - `quality-qualification.e2e.ts` "Active assessment, dialogs, media, voice and HR recovery … in dark" on chromium-mobile and chromium-small timed out waiting for `/api/hr/reauth`. The trace shows no request: unlocking HR history reloads the page, and the test sends its focus event once the password field is gone, which can be before the reloaded page has attached its focus listener. Re-run on both projects: 16 of 16 passed.
   - `voice-faults.e2e.ts` "Ending a pending microphone request …" on webkit-mobile found the audio context still running when checked (it passed on the other five browsers). Re-run on webkit-mobile: 4 of 4 passed.
 - This is one run, not the formal two consecutive passing runs described in `LOCAL_TESTING.md`.
+
+## Combined with main's per-course question banks — 9 November 2026
+
+While this branch was in progress, `main` gained two earlier commits:
+- `711f06b` added a "Question banks" tab in each course and an "Edit quiz settings" form.
+- `308416c` added the learner feedback work: My courses tabs, the progress panel, a per-question answer review after submitting, and no skipping lessons.
+
+TJ's decision: **combine into one**. The shared Question bank and the quiz builder stay. Main's quiz settings move into the builder, and main's tab and settings form go, so instructors have one way to do each thing. Main's learner changes stay as they are.
+
+Rulings:
+
+- Ruling R19: "Edit quiz" and "Add lesson" now carry main's pass mark (1–100), attempts (1–20, blank for unlimited) and time limit (1–180 minutes, blank for none), with main's labels. New quizzes start at 70%, unlimited attempts, no time limit. Settings the builder does not show (cooldown, shuffling, open dates) are kept on save — cost if wrong: one more field group in the builder.
+- Ruling R20: "Remove from bank" moves to the shared bank for the question's author, HR Head and Admin.
+  - It is refused while a draft or live quiz picks the question, or live training draws from its bank.
+  - Courses drawing from the bank, and archived courses picking the question, start a new revision with approval reset (as in R7).
+  - Learners having answered the question does not block removal, because past attempts keep it.
+  - Cost if wrong: an author sometimes takes the question out of a quiz first.
+- Ruling R21: AI drafts. An instructor sees "AI drafts for your courses" on the bank page and can approve or discard them. This applies only to banks that their own courses alone use or own, while those courses are unsubmitted drafts. That is main's rule, still enforced on the server, so every draft shown can be acted on. Only approve and discard are accepted. HR Head and Admin see how many drafts wait, with a link to Assessment reviews — cost if wrong: drafts in banks shared with other instructors' courses still go to HR.
+- Ruling R22: questions written in main's course tab have no recorded author. When such a question sits in a bank that belongs to a course, that course's instructor can edit or remove it, as they could in the tab — cost if wrong: the course's instructor manages starter questions placed in their course's bank.
+- Ruling R23: main's "edit makes a new version and retires the old one" is not kept. Shared-bank questions are picked by id, so a new id would break every quiz that picks the question. Edits stay in place, or the author copies the question once learners have answered it or live training uses it — cost if wrong: none for learners; authors copy instead of overwriting.
+- Ruling R24: preview results now show main's learner answer review for each scored question, with the answer key shown, plus a note on what exam learners see. Written answers keep their rubric and model answer — cost if wrong: wording only.
+- Main's submission error now ends "Add or approve N more in the Question bank, or lower “Questions to draw”".
+- `20261018_lessons_in_order.sql` runs before `20261108_question_authors.sql` at deploy.

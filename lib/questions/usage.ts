@@ -4,7 +4,7 @@ import type { QuizSection } from "@/lib/db/schema";
 import type { LearningDatabase } from "@/lib/lms/learning-cycle";
 import type { Actor } from "@/lib/auth/roles";
 import { canAuthorCourse } from "@/lib/courses/ownership";
-import { isLiveCourse, type CourseState } from "./rules";
+import { isDraftCourse, isLiveCourse, type CourseState } from "./rules";
 
 export type UsageRef = {
   courseId: string;
@@ -196,32 +196,43 @@ export async function isCourseTeamQuestion(
 }
 
 /** Banks whose AI drafts an instructor may approve or discard: at least one
- * course draws from the bank or owns it, and the instructor teaches every
- * one of them (the rule `updateDraftQuestion` enforces). */
+ * course uses the bank in a quiz section or owns it, and every one of them is
+ * an unsubmitted draft the instructor teaches. This is the rule
+ * `updateDraftQuestion` enforces, so every draft listed can be acted on. */
 export async function reviewableDraftBankIds(
   actor: Actor,
   conn: LearningDatabase = db,
 ): Promise<string[]> {
   if (actor.role !== "INSTRUCTOR") return [];
   const drawing = await conn
-    .select({ instructorId: t.courses.instructorId, sections: t.quizzes.sections })
+    .select({
+      instructorId: t.courses.instructorId,
+      status: t.courses.status,
+      approvalState: t.courses.approvalState,
+      sections: t.quizzes.sections,
+    })
     .from(t.lessons)
     .innerJoin(t.modules, eq(t.modules.id, t.lessons.moduleId))
     .innerJoin(t.courses, eq(t.courses.id, t.modules.courseId))
     .innerJoin(t.quizzes, sql`${t.lessons.payload}->>'quizId'=${t.quizzes.id}`)
     .where(sql`EXISTS(SELECT 1 FROM jsonb_array_elements(${t.quizzes.sections}) s WHERE s ? 'bankId')`);
   const owning = await conn
-    .select({ bankId: t.questionBanks.id, instructorId: t.courses.instructorId })
+    .select({
+      bankId: t.questionBanks.id,
+      instructorId: t.courses.instructorId,
+      status: t.courses.status,
+      approvalState: t.courses.approvalState,
+    })
     .from(t.questionBanks)
     .innerJoin(t.courses, eq(t.courses.id, t.questionBanks.courseId));
-  const teachers = new Map<string, Set<string | null>>();
-  const add = (bankId: string, instructorId: string | null) =>
-    teachers.set(bankId, (teachers.get(bankId) ?? new Set()).add(instructorId));
+  type Course = { instructorId: string | null; status: string; approvalState: string };
+  const users = new Map<string, Course[]>();
+  const add = (bankId: string, course: Course) =>
+    users.set(bankId, [...(users.get(bankId) ?? []), course]);
   for (const row of drawing)
-    for (const section of row.sections)
-      if (section.bankId && draws(section, section.bankId)) add(section.bankId, row.instructorId);
-  for (const row of owning) add(row.bankId, row.instructorId);
-  return [...teachers]
-    .filter(([, ids]) => ids.size === 1 && ids.has(actor.id))
+    for (const section of row.sections) if (section.bankId) add(section.bankId, row);
+  for (const row of owning) add(row.bankId, row);
+  return [...users]
+    .filter(([, courses]) => courses.every((c) => c.instructorId === actor.id && isDraftCourse(c)))
     .map(([bankId]) => bankId);
 }

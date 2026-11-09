@@ -86,6 +86,8 @@ export async function reviewDraftAction(
   decision: "APPROVED" | "RETIRED",
 ): Promise<ActionResult> {
   const { actor } = await author();
+  // Server actions can be called with any arguments; only these two are reviews.
+  if (decision !== "APPROVED" && decision !== "RETIRED") return { error: "Choose approve or discard." };
   try {
     await updateDraftQuestion(actor, questionId, decision);
   } catch (error) {

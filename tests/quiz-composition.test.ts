@@ -276,7 +276,11 @@ describe("assertQuizContent", () => {
 
 describe("saveQuizAction", () => {
   const ana: Actor = { id: "ana", role: "INSTRUCTOR", departmentId: null };
-  const settings = { passPct: 80, attemptsLimit: 3, feedbackMode: "EXAM", integrityMode: true };
+  // Stored settings the builder does not show must survive a save.
+  const settings = {
+    passPct: 80, attemptsLimit: 3, feedbackMode: "EXAM", integrityMode: true,
+    cooldownMinutes: 15, shuffleQuestions: false, availableFrom: "2026-12-01T09:00:00.000Z",
+  };
   const quizForm = (...extra: [string, string][]) =>
     form([
       ["title", " Fire drill "],

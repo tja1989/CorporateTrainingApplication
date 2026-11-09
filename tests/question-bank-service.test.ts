@@ -446,6 +446,16 @@ describe("removeQuestion", () => {
     expect(state.updates).toEqual([]);
   });
 
+  it("refuses while a live course picks it", async () => {
+    state.rows.lessons = [
+      quiz({ ...course("fire", "DRAFT", "APPROVED"), title: "Fire Safety" }, [{ fixed: ["q1"] }]),
+    ];
+    await expect(removeQuestion(ana, "q1")).rejects.toThrow(
+      "Used by live training: Fire Safety. It can't be removed while learners can get it.",
+    );
+    expect(state.updates).toEqual([]);
+  });
+
   it("refuses when a drawing course turns out to be live once it is locked", async () => {
     state.rows.lessons = [quiz(course("b"), [{ bankId: "bank", pickN: 1 }])];
     state.rows.courses = courseRows(course("b", "DRAFT", "SUBMITTED"));
@@ -524,6 +534,21 @@ describe("updateDraftQuestion", () => {
     expect(written("questions")).toEqual([{ status: "RETIRED" }]);
   });
 
+  it("refuses an instructor when another instructor's course owns the bank, even if only their quizzes draw from it", async () => {
+    state.rows.questions = [{ id: "q1", bankId: "bank", status: "DRAFT" }];
+    state.rows.question_banks = [{ id: "bank", courseId: "bens" }];
+    state.rows.lessons = [{ courseId: "mine" }];
+    const queue = [
+      { ...course("bens"), contentRevision: 4, instructorId: "ben" },
+      { ...course("mine"), contentRevision: 4, instructorId: "ana" },
+    ];
+    state.rows.courses = () => [queue.shift()];
+    await expect(updateDraftQuestion(ana, "q1", "APPROVED")).rejects.toThrow(
+      "Not authorized to review questions.",
+    );
+    expect(state.updates).toEqual([]);
+  });
+
   it("refuses an instructor when another instructor's course uses the bank, or no course does", async () => {
     state.rows.questions = [{ id: "q1", bankId: "bank", status: "DRAFT" }];
     state.rows.question_banks = [{ id: "bank", courseId: null }];
@@ -541,16 +566,22 @@ describe("updateDraftQuestion", () => {
 });
 
 describe("reviewableDraftBankIds", () => {
-  it("keeps banks that only the instructor's courses draw from or own", async () => {
+  it("keeps banks used or owned only by the instructor's unsubmitted draft courses", async () => {
+    const draftBy = (instructorId: string) => ({ instructorId, status: "DRAFT", approvalState: "DRAFT" });
     state.rows.lessons = [
-      { instructorId: "ana", sections: [{ bankId: "mine", pickN: 2 }, { bankId: "shared", pickN: 1 }, { fixed: ["q"] }] },
-      { instructorId: "ben", sections: [{ bankId: "shared", pickN: 1 }] },
-      { instructorId: "ana", sections: [{ bankId: "no-count" }] },
+      { ...draftBy("ana"), sections: [{ bankId: "mine", pickN: 2 }, { bankId: "shared", pickN: 1 }, { fixed: ["q"] }] },
+      { ...draftBy("ben"), sections: [{ bankId: "shared", pickN: 1 }] },
+      // A section naming a bank counts even without a count, as on the server.
+      { ...draftBy("ben"), sections: [{ bankId: "named" }] },
+      { ...draftBy("ana"), sections: [{ bankId: "named", pickN: 1 }] },
+      // A live course's bank cannot change without re-approval, so its drafts are not offered.
+      { instructorId: "ana", status: "PUBLISHED", approvalState: "APPROVED", sections: [{ bankId: "live", pickN: 1 }] },
+      { instructorId: "ana", status: "DRAFT", approvalState: "SUBMITTED", sections: [{ bankId: "submitted", pickN: 1 }] },
     ];
     state.rows.question_banks = [
-      { bankId: "owned", instructorId: "ana" },
-      { bankId: "mine", instructorId: "ana" },
-      { bankId: "theirs", instructorId: "ben" },
+      { bankId: "owned", ...draftBy("ana") },
+      { bankId: "mine", ...draftBy("ana") },
+      { bankId: "theirs", ...draftBy("ben") },
     ];
     expect(await reviewableDraftBankIds(ana, db as never)).toEqual(["mine", "owned"]);
   });
