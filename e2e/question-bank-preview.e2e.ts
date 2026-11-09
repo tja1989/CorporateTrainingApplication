@@ -124,7 +124,7 @@ async function learnerRows(userId: string) {
 
 async function quizOf(courseId: string) {
   return withDb(async (db) => (await db.query(
-    `SELECT q.id, q.sections, q.settings->>'feedbackMode' AS mode, l.id AS lesson_id
+    `SELECT q.id, q.sections, q.settings, q.settings->>'feedbackMode' AS mode, l.id AS lesson_id
        FROM lessons l JOIN modules m ON m.id=l.module_id JOIN quizzes q ON q.id=l.payload->>'quizId'
       WHERE m.course_id=$1 AND l.type='QUIZ'`,
     [courseId],
@@ -300,6 +300,11 @@ test.describe.serial("Instructor question bank, quiz builder and preview", () =>
     await expect(editSearch.getByRole("button", { name: `Added: ${qs.single.prompt}`, exact: true })).toBeDisabled();
     await editSearch.getByRole("button", { name: `Add: ${qs.multi.prompt}`, exact: true }).click();
     await expect(pickedRows(edit)).toHaveCount(4);
+    // The quiz's settings sit in the same builder: new quizzes start at a 70% pass mark with no limits.
+    await expect(edit.getByLabel("Pass mark %", { exact: true })).toHaveValue("70");
+    await expect(edit.getByLabel("Attempts allowed (blank = unlimited)", { exact: true })).toHaveValue("");
+    await expect(edit.getByLabel("Time limit in minutes (blank = none)", { exact: true })).toHaveValue("");
+    await edit.getByLabel("Attempts allowed (blank = unlimited)", { exact: true }).fill("3");
     await Promise.all([page.waitForEvent("load"), edit.getByRole("button", { name: "Save quiz", exact: true }).click()]);
 
     // The curriculum's review lists 4 picked questions (with answers) and the random draw.
@@ -316,6 +321,7 @@ test.describe.serial("Instructor question bank, quiz builder and preview", () =>
       { fixed: [ids[qs.single.prompt], ids[qs.truefalse.prompt], ids[inline.prompt], ids[qs.multi.prompt]] },
       { bankId, pickN: 2 },
     ]);
+    expect(quiz.settings).toMatchObject({ passPct: 70, attemptsLimit: 3, timeLimitSec: null, feedbackMode: "PRACTICE" });
     await expectNoPageOverflow(page);
     await capture(page, info, "curriculum-four-picked");
   });
@@ -644,4 +650,76 @@ test("bank, builder and preview fit a 360px phone with a 300-character unbroken 
   await page.goto(`/preview/course/${empty.id}`);
   await expect(page.getByText("This course has no lessons yet.", { exact: true })).toBeVisible();
   await expectNoPageOverflow(page);
+});
+
+test("authors remove unused questions from the bank, and instructors review AI drafts only their courses use", async ({ page }, info) => {
+  test.setTimeout(180_000);
+  const tag = randomUUID().slice(0, 8);
+  const department = randomUUID();
+  await withDb((db) => db.query("INSERT INTO departments(id,name) VALUES($1,$2)", [department, `QA Remove Dept ${tag}`]));
+  const author = await createPerson("INSTRUCTOR", { departmentId: department, name: "QA Remove Author" });
+  const own = randomUUID(), drafts = randomUUID();
+  const course = { id: randomUUID(), module: randomUUID(), lesson: randomUUID(), quiz: randomUUID(), title: `QA remove course ${tag}` };
+  const q = { unused: randomUUID(), picked: randomUUID(), approve: randomUUID(), discard: randomUUID() };
+  const prompt = (name: string) => `QA ${name} ${tag}: which exit is closest?`;
+  const choice = (name: string) => JSON.stringify({ prompt: prompt(name), options: ["North", "South"], correct: [0] });
+  // Prerequisites: two of the author's questions in their bank (one picked by their draft
+  // quiz), and two AI drafts in a bank only that quiz draws from.
+  await withDb(async (db) => {
+    await db.query("INSERT INTO question_banks(id,name) VALUES($1,$2),($3,$4)", [own, `QA own bank ${tag}`, drafts, `QA AI bank ${tag}`]);
+    for (const [id, name, bank, status, by, authorId] of [
+      [q.unused, "unused", own, "APPROVED", "human", author.id],
+      [q.picked, "picked", own, "APPROVED", "human", author.id],
+      [q.approve, "approve", drafts, "DRAFT", "ai", null],
+      [q.discard, "discard", drafts, "DRAFT", "ai", null],
+    ] as const)
+      await db.query(
+        "INSERT INTO questions(id,bank_id,type,status,created_by,author_id,body) VALUES($1,$2,'mcq_single',$3,$4,$5,$6)",
+        [id, bank, status, by, authorId, choice(name)],
+      );
+    await db.query(
+      "INSERT INTO courses(id,title,status,approval_state,instructor_id,created_by,department_id) VALUES($1,$2,'DRAFT','DRAFT',$3,$3,$4)",
+      [course.id, course.title, author.id, department],
+    );
+    await db.query("INSERT INTO modules(id,course_id,title) VALUES($1,$2,'Module')", [course.module, course.id]);
+    await db.query(
+      "INSERT INTO quizzes(id,lesson_id,title,settings,sections) VALUES($1,$2,'QA remove quiz',$3,$4)",
+      [course.quiz, course.lesson, JSON.stringify(DEFAULT_SETTINGS), JSON.stringify([{ fixed: [q.picked] }, { bankId: drafts, pickN: 1 }])],
+    );
+    await db.query("INSERT INTO lessons(id,module_id,type,title,payload) VALUES($1,$2,'QUIZ','QA remove quiz',$3)", [course.lesson, course.module, JSON.stringify({ quizId: course.quiz })]);
+  });
+  const status = (id: string) => withDb(async (db) => (await db.query("SELECT status FROM questions WHERE id=$1", [id])).rows[0].status);
+  const revision = () => withDb(async (db) => (await db.query("SELECT content_revision FROM courses WHERE id=$1", [course.id])).rows[0].content_revision);
+  await signIn(page, author);
+
+  // A question the draft quiz picks must be taken out of that quiz first.
+  await page.goto(`/instructor/questions?question=${q.picked}`);
+  const selected = page.getByRole("region", { name: "Selected question" });
+  await selected.locator("summary", { hasText: "Remove from bank" }).click();
+  await selected.getByRole("button", { name: "Remove question", exact: true }).click();
+  await expect(selected.getByRole("alert")).toHaveText(`Picked in ${course.title} · QA remove quiz. Take it out of those quizzes first.`);
+  expect(await status(q.picked)).toBe("APPROVED");
+
+  // An unused question is removed and leaves the list.
+  await page.goto(`/instructor/questions?question=${q.unused}`);
+  await selected.locator("summary", { hasText: "Remove from bank" }).click();
+  await Promise.all([page.waitForURL(/\/instructor\/questions$/), selected.getByRole("button", { name: "Remove question", exact: true }).click()]);
+  expect(await status(q.unused)).toBe("RETIRED");
+  await expect(page.getByText(prompt("unused"), { exact: true })).toHaveCount(0);
+
+  // AI drafts in a bank only this instructor's course uses wait for them on the bank page.
+  const draftList = page.getByRole("list", { name: "AI drafts" });
+  await expect(draftList.locator(":scope > li")).toHaveCount(2);
+  await expectNoPageOverflow(page);
+  await capture(page, info, "bank-ai-drafts");
+  const before = await revision();
+  const approveRow = draftList.locator(":scope > li").filter({ hasText: prompt("approve") });
+  await Promise.all([page.waitForEvent("load"), approveRow.getByRole("button", { name: "Approve", exact: true }).click()]);
+  expect(await status(q.approve)).toBe("APPROVED");
+  // Approving changes the quiz's random draw, so the course starts a new revision.
+  expect(await revision()).toBe(before + 1);
+  const discardRow = draftList.locator(":scope > li").filter({ hasText: prompt("discard") });
+  await Promise.all([page.waitForEvent("load"), discardRow.getByRole("button", { name: "Discard", exact: true }).click()]);
+  expect(await status(q.discard)).toBe("RETIRED");
+  await expect(draftList).toHaveCount(0);
 });
