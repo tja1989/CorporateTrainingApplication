@@ -6,7 +6,8 @@ import { requireUser } from "@/lib/auth/guard";
 import { canReadCourse } from "@/lib/courses/ownership";
 import type { QuizSettings, ServedItem } from "@/lib/db/schema";
 import type { Served } from "@/components/question-input";
-import { composeServedItems } from "@/lib/quiz/engine";
+import { composeServedItems, unmapAnswer } from "@/lib/quiz/engine";
+import { reviewItem } from "@/lib/quiz/review";
 import { toServed } from "@/lib/quiz/served";
 import type { Answer } from "@/lib/quiz/scoring";
 import { previewScore, type PreviewResult, type PreviewResultItem } from "./score";
@@ -98,7 +99,14 @@ export async function submitPreviewQuizAction(
       writtenCount: scored.writtenCount,
       items: ordered.map((served) => {
         const q = byId.get(served.questionId)!;
-        return { questionId: q.id, type: q.type, prompt: q.body.prompt, points: q.points, earned: scored.earnedById.get(q.id) ?? null, body: q.body, rubric: q.rubric ?? null };
+        const review =
+          q.type === "free_text"
+            ? null
+            : reviewItem(q, unmapAnswer(q, served, answers?.[served.questionId]), {
+                reveal: true,
+                sourceStartSec: q.body.sourceStartSec ?? q.source?.startSec ?? null,
+              });
+        return { questionId: q.id, type: q.type, prompt: q.body.prompt, points: q.points, earned: scored.earnedById.get(q.id) ?? null, body: q.body, rubric: q.rubric ?? null, review };
       }),
     },
   };

@@ -1,6 +1,7 @@
 import type { QuestionBody, Rubric, ServedItem } from "@/lib/db/schema";
 import { unmapAnswer } from "@/lib/quiz/engine";
 import { scoreQuestion, type Answer, type QuestionForScoring } from "@/lib/quiz/scoring";
+import type { ReviewItem } from "@/lib/quiz/review";
 
 export type PreviewResultItem = {
   questionId: string;
@@ -10,6 +11,8 @@ export type PreviewResultItem = {
   earned: number | null;
   body: QuestionBody;
   rubric: Rubric | null;
+  /** What a learner sees after submitting, with the answer key shown; null for written answers. */
+  review: ReviewItem | null;
 };
 
 export type PreviewResult = {

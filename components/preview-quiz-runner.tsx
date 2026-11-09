@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button, ButtonLink, Card, Chip } from "@/components/ui";
 import { QuestionInput } from "@/components/question-input";
 import { QuestionGuide } from "@/app/(workspace)/admin/reviews/question-guide";
+import { AnswerReview } from "@/components/answer-review";
 import { startPreviewQuizAction, submitPreviewQuizAction, type PreviewResult, type PreviewStart } from "@/lib/preview/quiz-actions";
 import type { Answer } from "@/lib/quiz/scoring";
 import { formatDateTime, plural } from "@/lib/format";
@@ -30,9 +31,13 @@ function availability({ availableFrom, availableUntil }: Rules): string | null {
   return `Open to learners${from}${until}.`;
 }
 
+const EXAM_NOTE =
+  "Exam mode: learners see which answers were right after submitting. The answer key appears after the assessment window closes.";
+
 /** The scored preview: score and pass mark (only when something is scorable),
- * the written-answer note, then each question with its answer key. */
-export function PreviewResultView({ result }: { result: PreviewResult }) {
+ * the written-answer note, then each answer as learners see it after
+ * submitting, with the answer key shown. Written answers show their rubric. */
+export function PreviewResultView({ result, exam = false }: { result: PreviewResult; exam?: boolean }) {
   const scorable = result.possible > 0;
   return (
     <>
@@ -47,14 +52,22 @@ export function PreviewResultView({ result }: { result: PreviewResult }) {
           </>
         ) : null}
         {result.writtenCount > 0 ? <p className={scorable ? "mt-3 text-sm text-muted" : "text-sm text-muted"}>{WRITTEN_NOTE}</p> : null}
+        {exam ? <p className="mt-3 text-sm text-muted">{EXAM_NOTE}</p> : null}
       </Card>
-      {result.items.map((item, i) => (
-        <Card key={item.questionId} className="mb-3 p-4 text-sm">
-          <p className="mb-1 font-medium [overflow-wrap:anywhere]">{i + 1}. {item.prompt}</p>
-          <p className="text-muted">{item.earned === null ? WRITTEN_NOTE : `${item.earned} / ${item.points} points`}</p>
-          <QuestionGuide type={item.type} body={item.body} rubric={item.rubric} />
-        </Card>
-      ))}
+      <section aria-label="Your answers" className="mb-4">
+        <h2 className="type-section mb-3">Your answers</h2>
+        {result.items.map((item, i) =>
+          item.review ? (
+            <AnswerReview key={item.questionId} item={item.review} number={i + 1} />
+          ) : (
+            <Card key={item.questionId} className="mb-3 p-4 text-sm">
+              <p className="mb-1 font-medium [overflow-wrap:anywhere]">{i + 1}. {item.prompt}</p>
+              <p className="text-muted">{WRITTEN_NOTE}</p>
+              <QuestionGuide type={item.type} body={item.body} rubric={item.rubric} />
+            </Card>
+          ),
+        )}
+      </section>
     </>
   );
 }
@@ -131,7 +144,7 @@ export function PreviewQuizRunner({ courseId, lessonId, lessonHref, rules }: { c
   if (result) {
     return (
       <div>
-        <PreviewResultView result={result} />
+        <PreviewResultView result={result} exam={rules.exam} />
         {alert}
         <div className="flex flex-wrap gap-2">
           <Button disabled={busy} onClick={() => void begin()}>{busy ? "Preparing…" : "Try again"}</Button>

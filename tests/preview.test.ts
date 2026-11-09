@@ -183,6 +183,10 @@ describe("preview actions", () => {
     expect(r.result?.items.map((i) => [i.questionId, i.earned])).toEqual([["q1", 1], ["q2", null]]);
     expect(r.result?.items[0].body.correct).toEqual([0]);
     expect(r.result?.items[1].rubric?.modelAnswer).toBe("m");
+    // The choice gets the learner's review with the key shown; the written answer does not.
+    expect(r.result?.items[0].review).toMatchObject({ questionId: "q1", correct: true });
+    expect(r.result?.items[0].review?.choices.some((c) => c.correct)).toBe(true);
+    expect(r.result?.items[1].review).toBeNull();
   });
 
 });
@@ -208,11 +212,17 @@ describe("PreviewQuizRunner", () => {
     questionId: "w1", type: "free_text", prompt: "Explain how you report a hazard.", points: 2, earned: null,
     body: { prompt: "Explain how you report a hazard." },
     rubric: { criteria: [{ name: "Names the supervisor", points: 2 }], modelAnswer: "Tell the supervisor straight away." },
+    review: null,
   };
   const choice: PreviewResult["items"][number] = {
     questionId: "c1", type: "mcq_single", prompt: "Which extinguisher suits electrical fires?", points: 1, earned: 0,
     body: { prompt: "Which extinguisher suits electrical fires?", options: ["Water", "Carbon dioxide"], correct: [1] },
     rubric: null,
+    review: {
+      questionId: "c1", prompt: "Which extinguisher suits electrical fires?", correct: false,
+      choices: [{ label: "Water", picked: true, correct: false }, { label: "Carbon dioxide", picked: false, correct: true }],
+      yourAnswer: [], correctAnswer: [], explanation: "Water conducts electricity.", sourceStartSec: null, rationale: null,
+    },
   };
   const result = (items: PreviewResult["items"], possible: number): PreviewResult => ({
     earned: 0, possible, pct: 0, passed: false, passPct: 70, writtenCount: items.filter((i) => i.earned === null).length, items,
@@ -229,6 +239,23 @@ describe("PreviewQuizRunner", () => {
     expect(html).toContain("Not passed");
     expect(html).toContain("Pass mark 70%");
     expect(html).toContain(WRITTEN_NOTE);
+  });
+
+  it("shows each answer as learners see it after submitting, with the answer key", () => {
+    const html = renderToStaticMarkup(createElement(PreviewResultView, { result: result([choice, written], 1) }));
+    expect(html).toContain("Your answers");
+    expect(html).toContain("Incorrect");
+    expect(html).toContain("Your answer");
+    expect(html).toContain("Correct answer");
+    expect(html).toContain("Water conducts electricity.");
+    // The written answer keeps its rubric and model answer.
+    expect(html).toContain("Tell the supervisor straight away.");
+  });
+
+  it("says what exam learners see, only for an exam", () => {
+    const note = "Exam mode: learners see which answers were right after submitting.";
+    expect(renderToStaticMarkup(createElement(PreviewResultView, { result: result([choice], 1), exam: true }))).toContain(note);
+    expect(renderToStaticMarkup(createElement(PreviewResultView, { result: result([choice], 1) }))).not.toContain(note);
   });
 
   it("shows only the written-answer note and the answer keys when nothing is scorable", () => {
