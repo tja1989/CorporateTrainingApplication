@@ -282,6 +282,7 @@ describe("saveQuizAction", () => {
       ["title", " Fire drill "],
       ["picked", "q1"], ["picked", "q2"],
       ["drawBank", "b1"], ["drawCount", "3"],
+      ["passPct", "80"], ["attemptsLimit", "2"], ["timeLimitMinutes", "15"],
       ["revision", "4"],
       ...extra,
     ]);
@@ -319,7 +320,14 @@ describe("saveQuizAction", () => {
       {
         title: "Fire drill",
         sections: [{ fixed: ["q1", "q2"] }, { bankId: "b1", pickN: 3 }],
-        settings: { ...settings, feedbackMode: "PRACTICE", integrityMode: false },
+        settings: {
+          ...settings,
+          feedbackMode: "PRACTICE",
+          integrityMode: false,
+          passPct: 80,
+          attemptsLimit: 2,
+          timeLimitSec: 900,
+        },
       },
     ]);
     expect(written("lessons")).toEqual([{ title: "Fire drill" }]);
@@ -335,7 +343,7 @@ describe("saveQuizAction", () => {
     m.liveExam.mockResolvedValue(new Set());
     m.liveBanks.mockResolvedValue(new Set(["b1"]));
     const drawOnly = (...extra: [string, string][]) =>
-      form([["title", "Drill"], ["drawBank", "b1"], ["drawCount", "3"], ["revision", "4"], ...extra]);
+      form([["title", "Drill"], ["drawBank", "b1"], ["drawCount", "3"], ["passPct", "80"], ["revision", "4"], ...extra]);
     expect(await saveQuizAction("c", "l1", drawOnly())).toEqual({
       error: "Confirm that learners will see answers to questions used in a live exam.",
     });
@@ -360,7 +368,14 @@ describe("saveQuizAction", () => {
   it("needs no confirmation for an exam quiz", async () => {
     const result = await saveQuizAction("c", "l1", quizForm(["exam", "on"], ["integrity", "on"]));
     expect(result).toEqual({ success: "Quiz saved. Submit this revision for approval." });
-    expect(written("quizzes")[0].settings).toEqual({ ...settings, feedbackMode: "EXAM", integrityMode: true });
+    expect(written("quizzes")[0].settings).toEqual({
+      ...settings,
+      feedbackMode: "EXAM",
+      integrityMode: true,
+      passPct: 80,
+      attemptsLimit: 2,
+      timeLimitSec: 900,
+    });
   });
 
   it("keeps the old content when the course changed since the form loaded", async () => {
@@ -391,8 +406,27 @@ describe("saveQuizAction", () => {
   });
 
   it("returns the content error and writes nothing", async () => {
-    expect(await saveQuizAction("c", "l1", form([["title", "Empty"], ["revision", "4"]]))).toEqual({
+    expect(await saveQuizAction("c", "l1", form([["title", "Empty"], ["passPct", "70"], ["revision", "4"]]))).toEqual({
       error: "Add at least one question.",
+    });
+    nothingWritten();
+  });
+
+  it("refuses an out-of-range pass mark, attempts or time limit and writes nothing", async () => {
+    const bad = quizForm(["confirmLiveExam", "on"]);
+    bad.set("passPct", "0");
+    expect(await saveQuizAction("c", "l1", bad)).toEqual({
+      error: "Pass mark must be a whole number from 1 to 100.",
+    });
+    bad.set("passPct", "70");
+    bad.set("attemptsLimit", "21");
+    expect(await saveQuizAction("c", "l1", bad)).toEqual({
+      error: "Attempts must be from 1 to 20, or blank for unlimited.",
+    });
+    bad.set("attemptsLimit", "");
+    bad.set("timeLimitMinutes", "181");
+    expect(await saveQuizAction("c", "l1", bad)).toEqual({
+      error: "Time limit must be from 1 to 180 minutes, or blank for none.",
     });
     nothingWritten();
   });

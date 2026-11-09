@@ -81,6 +81,9 @@ const builder = (props: Partial<BuilderProps> = {}) =>
         questions: [picker("q1", "Where is the nearest extinguisher?"), picker("q2", "Who calls the fire brigade?", true)],
         exam: false,
         integrity: false,
+        passPct: 80,
+        attemptsLimit: 3,
+        timeLimitSec: 1200,
       },
       banks,
       copySources: [],
@@ -108,6 +111,13 @@ describe("QuizBuilder", () => {
     expect(html).toContain("Save quiz");
   });
 
+  it("shows the quiz's pass mark, attempts and time limit", () => {
+    const html = builder();
+    expect(values(html, "passPct")).toEqual(["80"]);
+    expect(values(html, "attemptsLimit")).toEqual(["3"]);
+    expect(values(html, "timeLimitMinutes")).toEqual(["20"]);
+  });
+
   it("marks only the picked question a live exam uses", () => {
     expect(count(builder(), "Used in a live exam")).toBe(1);
   });
@@ -133,12 +143,24 @@ describe("QuizBuilder", () => {
       mode: "new",
       lessonId: undefined,
       moduleId: "m1",
-      initial: { title: "", content: { picked: [], draws: [] }, questions: [], exam: false, integrity: false },
+      initial: {
+        title: "",
+        content: { picked: [], draws: [] },
+        questions: [],
+        exam: false,
+        integrity: false,
+        passPct: 70,
+        attemptsLimit: null,
+        timeLimitSec: null,
+      },
     });
     expect(values(html, "type")).toEqual(["QUIZ"]);
     expect(values(html, "picked")).toEqual([]);
     expect(html).toContain("Lesson title");
     expect(html).toContain("Add lesson");
+    expect(values(html, "passPct")).toEqual(["70"]);
+    expect(values(html, "attemptsLimit")).toEqual([""]);
+    expect(values(html, "timeLimitMinutes")).toEqual([""]);
   });
 });
 

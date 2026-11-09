@@ -245,7 +245,16 @@ export function QuizBuilder({
   courseId: string;
   lessonId?: string;
   moduleId?: string;
-  initial: { title: string; content: QuizContent; questions: PickerQuestion[]; exam: boolean; integrity: boolean };
+  initial: {
+    title: string;
+    content: QuizContent;
+    questions: PickerQuestion[];
+    exam: boolean;
+    integrity: boolean;
+    passPct: number;
+    attemptsLimit: number | null;
+    timeLimitSec: number | null;
+  };
   banks: QuizBank[];
   copySources: { lessonId: string; label: string }[];
   revision: number;
@@ -459,6 +468,23 @@ export function QuizBuilder({
           ) : null}
 
           <div className={panel}>
+            <div className="grid min-w-0 gap-3 sm:grid-cols-3">
+              <Field label="Pass mark %">
+                <Input name="passPct" type="number" min={1} max={100} defaultValue={initial.passPct} required />
+              </Field>
+              <Field label="Attempts allowed (blank = unlimited)">
+                <Input name="attemptsLimit" type="number" min={1} max={20} defaultValue={initial.attemptsLimit ?? ""} />
+              </Field>
+              <Field label="Time limit in minutes (blank = none)">
+                <Input
+                  name="timeLimitMinutes"
+                  type="number"
+                  min={1}
+                  max={180}
+                  defaultValue={initial.timeLimitSec ? Math.round(initial.timeLimitSec / 60) : ""}
+                />
+              </Field>
+            </div>
             <label className="touch-target flex items-center gap-3 text-sm">
               <input type="checkbox" name="exam" checked={exam} onChange={(e) => setExam(e.target.checked)} className="size-5" />
               Exam mode (feedback after submission)

@@ -31,20 +31,7 @@ type Quiz = typeof t.quizzes.$inferSelect;
 type Question = typeof t.questions.$inferSelect;
 type Attempt = typeof t.attempts.$inferSelect;
 
-export const DEFAULT_SETTINGS: QuizSettings = {
-  attemptsLimit: null,
-  cooldownMinutes: 0,
-  gradingMethod: "highest",
-  passPct: 70,
-  shuffleQuestions: true,
-  shuffleChoices: true,
-  oneAtATime: false,
-  noBacktrack: false,
-  feedbackMode: "PRACTICE",
-  graceSec: 30,
-  integrityMode: false,
-  timeLimitSec: null,
-};
+export { DEFAULT_SETTINGS } from "./default-settings";
 
 export function windowState(
   s: QuizSettings,

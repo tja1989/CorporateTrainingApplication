@@ -49,7 +49,6 @@ import {
   updateCourseAction,
   addModuleAction,
   updateInterviewLessonAction,
-  updateQuizLessonAction,
   updateContentLessonAction,
   retryIngestAction,
   moveLessonAction,
@@ -58,7 +57,6 @@ import {
 import { lessonTypeLabel } from "./lesson-icon";
 import { CoverUrlField } from "./cover-url-field";
 import { languageName } from "@/lib/format";
-import { QuestionBanks } from "./question-banks";
 export const dynamic = "force-dynamic";
 export async function CourseEditor({
   actor,
@@ -158,7 +156,6 @@ export async function CourseEditor({
   const quizQuestions = await pickerQuestions([
     ...new Set(quizzes.flatMap((q) => q.content.picked)),
   ]);
-  const quizRows = quizzes.map((q) => q.quiz);
   return (
     <div className="min-w-0">
       <a
@@ -199,11 +196,6 @@ export async function CourseEditor({
             href: `${base}/${course.id}`,
             label: "Curriculum",
             active: view === "curriculum",
-          },
-          {
-            href: `${base}/${course.id}?view=questions`,
-            label: "Question banks",
-            active: view === "questions",
           },
           {
             href: `${base}/${course.id}?view=settings`,
@@ -451,54 +443,6 @@ export async function CourseEditor({
                               </WorkspaceForm>
                             </details>
                           ) : null}
-                          {lesson.type === "QUIZ" && editable ? (() => {
-                            const quiz = quizRows.find((q) => q.id === lesson.payload.quizId);
-                            const draw = quiz?.sections.find((s) => s.bankId);
-                            return quiz ? (
-                              <details className="mt-2">
-                                <summary className="touch-target flex items-center text-sm text-link">
-                                  Edit quiz settings
-                                </summary>
-                                <WorkspaceForm action={updateQuizLessonAction.bind(null, course.id, lesson.id)}>
-                                  <input type="hidden" name="revision" value={course.contentRevision} />
-                                  <Field label="Quiz title">
-                                    <Input name="title" defaultValue={lesson.title} required />
-                                  </Field>
-                                  <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-                                    <Field label="Question bank">
-                                      <Select name="bankId" defaultValue={draw?.bankId ?? ""} required>
-                                        <option value="">Choose a question bank</option>
-                                        {banks.map((b) => (
-                                          <option key={b.id} value={b.id}>{b.name}</option>
-                                        ))}
-                                      </Select>
-                                    </Field>
-                                    <Field label="Questions to draw">
-                                      <Input name="pickN" type="number" min={1} max={100} defaultValue={draw?.pickN ?? 5} />
-                                    </Field>
-                                    <Field label="Pass mark %">
-                                      <Input name="passPct" type="number" min={1} max={100} defaultValue={quiz.settings.passPct} />
-                                    </Field>
-                                    <Field label="Attempts allowed (blank = unlimited)">
-                                      <Input name="attemptsLimit" type="number" min={1} max={20} defaultValue={quiz.settings.attemptsLimit ?? ""} />
-                                    </Field>
-                                    <Field label="Time limit in minutes (blank = none)">
-                                      <Input name="timeLimitMinutes" type="number" min={1} max={180} defaultValue={quiz.settings.timeLimitSec ? Math.round(quiz.settings.timeLimitSec / 60) : ""} />
-                                    </Field>
-                                  </div>
-                                  <label className="touch-target flex items-center gap-3 text-sm">
-                                    <input type="checkbox" name="exam" defaultChecked={quiz.settings.feedbackMode === "EXAM"} />
-                                    Exam mode (answer key revealed after the window closes)
-                                  </label>
-                                  <label className="touch-target mb-4 flex items-center gap-3 text-sm">
-                                    <input type="checkbox" name="integrity" defaultChecked={quiz.settings.integrityMode} />
-                                    Integrity monitoring
-                                  </label>
-                                  <Button type="submit" variant="secondary">Save quiz settings</Button>
-                                </WorkspaceForm>
-                              </details>
-                            ) : null;
-                          })() : null}
                           {editable && ["TEXT", "PDF"].includes(lesson.type) ? (
                             <details className="mt-3">
                               <summary className="touch-target flex items-center text-sm text-link">
@@ -567,6 +511,9 @@ export async function CourseEditor({
                                     ),
                                     exam: quiz.quiz.settings.feedbackMode === "EXAM",
                                     integrity: quiz.quiz.settings.integrityMode,
+                                    passPct: quiz.quiz.settings.passPct,
+                                    attemptsLimit: quiz.quiz.settings.attemptsLimit,
+                                    timeLimitSec: quiz.quiz.settings.timeLimitSec ?? null,
                                   }}
                                   banks={banks}
                                   copySources={copySources}
@@ -631,8 +578,6 @@ export async function CourseEditor({
               </WorkspaceSection>
             ) : null}
           </div>
-        ) : view === "questions" ? (
-          <QuestionBanks course={course} lessons={lessons} editable={editable} />
         ) : (
           <div className="min-w-0 max-w-4xl">
             <WorkspaceSection title="Course settings">

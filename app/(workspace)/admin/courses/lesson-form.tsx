@@ -4,6 +4,7 @@ import { Button, Field, Input, Select, Textarea } from "@/components/ui";
 import { WorkspaceForm } from "@/components/workspace-form";
 import { QuizBuilder, type QuizBank } from "@/components/quiz-builder";
 import type { InterviewConfig } from "@/lib/db/schema";
+import { DEFAULT_SETTINGS } from "@/lib/quiz/default-settings";
 import { addLessonAction } from "./actions";
 export function InterviewFields({ cfg }: { cfg?: InterviewConfig }) {
   return (
@@ -65,8 +66,11 @@ const emptyQuiz = {
   title: "",
   content: { picked: [], draws: [] },
   questions: [],
-  exam: false,
-  integrity: false,
+  exam: DEFAULT_SETTINGS.feedbackMode === "EXAM",
+  integrity: DEFAULT_SETTINGS.integrityMode,
+  passPct: DEFAULT_SETTINGS.passPct,
+  attemptsLimit: DEFAULT_SETTINGS.attemptsLimit,
+  timeLimitSec: DEFAULT_SETTINGS.timeLimitSec ?? null,
 };
 export function LessonForm({
   courseId,

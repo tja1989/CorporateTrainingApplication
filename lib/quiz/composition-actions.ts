@@ -16,7 +16,7 @@ import {
   composeQuizSections,
   pickerQuestions,
   quizContentToCopy,
-  quizModes,
+  quizFormSettings,
   toPickerQuestions,
   type PickerQuestion,
   type QuizContent,
@@ -123,7 +123,7 @@ async function courseQuiz(tx: LearningTransaction, courseId: string, lessonId: s
   return quiz;
 }
 
-/** Replaces a draft quiz's title, questions and modes; other settings stay. */
+/** Replaces a draft quiz's title, questions and builder settings; other settings stay. */
 export async function saveQuizAction(
   courseId: string,
   lessonId: string,
@@ -132,6 +132,8 @@ export async function saveQuizAction(
   const actor = await signedIn("course.author");
   const title = String(form.get("title") ?? "").trim();
   if (!title) return { error: "Enter a quiz title." };
+  const settings = quizFormSettings(form);
+  if ("error" in settings) return settings;
   try {
     await mutateDraftCourse(
       actor,
@@ -141,7 +143,7 @@ export async function saveQuizAction(
         const sections = await composeQuizSections(tx, form);
         await tx
           .update(t.quizzes)
-          .set({ title, sections, settings: { ...quiz.settings, ...quizModes(form) } })
+          .set({ title, sections, settings: { ...quiz.settings, ...settings.value } })
           .where(eq(t.quizzes.id, quiz.id));
         await tx.update(t.lessons).set({ title }).where(eq(t.lessons.id, lessonId));
       },

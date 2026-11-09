@@ -1,12 +1,13 @@
 import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
-import type { QuizSection, QuizSettings } from "@/lib/db/schema";
+import type { QuizSection } from "@/lib/db/schema";
 import type { Actor } from "@/lib/auth/roles";
 import { canReadCourse, type CourseOwnership } from "@/lib/courses/ownership";
 import type { LearningDatabase, LearningTransaction } from "@/lib/lms/learning-cycle";
 import type { QuestionSearchRow } from "@/lib/questions/search";
 import { liveExamBankIds, liveExamQuestionIds } from "@/lib/questions/usage";
 import { LIVE_EXAM_CONFIRMATION_REQUIRED } from "./live-exam";
+import { parseQuizSettingsInput } from "@/lib/courses/quiz-settings-input";
 
 /** A quiz's content: picked questions in order, plus random draws from banks. */
 export type QuizContent = { picked: string[]; draws: { bankId: string; pickN: number }[] };
@@ -93,12 +94,15 @@ export async function assertQuizContent(
   }
 }
 
-/** The two settings the quiz form controls. */
-export function quizModes(form: FormData): Pick<QuizSettings, "feedbackMode" | "integrityMode"> {
-  return {
-    feedbackMode: form.get("exam") === "on" ? "EXAM" : "PRACTICE",
-    integrityMode: form.get("integrity") === "on",
-  };
+/** The settings the quiz form controls: modes, pass mark, attempts and time limit. */
+export function quizFormSettings(form: FormData) {
+  return parseQuizSettingsInput({
+    passPct: String(form.get("passPct") ?? ""),
+    attemptsLimit: String(form.get("attemptsLimit") ?? ""),
+    timeLimitMinutes: String(form.get("timeLimitMinutes") ?? ""),
+    exam: form.get("exam") === "on",
+    integrity: form.get("integrity") === "on",
+  });
 }
 
 /** Whether the quiz can serve a question a live exam uses: it picks one, or
@@ -122,7 +126,7 @@ export async function composeQuizSections(
   const content = parseQuizContent(form);
   await assertQuizContent(tx, content);
   if (
-    quizModes(form).feedbackMode === "PRACTICE" &&
+    form.get("exam") !== "on" &&
     form.get("confirmLiveExam") !== "on" &&
     (await servesLiveExamQuestions(tx, content))
   )

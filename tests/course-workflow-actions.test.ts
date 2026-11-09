@@ -96,6 +96,7 @@ it("adding a quiz cannot write around a rejected ownership gate", async () => {
   state.mutate.mockRejectedValueOnce(new Error("You cannot edit this course."));
   const form = new FormData();
   form.set("type", "QUIZ");
+  form.set("passPct", "70");
   form.set("title", "Forged quiz");
   form.set("drawBank", "other-bank");
   form.set("drawCount", "2");
@@ -118,6 +119,7 @@ it("an instructor's quiz can draw from a bank that names another course", async 
   ];
   const form = new FormData();
   form.set("type", "QUIZ");
+  form.set("passPct", "70");
   form.set("title", "Shared bank quiz");
   form.append("drawBank", "other-bank");
   form.append("drawCount", "2");
@@ -139,6 +141,7 @@ it("a new quiz is validated like a saved one and writes nothing when empty", asy
   state.responses = [[{ id: "m", courseId: "c" }], []];
   const form = new FormData();
   form.set("type", "QUIZ");
+  form.set("passPct", "70");
   form.set("title", "Empty quiz");
   expect(await addLessonAction("c", "m", form)).toEqual({ error: "Add at least one question." });
   expect(state.writes).not.toHaveBeenCalled();
@@ -154,6 +157,7 @@ it("a new practice quiz with a live-exam question needs confirmation", async () 
   state.responses = [[{ id: "m", courseId: "c" }], [], [{ id: "q1" }], [{ id: "q1", bankId: "b" }], [liveExam]];
   const form = new FormData();
   form.set("type", "QUIZ");
+  form.set("passPct", "70");
   form.set("title", "Practice");
   form.append("picked", "q1");
   expect(await addLessonAction("c", "m", form)).toEqual({
