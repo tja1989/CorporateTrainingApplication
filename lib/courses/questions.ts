@@ -5,6 +5,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 import type { LearningTransaction } from "@/lib/lms/learning-cycle";
 import { isLiveCourse } from "@/lib/questions/rules";
 import { lockAssessmentCurriculum, lockCurriculum } from "./workflow";
+import { canAuthorCourse } from "./ownership";
 type Course = typeof t.courses.$inferSelect;
 /** Locks each course in id order and re-reads it. Throws `refusal(course)`
  * when it returns a message; otherwise the course (if it exists) gets a new
@@ -42,18 +43,21 @@ async function startNewRevisions(
   return bumped;
 }
 /** Returns each course to a new draft revision with approval reset, locking
- * courses in id order. Refuses when any course is not an unsubmitted draft.
+ * courses in id order. Refuses with `refuse(course)` when it returns a
+ * message, then when any course is not an unsubmitted draft.
  * Call after `lockAssessmentCurriculum(tx)`. */
 export async function reopenDraftCourses(
   tx: LearningTransaction,
   courseIds: string[],
+  refuse: (course: Course) => string | null = () => null,
 ): Promise<void> {
   await startNewRevisions(tx, courseIds, (course) =>
-    !course ||
+    (course && refuse(course)) ||
+    (!course ||
     course.status !== "DRAFT" ||
     ["APPROVED", "SUBMITTED"].includes(course.approvalState)
       ? "Revise affected courses before changing their assessment questions. Approval is currently locked."
-      : null,
+      : null),
   );
 }
 /** For shared-bank writes: draft courses get a new revision, and archived
@@ -87,10 +91,12 @@ export async function updateDraftQuestion(
       !person ||
       person.erasedAt ||
       person.passwordState !== "ACTIVE" ||
-      canonicalRole(person.role) !== actor.role ||
-      !hasPermission(actor.role, "assessment.review")
+      canonicalRole(person.role) !== actor.role
     )
       throw new Error("Not authorized to review questions.");
+    // HR and Super Admin review any draft; an Instructor reviews drafts used
+    // only by courses they author.
+    const reviewer = hasPermission(actor.role, "assessment.review");
     const [question] = await tx
       .select()
       .from(t.questions)
@@ -114,10 +120,17 @@ export async function updateDraftQuestion(
       .where(
         sql`EXISTS(SELECT 1 FROM jsonb_array_elements(${t.quizzes.sections}) s WHERE s->>'bankId'=${question.bankId} OR (s->'fixed') ? ${questionId})`,
       );
-    await reopenDraftCourses(tx, [
+    const courseIds = [
       ...references.map((r) => r.courseId),
       ...(bank?.courseId ? [bank.courseId] : []),
-    ]);
+    ];
+    if (!reviewer && (actor.role !== "INSTRUCTOR" || !courseIds.length))
+      throw new Error("Not authorized to review questions.");
+    await reopenDraftCourses(tx, courseIds, (course) =>
+      !reviewer && !canAuthorCourse(actor, course)
+        ? "Not authorized to review questions."
+        : null,
+    );
     await tx
       .update(t.questions)
       .set({ status })

@@ -421,7 +421,7 @@ async function main() {
       estMinutes: 15,
       tags: [] as string[],
       objectives: [] as string[],
-      sequentialLock: false,
+      sequentialLock: true,
       certificateEnabled: false,
       certificateValidityDays: null as number | null,
       recertLeadDays: 30,

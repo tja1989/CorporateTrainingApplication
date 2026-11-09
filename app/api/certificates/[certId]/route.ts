@@ -6,7 +6,7 @@ import { trainingScope } from "@/lib/auth/scope";
 import { hasPermission } from "@/lib/auth/permissions";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ certId: string }> },
 ) {
   const user = await currentUser();
@@ -50,7 +50,8 @@ export async function GET(
   return new Response(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="certificate-${cert.serial}.pdf"`,
+      // ?download=1 saves the file; otherwise the browser shows it.
+      "Content-Disposition": `${new URL(req.url).searchParams.get("download") === "1" ? "attachment" : "inline"}; filename="certificate-${cert.serial}.pdf"`,
     },
   });
 }

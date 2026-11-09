@@ -77,7 +77,7 @@ export default async function QuizPage({
       <PageTitle
         sub={
           quiz.settings.feedbackMode === "EXAM"
-            ? "Assessment — answers are revealed after the window closes."
+            ? "Assessment — you see which answers were right after submitting; the answer key appears after the window closes."
             : "Practice quiz — instant feedback."
         }
       >

@@ -336,7 +336,7 @@ test("@core Folder navigation includes descendants, excludes sibling prefixes an
     null,
   );
   await signIn(page, employee);
-  await page.goto(`/learn?view=mine&folder=${encodeURIComponent(root)}`);
+  await page.goto(`/learn?view=browse&folder=${encodeURIComponent(root)}`);
   await page.emulateMedia({ colorScheme: "dark" });
   await page
     .getByRole("link", { name: "Safety · 1 course", exact: true })

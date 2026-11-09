@@ -122,7 +122,7 @@ export const courses = pgTable(
     startsAt: timestamp("starts_at", { withTimezone: true }),
     endsAt: timestamp("ends_at", { withTimezone: true }),
     folderPath: text("folder_path").notNull().default(""),
-    sequentialLock: boolean("sequential_lock").notNull().default(false),
+    sequentialLock: boolean("sequential_lock").notNull().default(true),
     certificateEnabled: boolean("certificate_enabled").notNull().default(false),
     certificateValidityDays: integer("certificate_validity_days"),
     recertLeadDays: integer("recert_lead_days").notNull().default(30),

@@ -5,6 +5,7 @@ import { flatLessons, lessonNeighbours, type CourseOutlineView } from "@/lib/lms
 import { CourseOutline } from "./course-outline";
 import { CompleteLessonForm } from "./complete-lesson";
 import { ButtonLink, Chip } from "./ui";
+import { ProgressStatus } from "./progress-status";
 
 const LessonProgress = createContext<{ view: CourseOutlineView; confirm: (view: CourseOutlineView) => void } | null>(null);
 
@@ -20,6 +21,11 @@ export function LessonProgressProvider({ initialView, children }: { initialView:
 }
 
 export function useLessonProgress() { return useContext(LessonProgress); }
+
+export function LiveProgressStatus({ view }: { view: CourseOutlineView }) {
+  const current = useLessonProgress()?.view ?? view;
+  return <ProgressStatus done={current.doneCount} total={current.total} />;
+}
 
 export function LiveCourseOutline({ view, variant }: { view: CourseOutlineView; variant: "page" | "rail" }) {
   const current = useLessonProgress();

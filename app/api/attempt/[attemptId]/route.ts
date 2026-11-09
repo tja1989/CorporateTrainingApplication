@@ -9,7 +9,8 @@ import {
   canRevealAnswers,
   unmapAnswer,
 } from "@/lib/quiz/engine";
-import { scoreQuestion, type Answer } from "@/lib/quiz/scoring";
+import { type Answer } from "@/lib/quiz/scoring";
+import { reviewItem } from "@/lib/quiz/review";
 import { CoursePlanningBlocked } from "@/lib/lms/planning-access";
 
 /**
@@ -112,56 +113,37 @@ export async function POST(
     .where(eq(t.quizzes.id, updated.quizId))
     .limit(1);
   if (!quiz) return new Response("Not found", { status: 404 });
+  // Learners always see their own answers marked right or wrong; the answer
+  // key and explanations follow the quiz's reveal policy.
   const reveal = canRevealAnswers(quiz.settings);
-
-  let review: Array<{
-    questionId: string;
-    prompt: string;
-    correct: boolean | null;
-    explanation: string | null;
-    sourceStartSec: number | null;
-    rationale: string | null;
-  }> = [];
-  if (reveal) {
-    const questions = await db
-      .select()
-      .from(t.questions)
-      .where(
-        inArray(
-          t.questions.id,
-          updated.servedItems.map((s) => s.questionId),
-        ),
-      );
-    const byId = new Map(questions.map((q) => [q.id, q]));
-    const reviews = await db
-      .select()
-      .from(t.gradingReviews)
-      .where(eq(t.gradingReviews.attemptId, updated.id));
-    review = updated.servedItems.map((served) => {
-      const q = byId.get(served.questionId)!;
-      const answer = unmapAnswer(
-        q,
-        served,
-        (updated.answers as Record<string, Answer>)[served.questionId],
-      );
-      const earned =
-        q.type === "free_text"
-          ? null
-          : scoreQuestion(
-              { type: q.type, points: q.points, body: q.body },
-              answer,
-            );
-      return {
-        questionId: q.id,
-        prompt: q.body.prompt,
-        correct: earned === null ? null : earned >= q.points,
-        explanation: q.body.explanation ?? null,
-        sourceStartSec: q.body.sourceStartSec ?? q.source?.startSec ?? null,
-        rationale:
-          reviews.find((r) => r.questionId === q.id)?.aiRationale ?? null,
-      };
+  const questions = await db
+    .select()
+    .from(t.questions)
+    .where(
+      inArray(
+        t.questions.id,
+        updated.servedItems.map((s) => s.questionId),
+      ),
+    );
+  const byId = new Map(questions.map((q) => [q.id, q]));
+  const reviews = await db
+    .select()
+    .from(t.gradingReviews)
+    .where(eq(t.gradingReviews.attemptId, updated.id));
+  const review = updated.servedItems.map((served) => {
+    const q = byId.get(served.questionId)!;
+    const answer = unmapAnswer(
+      q,
+      served,
+      (updated.answers as Record<string, Answer>)[served.questionId],
+    );
+    return reviewItem(q, answer, {
+      reveal,
+      sourceStartSec: q.body.sourceStartSec ?? q.source?.startSec ?? null,
+      rationale:
+        reviews.find((r) => r.questionId === q.id)?.aiRationale ?? null,
     });
-  }
+  });
 
   return Response.json({
     state: updated.state,

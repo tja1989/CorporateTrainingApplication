@@ -1,6 +1,6 @@
 import { Icon } from "@/components/icons";
 import { CourseCover } from "@/components/course-cover";
-import { LearningProgress } from "@/components/course-card";
+import { ProgressStatus } from "@/components/progress-status";
 import { notFound } from "next/navigation";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
@@ -17,6 +17,7 @@ import { CourseOutline } from "@/components/course-outline";
 import {
   ButtonLink,
   ButtonAnchor,
+  Card,
   Chip,
   PageTitle,
   PillLink,
@@ -167,7 +168,7 @@ export default async function CoursePage({
           {cert ? (
             <ButtonAnchor
               variant="secondary"
-              href={`/api/certificates/${cert.id}`}
+              href={`/api/certificates/${cert.id}?download=1`}
             >
               Download certificate
             </ButtonAnchor>
@@ -175,6 +176,7 @@ export default async function CoursePage({
         </div>
       </div>
     );
+  const finished = enrollment?.status === "COMPLETED";
   // The toggle only means something once a section has folded itself away.
   const showExpandToggle = expandAll || view.modules.some((m) => m.complete);
 
@@ -213,11 +215,31 @@ export default async function CoursePage({
               </ul>
             </section>
           ) : null}
+          {finished ? (
+            <Card className="mb-5 max-w-xl p-5">
+              <h2 className="type-section mb-1">Congratulations!</h2>
+              <p className="mb-4 text-sm text-muted">
+                You&#39;ve completed {course.title}.
+                {cert ? " Your certificate is ready to download." : ""}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {cert ? (
+                  <ButtonAnchor href={`/api/certificates/${cert.id}?download=1`}>
+                    Download certificate
+                  </ButtonAnchor>
+                ) : null}
+                <ButtonLink variant="secondary" href="/learn?view=browse">
+                  Find your next course
+                </ButtonLink>
+              </div>
+            </Card>
+          ) : null}
           {view.total > 0 ? (
             <div className="mb-5 max-w-md">
-              <LearningProgress
-                pct={view.pct}
-                label={`${view.doneCount} of ${view.total} lessons complete${view.minutesLeft ? `, about ${view.minutesLeft} min${view.minutesLeftPartial ? "+" : ""} left` : ""}`}
+              <ProgressStatus
+                done={view.doneCount}
+                total={view.total}
+                detail={view.minutesLeft ? `About ${view.minutesLeft} min${view.minutesLeftPartial ? "+" : ""} left.` : undefined}
               />
             </div>
           ) : (
@@ -246,13 +268,13 @@ export default async function CoursePage({
                       : "Give course feedback"}
                 </ButtonAnchor>
               ) : null}
-              {cert ? (
-                <ButtonLink
+              {cert && !finished ? (
+                <ButtonAnchor
                   variant="secondary"
-                  href={`/api/certificates/${cert.id}`}
+                  href={`/api/certificates/${cert.id}?download=1`}
                 >
                   Download certificate
-                </ButtonLink>
+                </ButtonAnchor>
               ) : null}
             </div>
           </div>

@@ -92,8 +92,9 @@ it("rejects an assessment bank below its configured total", async () => {
     [{ lesson: { type: "QUIZ", title: "Quiz", payload: { quizId: "q" } } }],
     [{ sections: [{ bankId: "b", pickN: 5 }] }],
     [{ id: "1" }],
+    [{ name: "Fire safety bank" }],
   ];
   await expect(validateCurriculum(transaction(), "c")).rejects.toThrow(
-    "too few approved questions",
+    "“Quiz” draws 5 questions from “Fire safety bank”, but only 1 is approved. Add or approve 4 more",
   );
 });

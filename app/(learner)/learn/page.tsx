@@ -25,6 +25,8 @@ import {
 } from "@/components/ui";
 import { languageName } from "@/lib/format";
 import { WorkspaceTabs } from "@/components/workspace-ui";
+import { myLearningBoard } from "@/lib/lms/my-learning";
+import { MyLearningBoard, boardTab } from "@/components/my-learning-board";
 
 export const dynamic = "force-dynamic";
 export default async function LearnPage({
@@ -33,7 +35,33 @@ export default async function LearnPage({
   searchParams: Promise<CatalogParams>;
 }) {
   const user = await requireUser();
-  const query = parseCatalogQuery(await searchParams);
+  const params = await searchParams;
+  const query = parseCatalogQuery(params);
+  const tabs = (
+    <WorkspaceTabs
+      label="Learning views"
+      items={(
+        [
+          ["mine", "My courses"],
+          ["upcoming", "Upcoming"],
+          ["paths", "Learning paths"],
+          ["browse", "Browse courses"],
+        ] as const
+      ).map(([view, label]) => ({ href: `/learn?view=${view}`, label, active: query.view === view }))}
+    />
+  );
+  if (query.view === "mine") {
+    const board = await myLearningBoard(user.id);
+    return (
+      <div>
+        <PageTitle sub="Pick up your training or find your next course.">
+          My Learning
+        </PageTitle>
+        {tabs}
+        <MyLearningBoard tab={boardTab(params.tab)} learnerName={user.name} {...board} />
+      </div>
+    );
+  }
   const [mine, catalog, paths, links] = await Promise.all([
     myCourses(user.id),
     db.select().from(t.courses).where(eq(t.courses.status, "PUBLISHED")),
@@ -61,17 +89,7 @@ export default async function LearnPage({
       <PageTitle sub="Pick up your training or find your next course.">
         My Learning
       </PageTitle>
-      <WorkspaceTabs
-        label="Learning views"
-        items={(
-          [
-            ["mine", "My courses"],
-            ["upcoming", "Upcoming"],
-            ["paths", "Learning paths"],
-            ["browse", "Browse courses"],
-          ] as const
-        ).map(([view, label]) => ({ href: `/learn?view=${view}`, label, active: query.view === view }))}
-      />
+      {tabs}
       {query.view === "paths" ? (
         <section aria-label="Learning paths">
           {myPaths.length ? (
