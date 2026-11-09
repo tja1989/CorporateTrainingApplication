@@ -6,6 +6,8 @@ const m = vi.hoisted(() => ({
   createBank: vi.fn(),
   createQuestion: vi.fn(),
   editQuestion: vi.fn(),
+  removeQuestion: vi.fn(),
+  updateDraftQuestion: vi.fn(),
   revalidatePath: vi.fn(),
 }));
 vi.mock("@/lib/auth/guard", () => ({ requirePermission: m.requirePermission }));
@@ -13,10 +15,18 @@ vi.mock("@/lib/questions/bank", () => ({
   createBank: m.createBank,
   createQuestion: m.createQuestion,
   editQuestion: m.editQuestion,
+  removeQuestion: m.removeQuestion,
 }));
+vi.mock("@/lib/courses/questions", () => ({ updateDraftQuestion: m.updateDraftQuestion }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 
-import { createBankAction, createQuestionAction, editQuestionAction } from "../lib/questions/actions";
+import {
+  createBankAction,
+  createQuestionAction,
+  editQuestionAction,
+  removeQuestionAction,
+  reviewDraftAction,
+} from "../lib/questions/actions";
 
 const form = (entries: [string, string][]) => {
   const f = new FormData();
@@ -98,5 +108,35 @@ describe("question bank actions", () => {
     expect(m.createQuestion).not.toHaveBeenCalled();
     expect(m.editQuestion).not.toHaveBeenCalled();
     expect(m.createBank).not.toHaveBeenCalled();
+  });
+
+  it("removeQuestionAction removes as the signed-in author and returns to the bank", async () => {
+    expect(await removeQuestionAction("q1")).toEqual({ href: "/instructor/questions" });
+    expect(m.requirePermission).toHaveBeenCalledWith("question.author");
+    expect(m.removeQuestion).toHaveBeenCalledWith({ id: "u1", role: "INSTRUCTOR", departmentId: "d1" }, "q1");
+  });
+
+  it("removeQuestionAction returns the block reason as error", async () => {
+    m.removeQuestion.mockRejectedValue(new Error("Picked in Fire · Quiz. Take it out of those quizzes first."));
+    expect(await removeQuestionAction("q1")).toEqual({
+      error: "Picked in Fire · Quiz. Take it out of those quizzes first.",
+    });
+  });
+
+  it("reviewDraftAction approves or discards as the signed-in author", async () => {
+    expect(await reviewDraftAction("q1", "APPROVED")).toEqual({ success: "Question approved." });
+    expect(await reviewDraftAction("q2", "RETIRED")).toEqual({ success: "Question discarded." });
+    expect(m.updateDraftQuestion).toHaveBeenNthCalledWith(1, { id: "u1", role: "INSTRUCTOR", departmentId: "d1" }, "q1", "APPROVED");
+    expect(m.updateDraftQuestion).toHaveBeenNthCalledWith(2, { id: "u1", role: "INSTRUCTOR", departmentId: "d1" }, "q2", "RETIRED");
+    m.updateDraftQuestion.mockRejectedValue(new Error("Not authorized to review questions."));
+    expect(await reviewDraftAction("q3", "APPROVED")).toEqual({ error: "Not authorized to review questions." });
+  });
+
+  it("the remove and review actions call nothing when the permission check redirects", async () => {
+    m.requirePermission.mockRejectedValue(new Error("NEXT_REDIRECT"));
+    await expect(removeQuestionAction("q1")).rejects.toThrow("NEXT_REDIRECT");
+    await expect(reviewDraftAction("q1", "APPROVED")).rejects.toThrow("NEXT_REDIRECT");
+    expect(m.removeQuestion).not.toHaveBeenCalled();
+    expect(m.updateDraftQuestion).not.toHaveBeenCalled();
   });
 });

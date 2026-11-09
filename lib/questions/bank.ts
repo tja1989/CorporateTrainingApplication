@@ -6,8 +6,20 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { lockAssessmentCurriculum } from "@/lib/courses/locks";
 import { revokeCourseApprovals } from "@/lib/courses/questions";
 import type { LearningTransaction } from "@/lib/lms/learning-cycle";
-import { editBlockReason, isLiveCourse, usedByLiveTraining } from "./rules";
-import { randomDrawCourses, referencingCourses, servedCount } from "./usage";
+import {
+  editBlockReason,
+  isLiveCourse,
+  liveRemovalBlocked,
+  removeBlockReason,
+  usedByLiveTraining,
+} from "./rules";
+import {
+  isCourseTeamQuestion,
+  questionUsage,
+  randomDrawCourses,
+  referencingCourses,
+  servedCount,
+} from "./usage";
 import type { QuestionDraft } from "./validate";
 
 /** Runs a shared-bank write under the assessment lock, after re-reading the
@@ -118,6 +130,7 @@ export async function editQuestion(
     const blocked = editBlockReason({
       actor,
       authorId: question.authorId,
+      courseTeam: await isCourseTeamQuestion(actor, question, tx),
       servedCount: await servedCount(questionId, tx),
       liveCourseTitles: courses.filter(isLiveCourse).map((c) => c.title),
     });
@@ -139,5 +152,48 @@ export async function editQuestion(
       .where(
         and(eq(t.questions.id, questionId), eq(t.questions.status, "APPROVED")),
       );
+  });
+}
+
+/** Takes an approved question out of its bank (RETIRED). Past attempts keep
+ * it. Quizzes in draft or live courses must stop picking it first. Courses
+ * drawing from its bank, and archived courses picking it, get a new revision
+ * with approval reset, as for any other bank change, so none can go live
+ * again on an approval of the old content. */
+export async function removeQuestion(actor: Actor, questionId: string): Promise<void> {
+  await asQuestionAuthor(actor, async (tx) => {
+    const [question] = await tx
+      .select()
+      .from(t.questions)
+      .where(eq(t.questions.id, questionId))
+      .limit(1);
+    if (!question || question.status !== "APPROVED")
+      throw new Error("Only approved questions can be removed here.");
+    const courses = await referencingCourses(question, tx);
+    const archived = new Set(courses.filter((c) => c.status === "ARCHIVED").map((c) => c.id));
+    const refs = (await questionUsage([questionId], tx)).get(questionId) ?? [];
+    const blocked = removeBlockReason({
+      actor,
+      authorId: question.authorId,
+      courseTeam: await isCourseTeamQuestion(actor, question, tx),
+      pickedIn: [
+        ...new Set(
+          refs
+            .filter((r) => r.via === "picked" && !archived.has(r.courseId))
+            .map((r) => `${r.courseTitle} · ${r.quizTitle}`),
+        ),
+      ],
+      liveCourseTitles: [...new Set(refs.filter((r) => r.live).map((r) => r.courseTitle))],
+    });
+    if (blocked) throw new Error(blocked);
+    await revokeCourseApprovals(
+      tx,
+      courses.map((c) => c.id),
+      liveRemovalBlocked,
+    );
+    await tx
+      .update(t.questions)
+      .set({ status: "RETIRED" })
+      .where(and(eq(t.questions.id, questionId), eq(t.questions.status, "APPROVED")));
   });
 }

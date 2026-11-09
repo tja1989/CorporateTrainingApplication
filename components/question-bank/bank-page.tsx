@@ -1,11 +1,25 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import type { Actor } from "@/lib/auth/roles";
 import { questionBankPath } from "@/lib/navigation";
-import { editBlockReason, isLiveCourse } from "@/lib/questions/rules";
+import { hasPermission } from "@/lib/auth/permissions";
+import { canManageQuestion, editBlockReason, isLiveCourse } from "@/lib/questions/rules";
 import { searchApprovedQuestions, searchPage } from "@/lib/questions/search";
-import { questionUsage, referencingCourses, servedCount, type UsageRef } from "@/lib/questions/usage";
-import { createBankAction, createQuestionAction, editQuestionAction } from "@/lib/questions/actions";
+import {
+  isCourseTeamQuestion,
+  questionUsage,
+  referencingCourses,
+  reviewableDraftBankIds,
+  servedCount,
+  type UsageRef,
+} from "@/lib/questions/usage";
+import {
+  createBankAction,
+  createQuestionAction,
+  editQuestionAction,
+  removeQuestionAction,
+  reviewDraftAction,
+} from "@/lib/questions/actions";
 import { draftToFormDefaults } from "@/lib/questions/validate";
 import { QuestionEditor } from "./question-editor";
 import { notFound } from "next/navigation";
@@ -67,15 +81,34 @@ export async function BankPage({ actor, searchParams }: { actor: Actor; searchPa
   const usage = await questionUsage([...rows.map((r) => r.id), ...(selected ? [selected.id] : [])]);
 
   let blocked: string | null = null;
+  let canRemove = false;
   if (selected) {
     const courses = await referencingCourses(selected);
+    const courseTeam = await isCourseTeamQuestion(actor, selected);
     blocked = editBlockReason({
       actor,
       authorId: selected.authorId,
+      courseTeam,
       servedCount: await servedCount(selected.id),
       liveCourseTitles: courses.filter(isLiveCourse).map((c) => c.title),
     });
+    canRemove = canManageQuestion({ actor, authorId: selected.authorId, courseTeam });
   }
+
+  // AI drafts: an instructor reviews drafts in banks only their courses use;
+  // HR Head and Admin review every draft in Assessment reviews.
+  const draftBankIds = await reviewableDraftBankIds(actor);
+  const drafts = draftBankIds.length
+    ? await db
+        .select()
+        .from(t.questions)
+        .where(and(inArray(t.questions.bankId, draftBankIds), eq(t.questions.status, "DRAFT")))
+        .orderBy(asc(t.questions.createdAt))
+        .limit(50)
+    : [];
+  const [{ waiting }] = hasPermission(actor.role, "assessment.review")
+    ? await db.select({ waiting: count() }).from(t.questions).where(eq(t.questions.status, "DRAFT"))
+    : [{ waiting: 0 }];
 
   const link = (extra: Record<string, string | number | undefined>) => {
     const params = new URLSearchParams();
@@ -93,6 +126,44 @@ export async function BankPage({ actor, searchParams }: { actor: Actor; searchPa
         sub="Questions shared by every course. Add your own, then pick them or draw from them in a quiz."
         actions={<ButtonLink href={`${base}/new`}>New question</ButtonLink>}
       />
+
+      {waiting > 0 ? (
+        <p role="status" className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-control bg-surface-2 p-3 text-sm">
+          {waiting} AI {waiting === 1 ? "draft is" : "drafts are"} waiting for review.
+          <a href="/admin/reviews" className="font-medium text-link">Open assessment reviews</a>
+        </p>
+      ) : null}
+
+      {drafts.length ? (
+        <WorkspaceSection
+          title="AI drafts for your courses"
+          description="AI wrote these for banks your courses use. Approve the ones that are right and discard the rest. Approving one adds it to your quizzes' random draws, so the course starts a new revision."
+        >
+          <ul aria-label="AI drafts" className="space-y-3">
+            {drafts.map((q) => (
+              <li key={q.id}>
+                <Card className="min-w-0 p-4">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <Chip variant="ai">AI draft</Chip>
+                    <Chip>{questionTypeLabels[q.type] ?? q.type}</Chip>
+                    <span className="min-w-0 break-words text-sm text-muted">{bankName.get(q.bankId) ?? "Bank"}</span>
+                  </div>
+                  <p className="break-words font-medium">{q.body.prompt}</p>
+                  <QuestionGuide type={q.type} body={q.body} rubric={q.rubric} />
+                  <div className="flex flex-wrap gap-2">
+                    <WorkspaceForm action={reviewDraftAction.bind(null, q.id, "APPROVED")}>
+                      <SubmitButton variant="secondary">Approve</SubmitButton>
+                    </WorkspaceForm>
+                    <WorkspaceForm action={reviewDraftAction.bind(null, q.id, "RETIRED")}>
+                      <SubmitButton variant="ghost">Discard</SubmitButton>
+                    </WorkspaceForm>
+                  </div>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </WorkspaceSection>
+      ) : null}
 
       <div className="mb-6 grid gap-4 lg:grid-cols-2">
         <WorkspaceSection title="Find questions">
@@ -160,6 +231,17 @@ export async function BankPage({ actor, searchParams }: { actor: Actor; searchPa
             )}
             <ButtonLink href={link({})} variant="ghost">Close</ButtonLink>
           </div>
+          {canRemove ? (
+            <details className="mt-4">
+              <summary className="touch-target flex cursor-pointer items-center text-sm text-link">Remove from bank</summary>
+              <WorkspaceForm action={removeQuestionAction.bind(null, selected.id)} className="mt-2 min-w-0">
+                <p className="mb-3 text-sm text-muted">
+                  Quizzes stop drawing this question. Past attempts keep it. A quiz that picks it must drop it first.
+                </p>
+                <SubmitButton variant="destructive">Remove question</SubmitButton>
+              </WorkspaceForm>
+            </details>
+          ) : null}
         </section>
       ) : null}
 
@@ -238,6 +320,7 @@ export async function EditQuestionPage({ actor, questionId }: { actor: Actor; qu
   const blocked = editBlockReason({
     actor,
     authorId: question.authorId,
+    courseTeam: await isCourseTeamQuestion(actor, question),
     servedCount: await servedCount(question.id),
     liveCourseTitles: courses.filter(isLiveCourse).map((c) => c.title),
   });

@@ -65,8 +65,8 @@ import {
   reopenDraftCourses,
   updateDraftQuestion,
 } from "../lib/courses/questions";
-import { createBank, createQuestion, editQuestion } from "../lib/questions/bank";
-import { liveExamBankIds } from "../lib/questions/usage";
+import { createBank, createQuestion, editQuestion, removeQuestion } from "../lib/questions/bank";
+import { liveExamBankIds, reviewableDraftBankIds } from "../lib/questions/usage";
 
 const dialect = new PgDialect();
 const toQuery = (value: unknown) => dialect.sqlToQuery(value as SQL);
@@ -307,6 +307,20 @@ describe("editQuestion", () => {
     expect(state.updates).toEqual([]);
   });
 
+  it("lets an instructor who teaches the bank's course edit a question with no recorded author", async () => {
+    state.rows.questions = [{ ...question, authorId: null }];
+    state.rows.question_banks = [{ instructorId: "ana", departmentId: null }];
+    await editQuestion(ana, "q1", draft);
+    expect(written("questions")).toHaveLength(1);
+    const ben: Actor = { id: "ben", role: "INSTRUCTOR", departmentId: null };
+    state.rows.users = [person(ben)];
+    state.updates = [];
+    await expect(editQuestion(ben, "q1", draft)).rejects.toThrow(
+      "Only the author, HR Head or Admin can edit this question.",
+    );
+    expect(state.updates).toEqual([]);
+  });
+
   it("refuses a question learners have answered, counted by served-item containment", async () => {
     state.rows.attempts = [{ count: 2 }];
     await expect(editQuestion(ana, "q1", draft)).rejects.toThrow(
@@ -398,6 +412,77 @@ describe("editQuestion", () => {
   });
 });
 
+describe("removeQuestion", () => {
+  const question = { id: "q1", bankId: "bank", status: "APPROVED", authorId: "ana" };
+  beforeEach(() => {
+    state.rows.questions = [question];
+    state.rows.lessons = [];
+  });
+
+  it("refuses another instructor's question", async () => {
+    const ben: Actor = { id: "ben", role: "INSTRUCTOR", departmentId: null };
+    state.rows.users = [person(ben)];
+    await expect(removeQuestion(ben, "q1")).rejects.toThrow(
+      "Only the author, HR Head or Admin can remove this question.",
+    );
+    expect(state.updates).toEqual([]);
+  });
+
+  it("refuses while a draft quiz still picks it", async () => {
+    state.rows.lessons = [quiz(course("a"), [{ fixed: ["q1"] }])];
+    await expect(removeQuestion(ana, "q1")).rejects.toThrow(
+      "Picked in Course a · Quiz a. Take it out of those quizzes first.",
+    );
+    expect(state.updates).toEqual([]);
+  });
+
+  it("refuses while live training draws from its bank", async () => {
+    state.rows.lessons = [
+      quiz({ ...course("fire", "PUBLISHED", "APPROVED"), title: "Fire Safety" }, [{ bankId: "bank", pickN: 1 }]),
+    ];
+    await expect(removeQuestion(ana, "q1")).rejects.toThrow(
+      "Used by live training: Fire Safety. It can't be removed while learners can get it.",
+    );
+    expect(state.updates).toEqual([]);
+  });
+
+  it("refuses when a drawing course turns out to be live once it is locked", async () => {
+    state.rows.lessons = [quiz(course("b"), [{ bankId: "bank", pickN: 1 }])];
+    state.rows.courses = courseRows(course("b", "DRAFT", "SUBMITTED"));
+    await expect(removeQuestion(ana, "q1")).rejects.toThrow(
+      "Used by live training: Course b. It can't be removed while learners can get it.",
+    );
+    expect(state.updates).toEqual([]);
+  });
+
+  it("only removes approved questions", async () => {
+    state.rows.questions = [{ ...question, status: "DRAFT" }];
+    await expect(removeQuestion(ana, "q1")).rejects.toThrow("Only approved questions can be removed here.");
+    expect(state.updates).toEqual([]);
+  });
+
+  it("revises courses drawing from the bank and archived courses picking it, then retires it", async () => {
+    state.rows.lessons = [
+      quiz(course("b"), [{ bankId: "bank", pickN: 2 }]),
+      quiz(course("old", "ARCHIVED", "APPROVED"), [{ fixed: ["q1"] }]),
+    ];
+    state.rows.courses = courseRows(course("b"), course("old", "ARCHIVED", "APPROVED"));
+    await removeQuestion(ana, "q1");
+    expect(locks()).toEqual(["assessment", "curriculum:b", "curriculum:old"]);
+    expect(written("courses")).toEqual([bump, bump]);
+    expect(written("questions")).toEqual([{ status: "RETIRED" }]);
+    // Learners having answered it does not matter: attempts are never read.
+    expect(state.wheres.some((w) => w.table === "attempts")).toBe(false);
+  });
+
+  it("lets the course team remove a question with no recorded author", async () => {
+    state.rows.questions = [{ ...question, authorId: null }];
+    state.rows.question_banks = [{ instructorId: "ana", departmentId: null }];
+    await removeQuestion(ana, "q1");
+    expect(written("questions")).toEqual([{ status: "RETIRED" }]);
+  });
+});
+
 describe("reopenDraftCourses", () => {
   it("locks each course once, in id order, and starts a new revision", async () => {
     state.rows.courses = courseRows(course("a"), course("b"));
@@ -427,6 +512,53 @@ describe("updateDraftQuestion", () => {
     expect(locks()).toEqual(["assessment", "curriculum:owner", "curriculum:user"]);
     expect(written("courses")).toEqual([bump, bump]);
     expect(written("questions")).toEqual([{ status: "APPROVED" }]);
+  });
+
+  it("lets an instructor review a draft only their own courses use", async () => {
+    state.rows.questions = [{ id: "q1", bankId: "bank", status: "DRAFT" }];
+    state.rows.question_banks = [{ id: "bank", courseId: null }];
+    state.rows.lessons = [{ courseId: "mine" }];
+    state.rows.courses = () => [{ ...course("mine"), contentRevision: 4, instructorId: "ana" }];
+    await updateDraftQuestion(ana, "q1", "RETIRED");
+    expect(written("courses")).toEqual([bump]);
+    expect(written("questions")).toEqual([{ status: "RETIRED" }]);
+  });
+
+  it("refuses an instructor when another instructor's course uses the bank, or no course does", async () => {
+    state.rows.questions = [{ id: "q1", bankId: "bank", status: "DRAFT" }];
+    state.rows.question_banks = [{ id: "bank", courseId: null }];
+    state.rows.lessons = [{ courseId: "theirs" }];
+    state.rows.courses = () => [{ ...course("theirs"), contentRevision: 4, instructorId: "ben" }];
+    await expect(updateDraftQuestion(ana, "q1", "APPROVED")).rejects.toThrow(
+      "Not authorized to review questions.",
+    );
+    state.rows.lessons = [];
+    await expect(updateDraftQuestion(ana, "q1", "APPROVED")).rejects.toThrow(
+      "Not authorized to review questions.",
+    );
+    expect(state.updates).toEqual([]);
+  });
+});
+
+describe("reviewableDraftBankIds", () => {
+  it("keeps banks that only the instructor's courses draw from or own", async () => {
+    state.rows.lessons = [
+      { instructorId: "ana", sections: [{ bankId: "mine", pickN: 2 }, { bankId: "shared", pickN: 1 }, { fixed: ["q"] }] },
+      { instructorId: "ben", sections: [{ bankId: "shared", pickN: 1 }] },
+      { instructorId: "ana", sections: [{ bankId: "no-count" }] },
+    ];
+    state.rows.question_banks = [
+      { bankId: "owned", instructorId: "ana" },
+      { bankId: "mine", instructorId: "ana" },
+      { bankId: "theirs", instructorId: "ben" },
+    ];
+    expect(await reviewableDraftBankIds(ana, db as never)).toEqual(["mine", "owned"]);
+  });
+
+  it("is empty for HR Head and Admin, who review drafts in Assessment reviews", async () => {
+    const hr: Actor = { id: "hr", role: "HR_HEAD", departmentId: null };
+    expect(await reviewableDraftBankIds(hr, db as never)).toEqual([]);
+    expect(state.wheres).toEqual([]);
   });
 });
 

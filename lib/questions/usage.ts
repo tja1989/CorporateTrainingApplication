@@ -2,6 +2,8 @@ import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db, t } from "@/lib/db/client";
 import type { QuizSection } from "@/lib/db/schema";
 import type { LearningDatabase } from "@/lib/lms/learning-cycle";
+import type { Actor } from "@/lib/auth/roles";
+import { canAuthorCourse } from "@/lib/courses/ownership";
 import { isLiveCourse, type CourseState } from "./rules";
 
 export type UsageRef = {
@@ -174,4 +176,52 @@ export async function liveExamBankIds(
     .where(and(inArray(t.questions.bankId, bankIds), eq(t.questions.status, "APPROVED")));
   const live = await liveExamQuestionIds(approved.map((q) => q.id), conn);
   return new Set(approved.filter((q) => live.has(q.id)).map((q) => q.bankId));
+}
+
+/** The question has no recorded author and its bank belongs to a course the
+ * actor authors, so they count as its author (see `canManageQuestion`). */
+export async function isCourseTeamQuestion(
+  actor: Actor,
+  question: { authorId: string | null; bankId: string },
+  conn: LearningDatabase = db,
+): Promise<boolean> {
+  if (question.authorId !== null) return false;
+  const [owner] = await conn
+    .select({ instructorId: t.courses.instructorId, departmentId: t.courses.departmentId })
+    .from(t.questionBanks)
+    .innerJoin(t.courses, eq(t.courses.id, t.questionBanks.courseId))
+    .where(eq(t.questionBanks.id, question.bankId))
+    .limit(1);
+  return !!owner && canAuthorCourse(actor, owner);
+}
+
+/** Banks whose AI drafts an instructor may approve or discard: at least one
+ * course draws from the bank or owns it, and the instructor teaches every
+ * one of them (the rule `updateDraftQuestion` enforces). */
+export async function reviewableDraftBankIds(
+  actor: Actor,
+  conn: LearningDatabase = db,
+): Promise<string[]> {
+  if (actor.role !== "INSTRUCTOR") return [];
+  const drawing = await conn
+    .select({ instructorId: t.courses.instructorId, sections: t.quizzes.sections })
+    .from(t.lessons)
+    .innerJoin(t.modules, eq(t.modules.id, t.lessons.moduleId))
+    .innerJoin(t.courses, eq(t.courses.id, t.modules.courseId))
+    .innerJoin(t.quizzes, sql`${t.lessons.payload}->>'quizId'=${t.quizzes.id}`)
+    .where(sql`EXISTS(SELECT 1 FROM jsonb_array_elements(${t.quizzes.sections}) s WHERE s ? 'bankId')`);
+  const owning = await conn
+    .select({ bankId: t.questionBanks.id, instructorId: t.courses.instructorId })
+    .from(t.questionBanks)
+    .innerJoin(t.courses, eq(t.courses.id, t.questionBanks.courseId));
+  const teachers = new Map<string, Set<string | null>>();
+  const add = (bankId: string, instructorId: string | null) =>
+    teachers.set(bankId, (teachers.get(bankId) ?? new Set()).add(instructorId));
+  for (const row of drawing)
+    for (const section of row.sections)
+      if (section.bankId && draws(section, section.bankId)) add(section.bankId, row.instructorId);
+  for (const row of owning) add(row.bankId, row.instructorId);
+  return [...teachers]
+    .filter(([, ids]) => ids.size === 1 && ids.has(actor.id))
+    .map(([bankId]) => bankId);
 }

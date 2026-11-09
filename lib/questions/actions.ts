@@ -3,7 +3,8 @@ import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth/guard";
 import { questionBankPath } from "@/lib/navigation";
 import type { ActionResult } from "@/components/workspace-form";
-import { createBank, createQuestion, editQuestion } from "./bank";
+import { createBank, createQuestion, editQuestion, removeQuestion } from "./bank";
+import { updateDraftQuestion } from "@/lib/courses/questions";
 import { parseQuestionForm } from "./validate";
 
 /** Always the signed-in user; nothing about the actor comes from the form. */
@@ -65,4 +66,31 @@ export async function editQuestionAction(
   }
   revalidateBanks();
   return { href: `${questionBankPath(user.role)}?question=${questionId}` };
+}
+
+export async function removeQuestionAction(questionId: string): Promise<ActionResult> {
+  const { user, actor } = await author();
+  try {
+    await removeQuestion(actor, questionId);
+  } catch (error) {
+    return { error: message(error) };
+  }
+  revalidateBanks();
+  return { href: questionBankPath(user.role) };
+}
+
+/** An instructor approves or discards an AI draft in a bank only their own
+ * courses use; `updateDraftQuestion` checks that rule again under its locks. */
+export async function reviewDraftAction(
+  questionId: string,
+  decision: "APPROVED" | "RETIRED",
+): Promise<ActionResult> {
+  const { actor } = await author();
+  try {
+    await updateDraftQuestion(actor, questionId, decision);
+  } catch (error) {
+    return { error: message(error) };
+  }
+  revalidateBanks();
+  return { success: decision === "APPROVED" ? "Question approved." : "Question discarded." };
 }

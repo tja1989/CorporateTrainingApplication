@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Actor } from "../lib/auth/roles";
 import {
+  canManageQuestion,
   editBlockReason,
   isDraftCourse,
   isLiveCourse,
+  removeBlockReason,
 } from "../lib/questions/rules";
 
 const ana: Actor = { id: "ana", role: "INSTRUCTOR", departmentId: null };
@@ -99,6 +101,49 @@ describe("editBlockReason", () => {
       }),
     ).toBe(
       "Used by live training: Fire Safety, Forklift Basics. Copy it to make changes.",
+    );
+  });
+});
+
+describe("canManageQuestion", () => {
+  it("lets the author, HR Head and Admin manage a question", () => {
+    expect(canManageQuestion({ actor: ana, authorId: "ana" })).toBe(true);
+    expect(canManageQuestion({ actor: ben, authorId: "ana" })).toBe(false);
+    expect(canManageQuestion({ actor: hrHead, authorId: "ana" })).toBe(true);
+    expect(canManageQuestion({ actor: admin, authorId: null })).toBe(true);
+  });
+
+  it("lets the course team manage only questions with no recorded author", () => {
+    expect(canManageQuestion({ actor: ben, authorId: null, courseTeam: true })).toBe(true);
+    expect(canManageQuestion({ actor: ben, authorId: null, courseTeam: false })).toBe(false);
+    expect(canManageQuestion({ actor: ben, authorId: "ana", courseTeam: true })).toBe(false);
+  });
+
+  it("applies the course-team rule to edits", () => {
+    const base = { servedCount: 0, liveCourseTitles: [] };
+    expect(editBlockReason({ ...base, actor: ben, authorId: null, courseTeam: true })).toBeNull();
+    expect(editBlockReason({ ...base, actor: ben, authorId: null })).toBe(
+      "Only the author, HR Head or Admin can edit this question.",
+    );
+  });
+});
+
+describe("removeBlockReason", () => {
+  const base = { actor: ana, authorId: "ana", pickedIn: [] as string[], liveCourseTitles: [] as string[] };
+  it("allows the author when nothing picks it and no live training uses it", () => {
+    expect(removeBlockReason(base)).toBeNull();
+  });
+
+  it("checks who is removing first, then live training, then picks", () => {
+    const busy = { ...base, pickedIn: ["Fire · Drill"], liveCourseTitles: ["Forklift"] };
+    expect(removeBlockReason({ ...busy, actor: ben })).toBe(
+      "Only the author, HR Head or Admin can remove this question.",
+    );
+    expect(removeBlockReason(busy)).toBe(
+      "Used by live training: Forklift. It can't be removed while learners can get it.",
+    );
+    expect(removeBlockReason({ ...busy, liveCourseTitles: [] })).toBe(
+      "Picked in Fire · Drill. Take it out of those quizzes first.",
     );
   });
 });
